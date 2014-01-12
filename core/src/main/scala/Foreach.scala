@@ -7,37 +7,58 @@ import SizeInfo._
 
 trait Foreach[+A] extends Any with HasSizeInfo { def foreach(f: A => Unit): Unit }
 
-class LabeledForeach[+A](xs: Foreach[A], val label: String) extends Foreach[A] with Labeled {
+// TODO: -Xexperimental SAM
+// abstract class FlatMapF1[-T, +R] { def apply(x: T): Foreach[R] }
+
+trait StaticallySized { def staticSize: Size }
+
+final class StaticSizeFlatMap[-A, +B](val staticSize: Size, f: A => Foreach[B]) extends (A => Foreach[B]) with StaticallySized {
+  def apply(x: A): Foreach[B] = f(x)
+}
+
+final case class LabeledForeach[+A](xs: Foreach[A], label: String) extends Foreach[A] with Labeled {
   def sizeInfo = xs.sizeInfo
   @inline final def foreach(f: A => Unit): Unit = xs foreach f
 }
-
 final case class SizedForeach[+A](xs: Foreach[A], sizeInfo: SizeInfo) extends Foreach[A] {
-  def foreach(f: A => Unit): Unit = xs foreach f
-  override def toString = ss"$xs"
+  @inline final def foreach(f: A => Unit): Unit = xs foreach f
+  override def toString = s"$xs"
 }
-
-sealed abstract case class Mapped[A, B](xs: Foreach[A], f: A => B) extends Foreach[B] {
+final case class Taken[+A](xs: Foreach[A], n: Int) extends Foreach[A] {
+  require(n >= 1, n)
+  def sizeInfo = xs.sizeInfo min precise(n)
+  @inline final def foreach(f: A => Unit): Unit = {
+    var remaining = n
+    xs foreach { x =>
+      f(x)
+      remaining -= 1
+      if (remaining == 0) return
+    }
+  }
+  override def toString = s"$xs"
+}
+final case class Mapped[A, B](xs: Foreach[A], f: A => B) extends Foreach[B] {
   def sizeInfo = xs.sizeInfo
   @inline final def foreach(g: B => Unit): Unit = xs foreach (x => g(f(x)))
   override def toString = ss"$xs map $f"
 }
-final class LinearMapped[A, B](xs: Foreach[A], f: A => B) extends Mapped(xs, f)
-final class IndexedMapped[A, B](xs: Indexed[A], f: A => B) extends Mapped(xs, f) with Indexed[B] {
-  def apply(index: Index): B = f(xs(index))
-}
 
-object Foreach {
+object Foreach extends ForeachImplicits {
   object Empty extends Foreach[Nothing] {
     def sizeInfo = SizeInfo.Empty
     def foreach(f: Nothing => Unit): Unit = ()
     override def toString = "<empty>"
   }
 
-  trait Infinite[A] extends Any with Foreach[A] { final def sizeInfo = Infinite }
+  final class Constant[A](elem: A) extends Foreach[A] {
+    def sizeInfo = Infinite
+    @inline def foreach(f: A => Unit): Unit = while (true) f(elem)
+    override def toString = ss"constant($elem)"
+  }
 
-  final class Unfold[A](zero: A, next: A => A) extends Infinite[A] {
-    def foreach(f: A => Unit): Unit = {
+  final case class Unfold[A](zero: A)(next: A => A) extends Foreach[A] {
+    def sizeInfo = Infinite
+    @inline def foreach(f: A => Unit): Unit = {
       var current = zero
       while (true) {
         f(current)
@@ -47,27 +68,41 @@ object Foreach {
     override def toString = ss"unfold from $zero"
   }
 
+  final case class Times[A](size: Size, elem: A) extends Foreach[A] with HasPreciseSize {
+    @inline def foreach(f: A => Unit): Unit = 0 until size.value foreach (_ => f(elem))
+    override def toString = ss"$elem x$size"
+  }
+
   final case class FlatMapped[A, B](xs: Foreach[A], f: A => Foreach[B]) extends Foreach[B] {
-    def sizeInfo = if (SizeInfo(xs).isZero) SizeInfo.Empty else SizeInfo.Unknown
-    def foreach(g: B => Unit): Unit = xs foreach (x => f(x) foreach g)
+    def sizeInfo = f match {
+      case f: StaticallySized => xs.sizeInfo * f.staticSize
+      case _                  => if (xs.sizeInfo.isZero) xs.sizeInfo else SizeInfo.Unknown
+    }
+    @inline def foreach(g: B => Unit): Unit = xs foreach (x => f(x) foreach g)
     override def toString = ss"$xs flatMap $f"
   }
 
   final case class Filtered[A](xs: Foreach[A], p: A => Boolean) extends Foreach[A] {
     def sizeInfo = SizeInfo(xs).atMost
-    def foreach(f: A => Unit): Unit = xs foreach (x => if (p(x)) f(x))
+    @inline def foreach(f: A => Unit): Unit = xs foreach (x => if (p(x)) f(x))
     override def toString = ss"$xs filter $p"
   }
 
   final case class Collected[A, B](xs: Foreach[A], pf: PartialFunction[A, B]) extends Foreach[B] {
     def sizeInfo = SizeInfo(xs).atMost
-    def foreach(f: B => Unit): Unit = xs foreach (x => if (pf isDefinedAt x) f(pf(x)))
+    @inline def foreach(f: B => Unit): Unit = xs foreach (x => if (pf isDefinedAt x) f(pf(x)))
     override def toString = ss"$xs collect $pf"
+  }
+
+  final case class Joined[A](xs: Foreach[A], ys: Foreach[A]) extends Foreach[A] {
+    def sizeInfo = xs.sizeInfo + ys.sizeInfo
+    @inline def foreach(f: A => Unit): Unit = { xs foreach f ; ys foreach f }
+    override def toString = ss"($xs) ++ ($ys)"
   }
 
   final class PureForeach[+A](mf: Suspended[A]) extends Foreach[A] {
     def sizeInfo = Unknown
-    def foreach(f: A => Unit): Unit = mf(f)
+    @inline def foreach(f: A => Unit): Unit = mf(f)
     override def toString = ss"$mf"
   }
 
@@ -114,7 +149,8 @@ object Foreach {
     def to[CC[X] <: Traversable[X]](implicit cbf: CanBuildFrom[Nothing, A, CC[A]]): CC[A]  = (cbf() ++= toTraversable).result
     def toRepr[Repr <: Traversable[A]](implicit cbf: CanBuildFrom[Nothing, A, Repr]): Repr = (cbf() ++= toTraversable).result
 
-    def labeled(label: String): LabeledForeach[A] = new LabeledForeach(xs, label)
+    def labeled(label: String): LabeledForeach[A] = LabeledForeach(xs, label)
+    def sized(info: SizeInfo): Foreach[A]         = SizedForeach(xs, info)
 
     // def toExtensionalSet(equiv: (A, A) => Boolean): ExtensionalSet[A] = new ExtensionalSet(xs, equiv)
   }
@@ -123,15 +159,22 @@ object Foreach {
   def from(n: Long): Foreach[Long]     = unfold(n)(_ + 1)
   def from(n: BigInt): Foreach[BigInt] = unfold(n)(_ + 1)
 
-  def unfold[A](start: A)(next: A => A): Unfold[A]                           = new Unfold[A](start, next)
-  def flatMapped[A, B](xs: Foreach[A])(f: A => Foreach[B]): FlatMapped[A, B] = new FlatMapped(xs, f)
-  def collected[A, B](xs: Foreach[A])(pf: A =?> B): Collected[A, B]          = new Collected(xs, pf)
-  def filtered[A](xs: Foreach[A])(f: A => Boolean): Filtered[A]              = new Filtered(xs, f)
-  def traversable[A](xs: Traversable[A]): Foreach[A]                         = new TraversableAsForeach[A](xs)
+  def const[A](elem: A): Constant[A] = new Constant(elem)
+
+  def unfold[A](start: A)(next: A => A): Unfold[A]                           = Unfold[A](start)(next)
+  def flatMapped[A, B](xs: Foreach[A])(f: A => Foreach[B]): FlatMapped[A, B] = FlatMapped(xs, f)
+  def collected[A, B](xs: Foreach[A])(pf: A =?> B): Collected[A, B]          = Collected(xs, pf)
+  def filtered[A](xs: Foreach[A])(f: A => Boolean): Filtered[A]              = Filtered(xs, f)
+  def joined[A](xs: Foreach[A], ys: Foreach[A]): Joined[A]                   = Joined(xs, ys)
+  def times[A](times: Int, elem: A): Foreach[A]                              = Taken(const(elem), times)
+  def traversable[A](xs: Traversable[A]): Foreach[A]                         = TraversableAsForeach[A](xs)
 
   def empty[A] : Foreach[A] = Empty
   def apply[A](mf: Suspended[A]): Foreach[A] = new PureForeach[A](mf)
-  def elems[A](xs: A*): Foreach[A] = Indexed.elems(xs: _*)
+  def elems[A](xs: A*): Foreach[A] = xs match {
+    case xs: WrappedArray[A] => new ImmutableArray(xs.array)
+    case _                   => new ImmutableVector(xs.toVector)
+  }
 }
 
 final case class TraversableAsForeach[+A](underlying: Traversable[A]) extends Foreach[A] {
@@ -148,4 +191,11 @@ final case class ForeachAsTraversable[+A](underlying: Foreach[A]) extends sc.imm
 
 final case class IndexedAsTraversable[+A](length: Int, underlying: Indexed[A]) extends sc.immutable.IndexedSeq[A] {
   def apply(x: Int): A = underlying(x)
+}
+
+trait ForeachImplicits {
+  implicit def tuple2ToForeach[A](p: Tuple2[A, A]): Foreach[A]          = Foreach.elems(p._1, p._2)
+  implicit def tuple3ToForeach[A](p: Tuple3[A, A, A]): Foreach[A]       = Foreach.elems(p._1, p._2, p._3)
+  implicit def tuple4ToForeach[A](p: Tuple4[A, A, A, A]): Foreach[A]    = Foreach.elems(p._1, p._2, p._3, p._4)
+  implicit def tuple5ToForeach[A](p: Tuple5[A, A, A, A, A]): Foreach[A] = Foreach.elems(p._1, p._2, p._3, p._4, p._5)
 }

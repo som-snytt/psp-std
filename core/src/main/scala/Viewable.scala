@@ -14,6 +14,7 @@ trait Viewable[+A] {
   def map[B](f: A => B): CC[B]
   def flatMap[B](f: A => Foreach[B]): CC[B]
   def collect[B](pf: PartialFunction[A, B]): CC[B]
+  def ++[A1 >: A](that: Foreach[A1]): CC[A1]
   def filter(p: A => Boolean): Self
   def filterNot(p: A => Boolean): Self
   def slice(start: Int, end: Int): Self
@@ -38,6 +39,7 @@ final case class ScalaNative[+A](xs: Iterable[A]) extends Viewable[A] {
   def map[B](f: A => B): CC[B]                     = xs map f
   def flatMap[B](f: A => Foreach[B]): CC[B]        = xs flatMap (x => f(x).toTraversable.seq)
   def collect[B](pf: PartialFunction[A, B]): CC[B] = xs collect pf
+  def ++[A1 >: A](that: Foreach[A1]): CC[A1]       = xs ++ that.toTraversable.seq
   def filter(p: A => Boolean): Self                = xs filter p
   def filterNot(p: A => Boolean): Self             = xs filterNot p
   def slice(start: Int, end: Int): Self            = xs.slice(start, end)

@@ -1,10 +1,35 @@
 package psp
 package core
 
-trait Indexed[+A] extends Any with Foreach[A] { def apply(index: Index): A }
-trait PreciselySizedIndexed[+A] extends Indexed[A] {
-  def size: Size
-  final def sizeInfo = SizeInfo.Precise(size)
+trait Indexed[+A] extends Any with Foreach[A] {
+  def apply(index: Index): A
+  def indexFn: Index => A = x => apply(x)
+}
+trait PreciselySizedIndexed[+A] extends Indexed[A] with HasPreciseSize
+
+final case class WithIndex[A](xs: Foreach[A], fn: Index => A) extends Indexed[A] {
+  def sizeInfo = xs.sizeInfo
+  def apply(index: Index): A = fn(index)
+  @inline def foreach(f: A => Unit): Unit = xs foreach f
+  override def toString = ss"$xs/indexed"
+}
+
+final class ImmutableArray[+A](xs: Array[A]) extends PreciselySizedIndexed[A] {
+  private[this] val len = xs.length
+  def size = Size(len)
+  @inline final def foreach(f: A => Unit): Unit = {
+    var i = 0
+    while (i < len) { f(xs(i)) ; i += 1 }
+  }
+  def apply(index: Index): A = xs(index)
+  override def toString = ss"ImmutableArray($size)"
+}
+
+final class ImmutableVector[+A](xs: Vector[A]) extends PreciselySizedIndexed[A] {
+  def size = Size(xs.length)
+  def apply(index: Index): A = xs(index)
+  @inline final def foreach(f: A => Unit): Unit = xs foreach f
+  override def toString = ss"Vector($size)"
 }
 
 object Indexed {
@@ -36,11 +61,6 @@ object Indexed {
     @inline def foreach(f: A => Unit): Unit = 0 until size.value foreach (i => f(apply(i)))
     override def toString = ss"PureIndexed(size: $size)"
   }
-  final class Times[A](val size: Size, elem: A) extends PreciselySizedIndexed[A] {
-    def apply(index: Index): A = elem
-    @inline def foreach(f: A => Unit): Unit = 0 until size.value foreach (_ => f(elem))
-    override def toString = ss"Times(size: $size)"
-  }
   final case class Sliced[A](xs: Indexed[A], interval: Interval) extends IndexedCommon[A] {
     def size = interval.size
     protected[this] def applyDirect(index: Index): A = xs(interval.start + index)
@@ -62,7 +82,6 @@ object Indexed {
     case xs: WrappedArray[A] => new ImmutableArray(xs.array)
     case _                   => apply(Size(xs.size), xs.toVector)
   }
-  def repeat[A](times: Int, elem: A): Times[A]  = new Times(Size(times), elem)
   def to(start: Int, last: Int): Indexed[Int]   = new IntRangeInclusive(start, Size(last - start + 1))
   // def until(start: Int, end: Int): Indexed[Int] = new IntRangeExclusive(start, end)
 }

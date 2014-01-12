@@ -94,7 +94,7 @@ trait IntViewGenerator extends ViewGenerator[Int] {
     dropRight,
     n => filter(nameFn(ss"/$n")(_ % n == 0)),
     n => map(nameFn(ss"*$n")(_ * n)),
-    n => flatMap(nameFn(ss"**${ math abs n }")(x => Indexed.repeat(math abs n, x))),
+    n => flatMap(nameFn(ss"**${ math abs n }")(x => x nTimes (math abs n))),
     n => collect(namePf(ss"$n**") { case x if x % n == 0 => x / 3 })
   )
     // n => withFilter(nameFn(ss"/$n")(_ % n == 0)),

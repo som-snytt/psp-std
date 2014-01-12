@@ -43,6 +43,10 @@ sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
 sealed trait Atomic extends SizeInfo
 
 trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
+trait HasPreciseSize extends HasSizeInfo {
+  def size: Size
+  final def sizeInfo = Precise(size)
+}
 
 object SizeInfo {
   lazy val Empty = precise(0)
@@ -72,7 +76,6 @@ object SizeInfo {
   }
   final case class Precise(size: Size) extends Atomic {
     def +(amount: Size): Precise = Precise(size + amount)
-    def -(amount: Size): Precise = Precise(size - amount)
     override def toString = s"$size"
   }
   final case class Bounded(lo: Size, hi: Atomic) extends SizeInfo {
@@ -92,42 +95,6 @@ object SizeInfo {
       case Bounded(lo, Precise(hi)) => Some(lo -> hi)
       case Precise(n)               => Some(n -> n)
       case _                        => None
-    }
-  }
-
-  implicit final class SizeInfoOps(val lhs: SizeInfo) extends AnyVal {
-    def isZero = lhs == precise(0)
-    def atMost: SizeInfo  = bounded(Zero, lhs)
-    def atLeast: SizeInfo = bounded(lhs, Infinite)
-
-    def + (rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
-      case (Infinite, _) | (_, Infinite)            => Infinite
-      case (Precise(l), Precise(r))                 => Precise(l + r)
-      case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 + l2, h1 + h2)
-    }
-    def - (rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
-      case (Infinite, Finite(_, _))         => Infinite
-      case (Finite(_, _), Infinite)         => Empty
-      case (Finite(l1, h1), Finite(l2, h2)) => bounded(l1 - h2, Precise(h1 - l2))
-      case (Bounded(l1, h1), Precise(n))    => bounded(l1 - n, h1 - Precise(n))
-      case _                                => Unknown
-    }
-    def min(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
-      case LT | LE | EQ => lhs
-      case GT | GE      => rhs
-      case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 min l2, h1 min h2))
-    }
-    def max(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
-      case LT | LE | EQ => rhs
-      case GT | GE      => lhs
-      case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 max l2, h1 max h2))
-    }
-
-    private def onBounds[T](rhs: SizeInfo)(f: (Size, Atomic, Size, Atomic) => T): T = {
-      val GenBounded(l1, h1) = lhs
-      val GenBounded(l2, h2) = rhs
-
-      f(l1, h1, l2, h2)
     }
   }
 }

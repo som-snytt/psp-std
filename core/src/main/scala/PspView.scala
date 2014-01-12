@@ -6,17 +6,17 @@ sealed trait PspView[+A] extends Foreach[A] with Viewable[A] {
 
   def underlying: Foreach[A]
 
-  protected[this] def unlessEmpty[B](nextSize: SizeInfo)(g: => Foreach[B]): PspView[B] =
-    if (nextSize.isZero) PspView() else PspView[B](g, nextSize)
+  import Foreach._
 
-  def flatMap[B](f: A => Foreach[B]): CC[B] = PspView(Foreach.flatMapped(underlying)(f))
-  def collect[B](pf: A =?> B): CC[B]        = PspView(Foreach.collected(underlying)(pf))
-  def filter(p: A => Boolean): Self         = PspView(Foreach.filtered(underlying)(p))
-  def filterNot(p: A => Boolean): Self      = PspView(Foreach.filtered[A](underlying)(x => !p(x)))
-  def takeWhile(p: A => Boolean): Self      = PspView(Foreach[A](g => applyWhile(p)(g)), sizeInfo.atMost)
-  def dropWhile(p: A => Boolean): Self      = PspView(Foreach[A](g => skipWhile(p)(g)), sizeInfo.atMost)
-  def head: A                               = { underlying foreach (x => return x) ; failEmpty("head") }
-  def mkString(sep: String)                 = underlying mk_s sep
+  def flatMap[B](f: A => Foreach[B]): CC[B]  = flatMapped(underlying)(f).view
+  def collect[B](pf: A =?> B): CC[B]         = collected(underlying)(pf).view
+  def ++[A1 >: A](that: Foreach[A1]): CC[A1] = joined(underlying, that).view
+  def filter(p: A => Boolean): Self          = filtered(underlying)(p).view
+  def filterNot(p: A => Boolean): Self       = filtered[A](underlying)(x => !p(x)).view
+  def takeWhile(p: A => Boolean): Self       = Foreach[A](g => applyWhile(p)(g)) sized sizeInfo.atMost view
+  def dropWhile(p: A => Boolean): Self       = Foreach[A](g => skipWhile(p)(g)) sized sizeInfo.atMost view
+  def head: A                                = { underlying foreach (x => return x) ; failEmpty("head") }
+  def mkString(sep: String)                  = underlying mk_s sep
 
   @inline final def foreach(f: A => Unit): Unit = underlying foreach f
   @inline final def foreachWithCount(f: (A, Index) => Boolean): Unit = {
@@ -44,27 +44,53 @@ sealed trait PspView[+A] extends Foreach[A] with Viewable[A] {
 }
 
 object PspView {
+  def someViewOps[T] = List[PspView[T] => PspView[T]](
+    _ take 100,
+    _ map identity,
+    _ dropRight 30,
+    _ dropRight 10,
+    _ drop 10,
+    _ filter (_ => true),
+    _ flatMap (x => x -> x),
+    _ take 20
+  )
+    // x => x ++ (nullAs[T] nTimes 10)
+  def applySomeViewOps[T](zero: PspView[T]) = someViewOps[T].scanLeft("" -> zero) { case ((prev, res), f) =>
+    val op = f(res)
+    val str = (op.to_s stripPrefix res.to_s).trim
+    str -> op
+  }
+  def showViewOps[T](zero: PspView[T]) = {
+    for ((str, op) <- applySomeViewOps[T](zero)) {
+      println("%15s  %-20s  %s".format(op.sizeInfo, str, (op take 3 mk_s ", ") + " ..."))
+    }
+  }
+
   lazy val Empty: Sliceable[Nothing] = Sliceable(Indexed.Empty, Size(0))
+  def emptyView[A](label: String): PspView[A] = PspView(Empty labeled label)
 
   final case class Unsliceable[+A](underlying: Foreach[A], sizeInfo: SizeInfo) extends PspView[A] {
-    import Foreach._
+    private def xs = underlying
+
+    protected[this] def unlessEmpty[B](nextSize: SizeInfo, label: String)(g: => Foreach[B]): PspView[B] =
+      if (nextSize.isZero) emptyView[B](ss"$xs") else (g labeled ss"$underlying$label" sized nextSize).view
 
     private def exhaust[A](capacity: Int, xs: Foreach[A]): CircularBuffer[A] = CircularBuffer[A](Size(capacity)) ++= xs
-    private def takeImpl(n: Int): Foreach[A]      = if (n <= 0) empty else Foreach(g => applyN(n)(g))
-    private def takeRightImpl(n: Int): Foreach[A] = if (n <= 0) empty else exhaust(n, underlying)
+    private def takeImpl(n: Int): Foreach[A]      = if (n <= 0) Foreach.empty else Foreach(g => applyN(n)(g))
+    private def takeRightImpl(n: Int): Foreach[A] = if (n <= 0) Foreach.empty else exhaust(n, underlying)
     private def dropImpl(n: Int): Foreach[A]      = if (n <= 0) underlying else Foreach(g => skipN(n)(g))
     private def dropRightImpl(n: Int): Foreach[A] = if (n <= 0) underlying else (
       Foreach[A](g => underlying.foldl(CircularBuffer[A](Size(n)))((buf, x) => if (buf.isFull) try buf finally g(buf push x) else buf += x))
     )
 
-    def map[B](f: A => B): CC[B]              = Unsliceable(new LinearMapped(underlying, f), sizeInfo)
-    def take(n: Int): Self                    = unlessEmpty(sizeInfo min precise(n))(takeImpl(n) labeled ss"$underlying take $n")
-    def takeRight(n: Int): Self               = unlessEmpty(sizeInfo min precise(n))(takeRightImpl(n) labeled ss"$underlying takeRight $n")
-    def drop(n: Int): Self                    = unlessEmpty(sizeInfo - precise(n))(dropImpl(n) labeled ss"$underlying drop $n")
-    def dropRight(n: Int): Self               = unlessEmpty(sizeInfo - precise(n))(dropRightImpl(n) labeled ss"$underlying dropRight $n")
-    def slice(start: Int, end: Int): Self     = unlessEmpty(sizeInfo min precise(end - start))(Foreach[A](g => sliceN(start, end)(g)) labeled ss"$underlying.slice($start, $end)")
+    def map[B](f: A => B): CC[B]          = unlessEmpty(sizeInfo, ss" map $f")(Mapped(underlying, f))
+    def take(n: Int): Self                = unlessEmpty(sizeInfo min precise(n), ss" take $n")(takeImpl(n))
+    def takeRight(n: Int): Self           = unlessEmpty(sizeInfo min precise(n), ss" takeRight $n")(takeRightImpl(n))
+    def drop(n: Int): Self                = unlessEmpty(sizeInfo - precise(n), ss" drop $n")(dropImpl(n))
+    def dropRight(n: Int): Self           = unlessEmpty(sizeInfo - precise(n), ss" dropRight $n")(dropRightImpl(n))
+    def slice(start: Int, end: Int): Self = unlessEmpty(sizeInfo min precise(end - start), ss".slice($start, $end)")(Foreach[A](g => sliceN(start, end)(g)))
 
-    def tail: Self = unlessEmpty(sizeInfo - precise(1))(Foreach[A](g => skipN(1)(g)))
+    def tail: Self = unlessEmpty(sizeInfo - precise(1), ".tail")(Foreach[A](g => skipN(1)(g)))
   }
 
   final case class Sliceable[+A](underlying: Indexed[A], size: Size) extends PspView[A] {
@@ -81,7 +107,7 @@ object PspView {
       Sliceable(slice, nextSize)
     }
 
-    def map[B](f: A => B): CC[B]    = Sliceable(new IndexedMapped(underlying, f), size)
+    def map[B](f: A => B): CC[B]    = Sliceable(WithIndex(Mapped(underlying, f), idx => f(underlying(idx))), size)
     def take(n: Int): Self          = if (n <= 0) Empty else if (intSize <= n) this else sliced(0, n)
     def takeRight(n: Int): Self     = if (n <= 0) Empty else if (intSize <= n) this else sliced(intSize - n, intSize)
     def drop(n: Int): Self          = if (n <= 0) this else if (intSize <= n) Empty else sliced(n, intSize)
