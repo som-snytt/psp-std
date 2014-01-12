@@ -49,5 +49,5 @@ final case class ScalaNative[+A](xs: Iterable[A]) extends Viewable[A] {
   def dropWhile(p: A => Boolean): Self             = xs dropWhile p
   def mkString(sep: String): String                = xs mkString sep
 
-  override def toString = s"<scala>.${xs.shortClass}"
+  override def toString = ss"[native:${xs.shortClass}]"
 }

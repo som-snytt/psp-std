@@ -2,7 +2,10 @@ package psp
 package core
 
 trait Indexed[+A] extends Any with Foreach[A] { def apply(index: Index): A }
-trait PreciselySizedIndexed[+A] extends Indexed[A] with HasPreciseSize
+trait PreciselySizedIndexed[+A] extends Indexed[A] {
+  def size: Size
+  final def sizeInfo = SizeInfo.Precise(size)
+}
 
 object Indexed {
   trait IndexedCommon[+A] extends PreciselySizedIndexed[A] {

@@ -2,7 +2,7 @@ package psp
 package core
 
 final class Interval private (val start: Index, val end: Index) {
-  require(0 <= start && 0 <= end, s"$start, $end")
+  require(0 <= start && 0 <= end, ss"$start, $end")
 
   def drop(n: Int): Interval = if (n <= 0) this else Interval(start + n min end, end)
   def take(n: Int): Interval = if (n <= 0) Interval.Empty else Interval(start, start + n min end)

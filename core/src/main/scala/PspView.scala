@@ -1,7 +1,7 @@
 package psp
 package core
 
-sealed trait PspView[+A] extends Foreach[A] with Viewable[A] with HasSizeInfo {
+sealed trait PspView[+A] extends Foreach[A] with Viewable[A] {
   type CC[+X] = PspView[X]
 
   def underlying: Foreach[A]
@@ -39,6 +39,8 @@ sealed trait PspView[+A] extends Foreach[A] with Viewable[A] with HasSizeInfo {
       if (done) f(x)
     }
   }
+
+  override def toString = ss"$underlying"
 }
 
 object PspView {
@@ -55,12 +57,12 @@ object PspView {
       Foreach[A](g => underlying.foldl(CircularBuffer[A](Size(n)))((buf, x) => if (buf.isFull) try buf finally g(buf push x) else buf += x))
     )
 
-    def map[B](f: A => B): CC[B]              = PspView(new LinearMapped(underlying, f))
-    def take(n: Int): Self                    = unlessEmpty(sizeInfo min precise(n))(takeImpl(n))
-    def takeRight(n: Int): Self               = unlessEmpty(sizeInfo min precise(n))(takeRightImpl(n))
-    def drop(n: Int): Self                    = unlessEmpty(sizeInfo - precise(n))(dropImpl(n))
-    def dropRight(n: Int): Self               = unlessEmpty(sizeInfo - precise(n))(dropRightImpl(n))
-    def slice(start: Int, end: Int): Self     = unlessEmpty(sizeInfo min precise(end - start))(Foreach[A](g => sliceN(start, end)(g)))
+    def map[B](f: A => B): CC[B]              = Unsliceable(new LinearMapped(underlying, f), sizeInfo)
+    def take(n: Int): Self                    = unlessEmpty(sizeInfo min precise(n))(takeImpl(n) labeled ss"$underlying take $n")
+    def takeRight(n: Int): Self               = unlessEmpty(sizeInfo min precise(n))(takeRightImpl(n) labeled ss"$underlying takeRight $n")
+    def drop(n: Int): Self                    = unlessEmpty(sizeInfo - precise(n))(dropImpl(n) labeled ss"$underlying drop $n")
+    def dropRight(n: Int): Self               = unlessEmpty(sizeInfo - precise(n))(dropRightImpl(n) labeled ss"$underlying dropRight $n")
+    def slice(start: Int, end: Int): Self     = unlessEmpty(sizeInfo min precise(end - start))(Foreach[A](g => sliceN(start, end)(g)) labeled ss"$underlying.slice($start, $end)")
 
     def tail: Self = unlessEmpty(sizeInfo - precise(1))(Foreach[A](g => skipN(1)(g)))
   }
@@ -70,14 +72,16 @@ object PspView {
     private def intSize = size.value
     import Indexed.Sliced
 
-    private[this] def sliced(start: Int, end: Int) = PspView(
-      underlying match {
-        case Sliced(xs, range) => new Sliced(xs, range drop start take (end - start))
+    private[this] def sliced(start: Int, end: Int): Self = {
+      val nextSize = Size(end - start)
+      val slice = underlying match {
+        case Sliced(xs, range) => new Sliced(xs, range drop start take nextSize.value)
         case _                 => new Sliced(underlying, Interval(start, end))
       }
-    )
+      Sliceable(slice, nextSize)
+    }
 
-    def map[B](f: A => B): CC[B]    = PspView(new IndexedMapped(underlying, f))
+    def map[B](f: A => B): CC[B]    = Sliceable(new IndexedMapped(underlying, f), size)
     def take(n: Int): Self          = if (n <= 0) Empty else if (intSize <= n) this else sliced(0, n)
     def takeRight(n: Int): Self     = if (n <= 0) Empty else if (intSize <= n) this else sliced(intSize - n, intSize)
     def drop(n: Int): Self          = if (n <= 0) this else if (intSize <= n) Empty else sliced(n, intSize)

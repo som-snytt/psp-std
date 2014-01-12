@@ -43,14 +43,12 @@ sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
 sealed trait Atomic extends SizeInfo
 
 trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
-trait HasPreciseSize extends Any with HasSizeInfo { def size: Size ; final def sizeInfo = Precise(size) }
 
 object SizeInfo {
   lazy val Empty = precise(0)
   lazy val Unknown = bounded(Zero, Infinite)
 
   def apply(x: Any): SizeInfo = x match {
-    case Mapped(xs, _)  => apply(xs)
     case x: HasSizeInfo => x.sizeInfo
     case _              => Unknown
   }

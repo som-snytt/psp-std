@@ -47,18 +47,31 @@ package object core extends ScalaTypes with PspTypes with MidPriorityPsp {
     def ref_==(y: Any): Boolean = x.toRef eq y.toRef
 
     def mk_s(sep: String): String = x match {
-      case xs: Foreach[_]                 => xs.toList map (_.to_s) mkString sep
-      case xs: Traversable[_]             => xs map (_.to_s) mkString sep
-      case _                              => to_s
+      case xs: Foreach[_]     => xs.toList map (_.to_s) mkString sep
+      case xs: Traversable[_] => xs map (_.to_s) mkString sep
+      case _                  => to_s
     }
     def to_s: String = x match {
-      case x: Labeled => x.label
-      case _          => "" + x
+      case x: Labeled               => x.label
+      case _: PartialFunction[_, _] => "<pf>"
+      case _: Function1[_, _]       => "<f>"
+      case _                        => "" + x
     }
     def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
   }
 
   implicit class ToSInterpolatorOps(val stringContext: StringContext) {
     final def ss(args: Any*): String = StringContext(stringContext.parts: _*).s(args map (_.to_s): _*)
+  }
+
+  implicit class PspViewEnter[A](val xs: Foreach[A]) {
+    def m: PspView[A] = PspView(xs)
+  }
+  implicit class PspViewExit[A](val xs: PspView[A]) {
+    def force[That](implicit cb: CBF[Nothing, A, That]): That = {
+      val buf = cb()
+      xs foreach (buf += _)
+      buf.result
+    }
   }
 }

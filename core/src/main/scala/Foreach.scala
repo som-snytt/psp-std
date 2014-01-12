@@ -1,10 +1,16 @@
 package psp
 package core
 
+import psp.common.Labeled
 import scala.{ collection => sc }
 import SizeInfo._
 
 trait Foreach[+A] extends Any with HasSizeInfo { def foreach(f: A => Unit): Unit }
+
+class LabeledForeach[+A](xs: Foreach[A], val label: String) extends Foreach[A] with Labeled {
+  def sizeInfo = xs.sizeInfo
+  @inline final def foreach(f: A => Unit): Unit = xs foreach f
+}
 
 final case class SizedForeach[+A](xs: Foreach[A], sizeInfo: SizeInfo) extends Foreach[A] {
   def foreach(f: A => Unit): Unit = xs foreach f
@@ -28,7 +34,7 @@ object Foreach {
     override def toString = "<empty>"
   }
 
-  trait Infinite[A] extends Any with Foreach[A] with HasSizeInfo { final def sizeInfo = Infinite }
+  trait Infinite[A] extends Any with Foreach[A] { final def sizeInfo = Infinite }
 
   final class Unfold[A](zero: A, next: A => A) extends Infinite[A] {
     def foreach(f: A => Unit): Unit = {
@@ -38,7 +44,7 @@ object Foreach {
         current = next(current)
       }
     }
-    override def toString = ss"unfold($zero)($next)"
+    override def toString = ss"unfold from $zero"
   }
 
   final case class FlatMapped[A, B](xs: Foreach[A], f: A => Foreach[B]) extends Foreach[B] {
@@ -62,7 +68,7 @@ object Foreach {
   final class PureForeach[+A](mf: Suspended[A]) extends Foreach[A] {
     def sizeInfo = Unknown
     def foreach(f: A => Unit): Unit = mf(f)
-    override def toString = "<mf>"
+    override def toString = ss"$mf"
   }
 
   implicit final class ForeachFoldOps[A](val xs: Foreach[A]) /*extends AnyVal*/ {
@@ -107,6 +113,8 @@ object Foreach {
     }
     def to[CC[X] <: Traversable[X]](implicit cbf: CanBuildFrom[Nothing, A, CC[A]]): CC[A]  = (cbf() ++= toTraversable).result
     def toRepr[Repr <: Traversable[A]](implicit cbf: CanBuildFrom[Nothing, A, Repr]): Repr = (cbf() ++= toTraversable).result
+
+    def labeled(label: String): LabeledForeach[A] = new LabeledForeach(xs, label)
 
     // def toExtensionalSet(equiv: (A, A) => Boolean): ExtensionalSet[A] = new ExtensionalSet(xs, equiv)
   }

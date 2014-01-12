@@ -12,3 +12,4 @@ class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label: Strin
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R = pf(x)
 }
+
