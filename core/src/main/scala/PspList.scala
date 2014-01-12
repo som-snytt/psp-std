@@ -31,9 +31,14 @@ sealed trait PspList[A] extends AnyRef with PspLinear[A] {
   def sizeInfo = if (isEmpty) precise(0) else precise(1).atLeast
   private def upcast[A1 >: A] : PspList[A1] = this.castTo[PspList[A1]]
 
+  def reverse: PspList[A] = {
+    def loop(in: PspList[A], out: PspList[A]): PspList[A] = if (in.isEmpty) out else loop(in.tail, in.head :: out)
+    loop(this, PspList.empty[A])
+  }
+
   def take(n: Int): PspList[A] = {
     @tailrec def loop(n: Int, in: PspList[A], out: PspList[A]): PspList[A] =
-      if (n <= 0 || in.isEmpty) out else loop(n - 1, in.tail, in.head :: out)
+      if (n <= 0 || in.isEmpty) out.reverse else loop(n - 1, in.tail, in.head :: out)
 
     loop(n, this, PspList[A]())
   }
