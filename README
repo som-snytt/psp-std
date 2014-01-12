@@ -1,0 +1,5 @@
+Collections, especially views.
+
+There are a few different approaches tried in here. Don't take anything too seriously.
+
+It depends on a trunk build of scala master. 2.11.0-M7 isn't good enough. 2.11.0-M8 should be once it's available.

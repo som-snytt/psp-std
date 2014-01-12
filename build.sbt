@@ -1,28 +1,46 @@
-seq(Revolver.settings: _*)
+import AssemblyKeys._
 
-javaOptions in Revolver.reStart += "-Xmx2g"
+assemblySettings
 
-mainClass in Revolver.reStart := Some("com.example.Main")
+resolvers in Global += Resolver.mavenLocal
 
-Revolver.reStartArgs := Seq[String]()
+resolvers in Global += Opts.resolver.sonatypeSnapshots
 
-name := "psp-view"
+scalaBinaryVersion in Global := "2.11.0-M7"
 
-description := "psp-view description"
+retrieveManaged := true
 
-organization := "org.improving"
+scalaVersion in Global := "2.11.0-SNAPSHOT"
 
-homepage := Some(url("https://github.com/paulp/psp-view"))
+// scalaHome in Global := Some(file("/scala/inst/scala-2.11.0-20140111-120659-9c95939865"))
 
-version := "0.1.0-SNAPSHOT"
+organization in Global := "org.improving"
 
-scalaVersion := "2.10.3"
+version in Global := "0.1.0-SNAPSHOT"
 
-fork in run := true // without this JNI breaks, type tags break
+exportJars in Global := true
 
-parallelExecution in Test := false
+initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/replStartup.scala".!!
 
-licenses := Seq("Apache" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+libraryDependencies ++= Seq(
+  "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+  "jline" % "jline" % "2.11"
+)
+
+lazy val common, demo = project
+
+lazy val core = project dependsOn common
+
+lazy val root = project in file(".") dependsOn (common, core, demo) aggregate (common, core, demo) settings (assemblySettings: _*) settings (
+  name                   := "psp-view",
+  description            := "psp alternate view implementation",
+  homepage               := Some(url("https://github.com/paulp/psp-view")),
+  licenses               := Seq("Apache" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  shellPrompt            := (s => name.value + projectString(s) + "> "),
+  target in assembly     := baseDirectory.value,
+  mainClass in assembly  := Some("psp.repl.Main"),
+  jarName in assembly    := "psp.jar"
+)
 
 def projectString(s: State): String = (
   (Project extract s).currentRef.project.toString match {
@@ -30,28 +48,3 @@ def projectString(s: State): String = (
     case s                            => "#" + s
   }
 )
-
-shellPrompt := (s => name.value + projectString(s) + "> ")
-
-initialCommands in console := """
-import scala.collection.mutable
-import scala.reflect.runtime.{ universe => ru }
-import improving._
-"""
-
-logBuffered := false
-
-libraryDependencies ++= Seq(
-  // "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  // "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-  // "org.specs2" %% "specs2" % "2.0 % "test",
-  // "org.scalacheck" %% "scalacheck" % "1.10.1" % "test"
-)
-
-scalacOptions ++= Seq(
-  // "-Xlint", "-Xdev"
-)
-
-// resolvers += Opts.resolver.sonatypeSnapshots
-
-// retrieveManaged := true
