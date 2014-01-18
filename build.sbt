@@ -2,9 +2,11 @@ import AssemblyKeys._
 
 assemblySettings
 
-// resolvers in Global ++= Seq(Resolver.mavenLocal, Opts.resolver.sonatypeSnapshots)
+resolvers in Global ++= Seq(Resolver.mavenLocal, Opts.resolver.sonatypeSnapshots)
 
-scalaVersion in Global := "2.11.0-M7"
+scalaBinaryVersion in Global := "2.11.0-M7"
+
+scalaVersion in Global := "2.11.0-SNAPSHOT"
 
 // scalaHome in Global := Some(file("/scala/inst/3"))
 
