@@ -2,17 +2,11 @@ import AssemblyKeys._
 
 assemblySettings
 
-resolvers in Global += Resolver.mavenLocal
+// resolvers in Global ++= Seq(Resolver.mavenLocal, Opts.resolver.sonatypeSnapshots)
 
-resolvers in Global += Opts.resolver.sonatypeSnapshots
+scalaVersion in Global := "2.11.0-M7"
 
-scalaBinaryVersion in Global := "2.11.0-M7"
-
-retrieveManaged := true
-
-scalaVersion in Global := "2.11.0-SNAPSHOT"
-
-// scalaHome in Global := Some(file("/scala/inst/scala-2.11.0-20140111-120659-9c95939865"))
+// scalaHome in Global := Some(file("/scala/inst/3"))
 
 organization in Global := "org.improving"
 
@@ -24,22 +18,22 @@ initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/re
 
 libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-  "jline" % "jline" % "2.11"
+  "jline" % "jline" % "2.11",
+  "ch.qos.logback" % "logback-classic" % "1.0.9",
+  "org.specs2" %% "specs2-scalacheck" % "2.3.4" % "test"
 )
 
-lazy val common, demo = project
-
-lazy val core = project dependsOn common
-
-lazy val root = project in file(".") dependsOn (common, core, demo) aggregate (common, core, demo) settings (assemblySettings: _*) settings (
-  name                   := "psp-view",
-  description            := "psp alternate view implementation",
-  homepage               := Some(url("https://github.com/paulp/psp-view")),
-  licenses               := Seq("Apache" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-  shellPrompt            := (s => name.value + projectString(s) + "> "),
-  target in assembly     := baseDirectory.value,
-  mainClass in assembly  := Some("psp.repl.Main"),
-  jarName in assembly    := "psp.jar"
+lazy val root = project in file(".") settings (assemblySettings: _*) settings (
+  name                      := "psp-view",
+  description               := "psp alternate view implementation",
+  homepage                  := Some(url("https://github.com/paulp/psp-view")),
+  licenses                  := Seq("Apache" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+  shellPrompt               := (s => name.value + projectString(s) + "> "),
+  target in assembly        := baseDirectory.value,
+  mainClass in assembly     := Some("psp.repl.Main"),
+  jarName in assembly       := "psp.jar",
+  parallelExecution in Test := false,
+  fork in Test              := true
 )
 
 def projectString(s: State): String = (
@@ -48,3 +42,6 @@ def projectString(s: State): String = (
     case s                            => "#" + s
   }
 )
+
+// lame
+conflictWarning ~= { _.copy(failOnConflict = false) }

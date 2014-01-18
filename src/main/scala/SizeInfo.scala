@@ -43,18 +43,20 @@ sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
 sealed trait Atomic extends SizeInfo
 
 trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
-trait HasPreciseSize extends HasSizeInfo {
+trait HasPreciseSize extends Any with HasSizeInfo {
   def size: Size
   final def sizeInfo = Precise(size)
 }
+trait HasStaticSize extends HasPreciseSize
 
 object SizeInfo {
   lazy val Empty = precise(0)
   lazy val Unknown = bounded(Zero, Infinite)
 
   def apply(x: Any): SizeInfo = x match {
-    case x: HasSizeInfo => x.sizeInfo
-    case _              => Unknown
+    case x: HasSizeInfo                               => x.sizeInfo
+    case x: HasUnderlying[_] if x.toRef ne x.xs.toRef => apply(x.xs)
+    case _                                            => Unknown
   }
   def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
     case hi: Atomic     => bounded(lo, hi)
@@ -80,7 +82,8 @@ object SizeInfo {
   }
   final case class Bounded(lo: Size, hi: Atomic) extends SizeInfo {
     require((Precise(lo) < hi).isTrue, s"!($lo < $hi)")
-    override def toString = s"[$lo, $hi)"
+    private def rdelim = if (hi == Infinite) ")" else "]"
+    override def toString = s"[$lo, $hi$rdelim"
   }
   object GenBounded {
     def unapply(x: SizeInfo): Option[(Size, Atomic)] = x match {
@@ -98,3 +101,71 @@ object SizeInfo {
     }
   }
 }
+
+final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
+  import PartialOrder._
+  import SizeInfo._
+  import ThreeValue._
+
+  def isZero = lhs == precise(0)
+  def atMost: SizeInfo  = bounded(Zero, lhs)
+  def atLeast: SizeInfo = bounded(lhs, Infinite)
+  def hiBound: Atomic = lhs match {
+    case Bounded(_, hi) => hi
+    case x: Atomic      => x
+  }
+
+  private def preciseSlice(size: Int, start: Int, end: Int): SizeInfo.Precise = (
+    if (start < 0) preciseSlice(size, 0, end)
+    else if (size <= start || end <= start) precise(0)
+    else if (end < size) precise(end - start)
+    else precise(size - start)
+  )
+
+  def slice(start: Int, end: Int): SizeInfo = lhs match {
+    case Precise(Size(n)) => preciseSlice(n, start, end)
+    case _                => lhs min precise(end - start)
+  }
+  def precisely: Option[Int] = lhs match { case Precise(Size(n)) => Some(n) ; case _ => None }
+
+  // def +(amount: Size): Precise = Precise(size + amount)
+  // def -(amount: Size): Precise = Precise(size - amount)
+
+  def * (rhs: Size): SizeInfo = lhs match {
+    case Precise(n)               => Precise(n * rhs.value)
+    case Bounded(lo, Precise(hi)) => Bounded(lo * rhs.value, Precise(hi * rhs.value))
+    case Bounded(lo, _)           => if (rhs.isZero) Unknown else Bounded(lo * rhs.value, Infinite)
+    case Infinite                 => if (rhs.isZero) Unknown else Infinite
+  }
+
+  def + (rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
+    case (Infinite, _) | (_, Infinite)            => Infinite
+    case (Precise(l), Precise(r))                 => Precise(l + r)
+    case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 + l2, h1 + h2)
+  }
+  def - (rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
+    case (Infinite, Finite(_, _))         => Infinite
+    case (Finite(_, _), Infinite)         => Empty
+    case (Finite(l1, h1), Finite(l2, h2)) => bounded(l1 - h2, Precise(h1 - l2))
+    case (Bounded(l1, h1), Precise(n))    => bounded(l1 - n, h1 - Precise(n))
+    case _                                => Unknown
+  }
+  def min(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
+    case LT | LE | EQ => lhs
+    case GT | GE      => rhs
+    case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 min l2, h1 min h2))
+  }
+  def max(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
+    case LT | LE | EQ => rhs
+    case GT | GE      => lhs
+    case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 max l2, h1 max h2))
+  }
+
+  private def onBounds[T](rhs: SizeInfo)(f: (Size, Atomic, Size, Atomic) => T): T = {
+    val GenBounded(l1, h1) = lhs
+    val GenBounded(l2, h2) = rhs
+
+    f(l1, h1, l2, h2)
+  }
+}
+

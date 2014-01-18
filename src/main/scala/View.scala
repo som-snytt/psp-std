@@ -1,6 +1,8 @@
 package psp
 package core
 
+// TODO - reconcile with ViewOp.
+
 /** A view class, the product of too many iterations to count.
  */
 final class View[+Coll, +A](xs: Coll)(f: Coll => Traversable[A]) {
@@ -22,9 +24,10 @@ final class View[+Coll, +A](xs: Coll)(f: Coll => Traversable[A]) {
 
   // The way in, and the way out.
   def m: this.type                                 = this
+  def psp: this.type                               = this
   def force[That](implicit cb: Builds[That]): That = cb(xs) ++= f(xs) result
   def finish[B](g: Traversable[A] => B): B         = g(f(xs))
-  override def toString = ss"view of a ${xs.shortClass}"
+  override def toString                            = ss"view of a ${xs.shortClass}"
 }
 
 object View {

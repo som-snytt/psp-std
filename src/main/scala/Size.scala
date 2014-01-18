@@ -28,8 +28,13 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
-  final val Zero   = new Size(0)
   final val NoSize = new Size(-1)
+  final val Zero   = new Size(0)
+  final val One    = new Size(1)
+  final val Two    = new Size(2)
+  final val Three  = new Size(3)
+  final val Four   = new Size(4)
+  final val Five   = new Size(5)
 
   def apply(n: Int): Size = if (n <= 0) Zero else new Size(n)
   def unapply(s: Size)    = s.toOption
