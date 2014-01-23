@@ -2,13 +2,7 @@ import AssemblyKeys._
 
 assemblySettings
 
-resolvers in Global ++= Seq(Resolver.mavenLocal, Opts.resolver.sonatypeSnapshots)
-
-scalaBinaryVersion in Global := "2.11.0-M7"
-
-scalaVersion in Global := "2.11.0-SNAPSHOT"
-
-// scalaHome in Global := Some(file("/scala/inst/3"))
+scalaVersion in Global := "2.11.0-M8"
 
 organization in Global := "org.improving"
 
@@ -19,10 +13,10 @@ exportJars in Global := true
 initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/replStartup.scala".!!
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-  "jline" % "jline" % "2.11",
-  "ch.qos.logback" % "logback-classic" % "1.0.9",
-  "org.specs2" %% "specs2-scalacheck" % "2.3.4" % "test"
+  "org.scala-lang" % "scala-compiler"              % scalaVersion.value,
+           "jline" % "jline"                       % "2.11",
+  "ch.qos.logback" % "logback-classic"             % "1.0.9",
+      "org.specs2" % "specs2-scalacheck_2.11.0-M7" % "2.3.6"             % "test"
 )
 
 lazy val root = project in file(".") settings (assemblySettings: _*) settings (
