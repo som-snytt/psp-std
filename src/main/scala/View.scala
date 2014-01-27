@@ -34,8 +34,12 @@ trait AtomicView[Coll, A] extends View[Coll, A] with CountCalls {
 sealed abstract class CompositeView[Coll, +A](description: String, sizeEffect: SizeInfo => SizeInfo) extends View[Coll, A] {
   def underlying: View[Coll, _]
   def atomicView: AtomicView[Coll, _] = underlying.atomicView
-  def calls                           = underlying.calls
   def sizeInfo: SizeInfo              = sizeEffect(underlying.sizeInfo)
+
+  def calls = this match {
+    case Joined(xs, ys) => xs.calls + ys.calls
+    case _              => underlying.calls
+  }
 
   def operationString: String = description indexOf ' ' match {
     case -1  => "%-15s" format description
@@ -190,7 +194,6 @@ sealed trait View[Coll, +A] extends ElementalView[A] {
   final def map[B](f: A => B): MapTo[B]               = Mapped(this, f)
   final def flatMap[B](f: A => Foreach[B]): MapTo[B]  = FlatMapped(this, f)
   final def collect[B](pf: A =?> B): MapTo[B]         = Collected(this, pf)
-  // this filter pf.isDefinedAt map pf //  Collected(this, pf)
   final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1] = Joined(this, that.m)
 
   final def withFilter(p: A => Boolean): MapTo[A] = Filtered(this, p)

@@ -32,7 +32,8 @@ class PreciseSpec extends PspSpec {
   def usCollections = List[ElementalView[Int]](
     PspList.to(1, max).m,
     PspList.to(1, max).m sized Size(max),
-    IntRange.to(1, max).m
+    IntRange.to(1, max).m,
+    IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max)
   )
   def themCollections = List[ElementalView[Int]](
     ScalaNative(scalaIntRange.toList.view),
@@ -95,7 +96,7 @@ class PreciseSpec extends PspSpec {
   }
 
   def runCollectionsTests() {
-    val banner: String    = List("Improve", "Psp/L", "Psp/LS", "Psp/I", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
+    val banner: String    = List("Improve", "Linear", "Sized", "Indexed", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
     val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mkString ""
 
     val composites     = compositesOfN(numOps)
