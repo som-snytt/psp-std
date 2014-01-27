@@ -52,6 +52,8 @@ package object core extends PspLogging with GenericUtility with ScalaTypes with 
   // type PspList[A] = psp.core.linear.PspList[A]
   // val PspList = psp.core.linear.PspList
 
+  def labelpf[T, R](label: String)(pf: T =?> R): T =?> R = new LabeledPartialFunction(pf, label)
+
   def Zero                     = Size.Zero
   def precise(n: Int): Precise = SizeInfo.Precise(Size(n))
   def failEmpty(operation: String): Nothing = throw new NoSuchElementException(s"$operation on empty collection")

@@ -11,6 +11,7 @@ class PreciseSpec extends PspSpec {
   lazy val tupleFlatMap: Int => Foreach[Int] = ((x: Int) => Foreach.elems(x, x)) labeled "(x, x)"
   lazy val isEven: Int => Boolean            = ((x: Int) => x % 2 == 0) labeled "isEven"
   lazy val timesThree: Int => Int            = ((x: Int) => x * 3) labeled "*3"
+  lazy val collectDivSix: Int =?> Int        = labelpf("%/6")({ case x: Int if x % 6 == 0 => x / 6 })
 
   def max    = 1000
   def numOps = 3
@@ -22,17 +23,18 @@ class PreciseSpec extends PspSpec {
     _ takeRight 17,
     _ flatMap tupleFlatMap,
     _ filter isEven,
-    _ map timesThree
+    _ map timesThree,
+    _ collect collectDivSix
   )
 
   def scalaIntRange: scala.collection.immutable.Range = Range.inclusive(1, max, 1)
 
-  def usCollections = Vector[ElementalView[Int]](
+  def usCollections = List[ElementalView[Int]](
     PspList.to(1, max).m,
     PspList.to(1, max).m sized Size(max),
     IntRange.to(1, max).m
   )
-  def themCollections = Vector[ElementalView[Int]](
+  def themCollections = List[ElementalView[Int]](
     ScalaNative(scalaIntRange.toList.view),
     ScalaNative(scalaIntRange.toStream),
     ScalaNative(scalaIntRange.toStream.view),
@@ -55,10 +57,10 @@ class PreciseSpec extends PspSpec {
 
       override def toString = pp"$view"
     }
-    val us      = usCollections map (xs => new CollectionResult(xs))
-    val control = new CollectionResult(ScalaNative(scalaIntRange.toList))
-    val them    = themCollections map (xs => new CollectionResult(xs))
-    val all     = us ++ (control +: them)
+    val us: List[CollectionResult]   = usCollections map (xs => new CollectionResult(xs))
+    val control: CollectionResult    = new CollectionResult(ScalaNative(scalaIntRange.toList))
+    val them: List[CollectionResult] = themCollections map (xs => new CollectionResult(xs))
+    val all: List[CollectionResult]  = us ++ (control +: them)
 
     def usCounts   = us map (_.count)
     def themCounts = them map (_.count)
@@ -67,7 +69,8 @@ class PreciseSpec extends PspSpec {
 
     def usAverage   = usCounts.sum / us.size.toDouble
     def themAverage = themCounts.sum / them.size.toDouble
-    def ratio       = "%.2f" format (themAverage / usAverage)
+    def ratioDouble = themAverage / usAverage
+    def ratio       = "%.2f" format ratioDouble
 
     def headResult  = us.head
     def headView    = us.head.view
@@ -76,10 +79,15 @@ class PreciseSpec extends PspSpec {
          !isAgreement
       || (usCounts.distinct.size == usCollections.size)
       || (allCounts.distinct.size > 4)
+      || (allCounts.distinct.size > 2 && ratioDouble < 1.3d)
     )
     def countsString   = allCounts map ("%7s" format _) mkString " "
     def resultsString  = if (isAgreement) headResult.result else "!!! " + failedString
-    def failedString   = allResults.zipWithIndex.toMap.groupBy(_._1).toList.mkString(" / ")
+    def failedString   = {
+      val grouped = all.zipWithIndex groupBy { case (x, i) => x.result }
+      val lines = grouped.toList map { case (res, pairs) => "%20s:  %s".format(pairs.map(_._2).mkString(" "), res) }
+      lines.mkString("\n  ", "\n  ", "\n")
+    }
     def padding        = " " * (headView.toString.length + 2)
     def sortKey        = ((-ratio.toDouble, usCounts.min))
 
@@ -91,8 +99,8 @@ class PreciseSpec extends PspSpec {
     val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mkString ""
 
     val composites     = compositesOfN(numOps)
-    val results        = composites map (fn => new CompositeOp(fn)) sortBy (_.sortKey)
-    val (show, noshow) = results partition (_.display)
+    val results        = composites map (fn => new CompositeOp(fn))
+    val (show, noshow) = results sortBy (_.sortKey) partition (_.display)
     val padding        = results.head.padding
 
     println(pp"""

@@ -144,7 +144,7 @@ class ViewForeach[Coll, A](view: View[Coll, A]) extends Foreach[A] {
       case Mapped(xs, g)                          => loop(xs)(g andThen f)
       case FlatMapped(xs, g)                      => loop(xs)(x => g(x) foreach f)
       case Filtered(xs, p: Function1[B, Boolean]) => loop(xs)(x => if (p(x)) f(x))
-      case Collected(xs, pf)                      => loop(xs)(x => if (pf isDefinedAt x) pf(x))
+      case Collected(xs, pf)                      => loop(xs)(x => if (pf isDefinedAt x) f(pf(x)))
       case FlattenIndexedSlice(xs, range)         => foreachSlice(xs, f, range)
       case Reversed(xs)                           => ???
       case Joined(xs, ys)                         => loop(xs)(f) ; loop(ys)(f)
@@ -190,6 +190,7 @@ sealed trait View[Coll, +A] extends ElementalView[A] {
   final def map[B](f: A => B): MapTo[B]               = Mapped(this, f)
   final def flatMap[B](f: A => Foreach[B]): MapTo[B]  = FlatMapped(this, f)
   final def collect[B](pf: A =?> B): MapTo[B]         = Collected(this, pf)
+  // this filter pf.isDefinedAt map pf //  Collected(this, pf)
   final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1] = Joined(this, that.m)
 
   final def withFilter(p: A => Boolean): MapTo[A] = Filtered(this, p)

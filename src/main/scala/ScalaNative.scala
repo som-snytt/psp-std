@@ -26,12 +26,12 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends E
   def takeRight(n: Int): MapTo[A]               = xs takeRight n
   def toForeach: Foreach[A]                     = Foreach(this foreach _)
 
-  def collect[B](pf: PartialFunction[A,B]): MapTo[B] = ???
-  def labeled(label: String): MapTo[A]               = ???
-  def reverse: MapTo[A]                              = ???
-  def sized(size: psp.core.Size): MapTo[A]           = ???
-  def slice(range: psp.core.Interval): MapTo[A]      = ???
-  def withFilter(p: A => Boolean): MapTo[A]          = ???
+  def collect[B](pf: PartialFunction[A,B]): MapTo[B] = xs collect pf
+  def labeled(label: String): MapTo[A]               = this
+  def reverse: MapTo[A]                              = xs.reverse
+  def sized(size: psp.core.Size): MapTo[A]           = this
+  def slice(range: psp.core.Interval): MapTo[A]      = xs.slice(range.start, range.end)
+  def withFilter(p: A => Boolean): MapTo[A]          = xs filter p
 
   override def toString = xs.shortClass
 }
