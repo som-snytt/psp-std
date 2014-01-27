@@ -25,7 +25,7 @@ trait ForeachableSet[-Repr] extends Foreachable[Repr] {
 
 object Indexable {
   implicit def stringIsIndexable: StringIsIndexable.type                                       = StringIsIndexable
-  implicit def arrayIsIndexable[@specialized A] : ArrayIsIndexable[A]                          = new ArrayIsIndexable[A]
+  implicit def arrayIsIndexable[A] : ArrayIsIndexable[A]                                       = new ArrayIsIndexable[A]
   implicit def indexedSeqIsIndexable[CC[X] <: IndexedSeq[X], A] : IndexedSeqIsIndexable[CC, A] = new IndexedSeqIsIndexable[CC, A]
   implicit def pspIndexedIsIndexable[A] : PspIndexedIsIndexable[A]                             = new PspIndexedIsIndexable[A]
 }

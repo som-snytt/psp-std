@@ -24,48 +24,28 @@ trait AtomicView[Coll, A] extends View[Coll, A] with CountCalls {
 
   def toForeach: Foreach[A]
   def repr: Coll
-  def atomicView: AtomicView[Coll, _] = this
-  def sizeInfo = repr match {
-    case xs: HasSizeInfo => xs.sizeInfo
-    case _               => SizeInfo.Unknown
-  }
+  def sizeInfo = SizeInfo(repr)
+
   final def m: this.type = this
+  def completeString = "<xs>"
+  def atomicView: AtomicView[Coll, _] = this
 }
 
-sealed abstract class CompositeView[Coll, +A](name: String, arg: String) extends View[Coll, A] {
-  def atomicView: AtomicView[Coll, _] = this match {
-    case xs: AtomicView[Coll, _] => xs
-    case _                       => underlying.atomicView
-  }
-
-  def sizeInfo: SizeInfo = this match {
-    case Sized(_, Size(n))  => precise(n)
-    case LabeledView(xs, _) => xs.sizeInfo
-    case Taken(xs, n)       => xs.sizeInfo min Precise(n)
-    case TakenR(xs, n)      => xs.sizeInfo min Precise(n)
-    case Dropped(xs, n)     => xs.sizeInfo - Precise(n)
-    case DroppedR(xs, n)    => xs.sizeInfo - Precise(n)
-    case Sliced(xs, range)  => xs.sizeInfo slice range
-    case Collected(xs, _)   => xs.sizeInfo.atMost
-    case Filtered(xs, _)    => xs.sizeInfo.atMost
-    case Joined(xs, ys)     => xs.sizeInfo + ys.sizeInfo
-    case Mapped(xs, _)      => xs.sizeInfo
-    case FlatMapped(xs, _)  => if (xs.sizeInfo.isZero) precise(0) else SizeInfo.Unknown
-    case Reversed(xs)       => xs.sizeInfo
-    case xs                 => xs.sizeInfo
-  }
-
+sealed abstract class CompositeView[Coll, +A](description: String, sizeEffect: SizeInfo => SizeInfo) extends View[Coll, A] {
   def underlying: View[Coll, _]
-  def calls = underlying.calls
-  def operationString = f"$name%-7s $arg%-7s"
-  def description = if (arg == "") name else s"$name $arg"
+  def atomicView: AtomicView[Coll, _] = underlying.atomicView
+  def calls                           = underlying.calls
+  def sizeInfo: SizeInfo              = sizeEffect(underlying.sizeInfo)
+
+  def operationString: String = description indexOf ' ' match {
+    case -1  => "%-15s" format description
+    case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
+  }
   def completeString: String = this match {
     case LabeledView(_, label) => label
-    case xs: AtomicView[_,_]   => xs.shortClass
-    case _                     => pp"${underlying.completeString}   $operationString"
+    case _                     => pp"${underlying.completeString} $operationString"
   }
   final def toForeach: Foreach[A] = new ViewForeach(this)
-  override def toString = completeString
 }
 
 final class IndexedView[Coll, CC[X], A](val repr: Coll)(implicit val tc: IndexableType[Coll, CC, A]) extends AtomicView[Coll, A] {
@@ -77,9 +57,6 @@ final class IndexedView[Coll, CC[X], A](val repr: Coll)(implicit val tc: Indexab
   def foreach(f: A => Unit): Unit = interval foreach (i => f(elemAt(i)))
   def foreachSlice(range: Interval)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
   def toForeach: Indexed[A] = Indexed(size, elemAt)
-
-  def completeString = "<xs>"
-  override def toString = "<xs>"
 }
 
 object IndexedView {
@@ -93,7 +70,6 @@ object SetView {
 }
 
 final class LinearView[Coll, CC[X], A](val repr: Coll)(implicit val tc: ForeachableType[Coll, CC, A]) extends AtomicView[Coll, A] {
-  def completeString = "<xs>"
   def toForeach: Foreach[A] = Foreach(f => tc.foreach(repr)(x => f(recordCall(x))))
 
   def foreachSlice(range: Interval)(f: A => Unit): Unit = {
@@ -107,27 +83,24 @@ final class LinearView[Coll, CC[X], A](val repr: Coll)(implicit val tc: Foreacha
 }
 
 final class SetView[Coll, CC[X], A](val repr: Coll)(implicit val tc: ForeachableSetType[Coll, CC, A]) extends AtomicView[Coll, A] {
-  def completeString = pp"linear view of ${repr.shortClass}"
   def toForeach: Foreach[A] = Foreach(f => tc.foreach(repr)(x => f(recordCall(x))))
 }
 
-final case class LabeledView[Coll, +A   ](underlying: View[Coll, A], label: String)      extends CompositeView[Coll, A](label, "")
-final case class Sized      [Coll, +A   ](underlying: View[Coll, A], size: Size)         extends CompositeView[Coll, A]("sized", pp"$size")
-final case class Joined     [C1, C2, +A ](underlying: View[C1, A], ys: View[C2, A])      extends CompositeView[C1, A]("++", pp"$ys")
-final case class Filtered   [Coll,  A   ](underlying: View[Coll, A], p: A => Boolean)    extends CompositeView[Coll, A]("filter", pp"$p")
-final case class Sliced     [Coll, +A   ](underlying: View[Coll, A], range: Interval)    extends CompositeView[Coll, A]("slice", pp"$range")
-final case class Dropped    [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A]("drop", pp"$n")
-final case class Taken      [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A]("take", pp"$n")
-final case class DroppedR   [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A]("dropR", pp"$n")
-final case class TakenR     [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A]("takeR", pp"$n")
-final case class Reversed   [Coll, +A   ](underlying: View[Coll, A])                     extends CompositeView[Coll, A]("reverse", "")
-final case class Mapped     [Coll,  A, B](underlying: View[Coll, A], f: A => B)          extends CompositeView[Coll, B]("map", pp"$f")
-final case class FlatMapped [Coll,  A, B](underlying: View[Coll, A], f: A => Foreach[B]) extends CompositeView[Coll, B]("flatMap", pp"$f")
-final case class Collected  [Coll,  A, B](underlying: View[Coll, A], pf: A =?> B)        extends CompositeView[Coll, B]("collect", pp"$pf")
+final case class LabeledView[Coll, +A   ](underlying: View[Coll, A], label: String)      extends CompositeView[Coll, A](label,            x => x)
+final case class Sized      [Coll, +A   ](underlying: View[Coll, A], size: Size)         extends CompositeView[Coll, A](pp"sized $size",  _ => Precise(size))
+final case class Joined     [Coll, +A, D](underlying: View[Coll, A], ys: View[D, A])     extends CompositeView[Coll, A](pp"++ $ys",       _ + ys.sizeInfo)
+final case class Filtered   [Coll,  A   ](underlying: View[Coll, A], p: A => Boolean)    extends CompositeView[Coll, A](pp"filter $p",    _.atMost)
+final case class Sliced     [Coll, +A   ](underlying: View[Coll, A], range: Interval)    extends CompositeView[Coll, A](pp"slice $range", _ slice range)
+final case class Dropped    [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A](pp"drop $n",      _ - Precise(n))
+final case class DroppedR   [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A](pp"dropR $n",     _ - Precise(n))
+final case class Taken      [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A](pp"take $n",      _ min Precise(n))
+final case class TakenR     [Coll, +A   ](underlying: View[Coll, A], n: Size)            extends CompositeView[Coll, A](pp"takeR $n",     _ min Precise(n))
+final case class Reversed   [Coll, +A   ](underlying: View[Coll, A])                     extends CompositeView[Coll, A]("reverse",        x => x)
+final case class Mapped     [Coll,  A, B](underlying: View[Coll, A], f: A => B)          extends CompositeView[Coll, B](pp"map $f",       x => x)
+final case class FlatMapped [Coll,  A, B](underlying: View[Coll, A], f: A => Foreach[B]) extends CompositeView[Coll, B](pp"flatMap $f",   x => if (x.isZero) x else Unknown)
+final case class Collected  [Coll,  A, B](underlying: View[Coll, A], pf: A =?> B)        extends CompositeView[Coll, B](pp"collect $pf",  _.atMost)
 
 class ViewForeach[Coll, A](view: View[Coll, A]) extends Foreach[A] {
-  override def toString = pp"$view foreach _"
-
   private def foreachSlice[Coll, A](xs: View[Coll, A], f: A => Unit, range: Interval): Unit = {
     var i = 0
     def runThrough(xs: Foreach[A]): Boolean = {
@@ -233,6 +206,8 @@ sealed trait View[Coll, +A] extends ElementalView[A] {
 
   final def native(implicit pcb: PspCanBuild[A, Coll]): Coll      = force[Coll]
   final def force[That](implicit pcb: PspCanBuild[A, That]): That = pcb build toForeach
+
+  override def toString = completeString
 }
 
 trait LowPriorityView {

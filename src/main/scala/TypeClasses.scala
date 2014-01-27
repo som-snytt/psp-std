@@ -9,7 +9,7 @@ object StringIsIndexable extends IndexableImpl[String, Indexed, Char] {
   def length(repr: String): Size               = Size(repr.length)
   def elemAt(repr: String)(index: Index): Char = repr charAt index
 }
-final class ArrayIsIndexable[@specialized A] extends IndexableImpl[Array[A], Indexed, A] {
+final class ArrayIsIndexable[A] extends IndexableImpl[Array[A], Indexed, A] {
   def convert(repr: Array[A]): Indexed[A]     = new ImmutableArray(repr)
   def length(repr: Array[A]): Size            = Size(repr.length)
   def elemAt(repr: Array[A])(index: Index): A = repr(index)
