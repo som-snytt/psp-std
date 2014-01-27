@@ -5,13 +5,6 @@ package tests
 import org.specs2.{ mutable => mu }
 import compat.ScalaNative
 
-class CollectionAndCompositeOp[A](xs: ElementalView[A], f: ElementalView[A] => ElementalView[A]) {
-  val view   = f(xs)
-  val result = view take 3 mk_s ", "
-  val count  = xs.calls
-  override def toString = pp"$view"
-}
-
 class PreciseSpec extends PspSpec {
   runCollectionsTests()
 
@@ -34,40 +27,81 @@ class PreciseSpec extends PspSpec {
 
   def scalaIntRange: scala.collection.immutable.Range = Range.inclusive(1, max, 1)
 
-  def rootCollections  = Vector[ElementalView[Int]](
+  def usCollections = Vector[ElementalView[Int]](
     PspList.to(1, max).m,
     PspList.to(1, max).m sized Size(max),
-    IntRange.to(1, max).m,
-    ScalaNative(scalaIntRange.toList),
+    IntRange.to(1, max).m
+  )
+  def themCollections = Vector[ElementalView[Int]](
     ScalaNative(scalaIntRange.toList.view),
     ScalaNative(scalaIntRange.toStream),
     ScalaNative(scalaIntRange.toStream.view),
     ScalaNative(scalaIntRange.view),
     ScalaNative(scalaIntRange.toVector.view)
   )
+  def rootCollections = usCollections ++ themCollections
 
   def compositesOfN(n: Int): List[ElementalView[Int] => ElementalView[Int]] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
       map (xss => xss reduceLeft (_ andThen _))
   )
 
+
+  class CompositeOp(viewFn: ElementalView[Int] => ElementalView[Int]) {
+    class CollectionResult(xs: ElementalView[Int]) {
+      val view   = viewFn(xs)
+      val result = view take 3 mk_s ", "
+      val count  = xs.calls
+
+      override def toString = pp"$view"
+    }
+    val us      = usCollections map (xs => new CollectionResult(xs))
+    val control = new CollectionResult(ScalaNative(scalaIntRange.toList))
+    val them    = themCollections map (xs => new CollectionResult(xs))
+    val all     = us ++ (control +: them)
+
+    def usCounts   = us map (_.count)
+    def themCounts = them map (_.count)
+    def allResults = all map (_.result)
+    def allCounts  = all map (_.count)
+
+    def usAverage   = usCounts.sum / us.size.toDouble
+    def themAverage = themCounts.sum / them.size.toDouble
+    def ratio       = "%.2f" format (themAverage / usAverage)
+
+    def headResult  = us.head
+    def headView    = us.head.view
+    def isAgreement = allResults.distinct.size == 1
+    def display     = (
+         !isAgreement
+      || (usCounts.distinct.size == usCollections.size)
+      || (allCounts.distinct.size > 4)
+    )
+    def countsString   = allCounts map ("%7s" format _) mkString " "
+    def resultsString  = if (isAgreement) headResult.result else "!!! " + failedString
+    def failedString   = allResults.zipWithIndex.toMap.groupBy(_._1).toList.mkString(" / ")
+    def padding        = " " * (headView.toString.length + 2)
+    def sortKey        = ((-ratio.toDouble, usCounts.min))
+
+    override def toString = "%s  %6s %s  //  %s".format(headView, ratio, countsString, resultsString)
+  }
+
   def runCollectionsTests() {
-    val banner: String = List("Psp/L", "Psp/LS", "Psp/I", "List", "List/V", "Stream", "Strm/V", "Rng/V", "Vctr/V") map ("%6s" format _) mkString " "
+    val banner: String    = List("Improve", "Psp/L", "Psp/LS", "Psp/I", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
     val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mkString ""
 
-    val composites                                          = compositesOfN(numOps)
-    val testss: List[Vector[CollectionAndCompositeOp[Int]]] = composites map (op => rootCollections map (xs => new CollectionAndCompositeOp(xs, op)))
-    val lines: List[String] = testss sortBy (xs => ((xs(1).count, xs(0).count))) map { tests =>
-      val counts = tests map ("%6s" format _.count) mkString " "
-      val res = tests.map(_.result).distinct.m.toPspList match {
-        case s :: nil() => s
-        case ss         => "!!! " + tests.take(3).zipWithIndex.map({ case (x, i) => s"xs($i) = ${x.result}" }).mk_s("  /  ") //ss.mk_s(" ... ")
-      }
-      "%s     %s  //  %s".format(tests.head, counts, res)
-    }
-    val padding = " " * (testss.head.head.toString.length + 5)
-    println(padding + banner)
-    println(padding + underline)
-    lines foreach println
+    val composites     = compositesOfN(numOps)
+    val results        = composites map (fn => new CompositeOp(fn)) sortBy (_.sortKey)
+    val (show, noshow) = results partition (_.display)
+    val padding        = results.head.padding
+
+    println(pp"""
+      |Basis sequence was 1 to $max
+      |Displaying ${show.size}/${results.size} results - omitted ${noshow.size} less interesting results
+      |
+      |$padding$banner
+      |$padding$underline
+      |${show mkString EOL}
+      |""".stripMargin)
   }
 }

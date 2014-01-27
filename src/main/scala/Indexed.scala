@@ -1,6 +1,8 @@
 package psp
 package core
 
+import java.{ lang => jl }
+
 trait Indexed[+A] extends Any with Foreach[A] with HasPreciseSize {
   def elemAt(index: Index): A
   @inline final def foreach(f: A => Unit): Unit = {
@@ -22,7 +24,13 @@ final class PspWrappedString(val wrapped: String) extends Traversable[Char] {
 }
 
 final class PspStringOps(val repr: String) extends AnyVal with Indexed[Char] {
-  def toInt: Int               = Integer parseInt repr
+  private def augment = Predef augmentString repr
+
+  def stripMargin(marginChar: Char): String = augment stripMargin marginChar
+  def stripMargin: String                   = stripMargin('|')
+
+  def toInt: Int               = jl.Integer parseInt repr
+  def toDouble: Double         = jl.Double parseDouble repr
   def toChars: Indexed[Char]   = new ImmutableArray(repr.toCharArray)
   def toBytes: Indexed[Byte]   = new ImmutableArray(repr.getBytes())
   def toLines: Indexed[String] = split(Regex(EOL))
