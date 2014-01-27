@@ -5,6 +5,7 @@ final class IndexedOperations[A](val xs: Indexed[A]) extends AnyVal {
 }
 
 final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
+  def hasPreciseSize = xs.sizeInfo.precisely.isDefined
   @inline final def foreachWithIndex(f: (A, Index) => Done): Unit = {
     var i = 0
     xs foreach (x => if (f(x, i)) return else i += 1)
@@ -15,7 +16,7 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def max(implicit ord: Ordering[A]): A    = reduce(ord.max)
 
   def reduce(f: (A, A) => A): A = {
-    var result: A = null.asInstanceOf[A]
+    var result: A = nullAs[A]
     var first = true
     xs foreach (x => if (first) try result = x finally first = false else result = f(result, x))
     if (first) failEmpty("reduce") else result
@@ -34,26 +35,29 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def forall(p: A => Boolean): Boolean = { xs.foreach(x => if (!p(x)) return false) ; true }
   def exists(p: A => Boolean): Boolean = { xs.foreach(x => if (p(x)) return true) ; false }
   def head: A = find(_ => true) getOrElse failEmpty("head")
+  def mkString(sep: String): String = foldl(new StringBuilder)(_ append sep append _.to_s).result stripPrefix sep
 }
 
 final class IndexedConversions[A](val xs: Indexed[A]) extends AnyVal {
-  def toSizedList = xs.toPspList sized xs.size
+  // def toSizedList = xs.toPspList sized xs.size
 }
 
 final class ForeachConversions[A](val xs: Foreach[A]) extends AnyVal {
   def toVector: Vector[A]           = to[Vector]
   def toList: List[A]               = to[List]
   def toSeq: Seq[A]                 = to[Seq]
-  def toStream: Stream[A]           = toTraversable.toStream
-  def toIterable: Iterable[A]       = toTraversable.toIterable
-  def toTraversable: Traversable[A] = ForeachAsTraversable(xs)
-  def to[CC[X] <: Traversable[X]](implicit cbf: CanBuildFrom[Nothing, A, CC[A]]): CC[A]  = (cbf() ++= toTraversable).result
-  def toRepr[Repr <: Traversable[A]](implicit cbf: CanBuildFrom[Nothing, A, Repr]): Repr = (cbf() ++= toTraversable).result
+  def toScalaSet: Set[A]            = to[Set]
+  def toStream: Stream[A]           = to[Stream]
+  def toIterable: Iterable[A]       = to[Iterable]
+  def toTraversable: Traversable[A] = new ForeachAsTraversable(xs)
 
-  // def labeled(label: String): LabeledForeach[A] = LabeledForeach(xs, label)
+  def toRepr[Repr](implicit pcb: PspCanBuild[A, Repr]): Repr      = pcb build xs
+  def to[CC[X]](implicit pcb: PspCanBuild[A, CC[A]]): CC[A]       = pcb build xs
 
-  def sized(size: Size): Foreach[A] = SizedForeach(xs, size)
-  def toPspList: PspList[A]         = PspList(toSeq: _*)
-
-  // def toExtensionalSet(equiv: (A, A) => Boolean): ExtensionalSet[A] = new ExtensionalSet(xs, equiv)
+  def toIndexed: Indexed[A]                                       = Indexed.elems(toSeq: _*)
+  def toPspList: PspList[A]                                       = to[PspList]
+  def toUniversalSet: EquivSet[A]                                 = EquivSet universal xs
+  def toReferenceSet(implicit ev: A <:< Ref[A]): EquivSet[Ref[A]] = EquivSet.reference[Ref[A]](xs map (x => ev(x)))
+  def toExtensionalSet: ExtensionalSet[A]                         = new ExtensionalSet(xs)
+  def toIntensionalSet: IntensionalSet[A]                         = IntensionalSet(xs)
 }

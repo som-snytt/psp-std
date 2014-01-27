@@ -1,5 +1,8 @@
 package psp
-package core
+package compat
+
+import scala.collection.generic.{ CanBuildFrom => CBF }
+import psp.core._
 
 class ScalaCompat[+A, CC[+X]] extends scala.collection.GenSeqLike[A, CC[A]] {
   import scala.{ collection => sc }

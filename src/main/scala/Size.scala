@@ -16,12 +16,14 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
   def min(that: Size): Size    = Size(value min that.value)
   def max(that: Size): Size    = Size(value max that.value)
 
-  def isZero  = this == Zero
-  def isError = this == NoSize
-
-  def toInt: Int            = value
-  def toLong: Long          = value
-  def toOption: Option[Int] = if (isError) None else Some(toInt)
+  def isZero                  = this == Zero
+  def isError                 = this == NoSize
+  def toInterval              = Interval(0, value)
+  def toScalaRange            = toInterval.toScalaRange
+  def toIndexed: Indexed[Int] = toInterval.toIndexed
+  def toInt: Int              = value
+  def toLong: Long            = value
+  def toOption: Option[Int]   = if (isError) None else Some(toInt)
 
   override def toString = if (isError) "<no size>" else s"$value"
 }

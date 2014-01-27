@@ -1,19 +1,19 @@
 package psp
 package core
-package linear
-
-trait PspLinear[+A] extends Any with Foreach[A] {
-  def isEmpty: Boolean
-  def head: A
-  def tail: PspLinear[A]
-  def foreach(f: A => Unit): Unit
-}
 
 object PspList {
+  implicit def newBuilder[A] : PspCanBuild[A, PspList[A]] = PspCanBuild(fromForeach)
+
+  def to(start: Int, end: Int): PspList[Int] = fromForeach(Foreach.to(start, end))
+
   // implicit def nilIsCovariant[A](xs: nil.type): PspList[A] = empty[A]
+  def fromForeach[A](xs: Foreach[A]): PspList[A] = xs match {
+    case xs: PspList[A] => xs
+    case _              => xs.foldr(empty[A])(_ :: _).reverse
+  }
 
   def empty[A] = nil.castTo[PspList[A]]
-  def fill[A](n: Int)(body: => A): PspList[A] = apply(0 until n map (_ => body): _*)
+  def fill[A](n: Int)(body: => A): PspList[A] = if (n <= 0) nil() else body :: fill(n - 1)(body)
   def apply[A](xs: A*): PspList[A]            = xs.foldRight(nil[A]())(_ :: _)
 
   def stringOf[A](xs: PspList[A], max: Int = 7): String = {
@@ -26,9 +26,8 @@ object PspList {
   }
 }
 
-sealed trait PspList[A] extends AnyRef with PspLinear[A] {
+sealed trait PspList[A] extends AnyRef with InvariantLinear[A] {
   def tail: PspList[A]
-  def sizeInfo = if (isEmpty) precise(0) else precise(1).atLeast
   private def upcast[A1 >: A] : PspList[A1] = this.castTo[PspList[A1]]
 
   def reverse: PspList[A] = {
@@ -60,14 +59,6 @@ sealed trait PspList[A] extends AnyRef with PspLinear[A] {
     }
     loop(this)
   }
-  @inline final def foreach(f: A => Unit): Unit = {
-    @tailrec def loop(x: PspList[A]): Unit = x match {
-      case x :: xs => f(x) ; loop(xs)
-      case _       =>
-    }
-    loop(this)
-  }
-
   final override def toString = if (isEmpty) "nil" else PspList.stringOf(this)
 }
 
@@ -77,7 +68,7 @@ final case object nil extends PspList[Nothing] {
   def tail     = failEmpty("tail")
 
   def apply[A](): PspList[A] = this.castTo[PspList[A]]
-  def unapply[A](xs: PspList[A]): Boolean = this eq xs
+  def unapply[A](xs: PspList[A]): Boolean = xs.isEmpty
 }
 final case class ::[A](head: A, tail: PspList[A]) extends PspList[A] {
   def isEmpty = false

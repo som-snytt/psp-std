@@ -1,8 +1,22 @@
 package psp
-package common
+package core
 
 import scala.{ collection => sc }
 import sc.{ mutable => scm, generic => scg }
+
+trait JavaTypes {
+  type jHashSet[A]            = java.util.HashSet[A]
+  type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]
+}
+
+trait ScalaShadowImplicits {
+  val StringAdd       = null
+  val wrapString      = null
+  val unwrapString    = null
+  val augmentString   = null
+  val unaugmentString = null
+  val intWrapper      = null
+}
 
 trait ScalaTypes {
   type tailrec      = scala.annotation.tailrec
@@ -28,7 +42,5 @@ trait ScalaTypes {
   type GenericTraversableTemplate[+A, +CC[X] <: GenTraversable[X]] = scg.GenericTraversableTemplate[A, CC]
   type FilterMonadic[+A, +Repr]                                    = scg.FilterMonadic[A, Repr]
   type CanBuildFrom[-From, -Elem, +To]                             = scg.CanBuildFrom[From, Elem, To]
-  type CBF[-From, -Elem, +To]                                      = scg.CanBuildFrom[From, Elem, To]
-
-  type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]
+  type ScalaNumber                                                 = scala.math.ScalaNumber
 }

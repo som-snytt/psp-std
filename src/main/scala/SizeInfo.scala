@@ -45,7 +45,7 @@ sealed trait Atomic extends SizeInfo
 trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
 trait HasPreciseSize extends Any with HasSizeInfo {
   def size: Size
-  final def sizeInfo = Precise(size)
+  final override def sizeInfo = Precise(size)
 }
 trait HasStaticSize extends HasPreciseSize
 
@@ -54,9 +54,8 @@ object SizeInfo {
   lazy val Unknown = bounded(Zero, Infinite)
 
   def apply(x: Any): SizeInfo = x match {
-    case x: HasSizeInfo                               => x.sizeInfo
-    case x: HasUnderlying[_] if x.toRef ne x.xs.toRef => apply(x.xs)
-    case _                                            => Unknown
+    case x: HasSizeInfo => x.sizeInfo
+    case _              => Unknown
   }
   def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
     case hi: Atomic     => bounded(lo, hi)
@@ -100,6 +99,8 @@ object SizeInfo {
       case _                        => None
     }
   }
+
+  implicit def sizeInfoOperations(lhs: SizeInfo): SizeInfoOperations = new SizeInfoOperations(lhs)
 }
 
 final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
@@ -107,7 +108,9 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
   import SizeInfo._
   import ThreeValue._
 
-  def isZero = lhs == precise(0)
+  def isZero    = lhs == precise(0)
+  def isPrecise = lhs match { case _: Precise => true ; case _ => false }
+
   def atMost: SizeInfo  = bounded(Zero, lhs)
   def atLeast: SizeInfo = bounded(lhs, Infinite)
   def hiBound: Atomic = lhs match {
@@ -115,16 +118,19 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
     case x: Atomic      => x
   }
 
-  private def preciseSlice(size: Int, start: Int, end: Int): SizeInfo.Precise = (
-    if (start < 0) preciseSlice(size, 0, end)
-    else if (size <= start || end <= start) precise(0)
-    else if (end < size) precise(end - start)
-    else precise(size - start)
+  private def preciseSliceSize(size: Int, start: Int, end: Int): Size = (
+    if (start < 0) preciseSliceSize(size, 0, end)
+    else if (size <= start || end <= start) Size(0)
+    else if (end < size) Size(end - start)
+    else Size(size - start)
   )
 
+  def slice(range: Interval): SizeInfo = slice(range.start, range.end)
   def slice(start: Int, end: Int): SizeInfo = lhs match {
-    case Precise(Size(n)) => preciseSlice(n, start, end)
-    case _                => lhs min precise(end - start)
+    case Precise(Size(n))                     => Precise(preciseSliceSize(n, start, end))
+    case Bounded(Size(lo), Precise(Size(hi))) => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(hi, start, end)))
+    case Bounded(Size(lo), Infinite)          => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(Int.MaxValue, start, end)))
+    case Infinite                             => Precise(preciseSliceSize(Int.MaxValue, start, end))
   }
   def precisely: Option[Int] = lhs match { case Precise(Size(n)) => Some(n) ; case _ => None }
 
