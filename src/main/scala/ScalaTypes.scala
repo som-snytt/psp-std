@@ -7,6 +7,8 @@ import sc.{ mutable => scm, generic => scg }
 trait JavaTypes {
   type jHashSet[A]            = java.util.HashSet[A]
   type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]
+  type BlockingQueue[A]       = java.util.concurrent.BlockingQueue[A]
+  type SynchronousQueue[A]    = java.util.concurrent.SynchronousQueue[A]
 }
 
 trait ScalaShadowImplicits {

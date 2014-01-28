@@ -60,7 +60,7 @@ final class IndexedView[Coll, CC[X], A](val repr: Coll)(implicit val tc: Indexab
   def interval = Interval(0, size.value)
   def foreach(f: A => Unit): Unit = interval foreach (i => f(elemAt(i)))
   def foreachSlice(range: Interval)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
-  def toForeach: Indexed[A] = Indexed(size, elemAt)
+  def toForeach: Indexed[A] = Indexed.pure(size, elemAt)
 }
 
 object IndexedView {

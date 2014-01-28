@@ -51,14 +51,6 @@ sealed trait PspList[A] extends AnyRef with InvariantLinear[A] {
     case x :: xs => x :: (xs ::: this)
     case _       => this
   }
-
-  def contains(x: A): Boolean = {
-    @tailrec def loop(xs: PspList[A]): Boolean = xs match {
-      case y :: ys => (x == y) || loop(ys)
-      case _       => false
-    }
-    loop(this)
-  }
   final override def toString = if (isEmpty) "nil" else PspList.stringOf(this)
 }
 
@@ -72,4 +64,19 @@ final case object nil extends PspList[Nothing] {
 }
 final case class ::[A](head: A, tail: PspList[A]) extends PspList[A] {
   def isEmpty = false
+}
+
+
+final class PspStream[A](headFn: => A, tailFn: => InvariantLinear[A]) extends InvariantLinear[A] {
+  def isEmpty = false
+  // def sizeInfo = precise(1).atLeast
+  lazy val head = headFn
+  lazy val tail = tailFn
+}
+
+object PspStream {
+  def empty[A] = nil.castTo[InvariantLinear[A]]
+  def cons[A](headFn: => A, tailFn: => InvariantLinear[A]): PspStream[A] = new PspStream[A](headFn, tailFn)
+
+  def fromForeach[A](xs: Foreach[A]): InvariantLinear[A] = xs.foldr(empty[A])((x, res) => cons(x, res))
 }

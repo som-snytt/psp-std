@@ -3,6 +3,7 @@ package core
 
 import scala.{ collection => sc }
 import SizeInfo._
+import impl._
 
 trait Foreach[+A] extends Any with HasSizeInfo {
   def foreach(f: A => Unit): Unit
@@ -14,7 +15,7 @@ trait Linear[+A] extends Any with Foreach[A] {
   def sizeInfo = if (isEmpty) precise(0) else precise(1).atLeast
   @tailrec @inline final def foreach(f: A => Unit): Unit = if (!isEmpty) { f(head) ; tail foreach f }
 }
-trait InvariantLinear[A] extends Linear[A]
+trait InvariantLinear[A] extends Any with Linear[A] with Invariant[A]
 
 object InvariantLinear {
   implicit final class InvariantLinearOps[A](val xs: InvariantLinear[A]) extends AnyVal {
@@ -26,10 +27,7 @@ object InvariantLinear {
 }
 
 object Foreach extends ForeachImplicits {
-  object Empty extends PreciselySizedIndexed[Nothing](Zero) with HasStaticSize {
-    def elemAt(index: Index): Nothing = failEmpty(pp"$this($index)")
-    override def toString = "<empty>"
-  }
+  def Empty = Indexed.Empty
 
   final class Constant[A](elem: A) extends Foreach[A] {
     def sizeInfo = Infinite
@@ -92,8 +90,7 @@ object Foreach extends ForeachImplicits {
   }
 }
 
-final class ScalaIndexedSeqAsIndexed[+A](underlying: sc.IndexedSeq[A]) extends Indexed[A] {
-  def size                 = Size(underlying.size)
+final class ScalaIndexedSeqAsIndexed[+A](underlying: sc.IndexedSeq[A]) extends IndexedImpl[A](Size(underlying.size)) {
   def elemAt(index: Index) = underlying(index)
   override def toString = underlying.shortClass + " (wrapped)"
 }
