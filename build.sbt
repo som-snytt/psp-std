@@ -39,7 +39,7 @@ def projectString(s: State): String = (
   }
 )
 
-// lame
-// conflictWarning ~= { _.copy(failOnConflict = false) }
-
-scalacOptions ++= Seq("-optimise", "-Xlog-implicit-conversions")
+scalacOptions ++= Seq(
+  "-optimise"
+  // , "-Xlog-implicit-conversions"
+)

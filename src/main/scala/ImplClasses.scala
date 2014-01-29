@@ -2,6 +2,29 @@ package psp
 package core
 package impl
 
+
+/** ArrowAssoc
+ */
+
+final class ArrowAssocInt(private val self: Int) extends AnyVal {
+  @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Int, B] = Tuple2(self, y)
+}
+final class ArrowAssocLong(private val self: Long) extends AnyVal {
+  @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Long, B] = Tuple2(self, y)
+}
+final class ArrowAssocDouble(private val self: Double) extends AnyVal {
+  @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Double, B] = Tuple2(self, y)
+}
+final class ArrowAssocChar(private val self: Char) extends AnyVal {
+  @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Char, B] = Tuple2(self, y)
+}
+final class ArrowAssocBoolean(private val self: Boolean) extends AnyVal {
+  @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Boolean, B] = Tuple2(self, y)
+}
+final class ArrowAssocRef[A](private val self: A) extends AnyVal {
+  @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
+}
+
 /** Indexed
  */
 

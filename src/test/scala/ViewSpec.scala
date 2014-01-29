@@ -36,7 +36,7 @@ class ViewSpec extends PspSpec {
 
   def stringTest(): Boolean = {
     def f1 = "abc".m map (_.toInt.toChar) native
-    def f2 = "abc".m flatMap (_.toString * 3) native
+    def f2 = "abc".m flatMap (_.toString * 3 m) native
 
     allTrue(List(f1, f2).zipWithIndex map (x => checkResult[String](x)))
   }

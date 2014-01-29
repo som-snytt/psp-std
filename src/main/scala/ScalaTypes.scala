@@ -11,23 +11,15 @@ trait JavaTypes {
   type SynchronousQueue[A]    = java.util.concurrent.SynchronousQueue[A]
 }
 
+/** It's kind of funny I guess.
+ */
 trait ScalaShadowImplicits {
   val wrapByteArray, wrapShortArray, wrapCharArray, wrapIntArray, wrapLongArray, wrapFloatArray, wrapDoubleArray = null
   val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps        = null
   val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper               = null
-
-  val StringAdd        = null
-  val wrapString       = null
-  val unwrapString     = null
-  val augmentString    = null
-  val unaugmentString  = null
-  val genericArrayOps  = null
-  val genericWrapArray = null
-  // val intWrapper       = null
-  // val intArrayOps      = null
-  // val byteArrayOps     = null
-  // val charArrayOps     = null
-  // val wrapIntArray     = null
+  val wrapString, unwrapString, augmentString, unaugmentString                                                   = null
+  val StringAdd, ArrowAssoc                                                                                      = null
+  val genericArrayOps, genericWrapArray                                                                          = null
 }
 
 trait ScalaTypes {

@@ -9,6 +9,7 @@ package core {
   trait LowPriorityPsp {
     @inline final implicit def pspIntWrapper(x: Int): PspInt                  = new PspInt(x)
     @inline final implicit def implicitUniversalOps[T](x: T): UniversalOps[T] = new UniversalOps(x)
+    @inline final implicit def arrowAssocRef[A](self: A): ArrowAssocRef[A]    = new ArrowAssocRef(self)
   }
 
   trait MidPriorityPsp extends LowPriorityPsp {
@@ -50,8 +51,12 @@ package core {
 
 package object core extends PspLogging with GenericUtility with ScalaTypes with JavaTypes with PspTypes with HighPriorityPsp with ScalaShadowImplicits {
   type Precise = SizeInfo.Precise
-  // type PspList[A] = psp.core.linear.PspList[A]
-  // val PspList = psp.core.linear.PspList
+
+  @inline implicit def arrowAssocInt(self: Int): ArrowAssocInt             = new ArrowAssocInt(self)
+  @inline implicit def arrowAssocLong(self: Long): ArrowAssocLong          = new ArrowAssocLong(self)
+  @inline implicit def arrowAssocDouble(self: Double): ArrowAssocDouble    = new ArrowAssocDouble(self)
+  @inline implicit def arrowAssocChar(self: Char): ArrowAssocChar          = new ArrowAssocChar(self)
+  @inline implicit def arrowAssocBoolean(self: Boolean): ArrowAssocBoolean = new ArrowAssocBoolean(self)
 
   def labelpf[T, R](label: String)(pf: T =?> R): T =?> R = new LabeledPartialFunction(pf, label)
   def classTag[T: ClassTag] = implicitly[ClassTag[T]]

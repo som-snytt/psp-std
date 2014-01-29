@@ -23,7 +23,7 @@ final class PspStringOps(val repr: String) extends AnyVal {
   def literal: Regex                    = regex.literal
   def split(re: Regex): DelimitedString = new DelimitedString(repr, re)
 
-  def * (n: Int): Foreach[String] = repr nTimes n
+  def * (n: Int): String = repr nTimes n mkString ""
 
   private def unwrapArg(arg: Any): AnyRef = arg match {
     case x: ScalaNumber => x.underlying
