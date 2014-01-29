@@ -26,8 +26,11 @@ final class Regex(val pattern: Pattern) extends AnyVal {
     case _                => None
   }
 
+  def literal: Regex = Regex(Pattern quote pattern.toString)
+
   override def toString = pattern.toString
 }
+
 object Regex {
   def apply(p: Pattern): Regex = new Regex(p)
   def apply(s: String): Regex  = new Regex(Pattern compile s)

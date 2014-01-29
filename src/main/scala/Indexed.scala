@@ -7,7 +7,8 @@ trait OpenIndexed[+A] extends Any with Foreach[A] {
   def isDefinedAt(index: Index): Boolean
   def elemAt(index: Index): A
   // TODO - move onto Ops
-  def zip[B](that: OpenIndexed[B]): ZippedIndexed[A, B] = new ZippedIndexed(this, that)
+  def zip[B](that: OpenIndexed[B]): OpenIndexed[(A, B)]                   = zipWith(that)(_ -> _)
+  def zipWith[B, C](that: OpenIndexed[B])(f: (A, B) => C): OpenIndexed[C] = new ZippedIndexed(this, that, f)
 }
 trait Indexed[+A] extends Any with OpenIndexed[A] with HasPreciseSize
 
@@ -16,6 +17,8 @@ trait HasContains[-A] extends Any {
 }
 trait Invariant[A] extends Any
 
+trait InvariantIndexed[A] extends Any with Indexed[A] with Invariant[A] with HasContains[A]
+
 final class PureIndexed[+A](size: Size, indexFn: Int => A) extends IndexedImpl[A](size) {
   def elemAt(index: Index): A = indexFn(index)
 }
@@ -23,12 +26,23 @@ final class PureIndexed[+A](size: Size, indexFn: Int => A) extends IndexedImpl[A
 object Indexed {
   implicit def newBuilder[A] : PspCanBuild[A, Indexed[A]] = new PspCanBuildImpl(_.toIndexed)
 
+  implicit final class IndexedOperations[A](val xs: Indexed[A]) extends AnyVal {
+    def ++(ys: Indexed[A]): Indexed[A] = join(xs, ys)
+    def apply(index: Index): A         = xs elemAt index
+  }
+
   object Empty extends IndexedImpl[Nothing](Zero) with HasStaticSize {
     def elemAt(index: Index): Nothing = failEmpty(pp"$this($index)")
     override def toString = "<empty>"
   }
 
+  def join[A](xs: Indexed[A], ys: Indexed[A]): Indexed[A] = pure(
+    xs.size + ys.size,
+    index => if (xs.size containsIndex index) xs elemAt index else ys elemAt index - xs.size.value
+  )
+
   /** Immutability (particularly of Arrays) is on the honor system. */
+  def pureArray[A](xs: Array[A]): Indexed[A]                            = pure(Size(xs.length), xs apply _)
   def pure[Repr](xs: Repr)(implicit tc: Indexable[Repr]): Indexed[tc.A] = pure(tc length xs, index => (tc elemAt xs)(index))
   def pure[A](size: Size, indexFn: Index => A): Indexed[A]              = new PureIndexed(size, indexFn)
 
@@ -48,7 +62,7 @@ object IntRange {
   def to(start: Int, last: Int): IntRange   = if (last < start) until(start, start) else new IntRange(start, last, isInclusive = true)
 }
 
-final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends IndexedImpl[Int](Size(last - start + 1)) with HasContains[Int] {
+final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends IndexedImpl[Int](Size(last - start + 1)) with InvariantIndexed[Int] {
   def contains(x: Int): Boolean = start <= x && x <= last
   def isEmpty               = last < start
   def end                   = last + 1

@@ -53,6 +53,8 @@ package object core extends PspLogging with GenericUtility with ScalaTypes with 
   // val PspList = psp.core.linear.PspList
 
   def labelpf[T, R](label: String)(pf: T =?> R): T =?> R = new LabeledPartialFunction(pf, label)
+  def classTag[T: ClassTag] = implicitly[ClassTag[T]]
+  def newBuffer[A](): ArrayBuffer[A] = mutable.ArrayBuffer[A]()
 
   def Zero                     = Size.Zero
   def precise(n: Int): Precise = SizeInfo.Precise(Size(n))

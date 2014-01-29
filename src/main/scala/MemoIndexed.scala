@@ -42,13 +42,13 @@ final class MemoIndexed[+A](xs: Foreach[A]) extends OpenIndexed[A] {
   override def toString = "<memo>"
 }
 
-final class ZippedIndexed[+A, +B](left: OpenIndexed[A], right: OpenIndexed[B]) extends OpenIndexed[(A, B)] {
-  def foreach(f: ((A, B)) => Unit): Unit = {
+final class ZippedIndexed[A, B, +C](left: OpenIndexed[A], right: OpenIndexed[B], f: (A, B) => C) extends OpenIndexed[C] {
+  def foreach(f: C => Unit): Unit = {
     var i = 0
-    while (isDefinedAt(i)) { f(apply(i)) ; i += 1 }
+    while (isDefinedAt(i)) { f(elemAt(i)); i += 1 }
   }
   def isDefinedAt(index: Int): Boolean = (left isDefinedAt index) && (right isDefinedAt index)
-  def apply(index: Int): (A, B)        = elemAt(index)
-  def elemAt(index: Int): (A, B)       = (left elemAt index) -> (right elemAt index)
+  def apply(index: Int): C             = elemAt(index)
+  def elemAt(index: Int): C            = f(left elemAt index, right elemAt index)
   def sizeInfo: SizeInfo               = left.sizeInfo min right.sizeInfo
 }

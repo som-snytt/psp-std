@@ -25,6 +25,8 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
   def toLong: Long            = value
   def toOption: Option[Int]   = if (isError) None else Some(toInt)
 
+  def containsIndex(index: Index): Boolean = 0 <= index && index < value
+
   override def toString = if (isError) "<no size>" else s"$value"
 }
 

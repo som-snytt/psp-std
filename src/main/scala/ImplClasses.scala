@@ -6,12 +6,15 @@ package impl
  */
 
 abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] {
-  def isDefinedAt(index: Index): Boolean = 0 <= index && index < size.value
+  def isDefinedAt(index: Index): Boolean = size containsIndex index
   @inline final def foreach(f: A => Unit): Unit = {
     var i = 0
     while (i < size.value) { f(elemAt(i)) ; i += 1 }
   }
   override def toString = Foreach stringify this
+}
+
+abstract class InvariantIndexedImpl[A](size: Size) extends IndexedImpl[A](size) with InvariantIndexed[A] {
 }
 
 /** Indexable

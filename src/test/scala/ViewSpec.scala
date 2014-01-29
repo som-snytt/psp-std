@@ -7,7 +7,6 @@ import scala.util.Random.nextInt
 import org.specs2.matcher.ThrownExpectations
 import scala.collection.{ mutable, immutable, generic }
 import immutable.BitSet
-import scala.reflect.{ ClassTag, classTag }
 
 class ViewSpec extends PspSpec {
   private def check(what: String, cond: Boolean): Boolean = try cond finally what in cond

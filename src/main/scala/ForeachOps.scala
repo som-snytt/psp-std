@@ -1,9 +1,6 @@
 package psp
 package core
 
-final class IndexedOperations[A](val xs: Indexed[A]) extends AnyVal {
-}
-
 final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def hasPreciseSize = xs.sizeInfo.precisely.isDefined
   @inline final def foreachWithIndex(f: (A, Index) => Done): Unit = {
@@ -31,6 +28,20 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
     xs.foreach(x => result = f(x, result))
     result
   }
+
+  def scanl[B](z: B)(op: (B, A) => B): Foreach[B] = {
+    Foreach[B](f => {
+      var acc = z
+      f(z)
+      xs foreach { x =>
+        acc = op(acc, x)
+        f(acc)
+      }
+    })
+  }
+
+  def ++[A1 >: A](that: Foreach[A1]): Foreach[A1] = Foreach.join(xs, that)
+
   def find(p: A => Boolean): Option[A] = { xs.foreach(x => if (p(x)) return Some(x)) ; None }
   def forall(p: A => Boolean): Boolean = { xs.foreach(x => if (!p(x)) return false) ; true }
   def exists(p: A => Boolean): Boolean = { xs.foreach(x => if (p(x)) return true) ; false }

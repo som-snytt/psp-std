@@ -19,6 +19,7 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends E
   def flatMap[B](f: A => Foreach[B]): MapTo[B]  = xs flatMap (x => f(x).toTraversable.seq)
   def ++[A1 >: A](that: Foreach[A1]): MapTo[A1] = xs ++ that.toTraversable.seq
   def filter(p: A => Boolean): MapTo[A]         = xs filter p
+  def filterNot(p: A => Boolean): MapTo[A]      = xs filterNot p
   def slice(start: Int, end: Int): MapTo[A]     = xs.slice(start, end)
   def drop(n: Int): MapTo[A]                    = xs drop n
   def take(n: Int): MapTo[A]                    = xs take n

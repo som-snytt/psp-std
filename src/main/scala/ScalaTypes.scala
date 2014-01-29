@@ -45,4 +45,5 @@ trait ScalaTypes {
   type FilterMonadic[+A, +Repr]                                    = scg.FilterMonadic[A, Repr]
   type CanBuildFrom[-From, -Elem, +To]                             = scg.CanBuildFrom[From, Elem, To]
   type ScalaNumber                                                 = scala.math.ScalaNumber
+  type ClassTag[A]                                                 = scala.reflect.ClassTag[A]
 }

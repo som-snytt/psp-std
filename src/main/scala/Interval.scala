@@ -36,7 +36,7 @@ final class Interval private (val start: Index, val end: Index) {
   override def toString       = if (isEmpty) "[0,0)" else pp"[$start,$end)" //pp"[$firstIndex,$lastIndex]"
 }
 
-object Interval {
+object Interval extends ((Index, Index) => Interval) {
   val Empty = new Interval(0, 0)
   val Full  = new Interval(0, Int.MaxValue)
 

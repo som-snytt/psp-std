@@ -41,3 +41,5 @@ def projectString(s: State): String = (
 
 // lame
 conflictWarning ~= { _.copy(failOnConflict = false) }
+
+scalacOptions += "-optimise"

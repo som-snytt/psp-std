@@ -71,6 +71,11 @@ object Foreach extends ForeachImplicits {
     case _                    => new TraversableAsForeach[A](xs)
   }
 
+  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A] = {
+    val sizeInfo = xs.sizeInfo + ys.sizeInfo
+    val mf: Suspended[A] = f => { xs foreach f ; ys foreach f }
+    new PureForeach(mf, sizeInfo)
+  }
   def empty[A] : Foreach[A] = Empty
   def apply[A](mf: Suspended[A]): Foreach[A] = new PureForeach[A](mf, SizeInfo.Unknown)
   def elems[A](xs: A*): Foreach[A] = Indexed.elems(xs: _*)

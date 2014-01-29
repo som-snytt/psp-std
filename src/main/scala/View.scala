@@ -170,6 +170,7 @@ trait ElementalView[+A] extends Any {
   def collect[B](pf: A =?> B): MapTo[B]
   def withFilter(p: A => Boolean): MapTo[A]
   def filter(p: A => Boolean): MapTo[A]
+  def filterNot(p: A => Boolean): MapTo[A]
   def drop(n: Int): MapTo[A]
   def take(n: Int): MapTo[A]
   def dropRight(n: Int): MapTo[A]
@@ -198,6 +199,7 @@ sealed trait View[Coll, +A] extends ElementalView[A] {
 
   final def withFilter(p: A => Boolean): MapTo[A] = Filtered(this, p)
   final def filter(p: A => Boolean): MapTo[A]     = Filtered(this, p)
+  final def filterNot(p: A => Boolean): MapTo[A]  = Filtered(this, (x: A) => !p(x))
   final def drop(n: Int): MapTo[A]                = Dropped(this, Size(n))
   final def take(n: Int): MapTo[A]                = Taken(this, Size(n))
   final def dropRight(n: Int): MapTo[A]           = DroppedR(this, Size(n))
@@ -210,6 +212,11 @@ sealed trait View[Coll, +A] extends ElementalView[A] {
 
   final def native(implicit pcb: PspCanBuild[A, Coll]): Coll      = force[Coll]
   final def force[That](implicit pcb: PspCanBuild[A, That]): That = pcb build toForeach
+
+  final def newBuilder[A1 >: A]: PspBuilder[A1, Foreach[A1]] = sizeInfo match {
+    case Precise(size) => new IndexedBuilder[A1](size)
+    case _             => new ForeachBuilder[A1]
+  }
 
   override def toString = completeString
 }
