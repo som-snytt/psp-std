@@ -13,10 +13,10 @@ exportJars in Global := true
 initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/replStartup.scala".!!
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-compiler"              % scalaVersion.value,
-           "jline" % "jline"                       % "2.11",
-  "ch.qos.logback" % "logback-classic"             % "1.0.9",
-      "org.specs2" % "specs2-scalacheck_2.11.0-M7" % "2.3.6"             % "test"
+  "org.scala-lang" %  "scala-compiler"    % scalaVersion.value,
+           "jline" %  "jline"             % "2.11",
+  "ch.qos.logback" %  "logback-classic"   % "1.0.9",
+      "org.specs2" %% "specs2-scalacheck" % "2.3.7"             % "test"
 )
 
 lazy val root = project in file(".") settings (assemblySettings: _*) settings (
@@ -40,6 +40,6 @@ def projectString(s: State): String = (
 )
 
 // lame
-conflictWarning ~= { _.copy(failOnConflict = false) }
+// conflictWarning ~= { _.copy(failOnConflict = false) }
 
-scalacOptions += "-optimise"
+scalacOptions ++= Seq("-optimise", "-Xlog-implicit-conversions")

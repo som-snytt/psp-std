@@ -53,7 +53,7 @@ sealed abstract class CompositeView[Coll, +A](description: String, sizeEffect: S
 }
 
 final class IndexedView[Coll, CC[X], A](val repr: Coll)(implicit val tc: IndexableType[Coll, CC, A]) extends AtomicView[Coll, A] {
-  def size = tc length repr
+  def size: Size = tc length repr
   override def sizeInfo = Precise(size)
   def elemAt(index: Index): A = recordCall(tc.elemAt(repr)(index))
 

@@ -18,9 +18,9 @@ final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
   private[this] def intSize = size.value
 
   def contents: Indexed[A] = indices map bufferAt toIndexed
-  def size     = capacity min Size(seen)
-  def isFull   = size == capacity
-  def sizeInfo = SizeInfo.Precise(size)
+  def size: Size           = capacity min Size(seen)
+  def isFull: Boolean      = size == capacity
+  def sizeInfo: Precise    = precise(intSize)
 
   def foreach(f: A => Unit): Unit = contents foreach f
 

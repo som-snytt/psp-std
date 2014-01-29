@@ -7,8 +7,9 @@ trait OpenIndexed[+A] extends Any with Foreach[A] {
   def isDefinedAt(index: Index): Boolean
   def elemAt(index: Index): A
   // TODO - move onto Ops
-  def zip[B](that: OpenIndexed[B]): OpenIndexed[(A, B)]                   = zipWith(that)(_ -> _)
-  def zipWith[B, C](that: OpenIndexed[B])(f: (A, B) => C): OpenIndexed[C] = new ZippedIndexed(this, that, f)
+  def zip[B](that: OpenIndexed[B]): OpenIndexed[(A, B)]                                                       = zipWith(that)(_ -> _)
+  def zipWith[A1, B](that: OpenIndexed[A1])(f: (A, A1) => B): OpenIndexed[B]                                  = new ZippedIndexed2(this, that, f)
+  def zipWith[A1, A2, B](that1: OpenIndexed[A1], that2: OpenIndexed[A2])(f: (A, A1, A2) => B): OpenIndexed[B] = new ZippedIndexed3(this, that1, that2, f)
 }
 trait Indexed[+A] extends Any with OpenIndexed[A] with HasPreciseSize
 
@@ -19,8 +20,29 @@ trait Invariant[A] extends Any
 
 trait InvariantIndexed[A] extends Any with Indexed[A] with Invariant[A] with HasContains[A]
 
+// object InvariantIndexed {
+//   implicit final class InvariantIndexedOps[A](val xs: InvariantIndexed[A]) extends AnyVal {
+//     def apply(index: Index): A = xs elemAt index
+//   }
+
+// }
+
+final class PspArrayOps[A](val xs: Array[A]) extends AnyVal with InvariantIndexed[A] {
+  def size                               = xs.size
+  def contains(x: A): Boolean            = xs.m exists (_ == x)
+  def foreach(f: A => Unit): Unit        = xs.m foreach f
+  def elemAt(index: Index): A            = xs(index)
+  def isDefinedAt(index: Index): Boolean = size containsIndex index
+}
+
 final class PureIndexed[+A](size: Size, indexFn: Int => A) extends IndexedImpl[A](size) {
   def elemAt(index: Index): A = indexFn(index)
+}
+
+object OpenIndexed {
+  implicit final class OpenIndexedOperations[A](val xs: OpenIndexed[A]) extends AnyVal {
+    def apply(index: Index): A = xs elemAt index
+  }
 }
 
 object Indexed {
@@ -28,7 +50,6 @@ object Indexed {
 
   implicit final class IndexedOperations[A](val xs: Indexed[A]) extends AnyVal {
     def ++(ys: Indexed[A]): Indexed[A] = join(xs, ys)
-    def apply(index: Index): A         = xs elemAt index
   }
 
   object Empty extends IndexedImpl[Nothing](Zero) with HasStaticSize {

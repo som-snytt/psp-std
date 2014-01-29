@@ -23,6 +23,7 @@ package core {
     implicit def implicitIndexedView[Coll](repr: Coll)(implicit tc: Indexable[Coll]): IndexedView[Coll, tc.CC, tc.A] = IndexedView(repr)
     implicit def implicitPartialFunctionOps[T, R](pf: T =?> R): PartialFunctionOps[T, R]                             = new PartialFunctionOps[T, R](pf)
     implicit def implicitFunctionOps[T, R](f: T => R): Function1Ops[T, R]                                            = new Function1Ops[T, R](f)
+    implicit def implicitArrayOps[A](xs: Array[A]): PspArrayOps[A]                                                   = new PspArrayOps[A](xs)
     implicit def implicitPpInterpolatorOps(sc: StringContext): PpInterpolatorOps                                     = new PpInterpolatorOps(sc)
   }
 

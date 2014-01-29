@@ -32,10 +32,10 @@ final class PspStringOps(val repr: String) extends AnyVal {
   override def toString = repr
 }
 
-final class PspStringAsBytes(val repr: String) extends AnyVal with InvariantIndexed[Byte] {
-  private def bytes: Array[Byte] = repr.getBytes()
+final class PspStringAsBytes(val repr: String) extends InvariantIndexed[Byte] {
+  private[this] val bytes: Array[Byte] = repr.getBytes()
 
-  def size: Size                             = Size(bytes.length)
+  def size: Size                             = bytes.size
   def elemAt(index: Index): Byte             = bytes(index)
   def isDefinedAt(index: Index): Boolean     = size containsIndex index
   @inline def foreach(f: Byte => Unit): Unit = Indexed pure bytes foreach f
@@ -48,7 +48,7 @@ final class PspStringAsChars(val repr: String) extends AnyVal with InvariantInde
   private def chars: Array[Char] = repr.toCharArray
 
   def size                                   = Size(chars.length)
-  def elemAt(index: Index): Char             = chars(index)
+  def elemAt(index: Index): Char             = repr charAt index
   def isDefinedAt(index: Index): Boolean     = size containsIndex index
   @inline def foreach(f: Char => Unit): Unit = Indexed pure chars foreach f
   def contains(x: Char): Boolean             = chars contains x
@@ -57,41 +57,17 @@ final class PspStringAsChars(val repr: String) extends AnyVal with InvariantInde
 }
 
 final class PspStringAsLines(val repr: String) extends AnyVal with InvariantIndexed[String] {
-  private def isEol(index: Int)   = index >= 0 && repr.startsWith(EOL, index)
-  private def isStart(index: Int) = index == 0 || isEol(index - EOL.length)
-  private def isEnd(index: Int)   = index == repr.length || isEol(index)
+  private def isEol(index: Int)        = index >= 0 && repr.startsWith(EOL, index)
+  private def isStart(index: Int)      = index == 0 || isEol(index - EOL.length)
+  private def isEnd(index: Int)        = index == repr.length || isEol(index)
+  private def starts: Indexed[Int]     = 0 to repr.length filter isStart force
+  private def ends: Indexed[Int]       = 0 to repr.length filter isEnd force
+  private def strings: Indexed[String] = Regex(EOL) splits repr
 
-  // private
-  def starts: Indexed[Int]      = 0 to repr.length filter isStart force
-  def ends: Indexed[Int]        = 0 to repr.length filter isEnd force
-  def ranges: Indexed[Interval] = starts.zipWith(ends)(Interval).toIndexed
-
+  def ranges: Indexed[Interval]            = starts.zipWith(ends)(Interval).toIndexed
   def indicesOfLine(lineno: Int): Interval = ranges elemAt lineno - 1
   def line(lineno: Int): String            = elemAt(lineno - 1)
 
-  //   Indexed.elems(-1, 0) ++ (0 until repr.length collect { case i if repr.startsWith(EOL, i) => i + EOL.length } filterNot (_ >= repr.length))
-  // }
-
-  // Indexed.elems(-1) ++ strings.scanl(0)(_ + _.length + EOL.length)
-  private def strings: Indexed[String]        = Regex(EOL) splits repr
-  // private def indexOfLine(lineno: Int): Index = (
-  //   if (starts containsIndex lineno - 1)
-
-  //   if (lineno <= 1) return NoIndex
-
-  //   var currentLine = 1
-  //   var currentIndex = 0
-  //   while (currentIndex < repr.length && currentLine < lineno) {
-  //     if (repr.startsWith(EOL, currentIndex)) {
-  //       currentLine += 1
-  //       currentIndex += EOL.length
-  //     }
-  //     else currentIndex += 1
-  //   }
-  //   if (currentIndex >= repr.length) NoIndex else currentIndex
-  // }
-
-  // def slice(start: Int, end: Int): PspStringAsLines =
   def size                                          = strings.size
   def elemAt(index: Index): String                  = strings elemAt index
   def isDefinedAt(index: Index): Boolean            = size containsIndex index

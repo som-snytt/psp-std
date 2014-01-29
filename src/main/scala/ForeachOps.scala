@@ -65,8 +65,15 @@ final class ForeachConversions[A](val xs: Foreach[A]) extends AnyVal {
   def toRepr[Repr](implicit pcb: PspCanBuild[A, Repr]): Repr      = pcb build xs
   def to[CC[X]](implicit pcb: PspCanBuild[A, CC[A]]): CC[A]       = pcb build xs
 
-  def toIndexed: Indexed[A]                                       = Indexed.elems(toSeq: _*)
-  def toPspList: PspList[A]                                       = to[PspList]
+  def toIndexed: Indexed[A] = xs match {
+    case xs: Indexed[A] => xs
+    case _              => Indexed.elems(toSeq: _*)
+  }
+  def toPspList: PspList[A] = xs match {
+    case xs: PspList[A] => xs
+    case _              => to[PspList]
+  }
+
   def toUniversalSet: EquivSet[A]                                 = EquivSet universal xs
   def toReferenceSet(implicit ev: A <:< Ref[A]): EquivSet[Ref[A]] = EquivSet.reference[Ref[A]](xs map (x => ev(x)))
   def toExtensionalSet: ExtensionalSet[A]                         = new ExtensionalSet(xs)

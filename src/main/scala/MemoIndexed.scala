@@ -42,7 +42,7 @@ final class MemoIndexed[+A](xs: Foreach[A]) extends OpenIndexed[A] {
   override def toString = "<memo>"
 }
 
-final class ZippedIndexed[A, B, +C](left: OpenIndexed[A], right: OpenIndexed[B], f: (A, B) => C) extends OpenIndexed[C] {
+final class ZippedIndexed2[A, B, +C](left: OpenIndexed[A], right: OpenIndexed[B], f: (A, B) => C) extends OpenIndexed[C] {
   def foreach(f: C => Unit): Unit = {
     var i = 0
     while (isDefinedAt(i)) { f(elemAt(i)); i += 1 }
@@ -51,4 +51,15 @@ final class ZippedIndexed[A, B, +C](left: OpenIndexed[A], right: OpenIndexed[B],
   def apply(index: Int): C             = elemAt(index)
   def elemAt(index: Int): C            = f(left elemAt index, right elemAt index)
   def sizeInfo: SizeInfo               = left.sizeInfo min right.sizeInfo
+}
+
+final class ZippedIndexed3[A, A1, A2, +B](xs1: OpenIndexed[A], xs2: OpenIndexed[A1], xs3: OpenIndexed[A2], f: (A, A1, A2) => B) extends OpenIndexed[B] {
+  def foreach(f: B => Unit): Unit = {
+    var i = 0
+    while (isDefinedAt(i)) { f(elemAt(i)); i += 1 }
+  }
+  def isDefinedAt(index: Int): Boolean = (xs1 isDefinedAt index) && (xs2 isDefinedAt index) && (xs3 isDefinedAt index)
+  def apply(index: Int): B             = elemAt(index)
+  def elemAt(index: Int): B            = f(xs1(index), xs2(index), xs3(index))
+  def sizeInfo: SizeInfo               = xs1.sizeInfo min xs2.sizeInfo min xs3.sizeInfo
 }
