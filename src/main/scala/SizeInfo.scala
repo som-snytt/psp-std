@@ -4,6 +4,7 @@ package core
 import PartialOrder._
 import SizeInfo._
 import ThreeValue._
+import scala.{ collection => sc }
 
 /** The SizeInfo hierarchy is:
  *                   SizeInfo
@@ -54,8 +55,10 @@ object SizeInfo {
   lazy val Unknown = bounded(Zero, Infinite)
 
   def apply(x: Any): SizeInfo = x match {
-    case x: HasSizeInfo => x.sizeInfo
-    case _              => Unknown
+    case x: HasSizeInfo       => x.sizeInfo
+    case xs: sc.IndexedSeq[_] => precise(xs.size)
+    case xs: Traversable[_]   => if (xs.isEmpty) Zero else precise(1).atLeast
+    case _                    => Unknown
   }
   def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
     case hi: Atomic     => bounded(lo, hi)
@@ -109,6 +112,7 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
   import ThreeValue._
 
   def isZero    = lhs == precise(0)
+  def isFinite  = lhs.hiBound != Infinite
   def isPrecise = lhs match { case _: Precise => true ; case _ => false }
 
   def atMost: SizeInfo  = bounded(Zero, lhs)

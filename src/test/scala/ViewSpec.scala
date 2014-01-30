@@ -5,8 +5,13 @@ package tests
 import org.specs2.{ mutable => mu }
 import scala.util.Random.nextInt
 import org.specs2.matcher.ThrownExpectations
-import scala.collection.{ mutable, immutable, generic }
+import scala.collection.immutable
 import immutable.BitSet
+
+
+abstract class PspSpec extends mu.Specification with ThrownExpectations {
+  sequential
+}
 
 class ViewSpec extends PspSpec {
   private def check(what: String, cond: Boolean): Boolean = try cond finally what in cond
@@ -43,7 +48,7 @@ class ViewSpec extends PspSpec {
 
   def arrayTest(): Boolean = {
     def f1 = Array[Int](1, 2, 3).m.native
-    def f2 = Array[Int](1, 2, 3).m flatMap (x => Foreach.elems(x)) native
+    def f2 = Array[Int](1, 2, 3).m flatMap (x => Foreach elems x) native
 
     allTrue(List(f1, f2).zipWithIndex map (x => checkResult[Array[Int]](x)))
   }
@@ -57,15 +62,15 @@ class ViewSpec extends PspSpec {
   }
 
   def seqTest(): Boolean = {
-    def f1 = Seq("a" -> 1, "b" -> 2, "c" -> 3).m.force
+    def f1 = Seq("a" -> 1, "b" -> 2, "c" -> 3).m.native
     def f2 = Seq("a" -> 1, "b" -> 2, "c" -> 3).m map (_._1) map (x => (x, x)) force
 
     allTrue(List(f1, f2).zipWithIndex map (x => checkResult[Seq[_]](x)))
   }
 
   def vectorTest(): Boolean = {
-    def f1 = Vector("a" -> 1, "b" -> 2, "c" -> 3).m.force
-    def f2 = Vector("a" -> 1, "b" -> 2, "c" -> 3).m.force// map (_._1) map (x => (x, x)) force
+    def f1 = Vector("a" -> 1, "b" -> 2, "c" -> 3).m.native
+    def f2 = Vector("a" -> 1, "b" -> 2, "c" -> 3).m.native
 
     allTrue(List(f1, f2).zipWithIndex map (x => checkResult[Vector[_]](x)))
   }

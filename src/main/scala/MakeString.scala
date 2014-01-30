@@ -10,9 +10,6 @@ final class UniversalOps[T](val x: T) extends AnyVal with ToString {
   def nTimes(n: Int): Foreach[T] = Foreach.times(n, x)
   def toRef: AnyRef              = castTo[AnyRef]
   def ref_==(y: Any): Boolean    = x.toRef eq y.toRef
-  def mk_s(sep: String)(implicit tc: Foreachable[T]): String = {
-    x.m map (_.to_s) mkString sep
-  }
 
   def toElements: Foreach[Any] = x match {
     case xs: Foreach[_]     => xs

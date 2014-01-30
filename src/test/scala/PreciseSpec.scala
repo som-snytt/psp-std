@@ -15,7 +15,7 @@ class PreciseSpec extends PspSpec {
 
   def max    = 1000
   def numOps = 3
-  def basicOps = List[ElementalView[Int] => ElementalView[Int]](
+  def basicOps = List[Elemental[Int] => Elemental[Int]](
     _ drop 5,
     _ dropRight 11,
     _.slice(7, 41),
@@ -29,13 +29,13 @@ class PreciseSpec extends PspSpec {
 
   def scalaIntRange: scala.collection.immutable.Range = Range.inclusive(1, max, 1)
 
-  def usCollections = List[ElementalView[Int]](
+  def usCollections = List[Elemental[Int]](
     PspList.to(1, max).m,
     PspList.to(1, max).m sized Size(max),
     IntRange.to(1, max).m,
     IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max)
   )
-  def themCollections = List[ElementalView[Int]](
+  def themCollections = List[Elemental[Int]](
     ScalaNative(scalaIntRange.toList.view),
     ScalaNative(scalaIntRange.toStream),
     ScalaNative(scalaIntRange.toStream.view),
@@ -44,23 +44,23 @@ class PreciseSpec extends PspSpec {
   )
   def rootCollections = usCollections ++ themCollections
 
-  def compositesOfN(n: Int): List[ElementalView[Int] => ElementalView[Int]] = (
+  def compositesOfN(n: Int): List[Elemental[Int] => Elemental[Int]] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
       map (xss => xss reduceLeft (_ andThen _))
   )
 
+  class CollectionResult(viewFn: Elemental[Int] => Elemental[Int], xs: Elemental[Int]) {
+    val view   = viewFn(xs)
+    val result = view take 3 mk_s ", "
+    val count  = xs.calls
 
-  class CompositeOp(viewFn: ElementalView[Int] => ElementalView[Int]) {
-    class CollectionResult(xs: ElementalView[Int]) {
-      val view   = viewFn(xs)
-      val result = view take 3 mk_s ", "
-      val count  = xs.calls
+    override def toString = pp"$view"
+  }
 
-      override def toString = pp"$view"
-    }
-    val us: List[CollectionResult]   = usCollections map (xs => new CollectionResult(xs))
-    val control: CollectionResult    = new CollectionResult(ScalaNative(scalaIntRange.toList))
-    val them: List[CollectionResult] = themCollections map (xs => new CollectionResult(xs))
+  class CompositeOp(viewFn: Elemental[Int] => Elemental[Int]) {
+    val us: List[CollectionResult]   = usCollections map (xs => new CollectionResult(viewFn, xs))
+    val control: CollectionResult    = new CollectionResult(viewFn, ScalaNative(scalaIntRange.toList))
+    val them: List[CollectionResult] = themCollections map (xs => new CollectionResult(viewFn, xs))
     val all: List[CollectionResult]  = us ++ (control +: them)
 
     def usCounts   = us map (_.count)
@@ -71,16 +71,17 @@ class PreciseSpec extends PspSpec {
     def usAverage   = usCounts.sum / us.size.toDouble
     def themAverage = themCounts.sum / them.size.toDouble
     def ratioDouble = themAverage / usAverage
-    def ratio       = "%.2f" format ratioDouble
+    def ratio       = if (ratioDouble == Double.PositiveInfinity) "Inf" else "%.2f" format ratioDouble
 
     def headResult  = us.head
-    def headView    = us.head.view
+    def headView    = us.head.view.completeString
     def isAgreement = allResults.distinct.size == 1
     def display     = (
          !isAgreement
       || (usCounts.distinct.size == usCollections.size)
       || (allCounts.distinct.size > 4)
       || (allCounts.distinct.size > 2 && ratioDouble < 1.3d)
+      || true
     )
     def countsString   = allCounts map ("%7s" format _) mkString " "
     def resultsString  = if (isAgreement) headResult.result else "!!! " + failedString
@@ -89,15 +90,15 @@ class PreciseSpec extends PspSpec {
       val lines = grouped.toList map { case (res, pairs) => "%20s:  %s".format(pairs.map(_._2).mkString(" "), res) }
       lines.mkString("\n  ", "\n  ", "\n")
     }
-    def padding        = " " * (headView.toString.length + 2)
-    def sortKey        = ((-ratio.toDouble, usCounts.min))
+    def padding        = " " * (headView.length + 2)
+    def sortKey        = ((-ratioDouble, usCounts.min))
 
     override def toString = "%s  %6s %s  //  %s".format(headView, ratio, countsString, resultsString)
   }
 
   def runCollectionsTests() {
     val banner: String    = List("Improve", "Linear", "Sized", "Indexed", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
-    val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mkString ""
+    val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mk_s ""
 
     val composites     = compositesOfN(numOps)
     val results        = composites map (fn => new CompositeOp(fn))

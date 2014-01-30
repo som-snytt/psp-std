@@ -11,29 +11,11 @@ trait OpenIndexed[+A] extends Any with Foreach[A] {
   def zipWith[A1, B](that: OpenIndexed[A1])(f: (A, A1) => B): OpenIndexed[B]                                  = new ZippedIndexed2(this, that, f)
   def zipWith[A1, A2, B](that1: OpenIndexed[A1], that2: OpenIndexed[A2])(f: (A, A1, A2) => B): OpenIndexed[B] = new ZippedIndexed3(this, that1, that2, f)
 }
+
 trait Indexed[+A] extends Any with OpenIndexed[A] with HasPreciseSize
-
-trait HasContains[-A] extends Any {
-  def contains(x: A): Boolean
-}
 trait Invariant[A] extends Any
-
-trait InvariantIndexed[A] extends Any with Indexed[A] with Invariant[A] with HasContains[A]
-
-// object InvariantIndexed {
-//   implicit final class InvariantIndexedOps[A](val xs: InvariantIndexed[A]) extends AnyVal {
-//     def apply(index: Index): A = xs elemAt index
-//   }
-
-// }
-
-final class PspArrayOps[A](val xs: Array[A]) extends AnyVal with InvariantIndexed[A] {
-  def size                               = xs.size
-  def contains(x: A): Boolean            = xs.m exists (_ == x)
-  def foreach(f: A => Unit): Unit        = xs.m foreach f
-  def elemAt(index: Index): A            = xs(index)
-  def isDefinedAt(index: Index): Boolean = size containsIndex index
-}
+trait HasContains[A] extends Any with Invariant[A] { def contains(x: A): Boolean }
+trait IndexedLeaf[A] extends Any with Indexed[A] with HasContains[A]
 
 final class PureIndexed[+A](size: Size, indexFn: Int => A) extends IndexedImpl[A](size) {
   def elemAt(index: Index): A = indexFn(index)
@@ -46,7 +28,7 @@ object OpenIndexed {
 }
 
 object Indexed {
-  implicit def newBuilder[A] : PspCanBuild[A, Indexed[A]] = new PspCanBuildImpl(_.toIndexed)
+  implicit def newBuilder[A] : PspCanBuild[A, Indexed[A]] = PspCanBuild(_.toIndexed)
 
   implicit final class IndexedOperations[A](val xs: Indexed[A]) extends AnyVal {
     def ++(ys: Indexed[A]): Indexed[A] = join(xs, ys)
@@ -74,7 +56,7 @@ object Indexed {
   }
   def empty[A] : Indexed[A] = Foreach.Empty
   def elems[A](xs: A*): Indexed[A] = xs match {
-    case xs: WrappedArray[A] => pure(xs.array)
+    case xs: WrappedArray[A] => pureArray(xs.array)
     case _                   => pure(xs.toVector)
   }
 }
@@ -83,7 +65,7 @@ object IntRange {
   def to(start: Int, last: Int): IntRange   = if (last < start) until(start, start) else new IntRange(start, last, isInclusive = true)
 }
 
-final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends IndexedImpl[Int](Size(last - start + 1)) with InvariantIndexed[Int] {
+final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends IndexedImpl[Int](Size(last - start + 1)) with IndexedLeaf[Int] {
   def contains(x: Int): Boolean = start <= x && x <= last
   def isEmpty               = last < start
   def end                   = last + 1

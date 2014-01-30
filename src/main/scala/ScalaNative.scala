@@ -5,7 +5,7 @@ import psp.core._
 
 /** Compatibility layer for wrapping scala views on their own terms.
  */
-final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends ElementalView[A] with CountCalls {
+final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends Elemental[A] with CountCalls {
   type MapTo[+X] = ScalaNative[X]
 
   private implicit def lift[B](result: Iterable[B]): MapTo[B] = new ScalaNative(result, counter)
@@ -23,9 +23,10 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends E
   def slice(start: Int, end: Int): MapTo[A]     = xs.slice(start, end)
   def drop(n: Int): MapTo[A]                    = xs drop n
   def take(n: Int): MapTo[A]                    = xs take n
+  def takeWhile(p: A => Boolean): MapTo[A]      = xs takeWhile p
+  def dropWhile(p: A => Boolean): MapTo[A]      = xs dropWhile p
   def dropRight(n: Int): MapTo[A]               = xs dropRight n
   def takeRight(n: Int): MapTo[A]               = xs takeRight n
-  def toForeach: Foreach[A]                     = Foreach(this foreach _)
 
   def collect[B](pf: PartialFunction[A,B]): MapTo[B] = xs collect pf
   def labeled(label: String): MapTo[A]               = this

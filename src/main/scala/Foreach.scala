@@ -66,10 +66,7 @@ object Foreach extends ForeachImplicits {
   def times[A](times: Int, elem: A): Foreach[A]   = Times(Size(times), elem)
 
   def unfold[A](start: A)(next: A => A): Unfold[A]   = Unfold[A](start)(next)
-  def traversable[A](xs: Traversable[A]): Foreach[A] = xs match {
-    case xs: sc.IndexedSeq[A] => new ScalaIndexedSeqAsIndexed[A](xs)
-    case _                    => new TraversableAsForeach[A](xs)
-  }
+  def traversable[A](xs: Traversable[A]): Foreach[A] = FromScala(xs)
 
   def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A] = {
     val sizeInfo = xs.sizeInfo + ys.sizeInfo
@@ -95,34 +92,11 @@ object Foreach extends ForeachImplicits {
   }
 }
 
-final class ScalaIndexedSeqAsIndexed[+A](underlying: sc.IndexedSeq[A]) extends IndexedImpl[A](Size(underlying.size)) {
-  def elemAt(index: Index) = underlying(index)
-  override def toString = underlying.shortClass + " (wrapped)"
-}
-
-final class TraversableAsForeach[+A](underlying: Traversable[A]) extends Foreach[A] {
-  def sizeInfo = underlying match {
-    case xs: sc.IndexedSeq[_] => Precise(Size(xs.size))
-    case xs                   => if (xs.isEmpty) precise(0) else precise(1).atLeast
-  }
-  def foreach(f: A => Unit): Unit = underlying foreach f
-  override def toString = underlying.shortClass + " (wrapped)"
-}
-
-final class ForeachAsTraversable[+A](underlying: Foreach[A]) extends sc.immutable.Traversable[A] {
-  def foreach[U](f: A => U): Unit = underlying foreach (x => f(x))
-}
-
-final class PureTraversable[+A](mf: Suspended[A]) extends sc.immutable.Traversable[A] {
-  def foreach[U](f: A => U): Unit = mf(x => f(x))
-}
-
 trait ForeachImplicits {
   implicit def tuple2ToForeach[A](p: Tuple2[A, A]): Foreach[A]          = Foreach.elems(p._1, p._2)
   implicit def tuple3ToForeach[A](p: Tuple3[A, A, A]): Foreach[A]       = Foreach.elems(p._1, p._2, p._3)
   implicit def tuple4ToForeach[A](p: Tuple4[A, A, A, A]): Foreach[A]    = Foreach.elems(p._1, p._2, p._3, p._4)
   implicit def tuple5ToForeach[A](p: Tuple5[A, A, A, A, A]): Foreach[A] = Foreach.elems(p._1, p._2, p._3, p._4, p._5)
 
-  implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A]          = new ForeachOperations(xs)
-  implicit def implicitForeachConversions[A](xs: Foreach[A]): ForeachConversions[A] = new ForeachConversions(xs)
+  implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A] = new ForeachOperations(xs)
 }

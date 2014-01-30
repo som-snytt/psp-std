@@ -23,7 +23,7 @@ final class PspStringOps(val repr: String) extends AnyVal {
   def literal: Regex                    = regex.literal
   def split(re: Regex): DelimitedString = new DelimitedString(repr, re)
 
-  def * (n: Int): String = repr nTimes n mkString ""
+  def * (n: Int): String = repr nTimes n mk_s ""
 
   private def unwrapArg(arg: Any): AnyRef = arg match {
     case x: ScalaNumber => x.underlying
@@ -32,7 +32,7 @@ final class PspStringOps(val repr: String) extends AnyVal {
   override def toString = repr
 }
 
-final class PspStringAsBytes(val repr: String) extends InvariantIndexed[Byte] {
+final class PspStringAsBytes(val repr: String) extends IndexedLeaf[Byte] {
   private[this] val bytes: Array[Byte] = repr.getBytes()
 
   def size: Size                             = bytes.size
@@ -44,7 +44,7 @@ final class PspStringAsBytes(val repr: String) extends InvariantIndexed[Byte] {
   override def toString = pp"String(as $size bytes)"
 }
 
-final class PspStringAsChars(val repr: String) extends AnyVal with InvariantIndexed[Char] {
+final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeaf[Char] {
   private def chars: Array[Char] = repr.toCharArray
 
   def size                                   = Size(chars.length)
@@ -56,7 +56,7 @@ final class PspStringAsChars(val repr: String) extends AnyVal with InvariantInde
   override def toString = pp"String(as $size chars)"
 }
 
-final class PspStringAsLines(val repr: String) extends AnyVal with InvariantIndexed[String] {
+final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeaf[String] {
   private def isEol(index: Int)        = index >= 0 && repr.startsWith(EOL, index)
   private def isStart(index: Int)      = index == 0 || isEol(index - EOL.length)
   private def isEnd(index: Int)        = index == repr.length || isEol(index)
@@ -77,7 +77,7 @@ final class PspStringAsLines(val repr: String) extends AnyVal with InvariantInde
   override def toString = pp"String(as $size lines)"
 }
 
-final class DelimitedString(repr: String, delimiter: Regex) extends InvariantIndexed[String] {
+final class DelimitedString(repr: String, delimiter: Regex) extends IndexedLeaf[String] {
   private[this] val elements: Indexed[String] = delimiter splits repr
 
   def size                                     = elements.size
