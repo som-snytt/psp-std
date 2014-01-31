@@ -12,29 +12,41 @@ import SizeInfo._
 // }
 
 trait CountCalls {
-  val counter: Counter
-
+  def counter: Counter
   def calls                  = counter.count
   def recordCall[T](x: T): T = counter record x
 }
 
 object AtomicView {
-  def linear[Coll](repr: Coll)(implicit tc: Foreachable[Coll]): psp.core.LinearView[Coll, tc.CC, tc.A] = new ViewEnvironment[Coll, tc.CC, tc.A](repr) linearView tc
-  def indexed[Coll](repr: Coll)(implicit tc: Indexable[Coll]): psp.core.IndexedView[Coll, tc.CC, tc.A] = new ViewEnvironment[Coll, tc.CC, tc.A](repr) indexedView tc
-  def apply[Coll](repr: Coll)(implicit tc: Foreachable[Coll]): psp.core.AtomicView[Coll, tc.CC, tc.A]  = new ViewEnvironment[Coll, tc.CC, tc.A](repr) newView tc
+  def linear[Coll](repr: Coll)(implicit tc: Linearable[Coll]): psp.core.LinearView[Coll, tc.CC, tc.A]    = new ViewEnvironment[Coll, tc.CC, tc.A](repr) linearView tc
+  def indexed[Coll](repr: Coll)(implicit tc: Indexable[Coll]): psp.core.IndexedView[Coll, tc.CC, tc.A]   = new ViewEnvironment[Coll, tc.CC, tc.A](repr) indexedView tc
+  def unknown[Coll](repr: Coll)(implicit tc: Foreachable[Coll]): psp.core.AtomicView[Coll, tc.CC, tc.A]  = new ViewEnvironment[Coll, tc.CC, tc.A](repr) unknownView tc
 }
 
-class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
-  def newView(tc: Foreachable[Coll]): AtomicView = tc match {
-    case tc: Indexable[_]   => new IndexedView(tc.castTo[IndexableType[Coll, CC, A]])
-    case tc: Foreachable[_] => new LinearView(tc.castTo[ForeachableType[Coll, CC, A]])
+class ViewEnvironment[Coll, CC[X], A](val repr: Coll) extends api.ViewEnvironment[Coll, CC, A] {
+  def linearView(tc: LinearableType[Coll, CC, A]): LinearView    = new LinearView(tc)
+  def indexedView(tc: IndexableType[Coll, CC, A]): IndexedView   = new IndexedView(tc)
+  def unknownView(tc: ForeachableType[Coll, CC, A]): UnknownView = new UnknownView(tc)
+
+  final class UnknownView(val tc: ForeachableType[Coll, CC, A]) extends AtomicView with LinearViewImpls {
+    def sizeInfo = tc sizeInfo repr
+
+    @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
-  def linearView(tc: ForeachableType[Coll, CC, A]): LinearView = new LinearView(tc)
-  def indexedView(tc: IndexableType[Coll, CC, A]): IndexedView = new IndexedView(tc)
 
-  final class IndexedView(val tc: IndexableType[Coll, CC, A]) extends AtomicView with HasContains[A] with HasPreciseSize {
-    final def m: this.type = this
+  final class LinearView(val tc: LinearableType[Coll, CC, A]) extends AtomicView with Linear[A] with LinearViewImpls {
+    type Tail = psp.core.LinearView[Coll, CC, A]
 
+    def isEmpty    = tc isEmpty repr
+    def head: A    = recordCall(tc head repr)
+    def tail: Tail = tc wrap (tc tail repr)
+    def sizeInfo   = if (isEmpty) precise(0) else precise(1).atLeast
+
+    @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
+  }
+
+  final class IndexedView(val tc: IndexableType[Coll, CC, A]) extends AtomicView with IndexedLeaf[A] {
+    def isDefinedAt(index: Index): Boolean                = size containsIndex index
     def size: Size                                        = tc length repr
     def elemAt(index: Index): A                           = recordCall(tc.elemAt(repr)(index))
     def contains(x: A): Boolean                           = this exists (_ == x)
@@ -42,36 +54,19 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
     def foreachSlice(range: Interval)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
   }
 
-  final class LinearView(val tc: ForeachableType[Coll, CC, A]) extends AtomicView {
-    final def m: this.type = this
-
-    def sizeInfo = SizeInfo(repr)
-    def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(x => f(x))
-    def foreachSlice(range: Interval)(f: A => Unit): Unit = {
-      var i = 0
-      (tc foreach repr) { x =>
-        recordCall(x)
-        if (range contains i) f(x)
-        i += 1
-        if (i >= range.end) return
-      }
-    }
-  }
-
   sealed trait View[+A] extends Any with api.View[A] {
     type MapTo[+X] = View[X]
-
     // Eventually
     // type Input[X]  = Foreach[X]
 
-    def completeString: String
+    def isAtomic: Boolean
     def atomicView: AtomicView
 
     final def map[B](f: A => B): MapTo[B]                       = Mapped(this, f)
     final def flatMap[B](f: A => Foreach[B]): MapTo[B]          = FlatMapped(this, f)
     final def flatten[B](implicit ev: A <:< Input[B]): MapTo[B] = flatMap(x => x)
     final def collect[B](pf: A =?> B): MapTo[B]                 = Collected(this, pf)
-    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]         = Joined(this, that.m)
+    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]         = Joined(this, that.m.castTo[View[A1]])
 
     final def withFilter(p: Predicate[A]): MapTo[A] = Filtered(this, p)
     final def filter(p: Predicate[A]): MapTo[A]     = Filtered(this, p)
@@ -91,19 +86,43 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
     final def native(implicit pcb: PspCanBuild[A, Coll]): Coll      = force[Coll]
     final def force[That](implicit pcb: PspCanBuild[A, That]): That = pcb build this
 
-    override def toString = completeString
+    override def toString = viewString(identity).replaceAll("\\s+", " ")
+  }
+
+  trait LinearViewImpls {
+    self: AtomicView =>
+
+    final def foreachSlice(range: Interval)(f: tc.A => Unit): Unit = {
+      var i = 0
+      (tc foreach repr) { x =>
+        recordCall(x)
+        if (range contains i) f(x)
+        i += 1
+        if (i >= range.end) return
+      }
+    }
   }
 
   sealed abstract class AtomicView extends View[A] with CountCalls {
-    val tc: Foreachable[Coll]
+    val tc: Walkable[Coll]
     def foreachSlice(range: Interval)(f: A => Unit): Unit
 
     val counter: Counter = new Counter()
-    def completeString = "<xs>"
+    final def m: this.type = this
+
+    def isAtomic = true
+    def viewString(formatter: String => String): String = ""
     def atomicView: AtomicView = this
   }
 
-  sealed abstract class CompositeView[+A](val description: String, val sizeEffect: SizeInfo => SizeInfo) extends CompositeViewImpl[A]
+  sealed abstract class CompositeView[+A](val description: String, val sizeEffect: SizeInfo => SizeInfo) extends CompositeViewImpl[A] {
+    def isAtomic = false
+    def viewString(formatter: String => String): String = this match {
+      case LabeledView(_, label) => formatter(label)
+      case _ if prev.isAtomic    => formatter(description)
+      case _                     => (prev viewString formatter) + " " + formatter(description)
+    }
+  }
 
   final case class LabeledView[+A   ](prev: View[A], label: String)      extends CompositeView[A](label,            x => x)
   final case class Sized      [+A   ](prev: View[A], size: Size)         extends CompositeView[A](pp"sized $size",  _ => Precise(size))
@@ -149,7 +168,6 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
       if (sizeInfo.isZero) return
 
       def loop[B](xs: api.View[B])(f: B => Unit): Unit = xs match {
-        case xs: AtomicView                           => xs foreach f
         case LabeledView(xs, _)                       => loop(xs)(f)
         case Sized(xs, size)                          => loop(xs)(f)
         case Mapped(xs, g)                            => loop(xs)(g andThen f)
@@ -166,10 +184,11 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
         case Dropped(xs, Size(n))                     => foreachSlice(xs, f, Interval.Full drop n)
         case Taken(xs, Size(n))                       => foreachSlice(xs, f, Interval.Full take n)
         case Sliced(xs, range)                        => foreachSlice(xs, f, range)
+        case xs: ViewEnvironment[_,CC,_]#View[_]      => xs foreach f // boy this line says it all
+        case xs                                       => sys.error(pp"Unexpected view class ${xs.shortClass}")
       }
       loop(this)(f)
     }
-
 
     private def foreachSlice[A](xs: View[A], f: A => Unit, range: Interval): Unit = {
       var i = 0
@@ -187,11 +206,11 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
         case Mapped(xs, g)    => foreachSlice(xs, g andThen f, range)
         case xs: Indexed[A]   => var i = range.start ; while (i < range.end) { f(xs elemAt i) ; i += 1 }
         case Joined(ys1, ys2) =>
-        ys1.sizeInfo.precisely match {
-          case Some(n) if n < range.start => ys2 slice (range - n) foreach f
-          case Some(n) if n > range.end   => ys1 slice range foreach f
-          case _                          => runThrough(ys1) || runThrough(ys2)
-        }
+          ys1.sizeInfo.precisely match {
+            case Some(n) if n < range.start => ys2 slice (range - n) foreach f
+            case Some(n) if n > range.end   => ys1 slice range foreach f
+            case _                          => runThrough(ys1) || runThrough(ys2)
+          }
         case _              => runThrough(xs)
       }
     }
@@ -220,15 +239,5 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
       case Joined(xs, ys) => xs.calls + ys.calls
       case _              => prev.calls
     }
-
-    def operationString: String = description indexOf ' ' match {
-      case -1  => "%-15s" format description
-      case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
-    }
-    def completeString: String = this match {
-      case LabeledView(_, label) => label
-      case _                     => pp"${prev.completeString} $operationString"
-    }
   }
 }
-

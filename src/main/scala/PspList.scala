@@ -26,8 +26,8 @@ object PspList {
   }
 }
 
-sealed trait PspList[A] extends AnyRef with InvariantLinear[A] {
-  def tail: PspList[A]
+sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
+  type Tail = PspList[A]
   private def upcast[A1 >: A] : PspList[A1] = this.castTo[PspList[A1]]
 
   def reverse: PspList[A] = {
@@ -67,9 +67,9 @@ final case class ::[A](head: A, tail: PspList[A]) extends PspList[A] {
 }
 
 
-final class PspStream[A](headFn: => A, tailFn: => InvariantLinear[A]) extends InvariantLinear[A] {
+final class PspStream[A](headFn: => A, tailFn: => InvariantLinear[A]) extends LinearImpl[A] with InvariantLinear[A] {
+  type Tail = InvariantLinear[A]
   def isEmpty = false
-  // def sizeInfo = precise(1).atLeast
   lazy val head = headFn
   lazy val tail = tailFn
 }

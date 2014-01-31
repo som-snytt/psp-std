@@ -76,18 +76,33 @@ final class PspIndexedIsIndexable[A0] extends IndexableImpl[Indexed[A0], Indexed
   def elemAt(repr: Indexed[A0])(index: Index): A0 = repr elemAt index
 }
 
+/** Foreachable
+ */
+final class TraversableIsForeachable[CC[X] <: Traversable[X], A] extends ForeachableImpl[CC[A], CC, A] {
+  def foreach(repr: CC[A])(f: A => Unit): Unit = repr foreach f
+}
+final class PspForeachIsForeachable[A] extends ForeachableImpl[Foreach[A], Foreach, A] {
+  def foreach(repr: Foreach[A])(f: A => Unit): Unit = repr foreach f
+}
+final class PspLinearIsLinearable[A] extends LinearableImpl[Linear[A], Linear, A] {
+  def head(repr: Linear[A]): A          = repr.head
+  def tail(repr: Linear[A]): Linear[A]  = repr.tail
+  def isEmpty(repr: Linear[A]): Boolean = repr.isEmpty
+
+  @inline def foreach(repr: Linear[A])(f: A => Unit): Unit = {
+    @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
+    loop(repr)
+  }
+}
+
 trait IndexableImpl[Repr, CC0[X], A0] extends Indexable[Repr] {
   type CC[X] = CC0[X]
   type A     = A0
 }
 
-/** Foreachable
- */
-final class ScalaTraversableIsForeachable[CC[X] <: Traversable[X], A] extends ForeachableImpl[CC[A], CC, A] {
-  def foreach(repr: CC[A])(f: A => Unit): Unit = repr foreach f
-}
-final class PspForeachIsForeachable[A] extends ForeachableImpl[Foreach[A], Foreach, A] {
-  def foreach(repr: Foreach[A])(f: A => Unit): Unit = repr foreach f
+trait LinearableImpl[Repr, CC0[X], A0] extends Linearable[Repr] {
+  type CC[X] = CC0[X]
+  type A     = A0
 }
 
 trait ForeachableImpl[Repr, CC0[X], A0] extends Foreachable[Repr] {

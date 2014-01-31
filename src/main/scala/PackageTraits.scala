@@ -7,13 +7,14 @@ trait PspLowPriority {
   @inline final implicit def raisePspInt(x: Int): PspInt                 = new PspInt(x)
   @inline final implicit def raiseUniversalOps[T](x: T): UniversalOps[T] = new UniversalOps(x)
   @inline final implicit def arrowAssocRef[A](x: A): ArrowAssocRef[A]    = new ArrowAssocRef(x)
+  implicit def raiseAtomicView[Coll](repr: Coll)(implicit tc: Foreachable[Coll]): AtomicView[Coll, tc.CC, tc.A] = AtomicView.unknown(repr)
 }
 
 trait PspMidPriority extends PspLowPriority {
-  implicit def raiseForeachableView[Coll](repr: Coll)(implicit tc: Foreachable[Coll]): LinearView[Coll, tc.CC, tc.A] = AtomicView.linear(repr)
-  implicit def raisePartiallyOrderOps[A](x: PartiallyOrdered[A]): PartiallyOrderedOps[A]                             = new PartiallyOrderedOps(x)
-  implicit def raisePspStringOps(s: String): PspStringOps                                                            = new PspStringOps(s)
-  implicit def lowerPspStringOps(s: PspStringOps): String                                                            = s.repr
+  implicit def raiseLinearableView[Coll](repr: Coll)(implicit tc: Linearable[Coll]): LinearView[Coll, tc.CC, tc.A] = AtomicView.linear(repr)
+  implicit def raisePartiallyOrderOps[A](x: PartiallyOrdered[A]): PartiallyOrderedOps[A]                           = new PartiallyOrderedOps(x)
+  implicit def raisePspStringOps(s: String): PspStringOps                                                          = new PspStringOps(s)
+  implicit def lowerPspStringOps(s: PspStringOps): String                                                          = s.repr
 
   @inline final implicit def arrowAssocInt(x: Int): ArrowAssocInt             = new ArrowAssocInt(x)
   @inline final implicit def arrowAssocLong(x: Long): ArrowAssocLong          = new ArrowAssocLong(x)

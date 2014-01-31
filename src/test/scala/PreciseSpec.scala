@@ -8,6 +8,8 @@ import compat.ScalaNative
 class PreciseSpec extends PspSpec {
   runCollectionsTests()
 
+  type IntView = api.View[Int]
+
   lazy val tupleFlatMap: Int => Foreach[Int] = ((x: Int) => Foreach.elems(x, x)) labeled "(x, x)"
   lazy val isEven: Int => Boolean            = ((x: Int) => x % 2 == 0) labeled "isEven"
   lazy val timesThree: Int => Int            = ((x: Int) => x * 3) labeled "*3"
@@ -15,7 +17,7 @@ class PreciseSpec extends PspSpec {
 
   def max    = 1000
   def numOps = 3
-  def basicOps = List[api.View[Int] => api.View[Int]](
+  def basicOps = List[IntView => IntView](
     _ drop 5,
     _ dropRight 11,
     _.slice(7, 41),
@@ -29,13 +31,13 @@ class PreciseSpec extends PspSpec {
 
   def scalaIntRange: scala.collection.immutable.Range = Range.inclusive(1, max, 1)
 
-  def usCollections = List[api.View[Int]](
+  def usCollections = List[IntView](
     PspList.to(1, max).m,
     PspList.to(1, max).m sized Size(max),
     IntRange.to(1, max).m,
     IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max)
   )
-  def themCollections = List[api.View[Int]](
+  def themCollections = List[IntView](
     ScalaNative(scalaIntRange.toList.view),
     ScalaNative(scalaIntRange.toStream),
     ScalaNative(scalaIntRange.toStream.view),
@@ -44,20 +46,24 @@ class PreciseSpec extends PspSpec {
   )
   def rootCollections = usCollections ++ themCollections
 
-  def compositesOfN(n: Int): List[api.View[Int] => api.View[Int]] = (
+  def compositesOfN(n: Int): List[IntView => IntView] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
       map (xss => xss reduceLeft (_ andThen _))
   )
 
-  class CollectionResult(viewFn: api.View[Int] => api.View[Int], xs: api.View[Int]) {
+  class CollectionResult(viewFn: IntView => IntView, xs: IntView) {
     val view   = viewFn(xs)
     val result = view take 3 mk_s ", "
     val count  = xs.calls
 
-    override def toString = pp"$view"
+    def fmtdesc(description: String): String = description indexOf ' ' match {
+      case -1  => "%-15s" format description
+      case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
+    }
+    override def toString = pp"<xs>  ${view viewString fmtdesc}"
   }
 
-  class CompositeOp(viewFn: api.View[Int] => api.View[Int]) {
+  class CompositeOp(viewFn: IntView => IntView) {
     val us: List[CollectionResult]   = usCollections map (xs => new CollectionResult(viewFn, xs))
     val control: CollectionResult    = new CollectionResult(viewFn, ScalaNative(scalaIntRange.toList))
     val them: List[CollectionResult] = themCollections map (xs => new CollectionResult(viewFn, xs))
@@ -74,7 +80,12 @@ class PreciseSpec extends PspSpec {
     def ratio       = if (ratioDouble == Double.PositiveInfinity) "Inf" else "%.2f" format ratioDouble
 
     def headResult  = us.head
-    def headView    = us.head.view.completeString
+
+    def fmtdesc(description: String): String = description indexOf ' ' match {
+      case -1  => "%-15s" format description
+      case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
+    }
+    def headView    = us.head.toString // view.viewString(fmtdesc)
     def isAgreement = allResults.distinct.size == 1
     def display     = (
          !isAgreement

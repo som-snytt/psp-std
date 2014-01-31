@@ -25,6 +25,10 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
     type A = A0
     type CC[B] = CC0[B]
   }
+  type LinearableType[Repr, CC0[X], A0] = Linearable[Repr] {
+    type A = A0
+    type CC[B] = CC0[B]
+  }
   type IndexableType[Repr, CC0[X], A0] = Indexable[Repr] {
     type A = A0
     type CC[B] = CC0[B]

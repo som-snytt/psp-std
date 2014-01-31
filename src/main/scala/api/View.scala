@@ -8,10 +8,12 @@ trait View[+A] extends Any with ForeachView[A] with IsoView[A] with MapElementVi
   // Defined here for the moment out of expedience.
   type Input[+X] = Foreach[X]
   type Split[+X] <: (MapTo[A], MapTo[A])
+  def ++[A1 >: A](that: Input[A1]): MapTo[A1]
 }
 
 trait MeasurementView extends Any {
   def calls: Int
+  def viewString(formatter: String => String): String
 }
 
 trait ForeachView[+A] extends Any with Foreach[A] {
