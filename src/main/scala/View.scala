@@ -11,37 +11,11 @@ import SizeInfo._
 //   def apply(x: A): Foreach[B] = f(x)
 // }
 
-
 trait CountCalls {
   val counter: Counter
 
   def calls                  = counter.count
   def recordCall[T](x: T): T = counter record x
-}
-
-trait Elemental[+A] extends Any with Foreach[A] {
-  type MapTo[+X] <: Elemental[X]
-
-  def foreach(f: A => Unit): Unit
-  def map[B](f: A => B): MapTo[B]
-  def flatMap[B](f: A => Foreach[B]): MapTo[B]
-  def collect[B](pf: A =?> B): MapTo[B]
-  def withFilter(p: A => Boolean): MapTo[A]
-  def filter(p: A => Boolean): MapTo[A]
-  def filterNot(p: A => Boolean): MapTo[A]
-  def drop(n: Int): MapTo[A]
-  def take(n: Int): MapTo[A]
-  def takeWhile(p: A => Boolean): MapTo[A]
-  def dropWhile(p: A => Boolean): MapTo[A]
-  def dropRight(n: Int): MapTo[A]
-  def takeRight(n: Int): MapTo[A]
-  def slice(start: Int, end: Int): MapTo[A]
-  def slice(range: Interval): MapTo[A]
-  def labeled(label: String): MapTo[A]
-  def sized(size: Size): MapTo[A]
-  def reverse: MapTo[A]
-
-  def calls: Int
 }
 
 object AtomicView {
@@ -84,24 +58,28 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
     }
   }
 
-  sealed trait View[+A] extends Any with Elemental[A] {
-    type MapTo[+B] = View[B]
+  sealed trait View[+A] extends Any with api.View[A] {
+    type MapTo[+X] = View[X]
+
+    // Eventually
+    // type Input[X]  = Foreach[X]
 
     def completeString: String
     def atomicView: AtomicView
 
-    final def map[B](f: A => B): MapTo[B]               = Mapped(this, f)
-    final def flatMap[B](f: A => Foreach[B]): MapTo[B]  = FlatMapped(this, f)
-    final def collect[B](pf: A =?> B): MapTo[B]         = Collected(this, pf)
-    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1] = Joined(this, that.m)
+    final def map[B](f: A => B): MapTo[B]                       = Mapped(this, f)
+    final def flatMap[B](f: A => Foreach[B]): MapTo[B]          = FlatMapped(this, f)
+    final def flatten[B](implicit ev: A <:< Input[B]): MapTo[B] = flatMap(x => x)
+    final def collect[B](pf: A =?> B): MapTo[B]                 = Collected(this, pf)
+    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]         = Joined(this, that.m)
 
-    final def withFilter(p: A => Boolean): MapTo[A] = Filtered(this, p)
-    final def filter(p: A => Boolean): MapTo[A]     = Filtered(this, p)
-    final def filterNot(p: A => Boolean): MapTo[A]  = Filtered(this, (x: A) => !p(x))
+    final def withFilter(p: Predicate[A]): MapTo[A] = Filtered(this, p)
+    final def filter(p: Predicate[A]): MapTo[A]     = Filtered(this, p)
+    final def filterNot(p: Predicate[A]): MapTo[A]  = Filtered(this, (x: A) => !p(x))
     final def drop(n: Int): MapTo[A]                = Dropped(this, Size(n))
     final def take(n: Int): MapTo[A]                = Taken(this, Size(n))
-    final def takeWhile(p: A => Boolean): MapTo[A]  = TakenWhile(this, p)
-    final def dropWhile(p: A => Boolean): MapTo[A]  = DropWhile(this, p)
+    final def takeWhile(p: Predicate[A]): MapTo[A]  = TakenWhile(this, p)
+    final def dropWhile(p: Predicate[A]): MapTo[A]  = DropWhile(this, p)
     final def dropRight(n: Int): MapTo[A]           = DroppedR(this, Size(n))
     final def takeRight(n: Int): MapTo[A]           = TakenR(this, Size(n))
     final def slice(start: Int, end: Int): MapTo[A] = Sliced(this, Interval(start, end))
@@ -129,15 +107,15 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
 
   final case class LabeledView[+A   ](prev: View[A], label: String)      extends CompositeView[A](label,            x => x)
   final case class Sized      [+A   ](prev: View[A], size: Size)         extends CompositeView[A](pp"sized $size",  _ => Precise(size))
-  final case class Joined     [+A   ](prev: View[A], ys: Elemental[A])   extends CompositeView[A](pp"++ $ys",       _ + ys.sizeInfo)
-  final case class Filtered   [ A   ](prev: View[A], p: A => Boolean)    extends CompositeView[A](pp"filter $p",    _.atMost)
+  final case class Joined     [+A   ](prev: View[A], ys: api.View[A])    extends CompositeView[A](pp"++ $ys",       _ + ys.sizeInfo)
+  final case class Filtered   [ A   ](prev: View[A], p: Predicate[A])    extends CompositeView[A](pp"filter $p",    _.atMost)
   final case class Sliced     [+A   ](prev: View[A], range: Interval)    extends CompositeView[A](pp"slice $range", _ slice range)
   final case class Dropped    [+A   ](prev: View[A], n: Size)            extends CompositeView[A](pp"drop $n",      _ - Precise(n))
   final case class DroppedR   [+A   ](prev: View[A], n: Size)            extends CompositeView[A](pp"dropR $n",     _ - Precise(n))
   final case class Taken      [+A   ](prev: View[A], n: Size)            extends CompositeView[A](pp"take $n",      _ min Precise(n))
   final case class TakenR     [+A   ](prev: View[A], n: Size)            extends CompositeView[A](pp"takeR $n",     _ min Precise(n))
-  final case class TakenWhile [ A   ](prev: View[A], p: A => Boolean)    extends CompositeView[A](pp"takeW $p",     _.atMost)
-  final case class DropWhile  [ A   ](prev: View[A], p: A => Boolean)    extends CompositeView[A](pp"dropW $p",     _.atMost)
+  final case class TakenWhile [ A   ](prev: View[A], p: Predicate[A])    extends CompositeView[A](pp"takeW $p",     _.atMost)
+  final case class DropWhile  [ A   ](prev: View[A], p: Predicate[A])    extends CompositeView[A](pp"dropW $p",     _.atMost)
   final case class Reversed   [+A   ](prev: View[A])                     extends CompositeView[A]("reverse",        x => x)
   final case class Mapped     [ A, B](prev: View[A], f: A => B)          extends CompositeView[B](pp"map $f",       x => x)
   final case class FlatMapped [ A, B](prev: View[A], f: A => Foreach[B]) extends CompositeView[B](pp"flatMap $f",   x => if (x.isZero) x else Unknown)
@@ -170,7 +148,7 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
     final def foreach(f: A => Unit): Unit = {
       if (sizeInfo.isZero) return
 
-      def loop[B](xs: Elemental[B])(f: B => Unit): Unit = xs match {
+      def loop[B](xs: api.View[B])(f: B => Unit): Unit = xs match {
         case xs: AtomicView                           => xs foreach f
         case LabeledView(xs, _)                       => loop(xs)(f)
         case Sized(xs, size)                          => loop(xs)(f)
@@ -224,10 +202,10 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) {
     private def foreachDropRight[A](xs: Foreach[A], f: A => Unit, n: Size): Unit =
       xs.foldl(CircularBuffer[A](n))((buf, x) => if (buf.isFull) try buf finally f(buf push x) else buf += x)
 
-    private def foreachTakeWhile[A](xs: Foreach[A], f: A => Unit, p: A => Boolean): Unit =
+    private def foreachTakeWhile[A](xs: Foreach[A], f: A => Unit, p: Predicate[A]): Unit =
       xs foreach (x => if (p(x)) f(x) else return)
 
-    private def foreachDropWhile[A](xs: Foreach[A], f: A => Unit, p: A => Boolean): Unit = {
+    private def foreachDropWhile[A](xs: Foreach[A], f: A => Unit, p: Predicate[A]): Unit = {
       var dropping = true
       xs foreach { x =>
         if (dropping && p(x)) ()

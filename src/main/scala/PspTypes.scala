@@ -6,10 +6,12 @@ import sc.{ mutable => scm, generic => scg }
 
 /** A thin abstraction over some questionable assumptions. */
 trait PspTypes extends PspJavaTypes with PspScalaTypes {
-  type Index         = Int
-  type Done          = Boolean
-  type Suspended[+A] = (A => Unit) => Unit
-  type Ref[+A]       = A with AnyRef
+  type Index              = Int
+  type Done               = Boolean
+  type Suspended[+A]      = (A => Unit) => Unit
+  type Ref[+A]            = A with AnyRef
+  type Predicate[-A]      = A => Boolean
+  type Predicate2[-A, -B] = (A, B) => Boolean
 
   val MaxIndex       = Int.MaxValue
   val NoIndex        = -1
@@ -43,6 +45,7 @@ trait PspScalaTypes {
   type IdFun[A]     = A => A
   type =?> [-A, +B] = PartialFunction[A, B]
 
+  type GenTraversableOnce[+A]          = sc.GenTraversableOnce[A]
   type Builder[-Elem, +To]             = scm.Builder[Elem, To]
   type WrappedArray[A]                 = scm.WrappedArray[A]
   type ArrayBuffer[A]                  = scm.ArrayBuffer[A]

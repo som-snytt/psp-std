@@ -15,6 +15,11 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def min(implicit ord: Order[A]): A       = reduce(ord.min)
   def max(implicit ord: Order[A]): A       = reduce(ord.max)
 
+  def forcedSize: Long = xs.sizeInfo.precisely match {
+    case Some(x) => x
+    case _       => foldl(0L)((res, x) => res + 1)
+  }
+
   def reduce[A1 >: A](f: (A1, A) => A1): A1 = {
     var result: A1 = nullAs[A1]
     var first = true
@@ -41,9 +46,9 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   })
   def mk_s(sep: String): String = foldl(new StringBuilder)(_ append sep append _.to_s).result stripPrefix sep
 
-  def find(p: A => Boolean): Option[A] = { xs.foreach(x => if (p(x)) return Some(x)) ; None }
-  def forall(p: A => Boolean): Boolean = { xs.foreach(x => if (!p(x)) return false) ; true }
-  def exists(p: A => Boolean): Boolean = { xs.foreach(x => if (p(x)) return true) ; false }
+  def find(p: Predicate[A]): Option[A] = { xs.foreach(x => if (p(x)) return Some(x)) ; None }
+  def forall(p: Predicate[A]): Boolean = { xs.foreach(x => if (!p(x)) return false) ; true }
+  def exists(p: Predicate[A]): Boolean = { xs.foreach(x => if (p(x)) return true) ; false }
 
   def head: A                                       = find(_ => true) getOrElse failEmpty("head")
   def toArray(implicit ctag: ClassTag[A]): Array[A] = to[Array](PspCanBuild wrap Array.canBuildFrom[A])
@@ -54,6 +59,7 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def toStream: Stream[A]                           = to[Stream]
   def toIterable: Iterable[A]                       = to[Iterable]
   def toTraversable: Traversable[A]                 = ToScala(xs)
+  def trav: Traversable[A]                          = toTraversable
 
   def buildInto[To](cbf: CanBuildFrom[_, A, To]): To = cbf() ++= toTraversable result
 

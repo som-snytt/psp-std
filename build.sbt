@@ -40,6 +40,6 @@ def projectString(s: State): String = (
 )
 
 scalacOptions ++= Seq(
-  "-optimise"
+  // "-optimise"
   // , "-Xlog-implicit-conversions"
 )

@@ -15,7 +15,7 @@ class PreciseSpec extends PspSpec {
 
   def max    = 1000
   def numOps = 3
-  def basicOps = List[Elemental[Int] => Elemental[Int]](
+  def basicOps = List[api.View[Int] => api.View[Int]](
     _ drop 5,
     _ dropRight 11,
     _.slice(7, 41),
@@ -29,13 +29,13 @@ class PreciseSpec extends PspSpec {
 
   def scalaIntRange: scala.collection.immutable.Range = Range.inclusive(1, max, 1)
 
-  def usCollections = List[Elemental[Int]](
+  def usCollections = List[api.View[Int]](
     PspList.to(1, max).m,
     PspList.to(1, max).m sized Size(max),
     IntRange.to(1, max).m,
     IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max)
   )
-  def themCollections = List[Elemental[Int]](
+  def themCollections = List[api.View[Int]](
     ScalaNative(scalaIntRange.toList.view),
     ScalaNative(scalaIntRange.toStream),
     ScalaNative(scalaIntRange.toStream.view),
@@ -44,12 +44,12 @@ class PreciseSpec extends PspSpec {
   )
   def rootCollections = usCollections ++ themCollections
 
-  def compositesOfN(n: Int): List[Elemental[Int] => Elemental[Int]] = (
+  def compositesOfN(n: Int): List[api.View[Int] => api.View[Int]] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
       map (xss => xss reduceLeft (_ andThen _))
   )
 
-  class CollectionResult(viewFn: Elemental[Int] => Elemental[Int], xs: Elemental[Int]) {
+  class CollectionResult(viewFn: api.View[Int] => api.View[Int], xs: api.View[Int]) {
     val view   = viewFn(xs)
     val result = view take 3 mk_s ", "
     val count  = xs.calls
@@ -57,7 +57,7 @@ class PreciseSpec extends PspSpec {
     override def toString = pp"$view"
   }
 
-  class CompositeOp(viewFn: Elemental[Int] => Elemental[Int]) {
+  class CompositeOp(viewFn: api.View[Int] => api.View[Int]) {
     val us: List[CollectionResult]   = usCollections map (xs => new CollectionResult(viewFn, xs))
     val control: CollectionResult    = new CollectionResult(viewFn, ScalaNative(scalaIntRange.toList))
     val them: List[CollectionResult] = themCollections map (xs => new CollectionResult(viewFn, xs))

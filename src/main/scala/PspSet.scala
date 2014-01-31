@@ -8,7 +8,7 @@ trait Extensional[+A] {
   def map[B](f: A => B): Extensional[B]
 }
 trait Intensional[-A] {
-  def contains: A => Boolean
+  def contains: Predicate[A]
   def contraMap[B](f: B => A): Intensional[B]
 }
 
@@ -20,7 +20,7 @@ trait Intensional[-A] {
 // }
 
 
-final class IntensionalSet[-A](val contains: A => Boolean) extends Intensional[A] {
+final class IntensionalSet[-A](val contains: Predicate[A]) extends Intensional[A] {
   def contraMap[B](f: B => A): IntensionalSet[B] = new IntensionalSet[B]((x: B) => contains(f(x)))
 }
 final class ExtensionalSet[+A](val elements: Foreach[A]) extends Extensional[A] {
@@ -61,23 +61,23 @@ object PspSet {
   def reference[A <: AnyRef](xs: A*): EquivSet[A] = EquivSet[A](Foreach.elems(xs: _*))(Equiv.reference[A])
 
   def apply[Coll](xs: Coll)(implicit tc: Foreachable[Coll]) = new {
-    def apply(containsFn: tc.A => Boolean): PspSet[tc.A] = ???
+    def apply(containsFn: Predicate[tc.A]): PspSet[tc.A] = ???
   }
 }
 
-final class PspSet[A](val elements: Foreach[A], val contains: A => Boolean) extends Intensional[A] with Extensional[A] {
+final class PspSet[A](val elements: Foreach[A], val contains: Predicate[A]) extends Intensional[A] with Extensional[A] {
   def map[B](f: A => B): Extensional[B]       = new ExtensionalSet(elements map f)
   def contraMap[B](f: B => A): Intensional[B] = new IntensionalSet((x: B) => contains(f(x)))
-  def withFilter(p: A => Boolean): PspSet[A]  = new PspSet[A](elements filter p, x => contains(x) && p(x))
+  def withFilter(p: Predicate[A]): PspSet[A]  = new PspSet[A](elements filter p, x => contains(x) && p(x))
   def union(xs: PspSet[A])                    = new PspSet[A](elements ++ xs.elements, (x: A) => contains(x) || (xs contains x))
   def intersection(xs: IntensionalSet[A])     = new PspSet[A](elements filter xs.contains, (x: A) => contains(x) && (xs contains x))
 
   override def toString = s"Intensional Set"
 }
 object IntensionalSet {
-  implicit def setToFunctionOne[A](xs: IntensionalSet[A]): A => Boolean = xs.contains
+  implicit def setToFunctionOne[A](xs: IntensionalSet[A]): Predicate[A] = xs.contains
 
-  def apply[A](contains: A => Boolean): IntensionalSet[A] = new IntensionalSet(contains)
+  def apply[A](contains: Predicate[A]): IntensionalSet[A] = new IntensionalSet(contains)
   def apply[A](jSet: jHashSet[A]): IntensionalSet[A] = new IntensionalSet(jSet.contains)
   def apply[A](xs: Foreach[A]): IntensionalSet[A] = {
     val jset = new jHashSet[A]
