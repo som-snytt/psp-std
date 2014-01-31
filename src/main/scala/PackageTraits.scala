@@ -8,6 +8,11 @@ trait PspLowPriority {
   @inline final implicit def raiseUniversalOps[T](x: T): UniversalOps[T] = new UniversalOps(x)
   @inline final implicit def arrowAssocRef[A](x: A): ArrowAssocRef[A]    = new ArrowAssocRef(x)
   implicit def raiseAtomicView[Coll](repr: Coll)(implicit tc: Foreachable[Coll]): AtomicView[Coll, tc.CC, tc.A] = AtomicView.unknown(repr)
+
+  // I don't think this should be implicit, but people are so easily impressed
+  // and so easily latch onto irrelevant details, we are sort of forced to be
+  // gimmick-compatible with scala to silence them.
+  implicit def lowerNativeView[Repr, CC[X], A](xs: ViewEnvironment[Repr, CC, A]#View[A])(implicit pcb: PspCanBuild[A, Repr]): Repr = xs.native
 }
 
 trait PspMidPriority extends PspLowPriority {
