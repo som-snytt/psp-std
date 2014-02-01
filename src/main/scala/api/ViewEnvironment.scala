@@ -7,8 +7,8 @@ trait ViewEnvironment[A, Repr, CC[X]] {
   def linearView(tc: LinearableType[A, Repr, CC]): LinearView
   def indexedView(tc: IndexableType[A, Repr, CC]): IndexedView
 
-  type View[+X] <: api.View[X]
-  type AtomicView <: View[A] with Foreach[A]
+  type View[+X] <: api.BuilderView[X, Repr]
+  type AtomicView <: View[A]
   type LinearView <: AtomicView with Linear[A]
   type IndexedView <: AtomicView with Indexed[A]
 }
