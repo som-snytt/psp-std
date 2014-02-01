@@ -49,26 +49,26 @@ final class ArrowAssocRef[A](private val self: A) extends AnyVal {
  */
 
 abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] {
-  def foreach(f: A => Unit): Unit = size.toInterval foreach (i => f(elemAt(i)))
+  def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
   def isDefinedAt(index: Index): Boolean = size containsIndex index
   override def toString = Foreach stringify this
 }
 
-/** Indexable
+/** DirectAccess
  */
-object StringIsIndexable extends IndexableImpl[Char, String, Indexed] {
+object StringIsDirectAccess extends DirectAccessImpl[Char, String, Indexed] {
   def length(repr: String): Size               = Size(repr.length)
   def elemAt(repr: String)(index: Index): Char = repr charAt index
 }
-final class ArrayIsIndexable[A: ClassTag] extends IndexableImpl[A, Array[A], Indexed] {
+final class ArrayIsDirectAccess[A: ClassTag] extends DirectAccessImpl[A, Array[A], Indexed] {
   def length(repr: Array[A]): Size            = Size(repr.length)
   def elemAt(repr: Array[A])(index: Index): A = repr(index)
 }
-final class IndexedSeqIsIndexable[CC[X] <: IndexedSeq[X], A] extends IndexableImpl[A, CC[A], CC] {
+final class IndexedSeqIsDirectAccess[CC[X] <: IndexedSeq[X], A] extends DirectAccessImpl[A, CC[A], CC] {
   def length(repr: CC[A]): Size            = Size(repr.length)
   def elemAt(repr: CC[A])(index: Index): A = repr(index)
 }
-final class PspIndexedIsIndexable[A0] extends IndexableImpl[A0, Indexed[A0], Indexed] {
+final class PspIndexedIsDirectAccess[A0] extends DirectAccessImpl[A0, Indexed[A0], Indexed] {
   def length(repr: Indexed[A0]): Size             = repr.size
   def elemAt(repr: Indexed[A0])(index: Index): A0 = repr elemAt index
 }
@@ -81,19 +81,19 @@ final class TraversableIsForeachable[CC[X] <: Traversable[X], A] extends Foreach
 final class PspForeachIsForeachable[A] extends ForeachableImpl[A, Foreach[A], Foreach] {
   def foreach(repr: Foreach[A])(f: A => Unit): Unit = repr foreach f
 }
-final class PspLinearIsLinearable[A] extends LinearableImpl[A, Linear[A], Linear] {
+final class PspLinearIsSequentialAccess[A] extends SequentialAccessImpl[A, Linear[A], Linear] {
   def head(repr: Linear[A]): A          = repr.head
   def tail(repr: Linear[A]): Linear[A]  = repr.tail
   def isEmpty(repr: Linear[A]): Boolean = repr.isEmpty
 }
 
-trait IndexableImpl[A0, Repr, CC0[X]] extends Indexable[Repr] {
+trait DirectAccessImpl[A0, Repr, CC0[X]] extends DirectAccess[Repr] {
   @inline final def foreach(repr: Repr)(f: A => Unit): Unit = length(repr) foreachIndex (i => f(elemAt(repr)(i)))
   type CC[X] = CC0[X]
   type A     = A0
 }
 
-trait LinearableImpl[A0, Repr, CC0[X]] extends Linearable[Repr] {
+trait SequentialAccessImpl[A0, Repr, CC0[X]] extends SequentialAccess[Repr] {
   @inline def foreach(repr: Repr)(f: A => Unit): Unit = {
     @tailrec def loop(xs: Repr): Unit = if (!isEmpty(xs)) { f(head(xs)) ; loop(tail(xs)) }
     loop(repr)

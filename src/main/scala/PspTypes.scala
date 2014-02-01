@@ -32,11 +32,11 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
     type A = A0
     type CC[B] = CC0[B]
   }
-  type LinearableType[A0, Repr, CC0[X]] = Linearable[Repr] {
+  type SequentialAccessType[A0, Repr, CC0[X]] = SequentialAccess[Repr] {
     type A = A0
     type CC[B] = CC0[B]
   }
-  type IndexableType[A0, Repr, CC0[X]] = Indexable[Repr] {
+  type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] {
     type A = A0
     type CC[B] = CC0[B]
   }

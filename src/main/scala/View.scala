@@ -12,8 +12,8 @@ import SizeInfo._
 // }
 
 object AtomicView {
-  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): LinearView[Repr, tc.type]   = new Env[Repr, tc.type](repr) linearView tc
-  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): IndexedView[Repr, tc.type]  = new Env[Repr, tc.type](repr) indexedView tc
+  def linear[Repr](repr: Repr)(implicit tc: SequentialAccess[Repr]): LinearView[Repr, tc.type]   = new Env[Repr, tc.type](repr) linearView tc
+  def indexed[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): IndexedView[Repr, tc.type]  = new Env[Repr, tc.type](repr) indexedView tc
   def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): AtomicView[Repr, tc.type] = new Env[Repr, tc.type](repr) unknownView tc
 }
 
@@ -21,8 +21,8 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   type A = A0
   type CC[X] = CC0[X]
 
-  def linearView(tc: LinearableType[A, Repr, CC]): LinearView    = new LinearView(tc)
-  def indexedView(tc: IndexableType[A, Repr, CC]): IndexedView   = new IndexedView(tc)
+  def linearView(tc: SequentialAccessType[A, Repr, CC]): LinearView    = new LinearView(tc)
+  def indexedView(tc: DirectAccessType[A, Repr, CC]): IndexedView   = new IndexedView(tc)
   def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView = new UnknownView(tc)
 
   final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView with LinearViewImpls {
@@ -30,7 +30,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
-  final class LinearView(val tc: LinearableType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
+  final class LinearView(val tc: SequentialAccessType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
     type Tail = psp.core.LinearView[Repr, tc.type]
 
     def isEmpty    = tc isEmpty repr
@@ -41,7 +41,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
-  final class IndexedView(val tc: IndexableType[A, Repr, CC]) extends AtomicView with IndexedLeaf[A] {
+  final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with IndexedLeaf[A] {
     def isDefinedAt(index: Index): Boolean                = size containsIndex index
     def size: Size                                        = tc length repr
     def elemAt(index: Index): A                           = recordCall(tc.elemAt(repr)(index))

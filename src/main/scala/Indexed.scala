@@ -46,7 +46,7 @@ object Indexed {
 
   /** Immutability (particularly of Arrays) is on the honor system. */
   def pureArray[A](xs: Array[A]): Indexed[A]                            = pure(Size(xs.length), xs apply _)
-  def pure[Repr](xs: Repr)(implicit tc: Indexable[Repr]): Indexed[tc.A] = pure(tc length xs, index => (tc elemAt xs)(index))
+  def pure[Repr](xs: Repr)(implicit tc: DirectAccess[Repr]): Indexed[tc.A] = pure(tc length xs, index => (tc elemAt xs)(index))
   def pure[A](size: Size, indexFn: Index => A): Indexed[A]              = new PureIndexed(size, indexFn)
 
   def fill[A](times: Int)(body: => A): Indexed[A] = {
