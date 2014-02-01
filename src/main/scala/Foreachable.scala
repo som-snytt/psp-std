@@ -28,7 +28,6 @@ trait Linearable[Repr] extends Walkable[Repr] {
 trait Indexable[-Repr] extends Walkable[Repr] {
   def length(repr: Repr): Size
   def elemAt(repr: Repr)(index: Index): A
-  def foreach(repr: Repr)(f: A => Unit): Unit = length(repr).toInterval foreach (i => f(elemAt(repr)(i)))
 
   def wrap[R <: Repr](repr: R): IndexedView[R, this.type] = AtomicView.indexed(repr)(this)
 }

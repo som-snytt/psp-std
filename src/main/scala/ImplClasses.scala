@@ -49,19 +49,16 @@ final class ArrowAssocRef[A](private val self: A) extends AnyVal {
  */
 
 abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] {
+  def foreach(f: A => Unit): Unit = size.toInterval foreach (i => f(elemAt(i)))
   def isDefinedAt(index: Index): Boolean = size containsIndex index
-  @inline final def foreach(f: A => Unit): Unit = {
-    var i = 0
-    while (i < size.value) { f(elemAt(i)) ; i += 1 }
-  }
   override def toString = Foreach stringify this
 }
 
 /** Indexable
  */
 object StringIsIndexable extends IndexableImpl[Char, String, Indexed] {
-  def length(repr: String): Size                     = Size(repr.length)
-  def elemAt(repr: String)(index: Index): Char       = repr charAt index
+  def length(repr: String): Size               = Size(repr.length)
+  def elemAt(repr: String)(index: Index): Char = repr charAt index
 }
 final class ArrayIsIndexable[A: ClassTag] extends IndexableImpl[A, Array[A], Indexed] {
   def length(repr: Array[A]): Size            = Size(repr.length)
@@ -88,19 +85,19 @@ final class PspLinearIsLinearable[A] extends LinearableImpl[A, Linear[A], Linear
   def head(repr: Linear[A]): A          = repr.head
   def tail(repr: Linear[A]): Linear[A]  = repr.tail
   def isEmpty(repr: Linear[A]): Boolean = repr.isEmpty
-
-  @inline def foreach(repr: Linear[A])(f: A => Unit): Unit = {
-    @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
-    loop(repr)
-  }
 }
 
 trait IndexableImpl[A0, Repr, CC0[X]] extends Indexable[Repr] {
+  @inline final def foreach(repr: Repr)(f: A => Unit): Unit = length(repr) foreachIndex (i => f(elemAt(repr)(i)))
   type CC[X] = CC0[X]
   type A     = A0
 }
 
 trait LinearableImpl[A0, Repr, CC0[X]] extends Linearable[Repr] {
+  @inline def foreach(repr: Repr)(f: A => Unit): Unit = {
+    @tailrec def loop(xs: Repr): Unit = if (!isEmpty(xs)) { f(head(xs)) ; loop(tail(xs)) }
+    loop(repr)
+  }
   type CC[X] = CC0[X]
   type A     = A0
 }

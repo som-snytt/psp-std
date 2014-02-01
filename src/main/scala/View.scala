@@ -26,8 +26,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView = new UnknownView(tc)
 
   final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView with LinearViewImpls {
-    def sizeInfo = tc sizeInfo repr
-
+    def sizeInfo = SizeInfo.Unknown
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
@@ -157,24 +156,25 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
       if (sizeInfo.isZero) return
 
       def loop[B](xs: api.View[B])(f: B => Unit): Unit = xs match {
-        case LabeledView(xs, _)                       => loop(xs)(f)
-        case Sized(xs, size)                          => loop(xs)(f)
-        case Mapped(xs, g)                            => loop(xs)(g andThen f)
-        case FlatMapped(xs, g)                        => loop(xs)(x => g(x) foreach f)
-        case Filtered(xs, p: Function1[B, Boolean])   => loop(xs)(x => if (p(x)) f(x))
-        case TakenWhile(xs, p: Function1[B, Boolean]) => foreachTakeWhile(xs, f, p)
-        case DropWhile(xs, p: Function1[B, Boolean])  => foreachDropWhile(xs, f, p)
-        case Collected(xs, pf)                        => loop(xs)(x => if (pf isDefinedAt x) f(pf(x)))
-        case FlattenIndexedSlice(xs, range)           => foreachSlice(xs, f, range)
-        case Reversed(xs)                             => ???
-        case Joined(xs, ys)                           => loop(xs)(f) ; loop(ys)(f)
-        case DroppedR(xs, Size(n))                    => foreachDropRight(xs, f, Size(n))
-        case TakenR(xs, Size(n))                      => foreachTakeRight(xs, f, Size(n))
-        case Dropped(xs, Size(n))                     => foreachSlice(xs, f, Interval.Full drop n)
-        case Taken(xs, Size(n))                       => foreachSlice(xs, f, Interval.Full take n)
-        case Sliced(xs, range)                        => foreachSlice(xs, f, range)
-        case xs: ViewEnvironment[_,_,cc]#View[_]      => xs foreach f // boy this line says it all
-        case xs                                       => sys.error(pp"Unexpected view class ${xs.shortClass}")
+
+        case LabeledView(xs, _)              => loop(xs)(f)
+        case Sized(xs, size)                 => loop(xs)(f)
+        case Mapped(xs, g)                   => loop(xs)(g andThen f)
+        case FlatMapped(xs, g)               => loop(xs)(x => g(x) foreach f)
+        case Filtered(xs, p: Predicate[B])   => loop(xs)(x => if (p(x)) f(x))
+        case TakenWhile(xs, p: Predicate[B]) => foreachTakeWhile(xs, f, p)
+        case DropWhile(xs, p: Predicate[B])  => foreachDropWhile(xs, f, p)
+        case Collected(xs, pf)               => loop(xs)(x => if (pf isDefinedAt x) f(pf(x)))
+        case FlattenIndexedSlice(xs, range)  => foreachSlice(xs, f, range)
+        case Reversed(xs)                    => ???
+        case Joined(xs, ys)                  => loop(xs)(f) ; loop(ys)(f)
+        case DroppedR(xs, Size(n))           => foreachDropRight(xs, f, Size(n))
+        case TakenR(xs, Size(n))             => foreachTakeRight(xs, f, Size(n))
+        case Dropped(xs, Size(n))            => foreachSlice(xs, f, Interval.Full drop n)
+        case Taken(xs, Size(n))              => foreachSlice(xs, f, Interval.Full take n)
+        case Sliced(xs, range)               => foreachSlice(xs, f, range)
+        case xs: api.View[_]                 => xs foreach f
+        case xs                              => sys.error(pp"Unexpected view class ${xs.shortClass}")
       }
       loop(this)(f)
     }
