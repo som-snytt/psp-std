@@ -14,6 +14,9 @@ trait View[+A] extends Any with TypeConstructors[A] with IsoView[A] with MapElem
 trait AtomicView[+A] extends Any with View[A] {
   def m: AtomicView[A]
 }
+trait CompositeView[+A] extends Any with View[A] {
+  def prev: api.View[_]
+}
 
 trait MeasurementView extends Any {
   def calls: Int

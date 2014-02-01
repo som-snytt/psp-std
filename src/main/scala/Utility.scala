@@ -8,3 +8,8 @@ class Counter() {
   def record[T](x: T): T = try x finally inc()
 }
 
+trait CountCalls {
+  def counter: Counter
+  def calls                  = counter.count
+  def recordCall[T](x: T): T = counter record x
+}
