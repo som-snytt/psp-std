@@ -59,32 +59,32 @@ abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] {
 
 /** Indexable
  */
-object StringIsIndexable extends IndexableImpl[String, Indexed, Char] {
+object StringIsIndexable extends IndexableImpl[Char, String, Indexed] {
   def length(repr: String): Size                     = Size(repr.length)
   def elemAt(repr: String)(index: Index): Char       = repr charAt index
 }
-final class ArrayIsIndexable[A: ClassTag] extends IndexableImpl[Array[A], Indexed, A] {
+final class ArrayIsIndexable[A: ClassTag] extends IndexableImpl[A, Array[A], Indexed] {
   def length(repr: Array[A]): Size            = Size(repr.length)
   def elemAt(repr: Array[A])(index: Index): A = repr(index)
 }
-final class IndexedSeqIsIndexable[CC[X] <: IndexedSeq[X], A] extends IndexableImpl[CC[A], CC, A] {
+final class IndexedSeqIsIndexable[CC[X] <: IndexedSeq[X], A] extends IndexableImpl[A, CC[A], CC] {
   def length(repr: CC[A]): Size            = Size(repr.length)
   def elemAt(repr: CC[A])(index: Index): A = repr(index)
 }
-final class PspIndexedIsIndexable[A0] extends IndexableImpl[Indexed[A0], Indexed, A0] {
+final class PspIndexedIsIndexable[A0] extends IndexableImpl[A0, Indexed[A0], Indexed] {
   def length(repr: Indexed[A0]): Size             = repr.size
   def elemAt(repr: Indexed[A0])(index: Index): A0 = repr elemAt index
 }
 
 /** Foreachable
  */
-final class TraversableIsForeachable[CC[X] <: Traversable[X], A] extends ForeachableImpl[CC[A], CC, A] {
+final class TraversableIsForeachable[CC[X] <: Traversable[X], A] extends ForeachableImpl[A, CC[A], CC] {
   def foreach(repr: CC[A])(f: A => Unit): Unit = repr foreach f
 }
-final class PspForeachIsForeachable[A] extends ForeachableImpl[Foreach[A], Foreach, A] {
+final class PspForeachIsForeachable[A] extends ForeachableImpl[A, Foreach[A], Foreach] {
   def foreach(repr: Foreach[A])(f: A => Unit): Unit = repr foreach f
 }
-final class PspLinearIsLinearable[A] extends LinearableImpl[Linear[A], Linear, A] {
+final class PspLinearIsLinearable[A] extends LinearableImpl[A, Linear[A], Linear] {
   def head(repr: Linear[A]): A          = repr.head
   def tail(repr: Linear[A]): Linear[A]  = repr.tail
   def isEmpty(repr: Linear[A]): Boolean = repr.isEmpty
@@ -95,17 +95,17 @@ final class PspLinearIsLinearable[A] extends LinearableImpl[Linear[A], Linear, A
   }
 }
 
-trait IndexableImpl[Repr, CC0[X], A0] extends Indexable[Repr] {
+trait IndexableImpl[A0, Repr, CC0[X]] extends Indexable[Repr] {
   type CC[X] = CC0[X]
   type A     = A0
 }
 
-trait LinearableImpl[Repr, CC0[X], A0] extends Linearable[Repr] {
+trait LinearableImpl[A0, Repr, CC0[X]] extends Linearable[Repr] {
   type CC[X] = CC0[X]
   type A     = A0
 }
 
-trait ForeachableImpl[Repr, CC0[X], A0] extends Foreachable[Repr] {
-  type CC[X]     = CC0[X]
-  type A         = A0
+trait ForeachableImpl[A0, Repr, CC0[X]] extends Foreachable[Repr] {
+  type CC[X] = CC0[X]
+  type A     = A0
 }

@@ -17,11 +17,11 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
   val NoIndex        = -1
   val EOL            = sys.props.getOrElse("line.separator", "\n")
 
-  type AtomicView[Repr, CC[X], A]  = ViewEnvironment[A, Repr, CC]#AtomicView
-  type IndexedView[Repr, CC[X], A] = ViewEnvironment[A, Repr, CC]#IndexedView
+  type AtomicView[A, Repr, CC[X]]  = ViewEnvironment[A, Repr, CC]#AtomicView
+  type IndexedView[A, Repr, CC[X]] = ViewEnvironment[A, Repr, CC]#IndexedView
   type LinearView[A, Repr, CC[X]]  = ViewEnvironment[A, Repr, CC]#LinearView
 
-  type ForeachableType[Repr, CC0[X], A0] = Foreachable[Repr] {
+  type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
     type A = A0
     type CC[B] = CC0[B]
   }
@@ -29,7 +29,7 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
     type A = A0
     type CC[B] = CC0[B]
   }
-  type IndexableType[Repr, CC0[X], A0] = Indexable[Repr] {
+  type IndexableType[A0, Repr, CC0[X]] = Indexable[Repr] {
     type A = A0
     type CC[B] = CC0[B]
   }

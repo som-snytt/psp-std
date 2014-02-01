@@ -17,23 +17,23 @@ object FromScala {
 }
 
 object ScalaCompat {
-  def apply[Repr](xs: Repr)(implicit tc: Foreachable[Repr]): CompatSeq[Repr, tc.CC, tc.A] = new CompatSeqImpl[Repr, tc.CC, tc.A](xs)(tc)
+  def apply[Repr](xs: Repr)(implicit tc: Foreachable[Repr]): CompatSeq[tc.A, Repr, tc.CC] = new CompatSeqImpl[tc.A, Repr, tc.CC](xs)(tc)
 }
 
-final class CompatSeqImpl[Repr, CC[X], A](val repr: Repr)(implicit val tc: ForeachableType[Repr, CC, A]) extends CompatSeq[Repr, CC, A] {
+final class CompatSeqImpl[A, Repr, CC[X]](val repr: Repr)(implicit val tc: ForeachableType[A, Repr, CC]) extends CompatSeq[A, Repr, CC] {
   protected[this] def newBuilder: Builder[A, Repr]    = ???//tc.nativeBuilder
   protected[this] def thisCollection: CC[A]           = toCollection(repr)
   protected[this] def toCollection(repr: Repr): CC[A] = ???
 }
 
-trait CompatSeq[Repr, CC[X], A] extends sc.GenSeqLike[A, Repr] {
+trait CompatSeq[A, Repr, CC[X]] extends sc.GenSeqLike[A, Repr] {
   def repr: Repr
 
-  val tc: ForeachableType[Repr, CC, A]
+  val tc: ForeachableType[A, Repr, CC]
 
   protected[this] def newBuilder: Builder[A, Repr]
   private[this] def forxs[A1 >: A]: Foreach[A1]                      = tc wrap repr
-  private[this] def wrap(xs: Repr): AtomicView[Repr, CC, A]          = tc wrap xs
+  private[this] def wrap(xs: Repr): AtomicView[A, Repr, CC]          = tc wrap xs
   private[this] def wrapOp(f: api.View[A] => Foreach[A]): Repr      = f(wrap(repr)).foldl(newBuilder)(_ += _).result
   private[this] def wrapMap[B](f: api.View[A] => Foreach[B]): CC[B] = ???
 

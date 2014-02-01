@@ -19,16 +19,16 @@ trait CountCalls {
 
 object AtomicView {
   def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[tc.A, Repr, tc.CC]    = new ViewEnvironment[tc.A, Repr, tc.CC](repr) linearView tc
-  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[Repr, tc.CC, tc.A]   = new ViewEnvironment[tc.A, Repr, tc.CC](repr) indexedView tc
-  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[Repr, tc.CC, tc.A]  = new ViewEnvironment[tc.A, Repr, tc.CC](repr) unknownView tc
+  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[tc.A, Repr, tc.CC]   = new ViewEnvironment[tc.A, Repr, tc.CC](repr) indexedView tc
+  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[tc.A, Repr, tc.CC]  = new ViewEnvironment[tc.A, Repr, tc.CC](repr) unknownView tc
 }
 
 class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironment[A, Repr, CC] {
   def linearView(tc: LinearableType[A, Repr, CC]): LinearView    = new LinearView(tc)
-  def indexedView(tc: IndexableType[Repr, CC, A]): IndexedView   = new IndexedView(tc)
-  def unknownView(tc: ForeachableType[Repr, CC, A]): UnknownView = new UnknownView(tc)
+  def indexedView(tc: IndexableType[A, Repr, CC]): IndexedView   = new IndexedView(tc)
+  def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView = new UnknownView(tc)
 
-  final class UnknownView(val tc: ForeachableType[Repr, CC, A]) extends AtomicView with LinearViewImpls {
+  final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView with LinearViewImpls {
     def sizeInfo = tc sizeInfo repr
 
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
@@ -45,7 +45,7 @@ class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironmen
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
-  final class IndexedView(val tc: IndexableType[Repr, CC, A]) extends AtomicView with IndexedLeaf[A] {
+  final class IndexedView(val tc: IndexableType[A, Repr, CC]) extends AtomicView with IndexedLeaf[A] {
     def isDefinedAt(index: Index): Boolean                = size containsIndex index
     def size: Size                                        = tc length repr
     def elemAt(index: Index): A                           = recordCall(tc.elemAt(repr)(index))
