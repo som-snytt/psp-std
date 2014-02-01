@@ -19,13 +19,13 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
 
   type AtomicView[Repr, CC[X], A]  = ViewEnvironment[Repr, CC, A]#AtomicView
   type IndexedView[Repr, CC[X], A] = ViewEnvironment[Repr, CC, A]#IndexedView
-  type LinearView[Repr, CC[X], A]  = ViewEnvironment[Repr, CC, A]#LinearView
+  type LinearView[A, Repr, CC[X]]  = ViewEnvironment[Repr, CC, A]#LinearView
 
   type ForeachableType[Repr, CC0[X], A0] = Foreachable[Repr] {
     type A = A0
     type CC[B] = CC0[B]
   }
-  type LinearableType[Repr, CC0[X], A0] = Linearable[Repr] {
+  type LinearableType[A0, Repr, CC0[X]] = Linearable[Repr] {
     type A = A0
     type CC[B] = CC0[B]
   }

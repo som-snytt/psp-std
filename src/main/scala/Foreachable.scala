@@ -20,7 +20,7 @@ trait Linearable[Repr] extends Walkable[Repr] {
   def tail(repr: Repr): Repr
   def isEmpty(repr: Repr): Boolean
 
-  def wrap(repr: Repr): LinearView[Repr, CC, A] = AtomicView.linear(repr)(this)
+  def wrap(repr: Repr): LinearView[A, Repr, CC] = AtomicView.linear(repr)(this)
 }
 
 trait Indexable[-Repr] extends Walkable[Repr] {

@@ -16,7 +16,7 @@ trait PspLowPriority {
 }
 
 trait PspMidPriority extends PspLowPriority {
-  implicit def raiseLinearableView[Repr](repr: Repr)(implicit tc: Linearable[Repr]): LinearView[Repr, tc.CC, tc.A] = AtomicView.linear(repr)
+  implicit def raiseLinearableView[Repr](repr: Repr)(implicit tc: Linearable[Repr]): LinearView[tc.A, Repr, tc.CC] = AtomicView.linear(repr)
   implicit def raisePartiallyOrderOps[A](x: PartiallyOrdered[A]): PartiallyOrderedOps[A]                           = new PartiallyOrderedOps(x)
   implicit def raisePspStringOps(s: String): PspStringOps                                                          = new PspStringOps(s)
   implicit def lowerPspStringOps(s: PspStringOps): String                                                          = s.repr

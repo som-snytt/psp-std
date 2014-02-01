@@ -4,7 +4,7 @@ package api
 
 trait ViewEnvironment[Repr, CC[X], A] {
   def unknownView(tc: ForeachableType[Repr, CC, A]): AtomicView
-  def linearView(tc: LinearableType[Repr, CC, A]): LinearView
+  def linearView(tc: LinearableType[A, Repr, CC]): LinearView
   def indexedView(tc: IndexableType[Repr, CC, A]): IndexedView
 
   type View[+X] <: api.View[X]

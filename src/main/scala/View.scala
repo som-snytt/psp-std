@@ -18,13 +18,13 @@ trait CountCalls {
 }
 
 object AtomicView {
-  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[Repr, tc.CC, tc.A]    = new ViewEnvironment[Repr, tc.CC, tc.A](repr) linearView tc
+  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[tc.A, Repr, tc.CC]    = new ViewEnvironment[Repr, tc.CC, tc.A](repr) linearView tc
   def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[Repr, tc.CC, tc.A]   = new ViewEnvironment[Repr, tc.CC, tc.A](repr) indexedView tc
   def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[Repr, tc.CC, tc.A]  = new ViewEnvironment[Repr, tc.CC, tc.A](repr) unknownView tc
 }
 
 class ViewEnvironment[Repr, CC[X], A](val repr: Repr) extends api.ViewEnvironment[Repr, CC, A] {
-  def linearView(tc: LinearableType[Repr, CC, A]): LinearView    = new LinearView(tc)
+  def linearView(tc: LinearableType[A, Repr, CC]): LinearView    = new LinearView(tc)
   def indexedView(tc: IndexableType[Repr, CC, A]): IndexedView   = new IndexedView(tc)
   def unknownView(tc: ForeachableType[Repr, CC, A]): UnknownView = new UnknownView(tc)
 
@@ -34,8 +34,8 @@ class ViewEnvironment[Repr, CC[X], A](val repr: Repr) extends api.ViewEnvironmen
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
-  final class LinearView(val tc: LinearableType[Repr, CC, A]) extends AtomicView with Linear[A] with LinearViewImpls {
-    type Tail = psp.core.LinearView[Repr, CC, A]
+  final class LinearView(val tc: LinearableType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
+    type Tail = psp.core.LinearView[A, Repr, CC]
 
     def isEmpty    = tc isEmpty repr
     def head: A    = recordCall(tc head repr)
