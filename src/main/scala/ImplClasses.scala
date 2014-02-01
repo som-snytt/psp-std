@@ -56,10 +56,16 @@ abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] {
 
 /** DirectAccess
  */
-object StringIsDirectAccess extends DirectAccessImpl[Char, String, Indexed] {
+object StringIsCharSequence extends DirectAccessImpl[Char, String, Indexed] {
   def length(repr: String): Size               = Size(repr.length)
   def elemAt(repr: String)(index: Index): Char = repr charAt index
 }
+object StringIsLineSequence extends DirectAccessImpl[Line, String, Indexed] {
+  def length(repr: String): Size               = wrap(repr).size
+  def elemAt(repr: String)(index: Index): Line = wrap(repr) elemAt index
+  def wrap(repr: String): IndexedLeaf[Line]    = new PspStringAsLines(repr)
+}
+
 final class ArrayIsDirectAccess[A: ClassTag] extends DirectAccessImpl[A, Array[A], Indexed] {
   def length(repr: Array[A]): Size            = Size(repr.length)
   def elemAt(repr: Array[A])(index: Index): A = repr(index)

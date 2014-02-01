@@ -43,7 +43,8 @@ object Foreachable {
 object DirectAccess {
   implicit def pspIndexedIsDirectAccess[A] : PspIndexedIsDirectAccess[A] = new PspIndexedIsDirectAccess[A]
 
-  implicit def stringIsDirectAccess: StringIsDirectAccess.type                                                                           = StringIsDirectAccess
+  implicit def stringIsCharSequence: StringIsCharSequence.type = StringIsCharSequence
+
   implicit def arrayIsDirectAccess[A: ClassTag] : ArrayIsDirectAccess[A]                                                                 = new ArrayIsDirectAccess[A]
   implicit def indexedSeqIsDirectAccess[CC[X] <: IndexedSeq[X], A](implicit pcb: PspCanBuild[A, CC[A]]): IndexedSeqIsDirectAccess[CC, A] = new IndexedSeqIsDirectAccess[CC, A]
 }

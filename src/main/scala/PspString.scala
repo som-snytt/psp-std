@@ -3,6 +3,8 @@ package core
 
 import java.{ lang => jl }
 
+final class Line(val text: String) extends AnyVal
+
 final class PspStringOps(val repr: String) extends AnyVal {
   private def augment = Predef augmentString repr
 
@@ -56,23 +58,24 @@ final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeaf[C
   override def toString = pp"String(as $size chars)"
 }
 
-final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeaf[String] {
+final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeaf[Line] {
   private def isEol(index: Int)        = index >= 0 && repr.startsWith(EOL, index)
   private def isStart(index: Int)      = index == 0 || isEol(index - EOL.length)
   private def isEnd(index: Int)        = index == repr.length || isEol(index)
   private def starts: Indexed[Int]     = 0 to repr.length filter isStart force
   private def ends: Indexed[Int]       = 0 to repr.length filter isEnd force
   private def strings: Indexed[String] = Regex(EOL) splits repr
+  private def lines: Indexed[Line]     = strings map (x => new Line(x)) force
 
   def ranges: Indexed[Interval]            = starts.zipWith(ends)(Interval).toIndexed
   def indicesOfLine(lineno: Int): Interval = ranges elemAt lineno - 1
-  def line(lineno: Int): String            = elemAt(lineno - 1)
+  def line(lineno: Int): Line              = elemAt(lineno - 1)
 
-  def size                                          = strings.size
-  def elemAt(index: Index): String                  = strings elemAt index
-  def isDefinedAt(index: Index): Boolean            = size containsIndex index
-  @inline def foreach(f: String => Unit): Unit      = strings foreach f
-  def contains(x: String): Boolean                  = strings exists (_ == x)
+  def size                                   = strings.size
+  def elemAt(index: Index): Line             = lines elemAt index
+  def isDefinedAt(index: Index): Boolean     = size containsIndex index
+  @inline def foreach(f: Line => Unit): Unit = lines foreach f
+  def contains(x: Line): Boolean             = lines exists (_ == x)
 
   override def toString = pp"String(as $size lines)"
 }
