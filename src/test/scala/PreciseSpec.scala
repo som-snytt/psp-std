@@ -52,15 +52,16 @@ class PreciseSpec extends PspSpec {
   )
 
   class CollectionResult(viewFn: IntView => IntView, xs: IntView) {
-    val view   = viewFn(xs)
-    val result = view take 3 mk_s ", "
-    val count  = xs.calls
+    val view    = viewFn(xs)
+    val result  = view take 3 mk_s ", "
+    val count   = xs.calls
+    def display = view.viewChain reverseMap (v => fmtdesc(v.description)) filterNot (_.trim.length == 0) mkString ("<xs>  ", " ", "")
 
     def fmtdesc(description: String): String = description indexOf ' ' match {
       case -1  => "%-15s" format description
       case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
     }
-    override def toString = pp"<xs>  ${view viewString fmtdesc}"
+    override def toString = display
   }
 
   class CompositeOp(viewFn: IntView => IntView) {
@@ -85,7 +86,7 @@ class PreciseSpec extends PspSpec {
       case -1  => "%-15s" format description
       case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
     }
-    def headView    = us.head.toString // view.viewString(fmtdesc)
+    def headView    = us.head.toString
     def isAgreement = allResults.distinct.size == 1
     def display     = (
          !isAgreement

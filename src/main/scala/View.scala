@@ -81,7 +81,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     final def native(implicit pcb: PspCanBuild[A, Repr]): Repr      = force[Repr]
     final def force[That](implicit pcb: PspCanBuild[A, That]): That = pcb build this
 
-    override def toString = viewString(identity).replaceAll("\\s+", " ")
+    override def toString = viewChain reverseMap (_.description) mkString " "
   }
 
   trait LinearViewImpls {
@@ -105,17 +105,13 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     val counter: Counter = new Counter()
     final def m: this.type = this
 
+    def description: String = ""
     def isAtomic = true
-    def viewString(formatter: String => String): String = ""
+    def viewChain: List[api.View[_]] = this :: Nil
   }
 
   sealed abstract class CompositeView[+A](val description: String, val sizeEffect: SizeInfo => SizeInfo) extends api.CompositeView[A] with CompositeViewImpl[A] {
     def isAtomic = false
-    def viewString(formatter: String => String): String = this match {
-      case LabeledView(_, label) => formatter(label)
-      case _ if prev.isAtomic    => formatter(description)
-      case _                     => (prev viewString formatter) + " " + formatter(description)
-    }
   }
 
   final case class LabeledView[+A   ](prev: api.View[A], label: String)      extends CompositeView[A](label,            x => x)
@@ -152,7 +148,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
 
   sealed trait CompositeViewImpl[+A] extends View[A] {
     def prev: api.View[_]
-    def description: String
+    def viewChain: List[api.View[_]] = this :: prev.viewChain
     def sizeEffect: SizeInfo => SizeInfo
 
     def sizeInfo: SizeInfo     = sizeEffect(prev.sizeInfo)

@@ -20,7 +20,8 @@ trait CompositeView[+A] extends Any with View[A] {
 
 trait MeasurementView extends Any {
   def calls: Int
-  def viewString(formatter: String => String): String
+  def description: String
+  def viewChain: List[View[_]]
 }
 
 trait BuilderView[+A, Repr] extends Any with View[A] {

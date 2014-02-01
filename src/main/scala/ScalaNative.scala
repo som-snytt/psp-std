@@ -40,8 +40,9 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   def slice(range: Interval): MapTo[A]               = xs.slice(range.start, range.end)
   def withFilter(p: Predicate[A]): MapTo[A]          = xs filter p
 
-  def viewString(formatter: String => String): String = formatter(xs.shortClass)
-  override def toString = viewString(identity)
+  def description = xs.shortClass
+  def viewChain: List[api.View[_]] = this :: Nil
+  override def toString = description
 }
 
 object ScalaNative {
