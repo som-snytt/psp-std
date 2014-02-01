@@ -2,7 +2,7 @@ package psp
 package core
 package api
 
-trait ViewEnvironment[Repr, CC[X], A] {
+trait ViewEnvironment[A, Repr, CC[X]] {
   def unknownView(tc: ForeachableType[Repr, CC, A]): AtomicView
   def linearView(tc: LinearableType[A, Repr, CC]): LinearView
   def indexedView(tc: IndexableType[Repr, CC, A]): IndexedView

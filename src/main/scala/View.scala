@@ -18,12 +18,12 @@ trait CountCalls {
 }
 
 object AtomicView {
-  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[tc.A, Repr, tc.CC]    = new ViewEnvironment[Repr, tc.CC, tc.A](repr) linearView tc
-  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[Repr, tc.CC, tc.A]   = new ViewEnvironment[Repr, tc.CC, tc.A](repr) indexedView tc
-  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[Repr, tc.CC, tc.A]  = new ViewEnvironment[Repr, tc.CC, tc.A](repr) unknownView tc
+  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[tc.A, Repr, tc.CC]    = new ViewEnvironment[tc.A, Repr, tc.CC](repr) linearView tc
+  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[Repr, tc.CC, tc.A]   = new ViewEnvironment[tc.A, Repr, tc.CC](repr) indexedView tc
+  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[Repr, tc.CC, tc.A]  = new ViewEnvironment[tc.A, Repr, tc.CC](repr) unknownView tc
 }
 
-class ViewEnvironment[Repr, CC[X], A](val repr: Repr) extends api.ViewEnvironment[Repr, CC, A] {
+class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironment[A, Repr, CC] {
   def linearView(tc: LinearableType[A, Repr, CC]): LinearView    = new LinearView(tc)
   def indexedView(tc: IndexableType[Repr, CC, A]): IndexedView   = new IndexedView(tc)
   def unknownView(tc: ForeachableType[Repr, CC, A]): UnknownView = new UnknownView(tc)
@@ -184,7 +184,7 @@ class ViewEnvironment[Repr, CC[X], A](val repr: Repr) extends api.ViewEnvironmen
         case Dropped(xs, Size(n))                     => foreachSlice(xs, f, Interval.Full drop n)
         case Taken(xs, Size(n))                       => foreachSlice(xs, f, Interval.Full take n)
         case Sliced(xs, range)                        => foreachSlice(xs, f, range)
-        case xs: ViewEnvironment[_,CC,_]#View[_]      => xs foreach f // boy this line says it all
+        case xs: ViewEnvironment[_,_,CC]#View[_]      => xs foreach f // boy this line says it all
         case xs                                       => sys.error(pp"Unexpected view class ${xs.shortClass}")
       }
       loop(this)(f)

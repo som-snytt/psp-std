@@ -12,7 +12,7 @@ trait PspLowPriority {
   // I don't think this should be implicit, but people are so easily impressed
   // and so easily latch onto irrelevant details, we are sort of forced to be
   // gimmick-compatible with scala to silence them.
-  implicit def lowerNativeView[Repr, CC[X], A](xs: ViewEnvironment[Repr, CC, A]#View[A])(implicit pcb: PspCanBuild[A, Repr]): Repr = xs.native
+  implicit def lowerNativeView[Repr, CC[X], A](xs: ViewEnvironment[A, Repr, CC]#View[A])(implicit pcb: PspCanBuild[A, Repr]): Repr = xs.native
 }
 
 trait PspMidPriority extends PspLowPriority {
