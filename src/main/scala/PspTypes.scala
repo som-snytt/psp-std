@@ -13,13 +13,20 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
   type Predicate[-A]      = A => Boolean
   type Predicate2[-A, -B] = (A, B) => Boolean
 
-  val MaxIndex       = Int.MaxValue
-  val NoIndex        = -1
-  val EOL            = sys.props.getOrElse("line.separator", "\n")
+  val MaxIndex = Int.MaxValue
+  val NoIndex  = -1
+  val EOL      = sys.props.getOrElse("line.separator", "\n")
 
-  type AtomicView[A, Repr, CC[X]]  = ViewEnvironment[A, Repr, CC]#AtomicView
-  type IndexedView[A, Repr, CC[X]] = ViewEnvironment[A, Repr, CC]#IndexedView
-  type LinearView[A, Repr, CC[X]]  = ViewEnvironment[A, Repr, CC]#LinearView
+  // With type aliases like these which include a type selection,
+  // sometimes substitution fails and you get messages like
+  // "found: Int, required: tc.A." It is bug, bug, bug city.
+  // It can be worked a little bit by expanding the type
+  // manually at the call sites where the bug hits (it's SI-8223).
+  type AtomicView[Repr, W <: WalkableTypes]  = Env[Repr, W]#AtomicView
+  type IndexedView[Repr, W <: WalkableTypes] = Env[Repr, W]#IndexedView
+  type LinearView[Repr, W <: WalkableTypes]  = Env[Repr, W]#LinearView
+
+  type Env[Repr, W <: WalkableTypes] = ViewEnvironment[W#A, Repr, W#CC]
 
   type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
     type A = A0

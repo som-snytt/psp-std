@@ -14,7 +14,7 @@ sealed trait Walkable[-Repr] extends WalkableTypes {
 
 trait Foreachable[-Repr] extends Walkable[Repr] {
   def sizeInfo(repr: Repr): SizeInfo = SizeInfo.Unknown
-  def wrap[R <: Repr](repr: R): AtomicView[A, R, CC] = AtomicView.unknown(repr)(this)
+  def wrap[R <: Repr](repr: R): AtomicView[R, this.type] = AtomicView.unknown(repr)(this)
 }
 
 trait Linearable[Repr] extends Walkable[Repr] {
@@ -22,7 +22,7 @@ trait Linearable[Repr] extends Walkable[Repr] {
   def tail(repr: Repr): Repr
   def isEmpty(repr: Repr): Boolean
 
-  def wrap(repr: Repr): LinearView[A, Repr, CC] = AtomicView.linear(repr)(this)
+  def wrap(repr: Repr): LinearView[Repr, this.type] = AtomicView.linear(repr)(this)
 }
 
 trait Indexable[-Repr] extends Walkable[Repr] {
@@ -30,7 +30,7 @@ trait Indexable[-Repr] extends Walkable[Repr] {
   def elemAt(repr: Repr)(index: Index): A
   def foreach(repr: Repr)(f: A => Unit): Unit = length(repr).toInterval foreach (i => f(elemAt(repr)(i)))
 
-  def wrap[R <: Repr](repr: R): IndexedView[A, R, CC] = AtomicView.indexed(repr)(this)
+  def wrap[R <: Repr](repr: R): IndexedView[R, this.type] = AtomicView.indexed(repr)(this)
 }
 
 object Linearable {

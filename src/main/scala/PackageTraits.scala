@@ -7,7 +7,9 @@ trait PspLowPriority {
   @inline final implicit def raisePspInt(x: Int): PspInt                 = new PspInt(x)
   @inline final implicit def raiseUniversalOps[T](x: T): UniversalOps[T] = new UniversalOps(x)
   @inline final implicit def arrowAssocRef[A](x: A): ArrowAssocRef[A]    = new ArrowAssocRef(x)
-  implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): AtomicView[tc.A, Repr, tc.CC] = AtomicView.unknown(repr)
+
+  // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
+  implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): Env[Repr, tc.type]#AtomicView = AtomicView.unknown(repr)
 
   // I don't think this should be implicit, but people are so easily impressed
   // and so easily latch onto irrelevant details, we are sort of forced to be
@@ -16,7 +18,7 @@ trait PspLowPriority {
 }
 
 trait PspMidPriority extends PspLowPriority {
-  implicit def raiseLinearableView[Repr](repr: Repr)(implicit tc: Linearable[Repr]): LinearView[tc.A, Repr, tc.CC] = AtomicView.linear(repr)
+  implicit def raiseLinearableView[Repr](repr: Repr)(implicit tc: Linearable[Repr]): Env[Repr, tc.type]#LinearView = AtomicView.linear(repr)
   implicit def raisePartiallyOrderOps[A](x: PartiallyOrdered[A]): PartiallyOrderedOps[A]                           = new PartiallyOrderedOps(x)
   implicit def raisePspStringOps(s: String): PspStringOps                                                          = new PspStringOps(s)
   implicit def lowerPspStringOps(s: PspStringOps): String                                                          = s.repr
@@ -29,7 +31,7 @@ trait PspMidPriority extends PspLowPriority {
 }
 
 trait PspHighPriority extends PspMidPriority {
-  implicit def raiseIndexedView[Repr](repr: Repr)(implicit tc: Indexable[Repr]): IndexedView[tc.A, Repr, tc.CC] = AtomicView.indexed(repr)
+  implicit def raiseIndexedView[Repr](repr: Repr)(implicit tc: Indexable[Repr]): Env[Repr, tc.type]#IndexedView = AtomicView.indexed(repr)
   implicit def raisePartialFunctionOps[T, R](pf: T =?> R): PartialFunctionOps[T, R]                             = new PartialFunctionOps[T, R](pf)
   implicit def raiseFunctionOps[T, R](f: T => R): Function1Ops[T, R]                                            = new Function1Ops[T, R](f)
   implicit def raisePpInterpolatorOps(sc: StringContext): PpInterpolatorOps                                     = new PpInterpolatorOps(sc)

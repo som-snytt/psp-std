@@ -30,10 +30,10 @@ trait CompatSeq[A, Repr, CC[X]] extends sc.GenSeqLike[A, Repr] {
   def repr: Repr
 
   val tc: ForeachableType[A, Repr, CC]
-
   protected[this] def newBuilder: Builder[A, Repr]
-  private[this] def forxs[A1 >: A]: Foreach[A1]                      = tc wrap repr
-  private[this] def wrap(xs: Repr): AtomicView[A, Repr, CC]          = tc wrap xs
+
+  private[this] def forxs[A1 >: A]: Foreach[A1]                     = tc wrap repr
+  private[this] def wrap(xs: Repr): AtomicView[Repr, tc.type]       = tc wrap xs
   private[this] def wrapOp(f: api.View[A] => Foreach[A]): Repr      = f(wrap(repr)).foldl(newBuilder)(_ += _).result
   private[this] def wrapMap[B](f: api.View[A] => Foreach[B]): CC[B] = ???
 

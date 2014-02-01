@@ -12,16 +12,15 @@ import SizeInfo._
 // }
 
 object AtomicView {
-  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[tc.A, Repr, tc.CC]   = newEnv[Repr, Linearable](repr) linearView tc
-  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[tc.A, Repr, tc.CC]  = newEnv[Repr, Indexable](repr) indexedView tc
-  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[tc.A, Repr, tc.CC] = newEnv[Repr, Foreachable](repr) unknownView tc
-
-  type Env[Repr, W <: WalkableTypes] = ViewEnvironment[W#A, Repr, W#CC]
-
-  def newEnv[Repr, TC[X] <: Walkable[X]](repr: Repr)(implicit tc: TC[Repr]): Env[Repr, tc.type] = new Env[Repr, tc.type](repr)
+  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): LinearView[Repr, tc.type]   = new Env[Repr, tc.type](repr) linearView tc
+  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): IndexedView[Repr, tc.type]  = new Env[Repr, tc.type](repr) indexedView tc
+  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): AtomicView[Repr, tc.type] = new Env[Repr, tc.type](repr) unknownView tc
 }
 
-class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironment[A, Repr, CC] {
+class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironment[A0, Repr, CC0] {
+  type A = A0
+  type CC[X] = CC0[X]
+
   def linearView(tc: LinearableType[A, Repr, CC]): LinearView    = new LinearView(tc)
   def indexedView(tc: IndexableType[A, Repr, CC]): IndexedView   = new IndexedView(tc)
   def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView = new UnknownView(tc)
@@ -33,7 +32,7 @@ class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironmen
   }
 
   final class LinearView(val tc: LinearableType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
-    type Tail = psp.core.LinearView[A, Repr, CC]
+    type Tail = psp.core.LinearView[Repr, tc.type]
 
     def isEmpty    = tc isEmpty repr
     def head: A    = recordCall(tc head repr)
@@ -178,7 +177,7 @@ class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironmen
         case Dropped(xs, Size(n))                     => foreachSlice(xs, f, Interval.Full drop n)
         case Taken(xs, Size(n))                       => foreachSlice(xs, f, Interval.Full take n)
         case Sliced(xs, range)                        => foreachSlice(xs, f, range)
-        case xs: ViewEnvironment[_,_,CC]#View[_]      => xs foreach f // boy this line says it all
+        case xs: ViewEnvironment[_,_,cc]#View[_]      => xs foreach f // boy this line says it all
         case xs                                       => sys.error(pp"Unexpected view class ${xs.shortClass}")
       }
       loop(this)(f)
