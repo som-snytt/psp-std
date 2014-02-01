@@ -6,7 +6,6 @@ import impl._
 sealed trait Walkable[-Repr] {
   type A
   type CC[X]
-  type Coll = CC[A]
 
   def foreach(repr: Repr)(f: A => Unit): Unit
 }

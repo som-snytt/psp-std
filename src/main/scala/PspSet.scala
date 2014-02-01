@@ -60,7 +60,7 @@ object PspSet {
   def universal[A](xs: A*): EquivSet[A]           = EquivSet[A](Foreach.elems(xs: _*))(Equiv.universal[A])
   def reference[A <: AnyRef](xs: A*): EquivSet[A] = EquivSet[A](Foreach.elems(xs: _*))(Equiv.reference[A])
 
-  def apply[Coll](xs: Coll)(implicit tc: Foreachable[Coll]) = new {
+  def apply[Repr](xs: Repr)(implicit tc: Foreachable[Repr]) = new {
     def apply(containsFn: Predicate[tc.A]): PspSet[tc.A] = ???
   }
 }

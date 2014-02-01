@@ -18,24 +18,24 @@ trait CountCalls {
 }
 
 object AtomicView {
-  def linear[Coll](repr: Coll)(implicit tc: Linearable[Coll]): psp.core.LinearView[Coll, tc.CC, tc.A]    = new ViewEnvironment[Coll, tc.CC, tc.A](repr) linearView tc
-  def indexed[Coll](repr: Coll)(implicit tc: Indexable[Coll]): psp.core.IndexedView[Coll, tc.CC, tc.A]   = new ViewEnvironment[Coll, tc.CC, tc.A](repr) indexedView tc
-  def unknown[Coll](repr: Coll)(implicit tc: Foreachable[Coll]): psp.core.AtomicView[Coll, tc.CC, tc.A]  = new ViewEnvironment[Coll, tc.CC, tc.A](repr) unknownView tc
+  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[Repr, tc.CC, tc.A]    = new ViewEnvironment[Repr, tc.CC, tc.A](repr) linearView tc
+  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[Repr, tc.CC, tc.A]   = new ViewEnvironment[Repr, tc.CC, tc.A](repr) indexedView tc
+  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[Repr, tc.CC, tc.A]  = new ViewEnvironment[Repr, tc.CC, tc.A](repr) unknownView tc
 }
 
-class ViewEnvironment[Coll, CC[X], A](val repr: Coll) extends api.ViewEnvironment[Coll, CC, A] {
-  def linearView(tc: LinearableType[Coll, CC, A]): LinearView    = new LinearView(tc)
-  def indexedView(tc: IndexableType[Coll, CC, A]): IndexedView   = new IndexedView(tc)
-  def unknownView(tc: ForeachableType[Coll, CC, A]): UnknownView = new UnknownView(tc)
+class ViewEnvironment[Repr, CC[X], A](val repr: Repr) extends api.ViewEnvironment[Repr, CC, A] {
+  def linearView(tc: LinearableType[Repr, CC, A]): LinearView    = new LinearView(tc)
+  def indexedView(tc: IndexableType[Repr, CC, A]): IndexedView   = new IndexedView(tc)
+  def unknownView(tc: ForeachableType[Repr, CC, A]): UnknownView = new UnknownView(tc)
 
-  final class UnknownView(val tc: ForeachableType[Coll, CC, A]) extends AtomicView with LinearViewImpls {
+  final class UnknownView(val tc: ForeachableType[Repr, CC, A]) extends AtomicView with LinearViewImpls {
     def sizeInfo = tc sizeInfo repr
 
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
-  final class LinearView(val tc: LinearableType[Coll, CC, A]) extends AtomicView with Linear[A] with LinearViewImpls {
-    type Tail = psp.core.LinearView[Coll, CC, A]
+  final class LinearView(val tc: LinearableType[Repr, CC, A]) extends AtomicView with Linear[A] with LinearViewImpls {
+    type Tail = psp.core.LinearView[Repr, CC, A]
 
     def isEmpty    = tc isEmpty repr
     def head: A    = recordCall(tc head repr)
@@ -45,7 +45,7 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) extends api.ViewEnvironmen
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
-  final class IndexedView(val tc: IndexableType[Coll, CC, A]) extends AtomicView with IndexedLeaf[A] {
+  final class IndexedView(val tc: IndexableType[Repr, CC, A]) extends AtomicView with IndexedLeaf[A] {
     def isDefinedAt(index: Index): Boolean                = size containsIndex index
     def size: Size                                        = tc length repr
     def elemAt(index: Index): A                           = recordCall(tc.elemAt(repr)(index))
@@ -54,7 +54,7 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) extends api.ViewEnvironmen
     def foreachSlice(range: Interval)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
   }
 
-  sealed trait View[+A] extends Any with api.View[A] {
+  sealed trait View[+A] extends Any with api.BuilderView[A, Repr] {
     type MapTo[+X] = View[X]
     // Eventually
     // type Input[X]  = Foreach[X]
@@ -83,7 +83,7 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) extends api.ViewEnvironmen
     final def sized(size: Size): MapTo[A]           = Sized(this, size)
     final def reverse: MapTo[A]                     = Reversed(this)
 
-    final def native(implicit pcb: PspCanBuild[A, Coll]): Coll      = force[Coll]
+    final def native(implicit pcb: PspCanBuild[A, Repr]): Repr      = force[Repr]
     final def force[That](implicit pcb: PspCanBuild[A, That]): That = pcb build this
 
     override def toString = viewString(identity).replaceAll("\\s+", " ")
@@ -103,8 +103,8 @@ class ViewEnvironment[Coll, CC[X], A](val repr: Coll) extends api.ViewEnvironmen
     }
   }
 
-  sealed abstract class AtomicView extends View[A] with CountCalls {
-    val tc: Walkable[Coll]
+  sealed abstract class AtomicView extends View[A] with api.AtomicView[A] with CountCalls {
+    val tc: Walkable[Repr]
     def foreachSlice(range: Interval)(f: A => Unit): Unit
 
     val counter: Counter = new Counter()

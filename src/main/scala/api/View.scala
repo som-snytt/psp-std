@@ -11,9 +11,18 @@ trait View[+A] extends Any with ForeachView[A] with IsoView[A] with MapElementVi
   def ++[A1 >: A](that: Input[A1]): MapTo[A1]
 }
 
+trait AtomicView[+A] extends Any with View[A] {
+  def m: AtomicView[A]
+}
+
 trait MeasurementView extends Any {
   def calls: Int
   def viewString(formatter: String => String): String
+}
+
+trait BuilderView[+A, Repr] extends Any with View[A] {
+  def native(implicit pcb: PspCanBuild[A, Repr]): Repr
+  def force[That](implicit pcb: PspCanBuild[A, That]): That
 }
 
 trait ForeachView[+A] extends Any with Foreach[A] {
