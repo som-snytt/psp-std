@@ -3,10 +3,12 @@ package core
 
 import impl._
 
-sealed trait Walkable[-Repr] {
+trait WalkableTypes {
   type A
   type CC[X]
+}
 
+sealed trait Walkable[-Repr] extends WalkableTypes {
   def foreach(repr: Repr)(f: A => Unit): Unit
 }
 

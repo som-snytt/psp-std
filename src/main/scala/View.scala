@@ -18,9 +18,13 @@ trait CountCalls {
 }
 
 object AtomicView {
-  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[tc.A, Repr, tc.CC]    = new ViewEnvironment[tc.A, Repr, tc.CC](repr) linearView tc
-  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[tc.A, Repr, tc.CC]   = new ViewEnvironment[tc.A, Repr, tc.CC](repr) indexedView tc
-  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[tc.A, Repr, tc.CC]  = new ViewEnvironment[tc.A, Repr, tc.CC](repr) unknownView tc
+  def linear[Repr](repr: Repr)(implicit tc: Linearable[Repr]): psp.core.LinearView[tc.A, Repr, tc.CC]   = newEnv[Repr, Linearable](repr) linearView tc
+  def indexed[Repr](repr: Repr)(implicit tc: Indexable[Repr]): psp.core.IndexedView[tc.A, Repr, tc.CC]  = newEnv[Repr, Indexable](repr) indexedView tc
+  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): psp.core.AtomicView[tc.A, Repr, tc.CC] = newEnv[Repr, Foreachable](repr) unknownView tc
+
+  type Env[Repr, W <: WalkableTypes] = ViewEnvironment[W#A, Repr, W#CC]
+
+  def newEnv[Repr, TC[X] <: Walkable[X]](repr: Repr)(implicit tc: TC[Repr]): Env[Repr, tc.type] = new Env[Repr, tc.type](repr)
 }
 
 class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironment[A, Repr, CC] {
@@ -77,7 +81,6 @@ class ViewEnvironment[A, Repr, CC[X]](val repr: Repr) extends api.ViewEnvironmen
     final def dropWhile(p: Predicate[A]): MapTo[A]  = DropWhile(this, p)
     final def dropRight(n: Int): MapTo[A]           = DroppedR(this, Size(n))
     final def takeRight(n: Int): MapTo[A]           = TakenR(this, Size(n))
-    final def slice(start: Int, end: Int): MapTo[A] = Sliced(this, Interval(start, end))
     final def slice(range: Interval): MapTo[A]      = Sliced(this, range)
     final def labeled(label: String): MapTo[A]      = LabeledView(this, label)
     final def sized(size: Size): MapTo[A]           = Sized(this, size)

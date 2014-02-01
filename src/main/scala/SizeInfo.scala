@@ -129,13 +129,16 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
     else Size(size - start)
   )
 
-  def slice(range: Interval): SizeInfo = slice(range.start, range.end)
-  def slice(start: Int, end: Int): SizeInfo = lhs match {
-    case Precise(Size(n))                     => Precise(preciseSliceSize(n, start, end))
-    case Bounded(Size(lo), Precise(Size(hi))) => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(hi, start, end)))
-    case Bounded(Size(lo), Infinite)          => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(Int.MaxValue, start, end)))
-    case Infinite                             => Precise(preciseSliceSize(Int.MaxValue, start, end))
+  def slice(range: Interval): SizeInfo = {
+    val Interval(start, end) = range
+    lhs match {
+      case Precise(Size(n))                     => Precise(preciseSliceSize(n, start, end))
+      case Bounded(Size(lo), Precise(Size(hi))) => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(hi, start, end)))
+      case Bounded(Size(lo), Infinite)          => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(Int.MaxValue, start, end)))
+      case Infinite                             => Precise(preciseSliceSize(Int.MaxValue, start, end))
+    }
   }
+
   def precisely: Option[Int] = lhs match { case Precise(Size(n)) => Some(n) ; case _ => None }
 
   // def +(amount: Size): Precise = Precise(size + amount)

@@ -26,7 +26,6 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   def flatten[B](implicit ev: A <:< Input[B]): MapTo[B] = xs flatMap (x => ev(x).trav)
   def filter(p: Predicate[A]): MapTo[A]                 = xs filter p
   def filterNot(p: Predicate[A]): MapTo[A]              = xs filterNot p
-  def slice(start: Int, end: Int): MapTo[A]             = xs.slice(start, end)
   def drop(n: Int): MapTo[A]                            = xs drop n
   def take(n: Int): MapTo[A]                            = xs take n
   def takeWhile(p: Predicate[A]): MapTo[A]              = xs takeWhile p
@@ -37,8 +36,8 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   def collect[B](pf: PartialFunction[A,B]): MapTo[B] = xs collect pf
   def labeled(label: String): MapTo[A]               = this
   def reverse: MapTo[A]                              = xs.reverse
-  def sized(size: psp.core.Size): MapTo[A]           = this
-  def slice(range: psp.core.Interval): MapTo[A]      = xs.slice(range.start, range.end)
+  def sized(size: Size): MapTo[A]                    = this
+  def slice(range: Interval): MapTo[A]               = xs.slice(range.start, range.end)
   def withFilter(p: Predicate[A]): MapTo[A]          = xs filter p
 
   def viewString(formatter: String => String): String = formatter(xs.shortClass)

@@ -91,7 +91,7 @@ trait CompatSeq[A, Repr, CC[X]] extends sc.GenSeqLike[A, Repr] {
   def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CBF[Repr,B,That]): That           = (bf() ++= forxs.scanl(z)(op).trav).result
   def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CBF[Repr,B,That]): That          = ???
   def size: Int                                                                               = forxs.sizeInfo.precisely getOrElse Int.MaxValue
-  def slice(unc_from: Int,unc_until: Int): Repr                                               = wrapOp(_ slice (unc_from, unc_until))
+  def slice(start: Int, end: Int): Repr                                                       = wrapOp(_ slice Interval(start, end))
   def span(pred: Predicate[A]): (Repr, Repr)                                                  = takeWhile(pred) -> dropWhile(pred)
   def splitAt(n: Int): (Repr, Repr)                                                           = take(n) -> drop(n)
   def stringPrefix: String                                                                    = "Compat"
