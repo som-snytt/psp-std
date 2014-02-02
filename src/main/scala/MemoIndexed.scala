@@ -38,7 +38,7 @@ final class MemoIndexed[+A](xs: Foreach[A]) extends OpenIndexed[A] {
   }
   def apply(index: Int): A = elemAt(index)
   def elemAt(index: Int): A = if (isDefinedAt(index)) memo(index) else sys.error(s"Out of range: $index")
-  def sizeInfo: SizeInfo = if (done) precise(seen) else precise(seen).atLeast
+  def sizeInfo: SizeInfo = if (done) Size(seen).toInfo else Size(seen).toInfo.atLeast
   override def toString = "<memo>"
 }
 

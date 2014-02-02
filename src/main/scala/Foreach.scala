@@ -16,7 +16,7 @@ trait Linear[+A] extends Any with Foreach[A] {
   def tail: Tail
 }
 trait LinearImpl[+A] extends Any with Linear[A] {
-  def sizeInfo = if (isEmpty) precise(0) else precise(1).atLeast
+  def sizeInfo = if (isEmpty) Empty else NonEmpty
   @inline final def foreach(f: A => Unit): Unit = {
     @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
     loop(this)

@@ -48,4 +48,33 @@ object PartialOrder {
   case object GE extends Cmp { def invert = LT }
   case object GT extends Cmp { def invert = LE }
   case object NA extends Cmp { def invert = NA }
+
+  implicit class PartialOrderOps[A: PartialOrder](lhs: A) {
+    private def pord = implicitly[PartialOrder[A]]
+    def <(rhs: A): ThreeValue = pord.partialCompare(lhs, rhs) match {
+      case LT      => True
+      case NA | LE => Undefined
+      case _       => False
+    }
+    def <=(rhs: A): ThreeValue = pord.partialCompare(lhs, rhs) match {
+      case LT | EQ | LE => True
+      case NA           => Undefined
+      case _            => False
+    }
+    def >(rhs: A): ThreeValue = pord.partialCompare(lhs, rhs) match {
+      case GT      => True
+      case NA | GE => Undefined
+      case _       => False
+    }
+    def >=(rhs: A): ThreeValue = pord.partialCompare(lhs, rhs) match {
+      case GT | EQ  | GE => True
+      case NA            => Undefined
+      case _             => False
+    }
+    def <==> (rhs: A): ThreeValue = pord.partialCompare(lhs, rhs) match {
+      case EQ           => True
+      case NA | LE | GE => Undefined
+      case _            => False
+    }
+  }
 }

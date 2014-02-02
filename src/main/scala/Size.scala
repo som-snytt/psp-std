@@ -24,6 +24,7 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
   def toInt: Int              = value
   def toLong: Long            = value
   def toOption: Option[Int]   = if (isError) None else Some(toInt)
+  def toInfo: Precise         = if (isError) fail(s"Cannot translate erroneous size") else Precise(this)
 
   @inline def foreachIndex(f: Index => Unit): Unit = toInterval foreach f
   def containsIndex(index: Index): Boolean = 0 <= index && index < value
@@ -33,7 +34,7 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
-  implicit def sizeToSizeInfo(s: Size): SizeInfo = Precise(s)
+  implicit def sizeToSizeInfo(s: Size): SizeInfo = s.toInfo
 
   final val NoSize = new Size(-1)
   final val Zero   = new Size(0)
@@ -43,8 +44,8 @@ object Size {
   final val Four   = new Size(4)
   final val Five   = new Size(5)
 
-  def apply(n: Int): Size = if (n <= 0) Zero else new Size(n)
-  def unapply(s: Size)    = s.toOption
+  def apply(n: Int): Size           = if (n <= 0) Zero else new Size(n)
+  def unapply(s: Size): Option[Int] = s.toOption
 
-  private def fail(msg: String) = throw new ArithmeticException(msg)
+  private def fail(msg: String): Nothing = throw new ArithmeticException(msg)
 }

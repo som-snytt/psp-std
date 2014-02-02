@@ -34,7 +34,7 @@ object Indexed {
     def ++(ys: Indexed[A]): Indexed[A] = join(xs, ys)
   }
 
-  object Empty extends IndexedImpl[Nothing](Zero) with HasStaticSize {
+  object Empty extends IndexedImpl[Nothing](SizeInfo.Zero) with HasStaticSize {
     def elemAt(index: Index): Nothing = failEmpty(pp"$this($index)")
     override def toString = "<empty>"
   }

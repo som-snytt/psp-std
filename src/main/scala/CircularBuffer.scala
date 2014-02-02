@@ -2,7 +2,7 @@ package psp
 package core
 
 final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
-  assert(capacity > Zero, capacity)
+  assert(!capacity.isZero, capacity)
 
   private[this] val buffer  = new Array[Any](capacity.value)
   private[this] var pointer = 0
@@ -20,7 +20,7 @@ final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
   def contents: Indexed[A] = indices map bufferAt toIndexed
   def size: Size           = capacity min Size(seen)
   def isFull: Boolean      = size == capacity
-  def sizeInfo: Precise    = precise(intSize)
+  def sizeInfo: Precise    = size.toInfo
 
   def foreach(f: A => Unit): Unit = contents foreach f
 

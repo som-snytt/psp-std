@@ -16,7 +16,7 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   private implicit def lift[B](result: Iterable[B]): MapTo[B] = new ScalaNative(result, counter)
 
   def sizeInfo: SizeInfo = xs match {
-    case xs: IndexedSeq[_] => precise(xs.size)
+    case xs: IndexedSeq[_] => Size(xs.size)
     case _                 => unknownSize
   }
   def foreach(f: A => Unit): Unit                       = xs foreach f

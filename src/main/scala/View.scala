@@ -36,7 +36,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     def isEmpty    = tc isEmpty repr
     def head: A    = recordCall(tc head repr)
     def tail: Tail = tc wrap (tc tail repr)
-    def sizeInfo   = if (isEmpty) precise(0) else precise(1).atLeast
+    def sizeInfo   = if (isEmpty) Empty else NonEmpty
 
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
@@ -114,14 +114,14 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   }
 
   final case class LabeledView[+A   ](prev: api.View[A], label: String)      extends CompositeView[A](label,            x => x)
-  final case class Sized      [+A   ](prev: api.View[A], size: Size)         extends CompositeView[A](pp"sized $size",  _ => Precise(size))
+  final case class Sized      [+A   ](prev: api.View[A], size: Size)         extends CompositeView[A](pp"sized $size",  _ => size)
   final case class Joined     [+A   ](prev: api.View[A], ys: api.View[A])    extends CompositeView[A](pp"++ $ys",       _ + ys.sizeInfo)
   final case class Filtered   [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"filter $p",    _.atMost)
   final case class Sliced     [+A   ](prev: api.View[A], range: Interval)    extends CompositeView[A](pp"slice $range", _ slice range)
-  final case class Dropped    [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"drop $n",      _ - Precise(n))
-  final case class DroppedR   [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"dropR $n",     _ - Precise(n))
-  final case class Taken      [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"take $n",      _ min Precise(n))
-  final case class TakenR     [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"takeR $n",     _ min Precise(n))
+  final case class Dropped    [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"drop $n",      _ - n)
+  final case class DroppedR   [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"dropR $n",     _ - n)
+  final case class Taken      [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"take $n",      _ min n)
+  final case class TakenR     [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"takeR $n",     _ min n)
   final case class TakenWhile [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"takeW $p",     _.atMost)
   final case class DropWhile  [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"dropW $p",     _.atMost)
   final case class Reversed   [+A   ](prev: api.View[A])                     extends CompositeView[A]("reverse",        x => x)

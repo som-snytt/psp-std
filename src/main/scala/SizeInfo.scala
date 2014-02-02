@@ -19,29 +19,7 @@ import scala.{ collection => sc }
  */
 sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
   def +(size: Size): SizeInfo
-
-  // no, infinity doesn't really equal infinity, but it can for our
-  // purposes as long as <inf> - <inf> is ill-defined.
-  def partialCompare(that: SizeInfo): PartialOrder.Cmp = (this, that) match {
-    case (Infinite, Infinite)                     => EQ
-    case (Precise(_), Infinite)                   => LT
-    case (Infinite, Precise(_))                   => GT
-    case (Precise(x), Precise(y))                 => if (x < y) LT else if (y < x) GT else EQ
-    case (Infinite, Bounded(_, Infinite))         => GE
-    case (Infinite, _)                            => GT
-    case (Bounded(_, Infinite), Infinite)         => LE
-    case (_, Infinite)                            => LT
-    case (GenBounded(l1, h1), GenBounded(l2, h2)) =>
-      def lo1 = Precise(l1)
-      def lo2 = Precise(l2)
-
-      ( if (h1 < lo2 isTrue) LT
-        else if (h1 <= lo2 isTrue) LE
-        else if (h2 < lo1 isTrue) GT
-        else if (h2 <= lo1 isTrue) GE
-        else NA
-      )
-  }
+  def partialCompare(that: SizeInfo): PartialOrder.Cmp = SizeInfo.SizeInfoPartialOrder.partialCompare(this, that)
   final override def toString = this match {
     case Infinite              => "<inf>"
     case Bounded(lo, Infinite) => s"[$lo, <inf>)"
@@ -65,13 +43,43 @@ trait HasPreciseSizeImpl extends Any with HasPreciseSize {
 }
 
 object SizeInfo {
-  lazy val Empty = precise(0)
-  lazy val Unknown = bounded(Zero, Infinite)
+  val Zero     = Size(0)
+  val One      = Size(1)
+  val Empty    = Precise(Zero)
+  val Unknown  = Bounded(Zero, Infinite)
+  val NonEmpty = Bounded(One, Infinite)
+
+  def apply(n: Int): SizeInfo = Precise(Size(n))
+
+  // no, infinity doesn't really equal infinity, but it can for our
+  // purposes as long as <inf> - <inf> is ill-defined.
+  implicit object SizeInfoPartialOrder extends PartialOrder[SizeInfo] {
+    def partialCompare(lhs: SizeInfo, rhs: SizeInfo): PartialOrder.Cmp = (lhs, rhs) match {
+      case (Infinite, Infinite)                     => EQ
+      case (Precise(_), Infinite)                   => LT
+      case (Infinite, Precise(_))                   => GT
+      case (Precise(x), Precise(y))                 => if (x < y) LT else if (y < x) GT else EQ
+      case (Infinite, Bounded(_, Infinite))         => GE
+      case (Infinite, _)                            => GT
+      case (Bounded(_, Infinite), Infinite)         => LE
+      case (_, Infinite)                            => LT
+      case (GenBounded(l1, h1), GenBounded(l2, h2)) =>
+        def lo1 = Precise(l1)
+        def lo2 = Precise(l2)
+
+        ( if (h1 < lo2 isTrue) LT
+          else if (h1 <= lo2 isTrue) LE
+          else if (h2 < lo1 isTrue) GT
+          else if (h2 <= lo1 isTrue) GE
+          else NA
+        )
+    }
+  }
 
   def apply(x: Any): SizeInfo = x match {
     case x: HasSizeInfo       => x.sizeInfo
-    case xs: sc.IndexedSeq[_] => precise(xs.size)
-    case xs: Traversable[_]   => if (xs.isEmpty) Zero else precise(1).atLeast
+    case xs: sc.IndexedSeq[_] => Size(xs.size)
+    case xs: Traversable[_]   => if (xs.isEmpty) Zero else NonEmpty
     case _                    => Unknown
   }
   def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
@@ -113,7 +121,7 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
   import SizeInfo._
   import ThreeValue._
 
-  def isZero    = lhs == precise(0)
+  def isZero    = lhs == Precise(Zero)
   def isFinite  = lhs.hiBound != Infinite
   def isPrecise = lhs match { case _: Precise => true ; case _ => false }
 
