@@ -18,6 +18,8 @@ import scala.{ collection => sc }
  *  SizeInfo forms a partial order, with some liberties taken at present.
  */
 sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
+  def +(size: Size): SizeInfo
+
   // no, infinity doesn't really equal infinity, but it can for our
   // purposes as long as <inf> - <inf> is ill-defined.
   def partialCompare(that: SizeInfo): PartialOrder.Cmp = (this, that) match {
@@ -40,15 +42,27 @@ sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
         else NA
       )
   }
+  final override def toString = this match {
+    case Infinite              => "<inf>"
+    case Bounded(lo, Infinite) => s"[$lo, <inf>)"
+    case Bounded(lo, hi)       => s"[$lo, $hi]"
+    case Precise(size)         => s"$size"
+  }
 }
-sealed trait Atomic extends SizeInfo
+
+// This arrangement means that "x + size" results in the same type as x for any SizeInfo.
+sealed trait Atomic                            extends SizeInfo { def +(n: Size): Atomic }
+final case class Bounded(lo: Size, hi: Atomic) extends SizeInfo { def +(n: Size): Bounded       = Bounded(lo + n, hi + n) }
+final case class Precise(size: Size)           extends Atomic   { def +(n: Size): Precise       = Precise(size + n)       }
+final case object Infinite                     extends Atomic   { def +(n: Size): Infinite.type = Infinite                }
 
 trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
-trait HasPreciseSize extends Any with HasSizeInfo {
-  def size: Size
+trait HasPreciseSize extends Any with HasSizeInfo { def size: Size }
+trait HasStaticSize extends HasPreciseSize
+
+trait HasPreciseSizeImpl extends Any with HasPreciseSize {
   final override def sizeInfo = Precise(size)
 }
-trait HasStaticSize extends HasPreciseSize
 
 object SizeInfo {
   lazy val Empty = precise(0)
@@ -75,18 +89,6 @@ object SizeInfo {
     case _                     => Bounded(lo, hi)
   }
 
-  final case object Infinite extends Atomic {
-    override def toString = "<inf>"
-  }
-  final case class Precise(size: Size) extends Atomic {
-    def +(amount: Size): Precise = Precise(size + amount)
-    override def toString = s"$size"
-  }
-  final case class Bounded(lo: Size, hi: Atomic) extends SizeInfo {
-    require((Precise(lo) < hi).isTrue, s"!($lo < $hi)")
-    private def rdelim = if (hi == Infinite) ")" else "]"
-    override def toString = s"[$lo, $hi$rdelim"
-  }
   object GenBounded {
     def unapply(x: SizeInfo): Option[(Size, Atomic)] = x match {
       case Bounded(lo, hi) => Some(lo -> hi)
@@ -140,9 +142,6 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
   }
 
   def precisely: Option[Int] = lhs match { case Precise(Size(n)) => Some(n) ; case _ => None }
-
-  // def +(amount: Size): Precise = Precise(size + amount)
-  // def -(amount: Size): Precise = Precise(size - amount)
 
   def * (rhs: Size): SizeInfo = lhs match {
     case Precise(n)               => Precise(n * rhs.value)

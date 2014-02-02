@@ -33,7 +33,7 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
-  implicit def sizeToSizeInfo(s: Size): SizeInfo = SizeInfo.Precise(s)
+  implicit def sizeToSizeInfo(s: Size): SizeInfo = Precise(s)
 
   final val NoSize = new Size(-1)
   final val Zero   = new Size(0)

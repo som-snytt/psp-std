@@ -48,8 +48,9 @@ final class ArrowAssocRef[A](private val self: A) extends AnyVal {
 /** Indexed
  */
 
-abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] {
-  def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
+abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] with HasPreciseSize {
+  def sizeInfo = size
+  @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
   def isDefinedAt(index: Index): Boolean = size containsIndex index
   override def toString = Foreach stringify this
 }

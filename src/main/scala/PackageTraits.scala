@@ -2,6 +2,7 @@ package psp
 package core
 
 import impl._
+import java.nio.file.Paths
 
 trait CollectionLow {
   // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
@@ -38,9 +39,11 @@ trait PspMidPriority extends PspLowPriority {
 }
 
 trait PspHighPriority extends PspMidPriority with CollectionHigh {
-  implicit def raisePartialFunctionOps[T, R](pf: T =?> R): PartialFunctionOps[T, R]                             = new PartialFunctionOps[T, R](pf)
-  implicit def raiseFunctionOps[T, R](f: T => R): Function1Ops[T, R]                                            = new Function1Ops[T, R](f)
-  implicit def raisePpInterpolatorOps(sc: StringContext): PpInterpolatorOps                                     = new PpInterpolatorOps(sc)
+  implicit def raisePartialFunctionOps[T, R](pf: T =?> R): PartialFunctionOps[T, R]                                                = new PartialFunctionOps[T, R](pf)
+  implicit def raiseFunctionOps[T, R](f: T => R): Function1Ops[T, R]                                                               = new Function1Ops[T, R](f)
+  implicit def raiseExtraViewOps[A, B, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[B]): ExtraViewOperations[A, B, Repr, CC] = new ExtraViewOperations[A, B, Repr, CC](xs)
+  implicit def raisePpInterpolatorOps(sc: StringContext): PpInterpolatorOps                                                        = new PpInterpolatorOps(sc)
+  implicit def raiseJavaPathOps(p: jPath): JavaPathOps                                                                             = new JavaPathOps(p)
 }
 
 /** It's kind of funny... I guess.
@@ -52,4 +55,11 @@ trait PspShadowScala {
   val wrapString, unwrapString, augmentString, unaugmentString                                                   = null
   val StringAdd, ArrowAssoc                                                                                      = null
   val genericArrayOps, genericWrapArray                                                                          = null
+}
+// ViewEnvironment[A, Repr, CC]#View[B]
+
+trait JioCreation {
+  def path(path: String): jPath = Paths get path
+  def file(path: String): jFile = new jFile(path)
+  def url(path: String): jUrl   = new jUrl(path)
 }

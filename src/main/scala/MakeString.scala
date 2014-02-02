@@ -1,6 +1,8 @@
 package psp
 package core
 
+import scala.reflect.io.Streamable
+
 trait ToString extends Any {
   def to_s: String
 }
@@ -33,4 +35,9 @@ final class UniversalOps[T](val x: T) extends AnyVal with ToString {
     case _              => x.to_s
   }
   def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
+}
+
+final class JavaPathOps(val path: jPath) extends AnyVal {
+  def toUrl = path.toUri.toURL
+  def slurp(): String = Streamable slurp toUrl
 }

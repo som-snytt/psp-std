@@ -13,7 +13,7 @@ sealed trait Walkable[-Repr] extends WalkableTypes {
 }
 
 trait Foreachable[-Repr] extends Walkable[Repr] {
-  def sizeInfo(repr: Repr): SizeInfo = SizeInfo.Unknown
+  def sizeInfo(repr: Repr): SizeInfo = unknownSize
   def wrap[R <: Repr](repr: R): AtomicView[R, this.type] = AtomicView.unknown(repr)(this)
 }
 

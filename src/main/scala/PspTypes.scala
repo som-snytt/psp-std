@@ -43,6 +43,10 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
 }
 
 trait PspJavaTypes {
+  type jPath                  = java.nio.file.Path
+  type jUri                   = java.net.URI
+  type jUrl                   = java.net.URL
+  type jFile                  = java.io.File
   type jClass[A]              = java.lang.Class[A]
   type jHashSet[A]            = java.util.HashSet[A]
   type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]

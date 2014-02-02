@@ -26,7 +26,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView = new UnknownView(tc)
 
   final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView with LinearViewImpls {
-    def sizeInfo = SizeInfo.Unknown
+    def sizeInfo = unknownSize
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
@@ -41,7 +41,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
   }
 
-  final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with IndexedLeaf[A] {
+  final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with IndexedLeafImpl[A] {
     def isDefinedAt(index: Index): Boolean                = size containsIndex index
     def size: Size                                        = tc length repr
     def elemAt(index: Index): A                           = recordCall(tc.elemAt(repr)(index))

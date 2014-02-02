@@ -3,7 +3,9 @@ package core
 
 import java.{ lang => jl }
 
-final class Line(val text: String) extends AnyVal
+final class Line(val text: String) extends AnyVal {
+  override def toString = text
+}
 
 final class PspStringOps(val repr: String) extends AnyVal {
   private def augment = Predef augmentString repr
@@ -20,6 +22,8 @@ final class PspStringOps(val repr: String) extends AnyVal {
   def toBytes: PspStringAsBytes = new PspStringAsBytes(repr)
   def toChars: PspStringAsChars = new PspStringAsChars(repr)
   def toLines: PspStringAsLines = new PspStringAsLines(repr)
+  def toPath: jPath             = path(repr)
+  def toFile: jFile             = file(repr)
 
   def regex: Regex                      = Regex(repr)
   def literal: Regex                    = regex.literal
@@ -34,7 +38,11 @@ final class PspStringOps(val repr: String) extends AnyVal {
   override def toString = repr
 }
 
-final class PspStringAsBytes(val repr: String) extends IndexedLeaf[Byte] {
+trait IndexedLeafImpl[A] extends Any with IndexedLeaf[A] {
+  def sizeInfo: Precise = Precise(size)
+}
+
+final class PspStringAsBytes(val repr: String) extends IndexedLeafImpl[Byte] {
   private[this] val bytes: Array[Byte] = repr.getBytes()
 
   def size: Size                             = bytes.size
@@ -43,10 +51,10 @@ final class PspStringAsBytes(val repr: String) extends IndexedLeaf[Byte] {
   @inline def foreach(f: Byte => Unit): Unit = Indexed pure bytes foreach f
   def contains(x: Byte): Boolean             = bytes contains x
 
-  override def toString = pp"String(as $size bytes)"
+  override def toString = pp"String of $size bytes"
 }
 
-final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeaf[Char] {
+final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeafImpl[Char] {
   private def chars: Array[Char] = repr.toCharArray
 
   def size                                   = Size(chars.length)
@@ -55,10 +63,10 @@ final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeaf[C
   @inline def foreach(f: Char => Unit): Unit = Indexed pure chars foreach f
   def contains(x: Char): Boolean             = chars contains x
 
-  override def toString = pp"String(as $size chars)"
+  override def toString = pp"String of $size chars"
 }
 
-final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeaf[Line] {
+final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeafImpl[Line] {
   private def isEol(index: Int)        = index >= 0 && repr.startsWith(EOL, index)
   private def isStart(index: Int)      = index == 0 || isEol(index - EOL.length)
   private def isEnd(index: Int)        = index == repr.length || isEol(index)
@@ -70,6 +78,7 @@ final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeaf[L
   def ranges: Indexed[Interval]            = starts.zipWith(ends)(Interval).toIndexed
   def indicesOfLine(lineno: Int): Interval = ranges elemAt lineno - 1
   def line(lineno: Int): Line              = elemAt(lineno - 1)
+  def lineNumbers: IntRange                = 1 to size.value
 
   def size                                   = strings.size
   def elemAt(index: Index): Line             = lines elemAt index
@@ -77,10 +86,10 @@ final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeaf[L
   @inline def foreach(f: Line => Unit): Unit = lines foreach f
   def contains(x: Line): Boolean             = lines exists (_ == x)
 
-  override def toString = pp"String(as $size lines)"
+  override def toString = lineNumbers map (i => "%4s  %s\n".format(i, line(i))) mk_s ""
 }
 
-final class DelimitedString(repr: String, delimiter: Regex) extends IndexedLeaf[String] {
+final class DelimitedString(repr: String, delimiter: Regex) extends IndexedLeafImpl[String] {
   private[this] val elements: Indexed[String] = delimiter splits repr
 
   def size                                     = elements.size

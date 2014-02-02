@@ -54,7 +54,7 @@ object Foreach extends ForeachImplicits {
     override def toString = pp"unfold from $zero"
   }
 
-  final case class Times[A](size: Size, elem: A) extends Foreach[A] with HasPreciseSize {
+  final case class Times[A](size: Size, elem: A) extends Foreach[A] with HasPreciseSizeImpl {
     @inline def foreach(f: A => Unit): Unit = 0 until size.value foreach (_ => f(elem))
     override def toString = pp"$elem x$size"
   }
@@ -81,7 +81,7 @@ object Foreach extends ForeachImplicits {
     new PureForeach(mf, sizeInfo)
   }
   def empty[A] : Foreach[A] = Empty
-  def apply[A](mf: Suspended[A]): Foreach[A] = new PureForeach[A](mf, SizeInfo.Unknown)
+  def apply[A](mf: Suspended[A]): Foreach[A] = new PureForeach[A](mf, unknownSize)
   def elems[A](xs: A*): Foreach[A] = Indexed.elems(xs: _*)
 
   def stringify[A](xs: Foreach[A], max: Int = 3): String = {

@@ -3,6 +3,22 @@ package core
 
 final class IndexedConversions[A](val xs: Indexed[A]) extends AnyVal { }
 
+final class ExtraViewOperations[A, B, Repr, CC[X]](val xs: ViewEnvironment[A, Repr, CC]#View[B]) extends AnyVal {
+  def mapWithIndex[C](f: (B, Int) => C)(implicit pcb: PspCanBuild[C, CC[C]]): ViewEnvironment[A, Repr, CC]#View[C] = {
+    var i = 0
+    xs map (x => try f(x, i) finally i += 1)
+  }
+}
+
+// implicit def lowerNativeView[A, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[A])(implicit pcb: PspCanBuild[A, Repr]): Repr = xs.native
+
+
+// @inline final def mapWithIndex(f: (A, Index) => Unit):  = {
+//   var i = 0
+//   xs foreach (x => if (f(x, i)) return else i += 1)
+// }
+
+
 final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   /** Abort traversal if/when f returns true.
    */

@@ -17,7 +17,7 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
 
   def sizeInfo: SizeInfo = xs match {
     case xs: IndexedSeq[_] => precise(xs.size)
-    case _                 => SizeInfo.Unknown
+    case _                 => unknownSize
   }
   def foreach(f: A => Unit): Unit                       = xs foreach f
   def map[B](f: A => B): MapTo[B]                       = xs map f
