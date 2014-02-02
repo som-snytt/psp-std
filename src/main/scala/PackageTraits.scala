@@ -20,10 +20,9 @@ trait PspLowPriority {
   @inline final implicit def raiseUniversalOps[T](x: T): UniversalOps[T] = new UniversalOps(x)
   @inline final implicit def arrowAssocRef[A](x: A): ArrowAssocRef[A]    = new ArrowAssocRef(x)
 
-  // I don't think this should be implicit, but people are so easily impressed
-  // and so easily latch onto irrelevant details, we are sort of forced to be
-  // gimmick-compatible with scala to silence them.
-  implicit def lowerNativeView[A, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[A])(implicit pcb: PspCanBuild[A, Repr]): Repr = xs.native
+  // See lowerNativeView.
+  implicit def lowerGenericView[A, B, CC[X]](xs: ViewEnvironment[A, _, CC]#View[B])(implicit pcb: Builds[B, CC[B]]): CC[B] = xs.force
+  // implicit def lowerGenericView[A, CC[X]](xs: ViewEnvironment[_, CC[A], CC]#View[A])(implicit pcb: Builds[A, CC[A]]): CC[A] = xs.force
 }
 
 trait PspMidPriority extends PspLowPriority {
@@ -36,6 +35,11 @@ trait PspMidPriority extends PspLowPriority {
   @inline final implicit def arrowAssocDouble(x: Double): ArrowAssocDouble    = new ArrowAssocDouble(x)
   @inline final implicit def arrowAssocChar(x: Char): ArrowAssocChar          = new ArrowAssocChar(x)
   @inline final implicit def arrowAssocBoolean(x: Boolean): ArrowAssocBoolean = new ArrowAssocBoolean(x)
+
+  // I don't think this should be implicit, but people are so easily impressed
+  // and so easily latch onto irrelevant details, we are sort of forced to be
+  // gimmick-compatible with scala to silence them.
+  implicit def lowerNativeView[A, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[A])(implicit pcb: Builds[A, Repr]): Repr = xs.native
 }
 
 trait PspHighPriority extends PspMidPriority with CollectionHigh {

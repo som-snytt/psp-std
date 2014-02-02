@@ -2,7 +2,7 @@ package psp
 package core
 
 object PspList {
-  implicit def newBuilder[A] : PspCanBuild[A, PspList[A]] = PspCanBuild(fromForeach)
+  implicit def newBuilder[A] : Builds[A, PspList[A]] = Builds(fromForeach)
 
   def to(start: Int, end: Int): PspList[Int] = fromForeach(Foreach.to(start, end))
 

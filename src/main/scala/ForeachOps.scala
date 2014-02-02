@@ -4,13 +4,13 @@ package core
 final class IndexedConversions[A](val xs: Indexed[A]) extends AnyVal { }
 
 final class ExtraViewOperations[A, B, Repr, CC[X]](val xs: ViewEnvironment[A, Repr, CC]#View[B]) extends AnyVal {
-  def mapWithIndex[C](f: (B, Int) => C)(implicit pcb: PspCanBuild[C, CC[C]]): ViewEnvironment[A, Repr, CC]#View[C] = {
+  def mapWithIndex[C](f: (B, Int) => C)(implicit pcb: Builds[C, CC[C]]): ViewEnvironment[A, Repr, CC]#View[C] = {
     var i = 0
     xs map (x => try f(x, i) finally i += 1)
   }
 }
 
-// implicit def lowerNativeView[A, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[A])(implicit pcb: PspCanBuild[A, Repr]): Repr = xs.native
+// implicit def lowerNativeView[A, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[A])(implicit pcb: Builds[A, Repr]): Repr = xs.native
 
 
 // @inline final def mapWithIndex(f: (A, Index) => Unit):  = {
@@ -67,7 +67,7 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def exists(p: Predicate[A]): Boolean = { xs.foreach(x => if (p(x)) return true) ; false }
 
   def head: A                                       = find(_ => true) getOrElse failEmpty("head")
-  def toArray(implicit ctag: ClassTag[A]): Array[A] = to[Array](PspCanBuild wrap Array.canBuildFrom[A])
+  def toArray(implicit ctag: ClassTag[A]): Array[A] = to[Array](Builds wrap Array.canBuildFrom[A])
   def toVector: Vector[A]                           = to[Vector]
   def toList: List[A]                               = to[List]
   def toSeq: Seq[A]                                 = to[Seq]
@@ -79,8 +79,8 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
 
   def buildInto[To](cbf: CanBuildFrom[_, A, To]): To = cbf() ++= toTraversable result
 
-  def toRepr[Repr](implicit pcb: PspCanBuild[A, Repr]): Repr = pcb build xs
-  def to[CC[X]](implicit pcb: PspCanBuild[A, CC[A]]): CC[A]  = pcb build xs
+  def toRepr[Repr](implicit pcb: Builds[A, Repr]): Repr = pcb build xs
+  def to[CC[X]](implicit pcb: Builds[A, CC[A]]): CC[A]  = pcb build xs
 
   def toIndexed: Indexed[A] = xs match {
     case xs: Indexed[A] => xs

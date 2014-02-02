@@ -28,7 +28,7 @@ object OpenIndexed {
 }
 
 object Indexed {
-  implicit def newBuilder[A] : PspCanBuild[A, Indexed[A]] = PspCanBuild(_.toIndexed)
+  implicit def newBuilder[A] : Builds[A, Indexed[A]] = Builds(_.toIndexed)
 
   implicit final class IndexedOperations[A](val xs: Indexed[A]) extends AnyVal {
     def ++(ys: Indexed[A]): Indexed[A] = join(xs, ys)

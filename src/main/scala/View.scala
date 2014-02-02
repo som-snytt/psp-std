@@ -77,8 +77,8 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     final def sized(size: Size): MapTo[A]           = Sized(this, size)
     final def reverse: MapTo[A]                     = Reversed(this)
 
-    final def native(implicit pcb: PspCanBuild[A, Repr]): Repr      = force[Repr]
-    final def force[That](implicit pcb: PspCanBuild[A, That]): That = pcb build this
+    final def native(implicit pcb: Builds[A, Repr]): Repr      = force[Repr]
+    final def force[That](implicit pcb: Builds[A, That]): That = pcb build this
 
     override def toString = viewChain reverseMap (_.description) mkString " "
   }

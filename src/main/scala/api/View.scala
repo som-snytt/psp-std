@@ -27,8 +27,8 @@ trait MeasurementView extends Any {
 trait BuilderView[+A, Repr] extends Any with View[A] {
   type MapTo[+X] <: BuilderView[X, Repr]
 
-  def native(implicit pcb: PspCanBuild[A, Repr]): Repr
-  def force[That](implicit pcb: PspCanBuild[A, That]): That
+  def native(implicit pcb: Builds[A, Repr]): Repr
+  def force[That](implicit pcb: Builds[A, That]): That
 }
 
 trait TypeConstructors[+A] extends Any with Foreach[A] {
