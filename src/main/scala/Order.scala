@@ -10,6 +10,8 @@ final class OrderImpl[-A](f: (A, A) => Order.Cmp) extends Order[A] {
 }
 
 object Order {
+  def apply[A](implicit ord: Order[A]): Order[A] = ord
+
   implicit def scalaOrderingToOrder[A](implicit ord: Ordering[A]): Order[A] = new OrderImpl[A]((x, y) => cmp(ord.compare(x, y)))
 
   implicit final class OrderOps[A](ord: Order[A]) {

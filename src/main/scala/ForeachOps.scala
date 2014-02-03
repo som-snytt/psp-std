@@ -36,6 +36,7 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
     case _       => foldl(0L)((res, x) => res + 1)
   }
 
+  def reduceLeft[A1 >: A](f: (A1, A) => A1): A1 = reduce[A1](f)
   def reduce[A1 >: A](f: (A1, A) => A1): A1 = {
     var result: A1 = nullAs[A1]
     var first = true
@@ -76,6 +77,7 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def toIterable: Iterable[A]                       = to[Iterable]
   def toTraversable: Traversable[A]                 = ToScala(xs)
   def trav: Traversable[A]                          = toTraversable
+  def scalaIterator: Iterator[A]                    = toIterable.iterator
 
   def buildInto[To](cbf: CanBuildFrom[_, A, To]): To = cbf() ++= toTraversable result
 

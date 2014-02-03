@@ -16,18 +16,20 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
   def min(that: Size): Size    = Size(value min that.value)
   def max(that: Size): Size    = Size(value max that.value)
 
-  def isZero                  = this == Zero
-  def isError                 = this == NoSize
-  def toInterval              = Interval(0, value)
-  def toScalaRange            = toInterval.toScalaRange
-  def toIndexed: Indexed[Int] = toInterval.toIndexed
-  def toInt: Int              = value
-  def toLong: Long            = value
-  def toOption: Option[Int]   = if (isError) None else Some(toInt)
-  def toInfo: Precise         = if (isError) fail(s"Cannot translate erroneous size") else Precise(this)
+  def isZero                        = this == Zero
+  def isError                       = this == NoSize
+  def toInterval: Interval          = Interval(0, value)
+  def reverseInterval: Indexed[Int] = toInterval.reverse
+  def toScalaRange                  = toInterval.toScalaRange
+  def toIndexed: Indexed[Int]       = toInterval.toIndexed
+  def toInt: Int                    = value
+  def toLong: Long                  = value
+  def toOption: Option[Int]         = if (isError) None else Some(toInt)
+  def toInfo: Precise               = if (isError) fail(s"Cannot translate erroneous size") else Precise(this)
 
   @inline def foreachIndex(f: Index => Unit): Unit = toInterval foreach f
   def containsIndex(index: Index): Boolean = 0 <= index && index < value
+  def lastIndex: Index = if (value <= 0) fail("empty.last") else value - 1
 
   override def toString = if (isError) "<no size>" else s"$value"
 }

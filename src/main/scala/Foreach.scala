@@ -72,8 +72,8 @@ object Foreach extends ForeachImplicits {
   def const[A](elem: A): Constant[A]              = new Constant(elem)
   def times[A](times: Int, elem: A): Foreach[A]   = Times(Size(times), elem)
 
-  def unfold[A](start: A)(next: A => A): Unfold[A]   = Unfold[A](start)(next)
-  def traversable[A](xs: Traversable[A]): Foreach[A] = FromScala(xs)
+  def unfold[A](start: A)(next: A => A): Unfold[A]          = Unfold[A](start)(next)
+  def traversable[A](xs: GenTraversableOnce[A]): Foreach[A] = FromScala(xs)
 
   def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A] = {
     val sizeInfo = xs.sizeInfo + ys.sizeInfo

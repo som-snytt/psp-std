@@ -52,6 +52,17 @@ trait MapElementView[+A] extends Any with TypeConstructors[A] {
   def collect[B](pf: A =?> B): MapTo[B]
 }
 
+trait DirectAccessView[+A] extends Any with TypeConstructors[A] {
+  def indexWhere(p: Predicate[A]): Index
+  def lastIndexWhere(p: Predicate[A]): Index
+}
+
+trait InvariantView[A] extends Any with TypeConstructors[A] {
+  def contains(elem: A): Boolean
+  def indexOf(elem: A): Index
+  def lastIndexOf(elem: A): Index
+}
+
 trait IsoView[+A] extends Any with TypeConstructors[A] {
   private[this] type This = MapTo[A]
 

@@ -5,6 +5,9 @@ package impl
 final class Function1Ops[-T, +R](val f: T => R) extends AnyVal {
   def labeled(label: String): T => R = new LabeledFunction(f, label)
 }
+final class Function2Ops[-T1, -T2, +R](val f: (T1, T2) => R) extends AnyVal {
+  def swap: (T2, T1) => R = (x, y) => f(y, x)
+}
 
 final class PartialFunctionOps[T, R](val pf: T =?> R) extends AnyVal {
   def labeled(label: String): T =?> R     = new LabeledPartialFunction(pf, label)

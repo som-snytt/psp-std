@@ -22,7 +22,6 @@ trait PspLowPriority {
 
   // See lowerNativeView.
   implicit def lowerGenericView[A, B, CC[X]](xs: ViewEnvironment[A, _, CC]#View[B])(implicit pcb: Builds[B, CC[B]]): CC[B] = xs.force
-  // implicit def lowerGenericView[A, CC[X]](xs: ViewEnvironment[_, CC[A], CC]#View[A])(implicit pcb: Builds[A, CC[A]]): CC[A] = xs.force
 }
 
 trait PspMidPriority extends PspLowPriority {
@@ -44,10 +43,26 @@ trait PspMidPriority extends PspLowPriority {
 
 trait PspHighPriority extends PspMidPriority with CollectionHigh {
   implicit def raisePartialFunctionOps[T, R](pf: T =?> R): PartialFunctionOps[T, R]                                                = new PartialFunctionOps[T, R](pf)
-  implicit def raiseFunctionOps[T, R](f: T => R): Function1Ops[T, R]                                                               = new Function1Ops[T, R](f)
+  implicit def raiseFunction1Ops[T, R](f: T => R): Function1Ops[T, R]                                                              = new Function1Ops[T, R](f)
+  implicit def raiseFunction2Ops[T1, T2, R](f: (T1, T2) => R): Function2Ops[T1, T2, R]                                             = new Function2Ops(f)
   implicit def raiseExtraViewOps[A, B, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[B]): ExtraViewOperations[A, B, Repr, CC] = new ExtraViewOperations[A, B, Repr, CC](xs)
   implicit def raisePpInterpolatorOps(sc: StringContext): PpInterpolatorOps                                                        = new PpInterpolatorOps(sc)
   implicit def raiseJavaPathOps(p: jPath): JavaPathOps                                                                             = new JavaPathOps(p)
+
+  implicit def raiseForeachableBuilderOps[Repr](tc: Foreachable[Repr]): ForeachableBuilderOps[tc.A, Repr, tc.CC]    = new ForeachableBuilderOps[tc.A, Repr, tc.CC](tc)
+  implicit def raiseDirectAccessBuilderOps[Repr](tc: DirectAccess[Repr]): DirectAccessBuilderOps[tc.A, Repr, tc.CC] = new DirectAccessBuilderOps[tc.A, Repr, tc.CC](tc)
+
+  implicit def convertCanBuildFrom[Elem, To](implicit cbf: CanBuildFrom[_, Elem, To]): Builds[Elem, To] = Builds wrap cbf
+}
+
+class ForeachableBuilderOps[A, Repr, CC[X]](tc: ForeachableType[A, Repr, CC]) {
+  def genericBuilder[B]: Builder[B, CC[B]] = ??? // pcb.newBuilder()
+  def nativeBuilder: Builder[A, Repr]      = ??? // pcb.newBuilder()
+}
+
+class DirectAccessBuilderOps[A, Repr, CC[X]](tc: DirectAccessType[A, Repr, CC]) {
+  def genericBuilder[B]: Builder[B, CC[B]] = ??? // pcb.newBuilder()
+  def nativeBuilder: Builder[A, Repr]      = ??? // pcb.newBuilder()
 }
 
 /** It's kind of funny... I guess.

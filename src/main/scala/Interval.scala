@@ -9,7 +9,7 @@ final class Interval private (val start: Index, val end: Index) {
   def -(n: Int): Interval = Interval(start - n, end - n)
   def +(n: Int): Interval = Interval(start + n, end + n)
 
-  // def reverse: Interval           = new Interval(start, end, !isReversed)
+  def reverse: Indexed[Int]       = Indexed.pure(size, idx => size.value - 1 - idx)
   def drop(n: Int): Interval      = if (n <= 0) this else Interval(start + n, end)
   def dropRight(n: Int): Interval = if (n <= 0) this else Interval(start, end - n)
   def take(n: Int): Interval      = if (n <= 0) Empty else if (intSize <= n) this else Interval(start, start + n)

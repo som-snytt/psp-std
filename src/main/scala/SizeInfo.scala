@@ -150,6 +150,8 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
   }
 
   def precisely: Option[Int] = lhs match { case Precise(Size(n)) => Some(n) ; case _ => None }
+  def preciseOr(alt: => Int): Int = precisely getOrElse alt
+  def preciseIntSize: Int = preciseOr(sys error s"precise size unavailable: $lhs")
 
   def * (rhs: Size): SizeInfo = lhs match {
     case Precise(n)               => Precise(n * rhs.value)
