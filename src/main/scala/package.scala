@@ -15,4 +15,7 @@ package object core extends PspUtility with PspTypes with PspHighPriority with P
   def failEmpty(operation: String): Nothing = throw new NoSuchElementException(s"$operation on empty collection")
   def fail(msg: String): Nothing            = throw new RuntimeException(msg)
 
+  implicit class TraversableToPsp[A](xs: GenTraversableOnce[A]) {
+    def toPsp: Foreach[A] = Foreach traversable xs
+  }
 }

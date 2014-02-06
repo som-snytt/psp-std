@@ -9,7 +9,7 @@ object ToScala {
   def apply[A](xs: Foreach[A]): Traversable[A] = new ForeachAsTraversable[A](xs)
 }
 object FromScala {
-  def apply[A](xs: sc.IndexedSeq[A]): Indexed[A]      = new ScalaIndexedSeqAsIndexed[A](xs)
+  def apply[A](xs: sc.IndexedSeq[A]): Indexed[A] = new ScalaIndexedSeqAsIndexed[A](xs)
   def apply[A](xs: GenTraversableOnce[A]): Foreach[A] = xs match {
     case xs: sc.IndexedSeq[A] => apply(xs)
     case _                    => new TraversableAsForeach[A](xs.toTraversable.seq)
@@ -96,47 +96,50 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def indexWhere(p: Predicate[A],from: Int): Int                                                  = { xs.foreachWithIndex((x, i) => if (i >= from && p(x)) return i else false) ; NoIndex }
   def intersect[B >: A](that: GSeq[B]): Repr                                                      = buildNative(filter(that.toSet))
   def lastIndexWhere(p: Predicate[A],end: Int): Int                                               = xs.size.reverseInterval drop (intSize - end) find (idx => p(apply(idx))) getOrElse NoIndex
-  def length: Int                                                                                 = intSize
-  def reverse: Repr                                                                               = buildNative(Indexed.pure(pspSize, idx => (tc elemAt repr)(length - 1 - idx)))
-  def reverseMap[B, That](f: A => B)(implicit bf: CBF[B,That]): That                              = pspBuild(bf) build (thisView map f)
-  def segmentLength(p: Predicate[A], from: Int): Int                                              = (thisView drop from takeWhile p).sizeInfo.preciseIntSize
-  def seq: Seq[A]                                                                                 = toSeq
+  def segmentLength(p: Predicate[A], from: Int): Int                                              = (this drop from takeWhile p).sizeInfo.preciseIntSize
   def startsWith[B](that: GSeq[B],offset: Int): Boolean                                           = (this drop offset take that.size).trav.toIterator sameElements that.iterator
-  def toSeq: Seq[A]                                                                               = toList
-  def updated[B >: A, That](index: Int,elem: B)(implicit bf: CBF[B,That]): That                   = pspBuild(bf) build (0 until length map { case `index` => elem ; case idx => (tc elemAt repr)(idx) })
 
-  def head: A    = if (isEmpty) fail("empty.head") else apply(0)
-  def last: A    = if (isEmpty) fail("empty.last") else apply(pspSize.lastIndex)
-  def tail: Repr = if (isEmpty) fail("empty.tail") else drop(1)
-  def init: Repr = if (isEmpty) fail("empty.init") else dropRight(1)
+  def head: A               = if (isEmpty) failEmpty("head") else apply(0)
+  def last: A               = if (isEmpty) failEmpty("last") else apply(pspSize.lastIndex)
+  def tail: Repr            = if (isEmpty) failEmpty("tail") else drop(1)
+  def init: Repr            = if (isEmpty) failEmpty("init") else dropRight(1)
+  def headOption: Option[A] = if (isEmpty) None else Some(head)
+  def lastOption: Option[A] = if (isEmpty) None else Some(last)
 
-  // Members declared in sc.GenTraversableLike
-  def ++[B >: A, That](that: sc.GenTraversableOnce[B])(implicit bf: CBF[B,That]): That   = (xs ++ (Foreach traversable that)).force //buildThat(xs.trav, that.seq)
-  def collect[B, That](pf: PartialFunction[A,B])(implicit bf: CBF[B,That]): That         = xs collect pf force
-  def drop(n: Int): Repr                                                                 = wrapOp(_ drop n)
-  def dropWhile(pred: Predicate[A]): Repr                                                = wrapOp(_ dropWhile pred)
-  def filter(pred: Predicate[A]): Repr                                                   = wrapOp(_ filter pred)
-  def filterNot(pred: Predicate[A]): Repr                                                = wrapOp(_ filterNot pred)
-  def flatMap[B, That](f: A => sc.GenTraversableOnce[B])(implicit bf: CBF[B,That]): That = buildThat(iterator map f toSeq: _*)
-  def foreach[U](f: A => U): Unit                                                        = xs foreach (x => f(x))
-  def headOption: Option[A]                                                              = if (isEmpty) None else Some(head)
-  def isTraversableAgain: Boolean                                                        = true
-  def lastOption: Option[A]                                                              = if (isEmpty) None else Some(last)
-  def map[B, That](f: A => B)(implicit bf: CBF[B,That]): That                            = buildThat(toTraversable map f)
-  def partition(pred: Predicate[A]): (Repr, Repr)                                        = filter(pred) -> filterNot(pred)
-  def scan[B >: A, That](z: B)(op: (B, B) => B)(implicit cbf: CBF[B,That]): That         = scanLeft(z)(op)
-  def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CBF[B,That]): That           = buildThat(xs.scanl(z)(op))
-  def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CBF[B,That]): That          = buildThat(xs.reverse.scanl(z)(op.swap).reverse)
-  def size: Int                                                                          = length
-  def slice(start: Int, end: Int): Repr                                                  = wrapOp(_ slice Interval(start, end))
-  def span(pred: Predicate[A]): (Repr, Repr)                                             = takeWhile(pred) -> dropWhile(pred)
-  def splitAt(n: Int): (Repr, Repr)                                                      = take(n) -> drop(n)
-  def stringPrefix: String                                                               = "Compat"
-  def take(n: Int): Repr                                                                 = wrapOp(_ take n)
-  def takeWhile(pred: Predicate[A]): Repr                                                = wrapOp(_ takeWhile pred)
+  def updated[B >: A, That](index: Int, elem: B)(implicit bf: CBF[B,That]): That          = buildThat(xs.size.toIndexed map { case `index` => elem ; case idx => (tc elemAt repr)(idx) })
+  def reverseMap[B, That](f: A => B)(implicit bf: CBF[B,That]): That                      = buildThat(reverse map f)
+  def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CBF[B, That]): That      = buildThat(xs ++ that.toPsp)
+  def collect[B, That](pf: PartialFunction[A,B])(implicit bf: CBF[B, That]): That         = xs collect pf force
+  def flatMap[B, That](f: A => sc.GenTraversableOnce[B])(implicit bf: CBF[B, That]): That = buildThat(toSeq map f: _*)
+  def map[B, That](f: A => B)(implicit bf: CBF[B,That]): That                             = buildThat(toTraversable map f)
+  def scan[B >: A, That](z: B)(op: (B, B) => B)(implicit cbf: CBF[B, That]): That         = scanLeft(z)(op)
+  def scanLeft[B, That](z: B)(op: (B, A) => B)(implicit bf: CBF[B, That]): That           = buildThat(xs.scanl(z)(op))
+  def scanRight[B, That](z: B)(op: (A, B) => B)(implicit bf: CBF[B, That]): That          = buildThat(xs.reverse.scanl(z)(op.swap).reverse)
 
-  def takeRight(n: Int): Repr = wrapOp(_ takeRight n)
-  def dropRight(n: Int): Repr = wrapOp(_ dropRight n)
+  def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
+  def isTraversableAgain: Boolean = true
+  def length: Int                 = intSize
+  def seq: Seq[A]                 = toSeq
+  def size: Int                   = length
+  def stringPrefix: String        = "Compat"
+  def toSeq: Seq[A]               = toList
+
+  def partition(pred: Predicate[A]): (Repr, Repr) = filter(pred) -> filterNot(pred)
+  def span(pred: Predicate[A]): (Repr, Repr)      = takeWhile(pred) -> dropWhile(pred)
+  def splitAt(n: Int): (Repr, Repr)               = take(n) -> drop(n)
+
+  def drop(n: Int): Repr                  = wrapOp(_ drop n)
+  def dropRight(n: Int): Repr             = wrapOp(_ dropRight n)
+  def dropWhile(pred: Predicate[A]): Repr = wrapOp(_ dropWhile pred)
+  def filter(pred: Predicate[A]): Repr    = wrapOp(_ filter pred)
+  def filterNot(pred: Predicate[A]): Repr = wrapOp(_ filterNot pred)
+  def slice(start: Int, end: Int): Repr   = wrapOp(_ slice Interval(start, end))
+  def take(n: Int): Repr                  = wrapOp(_ take n)
+  def takeRight(n: Int): Repr             = wrapOp(_ takeRight n)
+  def takeWhile(pred: Predicate[A]): Repr = wrapOp(_ takeWhile pred)
+  def reverse: Repr                       = wrapOp(_.reverse)
+  def withFilter(p: Predicate[A]): Repr   = wrapOp(_ withFilter p)
+  // def reverse: Repr = buildNative(Indexed.pure(pspSize, idx => (tc elemAt repr)(length - 1 - idx)))
 
   // Members declared in sc.GenTraversableOnce
   def :\[B](z: B)(op: (A, B) => B): B                                          = xs.foldr(z)(op)
@@ -145,7 +148,7 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def copyToArray[B >: A](xs: Array[B],start: Int,len: Int): Unit              = this.xs.foreachWithIndex((x, i) => { xs(start + i) = x ; i >= len })
   def copyToArray[B >: A](xs: Array[B],start: Int): Unit                       = copyToArray[B](xs, start, xs.length - start)
   def copyToArray[B >: A](xs: Array[B]): Unit                                  = copyToArray[B](xs, 0, xs.length)
-  def count(p: Predicate[A]): Int                                              = (xs filter p).sizeInfo.preciseIntSize
+  def count(p: Predicate[A]): Int                                              = filter(p).sizeInfo.preciseIntSize
   def exists(pred: Predicate[A]): Boolean                                      = xs exists pred
   def find(pred: Predicate[A]): Option[A]                                      = xs find pred
   def fold[A1 >: A](z: A1)(op: (A1, A1) => A1): A1                             = xs.foldl(z)(op)
@@ -174,7 +177,7 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def toArray[A1 >: A](implicit ev: ClassTag[A1]): Array[A1]                   = toIterable.toArray
   def toBuffer[A1 >: A]: sc.mutable.Buffer[A1]                                 = toIterable.toBuffer
   def toIndexedSeq: sc.immutable.IndexedSeq[A]                                 = toVector
-  def toIterable: GIterable[A]                                                 = xs.to[GIterable]
+  def toIterable: GIterable[A]                                                 = to[GIterable](Iterable.canBuildFrom)
   def toIterator: Iterator[A]                                                  = iterator
   def toList: List[A]                                                          = xs.toList
   def toMap[K, V](implicit ev: A <:< (K, V)): sc.GenMap[K,V]                   = toIterable.toMap
@@ -185,4 +188,6 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
 
   // Members declared in sc.Parallelizable
   protected[this] def parCombiner: sc.parallel.Combiner[A,sc.parallel.ParSeq[A]] = sc.parallel.ParSeq.newCombiner[A]
+
+  override def toString = pp"CompatSeq($repr)"
 }
