@@ -15,7 +15,7 @@ Explanation of test output, reformatted to reduce width:
 
 ```
 Basis sequence was 1 to 1000
-<xs>  map *3  dropR 11  slice [7,41)
+<xs> map *3  dropR 11  slice [7,41)
  Linear   Sized Indexed  <EAGER>  ListV  Stream StreamV  RangeV VectorV
  ------   ----- -------  -------  -----  ------ -------  ------ -------
      21      10       3     1000   1010      21    1010    1010    1010  //  24, 27, 30
@@ -23,7 +23,7 @@ Basis sequence was 1 to 1000
 
 The "basis sequence" defines the initial contents of each sequence (Linear, Sized, etc. explained below.)
 Each test output line begins with a list of operations to be performed successively on each sequence type,
-with <xs> standing in for the initial sequence. In this case the operations are to multiply each element by 3,
+with ```<xs>``` standing in for the initial sequence. In this case the operations are to multiply each element by 3,
 drop 11 elements from the right, and slice indices [7, 41) from what remains. Finally we take three elements
 (if available, or whatever remains) from the front of the sequence and display it at the end of the line.
 
