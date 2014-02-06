@@ -22,10 +22,11 @@ object ScalaCompat {
 
 trait SeqBuilderMethods[Repr] {
   val tc: DirectAccess[Repr]
+  import tc.A
+
   def repr: Repr
   def reverse: Repr
-
-  import tc.A
+  def iterator: Iterator[A]
 
   protected[this] type CBF[B, That]                                                                    = CanBuildFrom[Repr, B, That]
   protected[this] def xs: Indexed[A]                                                                   = tc wrap repr
@@ -33,6 +34,8 @@ trait SeqBuilderMethods[Repr] {
   protected[this] def buildThat[B, That](xs: Foreach[B])(implicit bf: CBF[B, That]): That              = pspBuild(bf) build xs
   protected[this] def buildThat[B, That](xss: GenTraversableOnce[B]*)(implicit bf: CBF[B, That]): That = pspBuild(bf).build(xss: _*)
 
+  def :+[B >: A, That](elem: B)(implicit bf: CBF[B,That]): That                           = buildThat(iterator, Iterator(elem))
+  def +:[B >: A, That](elem: B)(implicit bf: CBF[B,That]): That                           = buildThat(Iterator(elem), iterator)
   def updated[B >: A, That](index: Int, elem: B)(implicit bf: CBF[B, That]): That         = buildThat(xs.size.toIndexed map { case `index` => elem ; case idx => (tc elemAt repr)(idx) })
   def reverseMap[B, That](f: A => B)(implicit bf: CBF[B, That]): That                     = buildThat(xs.reverse map f)
   def ++[B >: A, That](that: GenTraversableOnce[B])(implicit bf: CBF[B, That]): That      = buildThat(xs ++ that.toPsp)
@@ -69,7 +72,7 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def iterator: Iterator[A]                                                           = xs.scalaIterator
   def sameElements[A1 >: A](that: GIterable[A1]): Boolean                             = (iterator corresponds that.iterator)(_ == _)
   def zip[A1 >: A, B, That](that: GIterable[B])(implicit bf: CBF[(A1, B),That]): That = buildThat(iterator zip that.iterator)
-  def zipAll[B, A1 >: A, That](that: GIterable[B],thisElem: A1,thatElem: B)(implicit bf: CBF[(A1, B),That]): That = {
+  def zipAll[B, A1 >: A, That](that: GIterable[B], thisElem: A1, thatElem: B)(implicit bf: CBF[(A1, B), That]): That = {
     val it1 = this.iterator
     val it2 = that.iterator
     val buf = bf()
@@ -80,29 +83,19 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
     }
     buf.result
   }
-  def zipWithIndex[A1 >: A, That](implicit bf: CBF[(A1, Int),That]): That = bf() ++= (iterator zip (Iterator from 0)) result
+  def zipWithIndex[A1 >: A, That](implicit bf: CBF[(A1, Int),That]): That                            = buildThat(iterator zip (Iterator from 0))
+  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CBF[B, That]): That                        = (Builds wrap bf) build (iterator, Iterator.fill(len - intSize)(elem))
+  def patch[B >: A, That](from: Int, patch: GSeq[B], replaced: Int)(implicit bf: CBF[B, That]): That = buildThat(wrapGen(_ take from), patch.seq, wrapGen(_ drop from + replaced))
 
   // Members declared in sc.GenSeqLike
-  def :+[B >: A, That](elem: B)(implicit bf: CBF[B,That]): That    = buildThat(iterator, Iterator(elem))
-  def +:[B >: A, That](elem: B)(implicit bf: CBF[B,That]): That    = buildThat(Iterator(elem), iterator)
   def apply(idx: Int): A                                           = (tc elemAt repr)(idx)
   def corresponds[B](that: GSeq[B])(p: (A, B) => Boolean): Boolean = (iterator corresponds that.iterator)(p)
   def diff[B >: A](that: GSeq[B]): Repr                            = this filterNot that.toSet
 
   def distinct: Repr = {
-    val buf = newBuilder
-    val jset = new jHashSet[A]
-    this foreach { x =>
-      if (jset contains x) ()
-      else {
-        jset add x
-        buf += x
-      }
-    }
-    buf.result
+    val seen =  new jHashSet[A]
+    foldLeft(newBuilder)((buf, x) => if (seen contains x) buf else try buf +=x finally seen add x).result
   }
-  def padTo[B >: A, That](len: Int, elem: B)(implicit bf: CBF[B, That]): That                        = (Builds wrap bf) build (iterator, Iterator.fill(len - intSize)(elem))
-  def patch[B >: A, That](from: Int, patch: GSeq[B], replaced: Int)(implicit bf: CBF[B, That]): That = buildThat(wrapGen(_ take from), patch.seq, wrapGen(_ drop from + replaced))
   def groupBy[K](f: A => K): sc.immutable.Map[K, Repr] = {
     val m = sc.mutable.Map[K, Builder[A, Repr]]() withDefault (_ => newBuilder)
     this foreach (x => m(f(x)) += x)
@@ -116,20 +109,23 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def segmentLength(p: Predicate[A], from: Int): Int    = (this drop from takeWhile p).sizeInfo.preciseIntSize
   def startsWith[B](that: GSeq[B],offset: Int): Boolean = (this drop offset take that.size).trav.toIterator sameElements that.iterator
 
-  def head: A               = if (isEmpty) failEmpty("head") else apply(0)
-  def last: A               = if (isEmpty) failEmpty("last") else apply(pspSize.lastIndex)
-  def tail: Repr            = if (isEmpty) failEmpty("tail") else drop(1)
-  def init: Repr            = if (isEmpty) failEmpty("init") else dropRight(1)
-  def headOption: Option[A] = if (isEmpty) None else Some(head)
-  def lastOption: Option[A] = if (isEmpty) None else Some(last)
-
-  def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
+  def head: A                     = if (isEmpty) failEmpty("head") else apply(0)
+  def last: A                     = if (isEmpty) failEmpty("last") else apply(pspSize.lastIndex)
+  def tail: Repr                  = if (isEmpty) failEmpty("tail") else drop(1)
+  def init: Repr                  = if (isEmpty) failEmpty("init") else dropRight(1)
+  def headOption: Option[A]       = if (isEmpty) None else Some(head)
+  def lastOption: Option[A]       = if (isEmpty) None else Some(last)
   def isTraversableAgain: Boolean = true
   def length: Int                 = intSize
   def seq: Seq[A]                 = toSeq
   def size: Int                   = length
   def stringPrefix: String        = "Compat"
-  def toSeq: Seq[A]               = toList
+  def hasDefiniteSize: Boolean    = xs.sizeInfo.isFinite
+  def isEmpty: Boolean            = xs.sizeInfo.isZero
+  def nonEmpty: Boolean           = !isEmpty
+
+
+  def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
 
   def partition(pred: Predicate[A]): (Repr, Repr) = filter(pred)    -> filterNot(pred)
   def span(pred: Predicate[A]): (Repr, Repr)      = takeWhile(pred) -> dropWhile(pred)
@@ -160,8 +156,6 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def foldLeft[B](z: B)(op: (B, A) => B): B                                    = xs.foldl(z)(op)
   def foldRight[B](z: B)(op: (A, B) => B): B                                   = xs.foldr(z)(op)
   def forall(pred: Predicate[A]): Boolean                                      = xs forall pred
-  def hasDefiniteSize: Boolean                                                 = xs.sizeInfo.isFinite
-  def isEmpty: Boolean                                                         = xs.sizeInfo.isZero
   def max[A1 >: A](implicit ord: Ordering[A1]): A                              = xsUp[A1].max.castTo[A]
   def maxBy[B](f: A => B)(implicit cmp: Ordering[B]): A                        = xs max (Order[B] by f)
   def min[A1 >: A](implicit ord: Ordering[A1]): A                              = xsUp[A1].min.castTo[A]
@@ -169,7 +163,6 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def mkString: String                                                         = xs mk_s ""
   def mkString(sep: String): String                                            = xs mk_s sep
   def mkString(start: String, sep: String, end: String): String                = pp"$start$mkString$end"
-  def nonEmpty: Boolean                                                        = !isEmpty
   def product[A1 >: A](implicit num: Numeric[A1]): A1                          = xsUp[A1].product
   def reduce[A1 >: A](op: (A1, A1) => A1): A1                                  = xs reduce op
   def reduceLeft[B >: A](op: (B, A) => B): B                                   = xs reduce op
@@ -186,6 +179,7 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def toIterator: Iterator[A]                                                  = iterator
   def toList: List[A]                                                          = xs.toList
   def toMap[K, V](implicit ev: A <:< (K, V)): sc.GenMap[K,V]                   = toIterable.toMap
+  def toSeq: Seq[A]                                                            = toList
   def toSet[A1 >: A]: sc.GenSet[A1]                                            = toIterable.toSet
   def toStream: Stream[A]                                                      = xs.toStream
   def toTraversable: sc.Traversable[A]                                         = xs.trav
