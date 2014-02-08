@@ -1,7 +1,7 @@
 package psp
 package core
 
-final class IndexedConversions[A](val xs: Indexed[A]) extends AnyVal { }
+final class IndexedConversions[A](val xs: Direct[A]) extends AnyVal { }
 
 final class ExtraViewOperations[A, B, Repr, CC[X]](val xs: ViewEnvironment[A, Repr, CC]#View[B]) extends AnyVal {
   def mapWithIndex[C](f: (B, Int) => C)(implicit pcb: Builds[C, CC[C]]): ViewEnvironment[A, Repr, CC]#View[C] = {
@@ -84,9 +84,9 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def toRepr[Repr](implicit pcb: Builds[A, Repr]): Repr = pcb build xs
   def to[CC[X]](implicit pcb: Builds[A, CC[A]]): CC[A]  = pcb build xs
 
-  def toIndexed: Indexed[A] = xs match {
-    case xs: Indexed[A] => xs
-    case _              => Indexed.elems(toSeq: _*)
+  def toIndexed: Direct[A] = xs match {
+    case xs: Direct[A] => xs
+    case _              => Direct.elems(toSeq: _*)
   }
   def toPspList: PspList[A] = xs match {
     case xs: PspList[A] => xs

@@ -9,7 +9,7 @@ final class Interval private (val start: Index, val end: Index) {
   def -(n: Int): Interval = Interval(start - n, end - n)
   def +(n: Int): Interval = Interval(start + n, end + n)
 
-  def reverse: Indexed[Int]       = Indexed.pure(size, idx => size.value - 1 - idx)
+  def reverse: Direct[Int]       = Direct.pure(size, idx => size.value - 1 - idx)
   def drop(n: Int): Interval      = if (n <= 0) this else Interval(start + n, end)
   def dropRight(n: Int): Interval = if (n <= 0) this else Interval(start, end - n)
   def take(n: Int): Interval      = if (n <= 0) Empty else if (intSize <= n) this else Interval(start, start + n)
@@ -32,7 +32,7 @@ final class Interval private (val start: Index, val end: Index) {
   def firstIndex: Index       = if (isEmpty) NoIndex else start
   def lastIndex: Index        = if (isEmpty) NoIndex else end - 1
   def toScalaRange: Range     = scala.collection.immutable.Range(start, end, 1)
-  def toIndexed: Indexed[Int] = IntRange.until(start, end)
+  def toIndexed: Direct[Int] = IntRange.until(start, end)
   override def toString       = if (isEmpty) "[0,0)" else pp"[$start,$end)" //pp"[$firstIndex,$lastIndex]"
 }
 

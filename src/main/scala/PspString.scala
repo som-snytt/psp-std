@@ -38,7 +38,7 @@ final class PspStringOps(val repr: String) extends AnyVal {
   override def toString = repr
 }
 
-trait IndexedLeafImpl[A] extends Any with IndexedLeaf[A] {
+trait IndexedLeafImpl[A] extends Any with DirectLeaf[A] {
   def sizeInfo: Precise = Precise(size)
 }
 
@@ -48,7 +48,7 @@ final class PspStringAsBytes(val repr: String) extends IndexedLeafImpl[Byte] {
   def size: Size                             = bytes.size
   def elemAt(index: Index): Byte             = bytes(index)
   def isDefinedAt(index: Index): Boolean     = size containsIndex index
-  @inline def foreach(f: Byte => Unit): Unit = Indexed pure bytes foreach f
+  @inline def foreach(f: Byte => Unit): Unit = Direct pure bytes foreach f
   def contains(x: Byte): Boolean             = bytes contains x
 
   override def toString = pp"String of $size bytes"
@@ -60,7 +60,7 @@ final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeafIm
   def size                                   = Size(chars.length)
   def elemAt(index: Index): Char             = repr charAt index
   def isDefinedAt(index: Index): Boolean     = size containsIndex index
-  @inline def foreach(f: Char => Unit): Unit = Indexed pure chars foreach f
+  @inline def foreach(f: Char => Unit): Unit = Direct pure chars foreach f
   def contains(x: Char): Boolean             = chars contains x
 
   override def toString = pp"String of $size chars"
@@ -70,12 +70,12 @@ final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeafIm
   private def isEol(index: Int)        = index >= 0 && repr.startsWith(EOL, index)
   private def isStart(index: Int)      = index == 0 || isEol(index - EOL.length)
   private def isEnd(index: Int)        = index == repr.length || isEol(index)
-  private def starts: Indexed[Int]     = 0 to repr.length filter isStart force
-  private def ends: Indexed[Int]       = 0 to repr.length filter isEnd force
-  private def strings: Indexed[String] = Regex(EOL) splits repr
-  private def lines: Indexed[Line]     = strings map (x => new Line(x)) force
+  private def starts: Direct[Int]     = 0 to repr.length filter isStart force
+  private def ends: Direct[Int]       = 0 to repr.length filter isEnd force
+  private def strings: Direct[String] = Regex(EOL) splits repr
+  private def lines: Direct[Line]     = strings map (x => new Line(x)) force
 
-  def ranges: Indexed[Interval]            = starts.zipWith(ends)(Interval).toIndexed
+  def ranges: Direct[Interval]            = starts.zipWith(ends)(Interval).toIndexed
   def indicesOfLine(lineno: Int): Interval = ranges elemAt lineno - 1
   def line(lineno: Int): Line              = elemAt(lineno - 1)
   def lineNumbers: IntRange                = 1 to size.value
@@ -90,7 +90,7 @@ final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeafIm
 }
 
 final class DelimitedString(repr: String, delimiter: Regex) extends IndexedLeafImpl[String] {
-  private[this] val elements: Indexed[String] = delimiter splits repr
+  private[this] val elements: Direct[String] = delimiter splits repr
 
   def size                                     = elements.size
   def elemAt(index: Index): String             = elements elemAt index

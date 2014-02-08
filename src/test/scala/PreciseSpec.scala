@@ -109,7 +109,7 @@ class PreciseSpec extends PspSpec {
   }
 
   def runCollectionsTests() {
-    val banner: String    = List("Improve", "Linear", "Sized", "Indexed", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
+    val banner: String    = List("Improve", "Linear", "Sized", "Direct", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
     val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mk_s ""
 
     val composites     = compositesOfN(numOps)

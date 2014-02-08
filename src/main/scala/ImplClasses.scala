@@ -45,10 +45,10 @@ final class ArrowAssocRef[A](private val self: A) extends AnyVal {
   @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
 }
 
-/** Indexed
+/** Direct
  */
 
-abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] with HasPreciseSize {
+abstract class IndexedImpl[+A](val size: Size) extends Direct[A] with HasPreciseSize {
   def sizeInfo = size
   @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
   def isDefinedAt(index: Index): Boolean = size containsIndex index
@@ -57,17 +57,17 @@ abstract class IndexedImpl[+A](val size: Size) extends Indexed[A] with HasPrecis
 
 /** DirectAccess
  */
-object StringIsCharSequence extends DirectAccessImpl[Char, String, Indexed] {
+object StringIsCharSequence extends DirectAccessImpl[Char, String, Direct] {
   def length(repr: String): Size               = Size(repr.length)
   def elemAt(repr: String)(index: Index): Char = repr charAt index
 }
-object StringIsLineSequence extends DirectAccessImpl[Line, String, Indexed] {
+object StringIsLineSequence extends DirectAccessImpl[Line, String, Direct] {
   def length(repr: String): Size               = wrap(repr).size
   def elemAt(repr: String)(index: Index): Line = wrap(repr) elemAt index
-  def wrap(repr: String): IndexedLeaf[Line]    = new PspStringAsLines(repr)
+  def wrap(repr: String): DirectLeaf[Line]    = new PspStringAsLines(repr)
 }
 
-final class ArrayIsDirectAccess[A: ClassTag] extends DirectAccessImpl[A, Array[A], Indexed] {
+final class ArrayIsDirectAccess[A: ClassTag] extends DirectAccessImpl[A, Array[A], Direct] {
   def length(repr: Array[A]): Size            = Size(repr.length)
   def elemAt(repr: Array[A])(index: Index): A = repr(index)
 }
@@ -75,9 +75,9 @@ final class IndexedSeqIsDirectAccess[CC[X] <: IndexedSeq[X], A] extends DirectAc
   def length(repr: CC[A]): Size            = Size(repr.length)
   def elemAt(repr: CC[A])(index: Index): A = repr(index)
 }
-final class PspIndexedIsDirectAccess[A0] extends DirectAccessImpl[A0, Indexed[A0], Indexed] {
-  def length(repr: Indexed[A0]): Size             = repr.size
-  def elemAt(repr: Indexed[A0])(index: Index): A0 = repr elemAt index
+final class PspIndexedIsDirectAccess[A0] extends DirectAccessImpl[A0, Direct[A0], Direct] {
+  def length(repr: Direct[A0]): Size             = repr.size
+  def elemAt(repr: Direct[A0])(index: Index): A0 = repr elemAt index
 }
 
 /** Foreachable

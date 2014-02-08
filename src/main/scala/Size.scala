@@ -19,9 +19,9 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
   def isZero                        = this == Zero
   def isError                       = this == NoSize
   def toInterval: Interval          = Interval(0, value)
-  def reverseInterval: Indexed[Int] = toInterval.reverse
+  def reverseInterval: Direct[Int] = toInterval.reverse
   def toScalaRange                  = toInterval.toScalaRange
-  def toIndexed: Indexed[Int]       = toInterval.toIndexed
+  def toIndexed: Direct[Int]       = toInterval.toIndexed
   def toInt: Int                    = value
   def toLong: Long                  = value
   def toOption: Option[Int]         = if (isError) None else Some(toInt)

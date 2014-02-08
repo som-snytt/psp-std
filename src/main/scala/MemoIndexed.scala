@@ -4,7 +4,7 @@ package core
 import java.{ lang => jl }
 import impl._
 
-final class MemoIndexed[+A](xs: Foreach[A]) extends OpenIndexed[A] {
+final class MemoIndexed[+A](xs: Foreach[A]) extends Indexed[A] {
   @volatile private[this] var seen = 0
   @volatile private[this] var done = false
 
@@ -42,7 +42,7 @@ final class MemoIndexed[+A](xs: Foreach[A]) extends OpenIndexed[A] {
   override def toString = "<memo>"
 }
 
-final class ZippedIndexed2[A, B, +C](left: OpenIndexed[A], right: OpenIndexed[B], f: (A, B) => C) extends OpenIndexed[C] {
+final class ZippedIndexed2[A, B, +C](left: Indexed[A], right: Indexed[B], f: (A, B) => C) extends Indexed[C] {
   def foreach(f: C => Unit): Unit = {
     var i = 0
     while (isDefinedAt(i)) { f(elemAt(i)); i += 1 }
@@ -53,7 +53,7 @@ final class ZippedIndexed2[A, B, +C](left: OpenIndexed[A], right: OpenIndexed[B]
   def sizeInfo: SizeInfo               = left.sizeInfo min right.sizeInfo
 }
 
-final class ZippedIndexed3[A, A1, A2, +B](xs1: OpenIndexed[A], xs2: OpenIndexed[A1], xs3: OpenIndexed[A2], f: (A, A1, A2) => B) extends OpenIndexed[B] {
+final class ZippedIndexed3[A, A1, A2, +B](xs1: Indexed[A], xs2: Indexed[A1], xs3: Indexed[A2], f: (A, A1, A2) => B) extends Indexed[B] {
   def foreach(f: B => Unit): Unit = {
     var i = 0
     while (isDefinedAt(i)) { f(elemAt(i)); i += 1 }

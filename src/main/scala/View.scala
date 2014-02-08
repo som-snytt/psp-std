@@ -193,7 +193,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
       xs match {
         case xs: AtomicView   => (xs foreachSlice range)(f)
         case Mapped(xs, g)    => foreachSlice(xs, g andThen f, range)
-        case xs: Indexed[A]   => var i = range.start ; while (i < range.end) { f(xs elemAt i) ; i += 1 }
+        case xs: Direct[A]   => var i = range.start ; while (i < range.end) { f(xs elemAt i) ; i += 1 }
         case Joined(ys1, ys2) =>
           ys1.sizeInfo.precisely match {
             case Some(n) if n < range.start => ys2 slice (range - n) foreach f

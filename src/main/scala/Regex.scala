@@ -16,10 +16,10 @@ final class MyResult {
 final class Regex(val pattern: Pattern) extends AnyVal {
   private def matcher(input: CharSequence): Matcher = pattern matcher input
 
-  // def allIn(input: CharSequence): Indexed[String]   =
+  // def allIn(input: CharSequence): Direct[String]   =
   def matchesWhole(input: CharSequence): Boolean    = matcher(input).matches()
   def matchesAnywhere(input: CharSequence): Boolean = matcher(input).find()
-  def splits(input: CharSequence): Indexed[String]  = Indexed pure (pattern split input)
+  def splits(input: CharSequence): Direct[String]  = Direct pure (pattern split input)
 
   def unapplySeq(input: CharSequence): Option[List[String]] = matcher(input) match {
     case m if m.matches() => Some((1 to m.groupCount).toList map m.group)

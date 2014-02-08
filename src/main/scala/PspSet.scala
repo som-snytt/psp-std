@@ -66,11 +66,20 @@ object PspSet {
 }
 
 final class PspSet[A](val elements: Foreach[A], val contains: Predicate[A]) extends Intensional[A] with Extensional[A] {
-  def map[B](f: A => B): Extensional[B]       = new ExtensionalSet(elements map f)
-  def contraMap[B](f: B => A): Intensional[B] = new IntensionalSet((x: B) => contains(f(x)))
-  def withFilter(p: Predicate[A]): PspSet[A]  = new PspSet[A](elements filter p, x => contains(x) && p(x))
-  def union(xs: PspSet[A])                    = new PspSet[A](elements ++ xs.elements, (x: A) => contains(x) || (xs contains x))
-  def intersection(xs: IntensionalSet[A])     = new PspSet[A](elements filter xs.contains, (x: A) => contains(x) && (xs contains x))
+  def map[B](f: A => B): Extensional[B]            = new ExtensionalSet(elements map f)
+  def contraMap[B](f: B => A): Intensional[B]      = new IntensionalSet((x: B) => contains(f(x)))
+  def withFilter(p: Predicate[A]): PspSet[A]       = new PspSet[A](elements filter p, x => contains(x) && p(x))
+  def union(xs: PspSet[A])                         = new PspSet[A](elements ++ xs.elements, (x: A) => contains(x) || (xs contains x))
+  def intersection(xs: IntensionalSet[A])          = new PspSet[A](elements filter xs.contains, (x: A) => contains(x) && (xs contains x))
+  def remap[B](f: A => B): (PspSet[B], Foreach[A]) = {
+    val jset    = jHashSet[B]
+    val dropped = jList[A]
+    elements filter contains foreach { x =>
+      val y = f(x)
+      if (jset contains y) dropped add x else jset add y
+    }
+    ((new PspSet(jset.toPsp, jset.contains), dropped.toPsp))
+  }
 
   override def toString = s"Intensional Set"
 }

@@ -16,8 +16,8 @@ Explanation of test output, reformatted to reduce width:
 ```
 Basis sequence was 1 to 1000
 <xs> map *3  dropR 11  slice [7,41)
- Linear   Sized Indexed  <EAGER>  ListV  Stream StreamV  RangeV VectorV
- ------   ----- -------  -------  -----  ------ -------  ------ -------
+ Linear   Sized  Direct  <EAGER>  ListV  Stream StreamV  RangeV VectorV
+ ------   -----  ------  -------  -----  ------ -------  ------ -------
      21      10       3     1000   1010      21    1010    1010    1010  //  24, 27, 30
 ```
 
@@ -46,7 +46,7 @@ allows work to be avoided, as it does here. Sized required 11 fewer steps than L
 because with knowledge that the sequence contains 1000 elements, it can infer that dropRight 11
 followed by slice(7, 41) is the same as slice(7, 41), and ignore the drop.
 
-- **Indexed** is a random access sequence, similar to scala's Vector or an Array. It should never
+- **Direct** is a random access sequence, similar to scala's Vector or an Array. It should never
 require more steps than Sized; it will often require many fewer. In this case, as is common,
 it requires exactly three, which means it is optimal in terms of operations performed. This is
 possible because psp's map is deterministic - the input collection and output collection must

@@ -34,7 +34,7 @@ object InvariantLinear {
 }
 
 object Foreach extends ForeachImplicits {
-  def Empty = Indexed.Empty
+  def Empty = Direct.Empty
 
   final class Constant[A](elem: A) extends Foreach[A] {
     def sizeInfo = Infinite
@@ -82,7 +82,7 @@ object Foreach extends ForeachImplicits {
   }
   def empty[A] : Foreach[A] = Empty
   def apply[A](mf: Suspended[A]): Foreach[A] = new PureForeach[A](mf, unknownSize)
-  def elems[A](xs: A*): Foreach[A] = Indexed.elems(xs: _*)
+  def elems[A](xs: A*): Foreach[A] = Direct.elems(xs: _*)
 
   def stringify[A](xs: Foreach[A], max: Int = 3): String = {
     def prefix = xs.shortClass

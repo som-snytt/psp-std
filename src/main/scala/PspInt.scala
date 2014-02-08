@@ -17,5 +17,5 @@ final class PspInt(val self: Int) extends AnyVal with Ordered[Int] {
 
   def until(end: Int): IntRange        = IntRange.until(self, end)
   def to(end: Int): IntRange           = IntRange.to(self, end)
-  def times[A](body: => A): Foreach[A] = Indexed.fill(self)(body)
+  def times[A](body: => A): Foreach[A] = Direct.fill(self)(body)
 }

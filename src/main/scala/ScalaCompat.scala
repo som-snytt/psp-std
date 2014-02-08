@@ -9,7 +9,7 @@ object ToScala {
   def apply[A](xs: Foreach[A]): Traversable[A] = new ForeachAsTraversable[A](xs)
 }
 object FromScala {
-  def apply[A](xs: sc.IndexedSeq[A]): Indexed[A] = new ScalaIndexedSeqAsIndexed[A](xs)
+  def apply[A](xs: sc.IndexedSeq[A]): Direct[A] = new ScalaIndexedSeqAsIndexed[A](xs)
   def apply[A](xs: GenTraversableOnce[A]): Foreach[A] = xs match {
     case xs: sc.IndexedSeq[A] => apply(xs)
     case _                    => new TraversableAsForeach[A](xs.toTraversable.seq)
@@ -29,7 +29,7 @@ trait SeqBuilderMethods[Repr] {
   def iterator: Iterator[A]
 
   protected[this] type CBF[B, That]                                                                    = CanBuildFrom[Repr, B, That]
-  protected[this] def xs: Indexed[A]                                                                   = tc wrap repr
+  protected[this] def xs: Direct[A]                                                                   = tc wrap repr
   protected[this] def pspBuild[B, That](cbf: CBF[B, That]): Builds[B, That]                            = Builds wrap cbf
   protected[this] def buildThat[B, That](xs: Foreach[B])(implicit bf: CBF[B, That]): That              = pspBuild(bf) build xs
   protected[this] def buildThat[B, That](xss: GenTraversableOnce[B]*)(implicit bf: CBF[B, That]): That = pspBuild(bf).build(xss: _*)
@@ -57,8 +57,8 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
 
   private[this] def pspSize: Size                                       = tc length repr
   private[this] def intSize: Int                                        = pspSize.value
-  private[this] def asIndexed: Indexed[A]                               = Indexed.pure(pspSize, idx => tc.elemAt(repr)(idx))
-  private[this] def xsUp[A1 >: A] : Indexed[A1]                         = xs
+  private[this] def asIndexed: Direct[A]                               = Direct.pure(pspSize, idx => tc.elemAt(repr)(idx))
+  private[this] def xsUp[A1 >: A] : Direct[A1]                         = xs
   private[this] implicit def wrap(xs: Repr): IndexedView[Repr, tc.type] = tc wrap xs
   private[this] def wrapOp(f: api.View[A] => Foreach[A]): Repr          = buildNative(f(xs.m))
   private[this] def wrapGen(f: api.View[A] => Foreach[A]): Vector[A]    = Vector.newBuilder[A] ++= f(xs.m).trav result

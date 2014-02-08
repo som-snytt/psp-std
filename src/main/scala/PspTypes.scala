@@ -48,10 +48,18 @@ trait PspJavaTypes {
   type jUrl                   = java.net.URL
   type jFile                  = java.io.File
   type jClass[A]              = java.lang.Class[A]
+  type jAbstractCollection[A] = java.util.AbstractCollection[A]
   type jHashSet[A]            = java.util.HashSet[A]
+  type jList[A]               = java.util.List[A]
+  type jArrayList[A]          = java.util.ArrayList[A]
+  type jIterator[A]           = java.util.Iterator[A]
   type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]
   type BlockingQueue[A]       = java.util.concurrent.BlockingQueue[A]
   type SynchronousQueue[A]    = java.util.concurrent.SynchronousQueue[A]
+
+  def jHashSet[A] = new jHashSet[A]
+  def jList[A]    = new jArrayList[A]
+
 }
 
 trait PspScalaTypes {

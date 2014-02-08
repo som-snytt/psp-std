@@ -10,5 +10,5 @@ trait ViewEnvironment[A, Repr, CC[X]] {
   type View[+X] <: api.BuilderView[X, Repr]
   type AtomicView <: View[A]
   type LinearView <: AtomicView with Linear[A]
-  type IndexedView <: AtomicView with Indexed[A]
+  type IndexedView <: AtomicView with Direct[A]
 }
