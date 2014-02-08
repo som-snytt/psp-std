@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang"  % "scala-compiler"    % scalaVersion.value,
   "jline"           % "jline"             %       "2.11",
   "ch.qos.logback"  % "logback-classic"   %      "1.0.9",
-  "org.scalacheck" %% "scalacheck"        %      "1.11.3"       % "test"
+  // "org.scalacheck" %% "scalacheck"        %      "1.11.3"       % "test",
   "org.specs2"     %% "specs2-scalacheck" %       "2.3.7"       % "test"
 )
 
