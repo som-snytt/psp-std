@@ -16,11 +16,12 @@ libraryDependencies ++= Seq(
   "org.scala-lang"  % "scala-compiler"    % scalaVersion.value,
   "jline"           % "jline"             %       "2.11",
   "ch.qos.logback"  % "logback-classic"   %      "1.0.9",
-  // "org.scalacheck" %% "scalacheck"        %      "1.11.3"       % "test",
   "org.specs2"     %% "specs2-scalacheck" %       "2.3.7"       % "test"
 )
 
-lazy val root = project in file(".") settings (assemblySettings: _*) settings (
+lazy val utest = RootProject(uri("https://github.com/lihaoyi/utest.git#2.11"))
+
+lazy val root = project in file(".") dependsOn utest settings (assemblySettings: _*) settings (
   name                      := "psp-view",
   description               := "psp alternate view implementation",
   homepage                  := Some(url("https://github.com/paulp/psp-view")),
@@ -32,6 +33,8 @@ lazy val root = project in file(".") settings (assemblySettings: _*) settings (
   parallelExecution in Test := false,
   fork in Test              := true
 )
+
+testFrameworks += new TestFramework("utest.runner.JvmFramework")
 
 def projectString(s: State): String = (
   (Project extract s).currentRef.project.toString match {

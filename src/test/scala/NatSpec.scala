@@ -1,19 +1,20 @@
 package psp
-package core
 package tests
 
-class NatSpec extends PspSpec {
-  "natlist" should {
-    val list = NatList(1, 2, 3, 4)
+import utest._
+import utest.ExecutionContext.RunNow
+import utest.framework.TestSuite
 
-    "(xs zip xs).sum == xs.sum * 2" in {
-      val result = list zip list map (_ + _) sum;
-      result must equalTo(list.sum * 2)
+object NatSpec extends TestSuite {
+  val list = core.NatList(1, 2, 3, 4)
+  val tests = TestSuite {
+    "zip2sum" - {
+      val result = list zip list map (_ + _)
+      assert(result.sum == (list.sum * 2))
     }
-
-    "(xs zip xs zip xs).sum == xs.sum * 3" in {
-      val result = list zip list zip list map (_ + _ + _) sum;
-      result must equalTo(list.sum * 3)
+    "zip3sum" - {
+      val result = list zip list zip list map (_ + _ + _)
+      assert(result.sum == (list.sum * 3))
     }
   }
 }
