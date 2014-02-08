@@ -36,7 +36,7 @@ final case object Infinite                     extends Atomic   { def +(n: Size)
 
 trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
 trait HasPreciseSize extends Any with HasSizeInfo { def size: Size }
-trait HasStaticSize extends HasPreciseSize
+trait HasStaticSize[N <: Nat] extends HasPreciseSize
 
 trait HasPreciseSizeImpl extends Any with HasPreciseSize {
   final override def sizeInfo = Precise(size)
