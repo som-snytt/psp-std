@@ -9,6 +9,13 @@ object CountOperationsSpec extends TestSuite {
   val raisePspStringOps = null
   import scala.Predef._
 
+  val tests = TestSuite {
+    "composite" - {
+      "agreement" - assert(results forall (_.isAgreement))
+    }
+  }
+  showResults()
+
   type IntView = api.View[Int]
 
   lazy val tupleFlatMap: Int => Foreach[Int] = ((x: Int) => Foreach.elems(x, x)) labeled "(x, x)"
@@ -111,12 +118,6 @@ object CountOperationsSpec extends TestSuite {
 
   lazy val results = compositesOfN(numOps) map (fn => new CompositeOp(fn))
 
-  val tests = TestSuite {
-    "composite" - {
-      "agreement" - assert(results forall (_.isAgreement))
-    }
-  }
-
   private def showResults() {
     val (show, noshow)    = results partition (_.display)
     val banner: String    = List("Improve", "Linear", "Sized", "Direct", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
@@ -133,5 +134,4 @@ object CountOperationsSpec extends TestSuite {
       |""".stripMargin)
   }
 
-  showResults()
 }

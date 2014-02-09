@@ -7,10 +7,6 @@ import utest.ExecutionContext.RunNow
 import utest.framework.TestSuite
 import psp.core.{ Foreach }
 
-abstract class PspSpec extends org.specs2.mutable.Specification with org.specs2.matcher.ThrownExpectations {
-  sequential
-}
-
 object ViewSpec extends TestSuite {
   // to keep utest happy since the macros are apparently relying on certain implicits
   val raisePspStringOps = null

@@ -6,6 +6,10 @@ import org.scalacheck._
 import SizeInfo._
 import SizeInfoGenerators._
 
+abstract class PspSpec extends org.specs2.mutable.Specification with org.specs2.matcher.ThrownExpectations {
+  sequential
+}
+
 object SizeInfoGenerators {
   import Gen._
 
