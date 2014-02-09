@@ -32,7 +32,7 @@ lazy val root = project in file(".") dependsOn utest settings (assemblySettings:
   target in assembly        := baseDirectory.value,
   mainClass in assembly     := Some("psp.repl.Main"),
   jarName in assembly       := "psp.jar",
-  parallelExecution in Test := false,
+  parallelExecution in Global in Test := false,
   fork in Test              := true
 )
 

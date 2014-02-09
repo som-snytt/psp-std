@@ -2,11 +2,12 @@ package psp
 package tests
 
 import core._
-import org.specs2.{ mutable => mu }
 import compat.ScalaNative
+import utest._
 
-class PreciseSpec extends PspSpec {
-  runCollectionsTests()
+object CountOperationsSpec extends TestSuite {
+  val raisePspStringOps = null
+  import scala.Predef._
 
   type IntView = api.View[Int]
 
@@ -53,7 +54,7 @@ class PreciseSpec extends PspSpec {
 
   class CollectionResult(viewFn: IntView => IntView, xs: IntView) {
     val view    = viewFn(xs)
-    val result  = view take 3 mk_s ", "
+    val result  = view take 3 mkString ", "
     val count   = xs.calls
     def display = view.viewChain reverseMap (v => fmtdesc(v.description)) filterNot (_.trim.length == 0) mkString ("<xs>  ", " ", "")
 
@@ -108,14 +109,19 @@ class PreciseSpec extends PspSpec {
     override def toString = "%s  %6s %s  //  %s".format(headView, ratio, countsString, resultsString)
   }
 
-  def runCollectionsTests() {
-    val banner: String    = List("Improve", "Linear", "Sized", "Direct", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
-    val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mk_s ""
+  lazy val results = compositesOfN(numOps) map (fn => new CompositeOp(fn))
 
-    val composites     = compositesOfN(numOps)
-    val results        = composites map (fn => new CompositeOp(fn))
-    val (show, noshow) = results sortBy (_.sortKey) partition (_.display)
-    val padding        = results.head.padding
+  val tests = TestSuite {
+    "composite" - {
+      "agreement" - assert(results forall (_.isAgreement))
+    }
+  }
+
+  private def showResults() {
+    val (show, noshow)    = results partition (_.display)
+    val banner: String    = List("Improve", "Linear", "Sized", "Direct", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
+    val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mkString ""
+    val padding           = show.head.padding
 
     println(pp"""
       |Basis sequence was 1 to $max
@@ -126,4 +132,6 @@ class PreciseSpec extends PspSpec {
       |${show mkString EOL}
       |""".stripMargin)
   }
+
+  showResults()
 }
