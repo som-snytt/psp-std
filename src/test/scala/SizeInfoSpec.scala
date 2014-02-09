@@ -1,7 +1,7 @@
 package psp
-package core
 package tests
 
+import core._
 import org.scalacheck._
 import SizeInfo._
 import SizeInfoGenerators._

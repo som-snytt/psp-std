@@ -1,7 +1,7 @@
 package psp
-package core
 package tests
 
+import core._
 import org.specs2.{ mutable => mu }
 import compat.ScalaNative
 
