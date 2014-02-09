@@ -3,8 +3,6 @@ package tests
 
 import scala.collection.immutable
 import utest._
-import utest.ExecutionContext.RunNow
-import utest.framework.TestSuite
 import psp.core.{ Foreach }
 
 object ViewSpec extends TestSuite {

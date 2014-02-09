@@ -2,8 +2,6 @@ package psp
 package tests
 
 import utest._
-import utest.ExecutionContext.RunNow
-import utest.framework.TestSuite
 
 object NatSpec extends TestSuite {
   val list = core.NatList(1, 2, 3, 4)

@@ -15,10 +15,10 @@ exportJars in Global := true
 initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/replStartup.scala".!!
 
 libraryDependencies ++= Seq(
-  "org.scala-lang"  % "scala-compiler"    % scalaVersion.value,
-  "jline"           % "jline"             %       "2.11",
-  "ch.qos.logback"  % "logback-classic"   %      "1.0.9",
-  "org.specs2"     %% "specs2-scalacheck" %       "2.3.7"       % "test"
+  "org.scala-lang"  % "scala-compiler"  % scalaVersion.value,
+  "jline"           % "jline"           %       "2.11",
+  "ch.qos.logback"  % "logback-classic" %      "1.0.9",
+  "org.scalacheck" %% "scalacheck"      %      "1.11.3"       % "test"
 )
 
 lazy val utest = ProjectRef(uri("git://github.com/paulp/utest#paulp-2.11"), "root") % "test"
