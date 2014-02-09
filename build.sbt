@@ -19,9 +19,11 @@ libraryDependencies ++= Seq(
   "org.specs2"     %% "specs2-scalacheck" %       "2.3.7"       % "test"
 )
 
-lazy val utest = RootProject(uri("https://github.com/lihaoyi/utest.git#2.11"))
+lazy val utest = ProjectRef(uri("git://github.com/lihaoyi/utest#2.11"), "root") % "test"
 
-lazy val root = project in file(".") dependsOn utest settings (assemblySettings: _*) settings (
+lazy val utestRunner = ProjectRef(uri("git://github.com/lihaoyi/utest#2.11"), "runner") % "test"
+
+lazy val root = project in file(".") dependsOn (utest, utestRunner) settings (assemblySettings: _*) settings (
   name                      := "psp-view",
   description               := "psp alternate view implementation",
   homepage                  := Some(url("https://github.com/paulp/psp-view")),
