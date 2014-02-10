@@ -6,9 +6,10 @@ import psp.core.impl._
 
 package core {
   abstract class PackageTraitsExceptShadowing extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods with JioCreation
+  abstract class PackageTraits extends PackageTraitsExceptShadowing with PspShadowScala
 }
 
-package object core extends PackageTraitsExceptShadowing with PspShadowScala {
+package object core extends PackageTraits {
   def zeroSize    = Size.Zero
   def unknownSize = SizeInfo.Unknown
 

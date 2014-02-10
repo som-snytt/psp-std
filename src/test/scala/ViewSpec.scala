@@ -6,11 +6,7 @@ import utest._
 import psp.core.{ Foreach }
 
 object ViewSpec extends TestSuite {
-  // to keep utest happy since the macros are apparently relying on certain implicits
-  val raisePspStringOps = null
-
   def checkResult[T: ClassTag](result: Object) = assert(classTag[T].runtimeClass isAssignableFrom result.getClass)
-  implicit def selectiveStringConversion(s: String): Seq[Char] = s.toCharArray.toSeq
 
   val tests = TestSuite {
     "bitset" - {

@@ -80,17 +80,14 @@ class DirectAccessBuilderOps[A, Repr, CC[X]](tc: DirectAccessType[A, Repr, CC]) 
   def nativeBuilder: Builder[A, Repr]      = ??? // pcb.newBuilder()
 }
 
-trait PspShadowRequired {
-  val StringAdd, ArrowAssoc = null
-}
-
 /** It's kind of funny... I guess.
  */
-trait PspShadowScala extends PspShadowRequired {
+trait PspShadowScala {
   val wrapByteArray, wrapShortArray, wrapCharArray, wrapIntArray, wrapLongArray, wrapFloatArray, wrapDoubleArray = null
   val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps        = null
   val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper               = null
   val wrapString, unwrapString, augmentString, unaugmentString                                                   = null
+  val StringAdd, ArrowAssoc                                                                                      = null
   val genericArrayOps, genericWrapArray                                                                          = null
 }
 // ViewEnvironment[A, Repr, CC]#View[B]

@@ -6,9 +6,6 @@ import compat.ScalaNative
 import utest._
 
 object CountOperationsSpec extends TestSuite {
-  val raisePspStringOps = null
-  import scala.Predef._
-
   val tests = TestSuite {
     "composite" - {
       "agreement" - assert(results forall (_.isAgreement))
