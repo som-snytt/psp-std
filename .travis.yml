@@ -1,3 +1,8 @@
 language: scala
 scala:
-  - 2.11.0-M8
+- 2.11.0-M8
+env:
+  matrix:
+  - secure: Ekr598plHvGBDTJRkGWkJEsZyTzRHSwxG5+h5ESvXYUbDVdxtUH78dxtPG14X8F4wYch8K5aB7LtuoFYcTDzjIKlg7kld1NbdsQugNVkLLhgmBRTsYXvQyKJ/Kii2v95pNn6K+lC+3pjCQbeAwzu+JtRhKziJSMt7GnANrUHYv0=
+  - secure: OlyRnnb9Gb4fBsP74ZdWX1NfuXdTUH0XWcab5njSVne332qqSHCuA3fKNWfx5FWWElJUHmom6LN/xmh2uP6HWEU7P81/TSXrNFgcywkhj7xR9t4cIxx25QbZV7nsX5WbIP9o8nawulNg+mjvMpaRuZwiJuuGYIndziD4E0/gAnQ=
+  - secure: r10ALuDQE2Ntj1csrHCDjDqQqNTMnaZgqjEEPNgVBKbWGy/wbRPAdDhpGqeAdgwucpjN7bS+yGAO0WV1AQhRnvPYjk42REnTZG6xKjcozAhfuCPNWtKU1dcn03FFKOT/vBjUGeCLXLMFcP5wdljqJ+QjdWJmVCgzIKYoMAa7npQ=
