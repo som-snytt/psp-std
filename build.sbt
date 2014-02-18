@@ -1,9 +1,3 @@
-import AssemblyKeys._
-
-resolvers += Opts.resolver.sonatypeSnapshots
-
-assemblySettings
-
 scalaVersion in Global := "2.11.0-M8"
 
 organization in Global := "org.improving"
@@ -23,16 +17,13 @@ libraryDependencies ++= Seq(
 
 lazy val utest = ProjectRef(uri("git://github.com/paulp/utest#paulp-2.11"), "root") % "test"
 
-lazy val root = project in file(".") dependsOn utest settings (assemblySettings: _*) settings (
+lazy val root = project in file(".") dependsOn utest settings (
   name                      := "psp-view",
   description               := "psp alternate view implementation",
   homepage                  := Some(url("https://github.com/paulp/psp-view")),
   licenses                  := Seq("Apache" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   shellPrompt               := (s => name.value + projectString(s) + "> "),
-  target in assembly        := baseDirectory.value,
-  mainClass in assembly     := Some("psp.repl.Main"),
-  jarName in assembly       := "psp.jar",
-  parallelExecution in Global in Test := false,
+  parallelExecution in Test := false,
   fork in Test              := true
 )
 
@@ -43,11 +34,4 @@ def projectString(s: State): String = (
     case s if s startsWith "default-" => ""
     case s                            => "#" + s
   }
-)
-
-scalacOptions ++= Seq(
-  // "-Ylog:all"
-  // "-Ydebug"
-  // "-optimise"
-  // "-Xlog-implicit-conversions"
 )
