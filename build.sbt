@@ -1,8 +1,8 @@
-scalaVersion in Global := "2.11.0-M8"
+scalaVersion in Global := "2.11.0"
 
 organization in Global := "org.improving"
 
-version in Global := "0.1.0-SNAPSHOT"
+version in Global := "0.1.1-SNAPSHOT"
 
 exportJars in Global := true
 
@@ -12,12 +12,11 @@ libraryDependencies ++= Seq(
   "org.scala-lang"  % "scala-compiler"  % scalaVersion.value,
   "jline"           % "jline"           %       "2.11",
   "ch.qos.logback"  % "logback-classic" %      "1.0.9",
-  "org.scalacheck" %% "scalacheck"      %      "1.11.3"       % "test"
+  "org.scalacheck" %% "scalacheck"      %      "1.11.3"       % "test",
+  "com.lihaoyi"    %% "utest"           %       "0.1.4"       % "test"
 )
 
-lazy val utest = ProjectRef(uri("git://github.com/paulp/utest#paulp-2.11"), "root") % "test"
-
-lazy val root = project in file(".") dependsOn utest settings (
+lazy val root = project in file(".") settings (
   name                      := "psp-view",
   description               := "psp alternate view implementation",
   homepage                  := Some(url("https://github.com/paulp/psp-view")),
