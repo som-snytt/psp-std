@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/paulp/psp-view.png)](https://travis-ci.org/paulp/psp-view)
+
 psp collect
 ===========
 
@@ -8,8 +10,6 @@ It's still under development. Please don't use it unless you understand what tha
 Also, the bikeshed is covered in a large tarp. Renovations are postponed until further
 notice. I already know you don't like the name "mk_s" and want to fiddle with things.
 Have patience, you'll get your chance.
-
-Current [test results](https://travis-ci.org/paulp/psp-view) can be found at travis CI.
 
 Explanation of test output, reformatted to reduce width:
 
