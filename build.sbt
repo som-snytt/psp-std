@@ -1,8 +1,8 @@
-scalaVersion in Global := "2.11.0"
+scalaVersion in Global := "2.11.1"
 
 organization in Global := "org.improving"
 
-version in Global := "0.1.1-SNAPSHOT"
+version in Global := "0.1.2-SNAPSHOT"
 
 exportJars in Global := true
 
@@ -11,8 +11,8 @@ initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/re
 libraryDependencies ++= Seq(
   "org.scala-lang"  % "scala-compiler"  % scalaVersion.value,
   "jline"           % "jline"           %       "2.11",
-  "ch.qos.logback"  % "logback-classic" %      "1.0.9",
-  "org.scalacheck" %% "scalacheck"      %      "1.11.3"       % "test",
+  "ch.qos.logback"  % "logback-classic" %      "1.1.2",
+  "org.scalacheck" %% "scalacheck"      %      "1.11.4"       % "test",
   "com.lihaoyi"    %% "utest"           %       "0.1.4"       % "test"
 )
 
