@@ -25,10 +25,11 @@ class Tester {
   def fail(msg: String) = try testsFailed += 1 finally echo(s"$fail_s $msg")
 
   def expect[A](msg: String, expected: A)(result: A)(implicit eqs: Eq[A], shows: Show[A]) = {
-    def s1 = shows show result
-    def s2 = shows show expected
+    def s1 = result.to_s
+    def s2 = expected.to_s
 
-    if (eqs.equivalent(expected, result)) pass(s"$msg == $s1") else fail(s"$msg == $s1 (expected: $s2)")
+    if (expected === result) pass(show"$msg == $s1")
+    else fail(show"$msg == $s1 (expected: $s2)")
   }
 
   def check[A, B, C : Eq : Show](x: A, y: B, z: C)(f: (A, B) => String)(g: (A, B) => C): Unit = expect(f(x, y), z)(g(x, y))

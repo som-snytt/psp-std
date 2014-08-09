@@ -13,3 +13,11 @@ object Show {
   implicit def arrayShow[A: Show] : Show[Array[A]]             = Show(_ map (_.to_s) mkString ("Array(", ", ", ")"))
   implicit def anyValShow[A <: AnyVal] : Show[A]               = Show("" + _)
 }
+
+final class Shown[A: Show](val value: A) {
+  override def toString = value.to_s
+}
+
+final class ShowInterpolator(val sc: StringContext) extends AnyVal {
+  def show(args: Shown[_]*): String = new StringContext(sc.parts: _*).raw(args: _*)
+}
