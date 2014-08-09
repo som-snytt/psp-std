@@ -3,18 +3,6 @@ package std
 
 import scala.collection.{ mutable, immutable, generic }
 
-/** If the type class is attached at creation it can't be a value class.
- *  So it has to be duplicated across every method with utilizes it.
- *  Another victory against boilerplate.
- */
-final class ShowExtensionOps[A](val x: A) extends AnyVal {
-  def to_s(implicit shows: Show[A]): String = shows show x
-}
-
-final class EqExtensionOps[A](val x: A) extends AnyVal {
-  def ===(that: A)(implicit eq: Eq[A]): Boolean = eq.equiv(x, that)
-}
-
 // Have to each go into their own class because the apply methods have the same erasure.
 final class AddNthApplyToSeq[CC[X] <: scala.collection.Seq[X], A](private val xs: CC[A]) extends AnyVal {
   def apply(nth: Nth): A = if (nth.isDefined) xs(nth.intIndex) else sys.error(s"apply($nth)")

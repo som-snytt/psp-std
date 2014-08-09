@@ -3,9 +3,13 @@ package std
 
 import Nth.{ empty }
 
-/** A one-based index.
+/** A one-based index. In principle Index(n) and Nth(n + 1) have the
+ *  same behavior for all values n >= 0, assuming things type check.
+ *  I resist cosmetic implicits.
  */
-final class Nth private (val value: Int) extends AnyVal with Ordered[Nth] {
+final class Nth private (val value: Int) extends AnyVal with Ordered[Nth] with IndexOrNth {
+  type This = Nth
+
   def +(n: Int): Nth = if (isDefined) Nth(value + n) else NoNth
   def -(n: Int): Nth = if (isDefined) Nth(value - n) else NoNth
 

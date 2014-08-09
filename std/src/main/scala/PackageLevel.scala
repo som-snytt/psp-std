@@ -92,6 +92,7 @@ trait Aliases {
 }
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
+ *  This list is subject to renegotiation.
  */
 trait ImplicitRemoval {
   val any2stringadd              = null
@@ -157,8 +158,11 @@ trait Implicits {
   implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A] = new TryExtensionOps[A](x)
 
   // Implicit classes with typeclass-based membership.
-  implicit def showExtensionOps[A](x: A): ShowExtensionOps[A] = new ShowExtensionOps[A](x)
-  implicit def eqExtensionOps[A](x: A): EqExtensionOps[A]     = new EqExtensionOps[A](x)
+  // If the type class is attached at creation it can't be a value class.
+  // So it has to be duplicated across every method which utilizes it.
+  // Another victory against boilerplate.
+  implicit def showExtensionOps[A](x: A): Show.Ops[A] = new Show.Ops[A](x)
+  implicit def eqExtensionOps[A](x: A): Eq.Ops[A]     = new Eq.Ops[A](x)
 
   // The delicate dance against scala's hostile-to-correctness intrinsics.
   implicit def showableToShown[A: Show](x: A): Shown[A] = new Shown[A](x)

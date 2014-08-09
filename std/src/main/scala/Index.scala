@@ -8,7 +8,9 @@ import Index.{ zero, empty }
  *  In principle we could double the usable range by treating
  *  value as an unsigned Int other than -1.
  */
-final class Index private (val value: Int) extends AnyVal with Ordered[Index] {
+final class Index private (val value: Int) extends AnyVal with Ordered[Index] with IndexOrNth {
+  type This = Index
+
   // Manipulations of NoIndex result in NoIndex, it's like NaN in that way.
   def +(n: Int): Index = if (isDefined) Index(value + n) else NoIndex
   def -(n: Int): Index = if (isDefined) Index(value - n) else NoIndex
@@ -32,9 +34,11 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] {
   def max(that: Index): Index = Index(value max that.value)
   def min(that: Index): Index = Index(value min that.value)
 
-  def toInt: Int   = value
-  def toLong: Long = value.toLong
-  def toNth: Nth   = Nth fromIndex this
+  def toInt: Int     = value
+  def toLong: Long   = value.toLong
+  def toNth: Nth     = Nth fromIndex this
+  def toIndex: Index = this
+  def intIndex: Int  = value
 
   override def toString         = s"$value"
 }
