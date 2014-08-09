@@ -6,7 +6,7 @@ psp.std - a non-standard standard library
 Background
 ----------
 
-The scala standard library is lacking. This tries to supplement the missing parts and to play defense against its hostility to correctness where possible.
+The scala standard library is lacking. This library attempts to fill some of the gaps and play defense against its hostility to correctness where possible.
 
 Usage
 -----
