@@ -5,6 +5,14 @@ import java.util.regex.Pattern
 import scala.reflect.macros.TypecheckException
 import scala.reflect.macros.blackbox.Context
 
+/** TODO - mock the ridiculous scala ast with a clean one with the same structure.
+ *  Same thing with positions. Then they will be easy to lift and unlift without
+ *  struggling with Universes and Importers and Mirrors and all the crazy bullshit
+ *  which made it so easy to stop working on scala in the first place.
+ *
+ *  So for now it's the high-tech approach of calling toString on the tree and
+ *  type and passing those, but at least that lets us print something interesting.
+ */
 package macros {
   sealed trait TypecheckResult {
     def isError: Boolean
@@ -38,10 +46,11 @@ package macros {
 
     private def fail(msg: String) = c.abort(c.enclosingPosition, msg)
     private def check(code: String): c.Expr[Typechecked] = {
-      def treeStr(tree: Tree) =  "%s: %s".format(tree, tree.tpe)
-      def typed()           = scala.util.Try(c.typecheck(c.parse(code)))
-      def good(tree: Tree)  = q"Typechecked.typed($code, ${tree.toString}, ${tree.tpe.toString})"
-      def bad(t: Throwable) = q"Typechecked.error($code, ${t.getMessage})"
+      def treeStr(tree: Tree) = "%s: %s".format(tree, tree.tpe)
+      def typed()             = scala.util.Try(c.typecheck(c.parse(code)))
+      def good(tree: Tree)    = q"Typechecked.typed($code, ${tree.toString}, ${tree.tpe.toString})"
+      def bad(t: Throwable)   = q"Typechecked.error($code, ${t.getMessage})"
+
       c.Expr(typed().fold(good, bad))
     }
 
@@ -55,13 +64,12 @@ package macros {
       c.Expr(res)
     }
 
-    def typechecked(expr: c.Expr[String]): c.Expr[Typechecked] = {
-      val code: String = expr.tree match {
+    def typechecked(expr: c.Expr[String]): c.Expr[Typechecked] = check(
+      expr.tree match {
         case Literal(Constant(s: String)) => s.trim
         case _                            => fail("not a literal string")
       }
-      check(code)
-    }
+    )
   }
 }
 

@@ -34,6 +34,11 @@ class Tester {
 
   def check[A, B, C : Eq : Show](x: A, y: B, z: C)(f: (A, B) => String)(g: (A, B) => C): Unit = expect(f(x, y), z)(g(x, y))
 
+  /** We'll say a line which begins with the shown comment is expected to type check.
+   *  Will make this more robust. For now this makes it easy to put the expectation of
+   *  success or failure next to the code in question.
+   */
+  def divide(what: String, xs: Vector[Typechecked]): Unit = divide(what, xs, xs count (_.code startsWith "/* ok */"))
   def divide(what: String, xs: Vector[Typechecked], expectedTypecheck: Int): Unit = {
     val (good, bad) = xs partition (_.typechecks)
     val passed = expectedTypecheck == good.size
@@ -53,6 +58,7 @@ class Tester {
 
     divide("scala-library", typecheckedLines(scalaLibraryCode), expectedTypecheck = 32)
     divide("psp-std", typecheckedLines(pspCode), expectedTypecheck = 10)
+    divide("psp-show", typecheckedLines(pspShowCode))
 
     "%s/%s tests passed.".format(testsPassed, testsPassed + testsFailed)
   }

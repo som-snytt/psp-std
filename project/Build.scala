@@ -10,15 +10,9 @@ object Build extends sbt.Build {
     import psp.std._
   """.trim
 
-  def cleanTest = Def task {
-    (clean in Compile in Test).value
-    (run in Test).toTask("").value
-    ()
-  }
-
   def common = Seq[Setting[_]](
        organization :=  "org.improving",
-            version :=  "0.0.1-SNAPSHOT",
+            version :=  "0.1.0-SNAPSHOT",
        scalaVersion :=  "2.11.2",
         logBuffered :=  false,
       scalacOptions ++= Seq("-language:_"),
@@ -26,11 +20,13 @@ object Build extends sbt.Build {
   )
 
   /** What is accomplished by this structure?
+   *
    *   - std does not depend on scala-reflect
-   *   - macros can use the methods defined in std
-   *   - when testing std, we have access to macros
-   *   - after touching a testfile the macro runs and the test runs, but the entire project isn't rebuilt
-   *  It's harder to get all these at once than you think.
+   *   - the macro project can make use of psp.std
+   *   - when testing psp.std, we have access to psp.macros
+   *   - after touching a testfile, the macro runs and the tests run, but the entire project isn't rebuilt
+   *
+   *  It's harder to get all those at once than you may think.
    */
   lazy val root = project in file(".") dependsOn (macros, std) aggregate (macros, std) settings (common: _*) settings (
                           name :=  "psp-std-root",

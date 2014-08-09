@@ -4,6 +4,8 @@ package stdtests
 import psp.std._
 import macros._
 
+/** TODO - actually generate the code via an sbt generator.
+ */
 object Generator {
   val tq    = "\"\"\""
   def lhses = List("\"abc\"", "Seq(1, 2, 3)", "scala.collection.mutable.Seq('a', 'b', 'c')", "Array(true, false, true)")
@@ -20,6 +22,11 @@ object Generator {
 }
 
 object Generated {
+  final val pspShowCode = """
+    /* no */ class Bippy ; val x = new Bippy ; show"$x"
+    /* ok */ class Bippy ; val x = new Bippy ; implicit val s = Show[Bippy](_ => "yo") ; show"$x"
+  """
+
   final val scalaLibraryCode = """
     "abc" indexOf 59d
     "abc" indexOf (1: Int)

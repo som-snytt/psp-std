@@ -4,7 +4,7 @@ package std
 /** Sorry there's no way to put mutable and immutable into the namespace.
  *  You can import them individually into every file until you die.
  */
-import scala.collection.{ mutable, immutable, generic }
+import scala.collection.{ mutable, immutable }
 
 /** Yes I know all about implicit classes.
  *  There's no way to write an implicit value class which doesn't hardcode
@@ -149,26 +149,27 @@ trait Creators {
 }
 
 trait Implicits {
+  // The typesafe non-toString-using show"..." interpolator.
   implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
+  // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
+  implicit def showableToShown[A: Show](x: A): Shown[A] = new Shown[A](x)
 
-  // Implicit classes for non-collection types.
+  // Extension methods for non-collection types.
   implicit def stringExtensionOps(s: String): StringExtensionOps            = new StringExtensionOps(s)
   implicit def arrayExtensionOps[A](xs: Array[A]): ArrayExtensionOps[A]     = new ArrayExtensionOps[A](xs)
   implicit def anyExtensionOps[A](x: A): AnyExtensionOps[A]                 = new AnyExtensionOps[A](x)
   implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A] = new TryExtensionOps[A](x)
 
-  // Implicit classes with typeclass-based membership.
+  // Extension methods which depend on a typeclass.
   // If the type class is attached at creation it can't be a value class.
   // So it has to be duplicated across every method which utilizes it.
   // Another victory against boilerplate.
   implicit def showExtensionOps[A](x: A): Show.Ops[A] = new Show.Ops[A](x)
   implicit def eqExtensionOps[A](x: A): Eq.Ops[A]     = new Eq.Ops[A](x)
 
-  // The delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): Shown[A] = new Shown[A](x)
-
-  // Implicit classes for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
+  // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
   // It's not like you have any idea what the performance characteristics of the target are anyway.
+  // If you think you do, and you ever call standard collections methods, then think again.
   implicit def sortedMapExtensionOps[K, V](xs: scala.collection.SortedMap[K, V]): SortedMapExtensionOps[K, V]                      = new SortedMapExtensionOps[K, V](xs)
   implicit def mapExtensionOps[K, V](xs: scala.collection.Map[K, V]): MapExtensionOps[K, V]                                        = new MapExtensionOps[K, V](xs)
   implicit def seqExtensionOps[CC[X] <: scala.collection.Seq[X], A](xs: CC[A]): SeqExtensionOps[CC, A]                             = new SeqExtensionOps[CC, A](xs)
