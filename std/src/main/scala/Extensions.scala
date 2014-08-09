@@ -23,6 +23,7 @@ final class MapExtensionOps[K, V](private val map: scala.collection.Map[K, V]) e
 
 final class GenTraversableOnceExtensionOps[CC[X] <: scala.collection.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal {
   def sortDistinct(implicit ord: Ordering[A]): Vector[A] = distinct.sorted
+  def mapFrom[B](f: A => B): OrderedMap[B, A]            = orderedMap(xs.toVector map (x => (f(x), x)): _*)
   def mapOnto[B](f: A => B): OrderedMap[A, B]            = orderedMap(xs.toVector map (x => (x, f(x))): _*)
   def sorted(implicit ord: Ordering[A]): Vector[A]       = xs.toVector.sorted
   def distinct: Vector[A]                                = xs.toVector.distinct
@@ -32,45 +33,56 @@ final class GenTraversableOnceExtensionOps[CC[X] <: scala.collection.GenTraversa
 }
 
 /** We could avoid this duplication with some of scala's incredibly high-cost
- *  (in performance and complexity tax) machinery. Gordian knot untied.
+ *  (in performance and complexity tax) machinery. I'll take the duplication at this point.
  */
-final class SeqExtensionOps[CC[X] <: scala.collection.Seq[X], A](private val xs: CC[A]) extends AnyVal {
+trait SeqLikeExtensionOps[A] extends Any {
   // An added benefit of these methods is a huge increase in type safety
   // because the sequence is treated as invariant due to an idiosyncrasy of
   // scala's type inference.
+  def length: Int
+  def index(elem: A): Index
+  def lastIndex(elem: A): Index
+  def indexAtWhich(p: A => Boolean): Index
+  def lastIndexAtWhich(p: A => Boolean): Index
+  def hasElem(elem: A): Boolean
+
+  def hasIndex(index: Index): Boolean = indexRange contains index
+  def indexRange: IndexRange          = IndexRange zeroUntil exclusiveEnd
+  def exclusiveEnd: Index             = Index(length)
+}
+
+final class SeqExtensionOps[CC[X] <: scala.collection.Seq[X], A](private val xs: CC[A]) extends AnyVal with SeqLikeExtensionOps[A] {
+  def length                                   = xs.length
   def index(elem: A): Index                    = Index(xs indexOf elem)
   def lastIndex(elem: A): Index                = Index(xs lastIndexOf elem)
   def indexAtWhich(p: A => Boolean): Index     = Index(xs indexWhere p)
   def lastIndexAtWhich(p: A => Boolean): Index = Index(xs lastIndexWhere p)
-  def indexRange: IndexRange                   = IndexRange zeroUntil exclusiveEnd
   def hasElem(elem: A): Boolean                = xs contains elem
-  def exclusiveEnd: Index                      = Index(xs.length)
+
   // Produces a vector containing the elements in the given index range.
   // Ignores indices which don't exist in the target sequence.
   def apply(range: IndexRange): Vector[A] = indexRange intersect range map (i => xs(i.value))
 }
 
 // Another demonstration of scala's boilerplate reduction powers.
-final class StringExtensionOps(private val xs: String) extends AnyVal {
+final class StringExtensionOps(private val xs: String) extends AnyVal with SeqLikeExtensionOps[Char] {
+  def length                                      = xs.length
   def index(elem: Char): Index                    = Index(xs indexOf elem)
   def lastIndex(elem: Char): Index                = Index(xs lastIndexOf elem)
   def indexAtWhich(p: Char => Boolean): Index     = Index(xs indexWhere p)
   def lastIndexAtWhich(p: Char => Boolean): Index = Index(xs lastIndexWhere p)
-  def indexRange: IndexRange                      = IndexRange zeroUntil exclusiveEnd
   def hasElem(elem: Char): Boolean                = (xs indexOf elem) >= 0
-  def exclusiveEnd: Index                         = Index(xs.length)
 
   def apply(range: IndexRange): String = (indexRange intersect range) |> (r => xs.slice(r.startInt, r.endInt))
 }
 
-final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal {
+final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal with SeqLikeExtensionOps[A] {
+  def length                                   = xs.length
   def index(elem: A): Index                    = Index(xs indexOf elem)
   def lastIndex(elem: A): Index                = Index(xs lastIndexOf elem)
   def indexAtWhich(p: A => Boolean): Index     = Index(xs indexWhere p)
   def lastIndexAtWhich(p: A => Boolean): Index = Index(xs lastIndexWhere p)
-  def indexRange: IndexRange                   = IndexRange zeroUntil exclusiveEnd
   def hasElem(elem: A): Boolean                = xs contains elem
-  def exclusiveEnd: Index                      = Index(xs.length)
 
   def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = (indexRange intersect range) |> (r => xs.slice(r.startInt, r.endInt))
 }
