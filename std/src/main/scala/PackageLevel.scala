@@ -57,7 +57,7 @@ trait Aliases {
   type File                 = java.io.File
   type FileInputStream      = java.io.FileInputStream
   type FileOutputStream     = java.io.FileOutputStream
-  type FileTime             = java.nio.file.attribute.FileTime
+  // type FileTime             = java.nio.file.attribute.FileTime
   type IOException          = java.io.IOException
   type InputStream          = java.io.InputStream
   type JarEntry             = java.util.jar.JarEntry
