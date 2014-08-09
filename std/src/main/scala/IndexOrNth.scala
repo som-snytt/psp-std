@@ -4,6 +4,10 @@ package std
 trait IndexOrNth extends Any {
   type This <: IndexOrNth
 
+  // Name based extractors
+  def get: Int
+  def isEmpty: Boolean
+
   def +(n: Int): This
   def -(n: Int): This
   def next: This
@@ -15,6 +19,8 @@ trait IndexOrNth extends Any {
   def toLong: Long
   def toNth: Nth
   def toIndex: Index
-  def intIndex: Int
-}
 
+  // Concessions to reality
+  def intIndex: Int
+  def intNth: Int
+}

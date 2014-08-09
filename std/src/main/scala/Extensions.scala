@@ -42,12 +42,12 @@ final class SeqExtensionOps[CC[X] <: scala.collection.Seq[X], A](private val xs:
   def lastIndex(elem: A): Index                = Index(xs lastIndexOf elem)
   def indexAtWhich(p: A => Boolean): Index     = Index(xs indexWhere p)
   def lastIndexAtWhich(p: A => Boolean): Index = Index(xs lastIndexWhere p)
-  def indicesOf: IndexRange                    = IndexRange zeroUntil exclusiveEnd
+  def indexRange: IndexRange                   = IndexRange zeroUntil exclusiveEnd
   def hasElem(elem: A): Boolean                = xs contains elem
   def exclusiveEnd: Index                      = Index(xs.length)
   // Produces a vector containing the elements in the given index range.
   // Ignores indices which don't exist in the target sequence.
-  def apply(range: IndexRange): Vector[A] = indicesOf intersect range map (i => xs(i.value))
+  def apply(range: IndexRange): Vector[A] = indexRange intersect range map (i => xs(i.value))
 }
 
 // Another demonstration of scala's boilerplate reduction powers.
@@ -56,11 +56,11 @@ final class StringExtensionOps(private val xs: String) extends AnyVal {
   def lastIndex(elem: Char): Index                = Index(xs lastIndexOf elem)
   def indexAtWhich(p: Char => Boolean): Index     = Index(xs indexWhere p)
   def lastIndexAtWhich(p: Char => Boolean): Index = Index(xs lastIndexWhere p)
-  def indicesOf: IndexRange                       = IndexRange zeroUntil exclusiveEnd
+  def indexRange: IndexRange                      = IndexRange zeroUntil exclusiveEnd
   def hasElem(elem: Char): Boolean                = (xs indexOf elem) >= 0
   def exclusiveEnd: Index                         = Index(xs.length)
 
-  def apply(range: IndexRange): String = (indicesOf intersect range) |> (r => xs.slice(r.startInt, r.endInt))
+  def apply(range: IndexRange): String = (indexRange intersect range) |> (r => xs.slice(r.startInt, r.endInt))
 }
 
 final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal {
@@ -68,11 +68,11 @@ final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal {
   def lastIndex(elem: A): Index                = Index(xs lastIndexOf elem)
   def indexAtWhich(p: A => Boolean): Index     = Index(xs indexWhere p)
   def lastIndexAtWhich(p: A => Boolean): Index = Index(xs lastIndexWhere p)
-  def indicesOf: IndexRange                    = IndexRange zeroUntil exclusiveEnd
+  def indexRange: IndexRange                   = IndexRange zeroUntil exclusiveEnd
   def hasElem(elem: A): Boolean                = xs contains elem
   def exclusiveEnd: Index                      = Index(xs.length)
 
-  def apply(range: IndexRange)(implicit tag: reflect.ClassTag[A]): Array[A] = (indicesOf intersect range) |> (r => xs.slice(r.startInt, r.endInt))
+  def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = (indexRange intersect range) |> (r => xs.slice(r.startInt, r.endInt))
 }
 
 final class AnyExtensionOps[A](val x: A) extends AnyVal {

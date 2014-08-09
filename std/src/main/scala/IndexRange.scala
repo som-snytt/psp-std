@@ -3,7 +3,7 @@ package std
 
 import Index.zero
 
-/** All IndexRanges are exclusive.
+/** All IndexRanges are inclusive of start and exclusive of end.
  */
 final class IndexRange private (private val bits: Long) extends AnyVal {
   private def lbits: Int = (bits >>> 32).toInt
@@ -43,11 +43,11 @@ object IndexRange {
   def zeroTo(end: Index): IndexRange    = to(zero, end)
 
   def to(start: Index, end: Index): IndexRange =
-    if (start.isUndefined || end.isUndefined) empty
+    if (start.isEmpty || end.isEmpty) empty
     else if (end.value == Int.MaxValue) throw new IllegalArgumentException("Cannot encode Int.MaxValue")
     else until(start, end.next)
 
   def until(start: Index, end: Index): IndexRange =
-    if (start.isUndefined || end.isUndefined) empty
+    if (start.isEmpty || end.isEmpty) empty
     else new IndexRange((start.value.toLong << 32) | end.value.toLong)
 }

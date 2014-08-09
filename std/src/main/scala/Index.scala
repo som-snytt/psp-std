@@ -23,8 +23,10 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
   def indicesUntil      = zero until this
   def indicesTo         = zero to this
 
-  def isDefined   = this != empty
-  def isUndefined = this == empty
+  // Name based extractors
+  def get       = value
+  def isEmpty   = this == empty
+  def isDefined = !isEmpty
 
   def spaces                    = " " * value
   def compare(that: Index): Int = value compare that.value
@@ -39,14 +41,15 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
   def toNth: Nth     = Nth fromIndex this
   def toIndex: Index = this
   def intIndex: Int  = value
+  def intNth: Int    = toNth.value
 
   override def toString         = s"$value"
 }
 
 object Index extends (Int => Index) {
-  def zero: Index  = new Index(0)
-  def empty: Index = new Index(-1)
-
-  def fromNth(nth: Nth): Index = apply(nth.value - 1)
-  def apply(value: Int): Index = if (value < 0) empty else new Index(value)
+  def zero: Index                   = new Index(0)
+  def empty: Index                  = new Index(-1)
+  def fromNth(nth: Nth): Index      = apply(nth.value - 1)
+  def apply(value: Int): Index      = if (value < 0) empty else new Index(value)
+  def unapply(n: IndexOrNth): Index = if (n.isDefined) apply(n.intIndex) else empty
 }
