@@ -1,0 +1,44 @@
+package psp
+package std
+
+/** All IndexRanges are exclusive.
+ */
+final class IndexRange private (private val bits: Long) extends AnyVal {
+  private def lbits: Int = (bits >>> 32).toInt
+  private def rbits: Int = bits.toInt
+
+  def startInt: Int = lbits
+  def endInt: Int   = rbits
+  def start: Index  = Index(startInt)
+  def end: Index    = Index(endInt)
+  def length: Long  = (end.toLong - start.toLong) max 0L
+
+  def foreachInt(f: Int => Unit): Unit            = toIntRange foreach f
+  def filterInt(p: Int => Boolean): Vector[Index] = toIntRange filter p map Index toVector
+  def mapInt[A](f: Int => A): Vector[A]           = toIntRange map f toVector
+
+  def filter(p: Index => Boolean): Vector[Index] = filterInt(i => p(Index(i)))
+  def foreach(f: Index => Unit): Unit            = foreachInt(i => f(Index(i)))
+  def map[A](f: Index => A): Vector[A]           = mapInt(i => f(Index(i)))
+
+  def intersect(that: IndexRange): IndexRange = IndexRange.until(start max that.start, end min that.end)
+  def contains(i: Index): Boolean             = i.isDefined && (start <= i && i < end)
+  def toSeq: Seq[Index]                       = toVector
+  def toVector: Vector[Index]                 = mapInt(Index)
+  def toIntRange: Range                       = lbits until rbits
+
+  override def toString = s"[$start,$end)"
+}
+
+object IndexRange {
+  def empty: IndexRange = new IndexRange(-1L)
+
+  def to(start: Index, end: Index): IndexRange =
+    if (start.isUndefined || end.isUndefined) empty
+    else if (end.value == Int.MaxValue) throw new IllegalArgumentException("Cannot encode Int.MaxValue")
+    else until(start, end.next)
+
+  def until(start: Index, end: Index): IndexRange =
+    if (start.isUndefined || end.isUndefined) empty
+    else new IndexRange((start.value.toLong << 32) | end.value.toLong)
+}
