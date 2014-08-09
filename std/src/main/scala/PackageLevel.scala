@@ -15,12 +15,112 @@ import scala.collection.{ mutable, immutable, generic }
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends Implicits with Creators {
-  val NoIndex = Index.empty
-  val NoNth   = Nth.empty
+trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases {
+  val NoIndex  = Index.empty
+  val NoNth    = Nth.empty
+  val ClassTag = scala.reflect.ClassTag
 
-  type ClassTag[A]            = scala.reflect.ClassTag[A]
-  type GenTraversableOnce[+A] = scala.collection.GenTraversableOnce[A]
+  def encodeScala(s: String): String = scala.reflect.NameTransformer encode s
+  def decodeScala(s: String): String = scala.reflect.NameTransformer decode s
+}
+
+/** Aliases for types I've had to import over and over and over again.
+ *  Your list may vary.
+ */
+trait Aliases {
+  // common scala
+  type ArrayBuffer[A]                  = scala.collection.mutable.ArrayBuffer[A]
+  type CanBuildFrom[-From, -Elem, +To] = scala.collection.generic.CanBuildFrom[From, Elem, To] // ugh, it's so hideous
+  type ClassTag[A]                     = scala.reflect.ClassTag[A]
+  type Codec                           = scala.io.Codec
+  type IndexedSeq[+A]                  = scala.collection.immutable.IndexedSeq[A]
+  type ListBuffer[A]                   = scala.collection.mutable.ListBuffer[A]
+  type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
+  type GenTraversableLike[+A, +Repr]   = scala.collection.GenTraversableLike[A, Repr]
+  type GenTraversableOnce[+A]          = scala.collection.GenTraversableOnce[A]
+  type VectorBuilder[A]                = scala.collection.mutable.Builder[A, Vector[A]]
+
+  // common annotations
+  type switch  = scala.annotation.switch
+  type tailrec = scala.annotation.tailrec
+  type uV      = scala.annotation.unchecked.uncheckedVariance
+
+  // java types which I acknowledge as victors in the battle for simple names.
+  type BufferedInputStream  = java.io.BufferedInputStream
+  type BufferedReader       = java.io.BufferedReader
+  type BufferedWriter       = java.io.BufferedWriter
+  type ByteArrayInputStream = java.io.ByteArrayInputStream
+  type Charset              = java.nio.charset.Charset
+  type DataInput            = java.io.DataInput
+  type DataInputStream      = java.io.DataInputStream
+  type DataOutputStream     = java.io.DataOutputStream
+  type File                 = java.io.File
+  type FileInputStream      = java.io.FileInputStream
+  type FileOutputStream     = java.io.FileOutputStream
+  type FileTime             = java.nio.file.attribute.FileTime
+  type IOException          = java.io.IOException
+  type InputStream          = java.io.InputStream
+  type JarEntry             = java.util.jar.JarEntry
+  type JarInputStream       = java.util.jar.JarInputStream
+  type ObjectInputStream    = java.io.ObjectInputStream
+  type ObjectOutputStream   = java.io.ObjectOutputStream
+  type OutputStream         = java.io.OutputStream
+  type URI                  = java.net.URI
+  type URL                  = java.net.URL
+  type URLClassLoader       = java.net.URLClassLoader
+
+  // java types for which the battle rages on.
+  type jArray[A]     = Array[A with Object]
+  type jClass        = java.lang.Class[_]
+  type jField        = java.lang.reflect.Field
+  type jFile         = java.io.File
+  type jIterable[+A] = java.lang.Iterable[A @uV]
+  type jIterator[+A] = java.util.Iterator[A @uV]
+  type jList[A]      = java.util.List[A]
+  type jManifest     = java.util.jar.Manifest
+  type jMap[K, V]    = java.util.Map[K, V]
+  type jMethod       = java.lang.reflect.Method
+  type jSet[A]       = java.util.Set[A]
+
+  // scala types which I won't let win.
+  type sIterator[+A] = scala.collection.Iterator[A]
+  type sIterable[+A] = scala.collection.Iterable[A]
+
+  // originals.
+  type ?=>[-A, +B]            = PartialFunction[A, B]
+  type CanBuildSelf[A, CC[X]] = CanBuildFrom[CC[A], A, CC[A]]
+}
+
+/** Various lame global-scope implicits, made to disappear with our friend null.
+ */
+trait ImplicitRemoval {
+  val any2stringadd              = null
+  val fallbackStringCanBuildFrom = null
+  val tuple2ToZippedOps          = null
+  val tuple3ToZippedOps          = null
+  val unwrapString               = null
+
+  val Boolean2boolean = null
+  val Byte2byte       = null
+  val Character2char  = null
+  val Double2double   = null
+  val Float2float     = null
+  val Integer2int     = null
+  val Long2long       = null
+  val Short2short     = null
+
+  val genericWrapArray = null
+  val wrapBooleanArray = null
+  val wrapByteArray    = null
+  val wrapCharArray    = null
+  val wrapDoubleArray  = null
+  val wrapFloatArray   = null
+  val wrapIntArray     = null
+  val wrapLongArray    = null
+  val wrapRefArray     = null
+  val wrapShortArray   = null
+  val wrapString       = null
+  val wrapUnitArray    = null
 }
 
 trait Creators {

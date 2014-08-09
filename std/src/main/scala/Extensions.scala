@@ -43,6 +43,9 @@ final class GenTraversableOnceExtensionOps[CC[X] <: scala.collection.GenTraversa
   def descendingFrequency: OrderedMap[A, Int]            = ascendingFrequency.reverse
 }
 
+/** We could avoid this duplication with some of scala's incredibly high-cost
+ *  (in performance and complexity tax) machinery. Gordian knot untied.
+ */
 final class SeqExtensionOps[CC[X] <: scala.collection.Seq[X], A](private val xs: CC[A]) extends AnyVal {
   // An added benefit of these methods is a huge increase in type safety
   // because the sequence is treated as invariant due to an idiosyncrasy of
@@ -70,7 +73,6 @@ final class StringExtensionOps(private val xs: String) extends AnyVal {
   def exclusiveEnd: Index                         = Index(xs.length)
 
   def apply(range: IndexRange): String = (indicesOf intersect range) |> (r => xs.slice(r.startInt, r.endInt))
-  // indicesOf intersect range map (i => xs(i.value))
 }
 
 final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal {
@@ -83,7 +85,6 @@ final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal {
   def exclusiveEnd: Index                      = Index(xs.length)
 
   def apply(range: IndexRange)(implicit tag: reflect.ClassTag[A]): Array[A] = (indicesOf intersect range) |> (r => xs.slice(r.startInt, r.endInt))
-  // indicesOf intersect range map (i => xs(i.value))
 }
 
 final class AnyExtensionOps[A](val x: A) extends AnyVal {
