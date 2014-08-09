@@ -13,9 +13,11 @@ Usage
 
     resolvers += "bintray/paulp" at "https://dl.bintray.com/paulp/maven"
 
+    scalaVersion := "2.11.2"
+
     libraryDependencies += "org.improving" %% "psp-std" % "0.1.0-M1"
 
-    import psp.std._
+    initialCommands in console := "import psp.std._"
 
 Requirements
 ------------
