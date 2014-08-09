@@ -1,6 +1,8 @@
 package psp
 package std
 
+import Index.zero
+
 /** All IndexRanges are exclusive.
  */
 final class IndexRange private (private val bits: Long) extends AnyVal {
@@ -36,6 +38,9 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
 
 object IndexRange {
   def empty: IndexRange = new IndexRange(-1L)
+
+  def zeroUntil(end: Index): IndexRange = until(zero, end)
+  def zeroTo(end: Index): IndexRange    = to(zero, end)
 
   def to(start: Index, end: Index): IndexRange =
     if (start.isUndefined || end.isUndefined) empty
