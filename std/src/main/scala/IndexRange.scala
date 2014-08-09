@@ -13,6 +13,10 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def end: Index    = Index(endInt)
   def length: Long  = (end.toLong - start.toLong) max 0L
 
+  def foreachNth(f: Nth => Unit): Unit            = foreach(i => f(i.toNth))
+  def filterNth(p: Nth => Boolean): Vector[Index] = filter(i => p(i.toNth))
+  def mapNth[A](f: Nth => A): Vector[A]           = map(i => f(i.toNth))
+
   def foreachInt(f: Int => Unit): Unit            = toIntRange foreach f
   def filterInt(p: Int => Boolean): Vector[Index] = toIntRange filter p map Index toVector
   def mapInt[A](f: Int => A): Vector[A]           = toIntRange map f toVector
