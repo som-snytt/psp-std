@@ -56,7 +56,12 @@ class Tester {
     check(alpha('a', 'g').mkString, range(2, 4), "cde")(_.to_s + "(" + _.to_s + ")")(_ apply _)
     check(alpha('a', 'g').toArray, range(2, 4), Array('c', 'd', 'e'))(_.to_s + "(" + _.to_s + ")")(_ apply _)
 
-    divide("scala-library", typecheckedLines(scalaLibraryCode), expectedTypecheck = 32)
+    // We don't want to protect scala library from itself so let's unmask augmentString etc.
+    {
+      import Predef._
+      divide("scala-library", typecheckedLines(scalaLibraryCode), expectedTypecheck = 32)
+    }
+
     divide("psp-std", typecheckedLines(pspCode), expectedTypecheck = 10)
     divide("psp-show", typecheckedLines(pspShowCode))
 

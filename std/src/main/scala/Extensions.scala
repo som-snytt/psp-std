@@ -64,18 +64,6 @@ final class SeqExtensionOps[CC[X] <: scala.collection.Seq[X], A](private val xs:
   def apply(range: IndexRange): Vector[A] = indexRange intersect range map (i => xs(i.value))
 }
 
-// Another demonstration of scala's boilerplate reduction powers.
-final class StringExtensionOps(private val xs: String) extends AnyVal with SeqLikeExtensionOps[Char] {
-  def length                                      = xs.length
-  def index(elem: Char): Index                    = Index(xs indexOf elem)
-  def lastIndex(elem: Char): Index                = Index(xs lastIndexOf elem)
-  def indexAtWhich(p: Char => Boolean): Index     = Index(xs indexWhere p)
-  def lastIndexAtWhich(p: Char => Boolean): Index = Index(xs lastIndexWhere p)
-  def hasElem(elem: Char): Boolean                = (xs indexOf elem) >= 0
-
-  def apply(range: IndexRange): String = (indexRange intersect range) |> (r => xs.slice(r.startInt, r.endInt))
-}
-
 final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal with SeqLikeExtensionOps[A] {
   def length                                   = xs.length
   def index(elem: A): Index                    = Index(xs indexOf elem)
@@ -87,12 +75,12 @@ final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal with S
   def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = (indexRange intersect range) |> (r => xs.slice(r.startInt, r.endInt))
 }
 
-final class AnyExtensionOps[A](val x: A) extends AnyVal {
+final class AnyExtensionOps[A](private val x: A) extends AnyVal {
   // The famed forward pipe.
   @inline def |>[B](f: A => B): B = f(x)
 }
 
-final class TryExtensionOps[A](val x: scala.util.Try[A]) extends AnyVal {
+final class TryExtensionOps[A](private val x: scala.util.Try[A]) extends AnyVal {
   def fold[B](f: A => B, g: Throwable => B): B = x match {
     case scala.util.Success(x) => f(x)
     case scala.util.Failure(t) => g(t)

@@ -122,12 +122,17 @@ trait ImplicitRemoval {
   val wrapShortArray   = null
   val wrapString       = null
   val wrapUnitArray    = null
+
+  // We reimplement these.
+  val augmentString   = null
+  val unaugmentString = null
 }
 
 trait Creators {
-  def index(x: Int): Index   = Index(x)
-  def offset(x: Int): Offset = Offset(x)
-  def nth(x: Int): Nth       = Nth(x)
+  def index(x: Int): Index                         = Index(x)
+  def offset(x: Int): Offset                       = Offset(x)
+  def nth(x: Int): Nth                             = Nth(x)
+  def indexRange(start: Int, end: Int): IndexRange = IndexRange.until(Index(start), Index(end))
 
   // Mostly obviating the need for those mutable/immutable identifiers.
   def mutableSeq[A](xs: A*): mutable.Seq[A]                 = mutable.Seq(xs: _*)
@@ -154,8 +159,11 @@ trait Implicits {
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
   implicit def showableToShown[A: Show](x: A): Shown[A] = new Shown[A](x)
 
+  // We buried Predef's {un,}augmentString in favor of these.
+  @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
+  @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
+
   // Extension methods for non-collection types.
-  implicit def stringExtensionOps(s: String): StringExtensionOps            = new StringExtensionOps(s)
   implicit def arrayExtensionOps[A](xs: Array[A]): ArrayExtensionOps[A]     = new ArrayExtensionOps[A](xs)
   implicit def anyExtensionOps[A](x: A): AnyExtensionOps[A]                 = new AnyExtensionOps[A](x)
   implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A] = new TryExtensionOps[A](x)

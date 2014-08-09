@@ -9,6 +9,11 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   private def lbits: Int = (bits >>> 32).toInt
   private def rbits: Int = bits.toInt
 
+  // Shift the range left or right. Attempts to go past the minimum
+  // or maximum representable index will yield IndexRange.empty.
+  def >> (n: Int): IndexRange = IndexRange.until(start + n, end + n)
+  def << (n: Int): IndexRange = IndexRange.until(start - n, end - n)
+
   def startInt: Int = lbits
   def endInt: Int   = rbits
   def start: Index  = Index(startInt)
@@ -49,5 +54,6 @@ object IndexRange {
 
   def until(start: Index, end: Index): IndexRange =
     if (start.isEmpty || end.isEmpty) empty
+    else if (end < start) until(start, start)
     else new IndexRange((start.value.toLong << 32) | end.value.toLong)
 }
