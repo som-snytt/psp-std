@@ -3,12 +3,7 @@ package std
 
 import scala.collection.{ mutable, immutable, generic }
 
-final class OrderPreservingMap[K, +V](keys: Seq[K], map: Map[K, V]) extends immutable.Map[K, V] {
-  def +[V1 >: V](kv: (K, V1))    = new OrderPreservingMap(keys :+ kv._1, map + kv)
-  def -(key: K)                  = new OrderPreservingMap(keys filterNot (_ == key), map - key)
-  def get(key: K): Option[V]     = map get key
-  def iterator: Iterator[(K, V)] = keys.iterator map (k => (k, map(k)))
-}
+trait PackageLevel extends Implicits with Creators
 
 trait Creators {
   def index(x: Int): Index   = Index(x)
@@ -22,9 +17,8 @@ trait Creators {
   def immutableSet[A](xs: A*): immutable.Set[A]                          = immutable.Set(xs: _*)
   def immutableMap[K, V](kvs: (K, V)*): immutable.Map[K, V]              = immutable.Map[K, V](kvs: _*)
 
-  def sortedMap[K: Ordering, V](kvs: (K, V)*): SortedMap[K, V]                 = immutable.SortedMap[K, V](kvs: _*)
-  def orderedMap[K, V](kvs: (K, V)*): OrderPreservingMap[K, V]                 = orderedMap[K, V](kvs map (_._1), kvs.toMap)
-  def orderedMap[K, V](keys: Seq[K], map: Map[K, V]): OrderPreservingMap[K, V] = new OrderPreservingMap[K, V](keys, map)
+  def orderedMap[K, V](kvs: (K, V)*): OrderedMap[K, V]                 = new OrderedMap[K, V](kvs map (_._1), kvs.toMap)
+  def orderedMap[K, V](keys: Seq[K], map: Map[K, V]): OrderedMap[K, V] = new OrderedMap[K, V](keys, map)
 
   def listBuilder[A](xs: A*)            = List.newBuilder[A] ++= xs
   def arrayBuilder[A: ClassTag](xs: A*) = Array.newBuilder[A] ++= xs
@@ -37,12 +31,27 @@ trait Implicits {
   implicit def anyExtensionOps[A](x: A): AnyExtensionOps[A]                 = new AnyExtensionOps[A](x)
   implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A] = new TryExtensionOps[A](x)
 
-  implicit def sortedMapExtensionOps[K, V](xs: SortedMap[K, V]): SortedMapExtensionOps[K, V]                                       = new SortedMapExtensionOps[K, V](xs)
+  implicit def sortedMapExtensionOps[K, V](xs: scala.collection.SortedMap[K, V]): SortedMapExtensionOps[K, V]                      = new SortedMapExtensionOps[K, V](xs)
   implicit def mapExtensionOps[K, V](xs: scala.collection.Map[K, V]): MapExtensionOps[K, V]                                        = new MapExtensionOps[K, V](xs)
   implicit def seqExtensionOps[CC[X] <: scala.collection.Seq[X], A](xs: CC[A]): SeqExtensionOps[CC, A]                             = new SeqExtensionOps[CC, A](xs)
   implicit def seqNthExtensionOps[CC[X] <: scala.collection.Seq[X], A](xs: CC[A]): AddNthApplyToSeq[CC, A]                         = new AddNthApplyToSeq[CC, A](xs)
   implicit def seqIndexExtensionOps[CC[X] <: scala.collection.Seq[X], A](xs: CC[A]): AddIndexApplyToSeq[CC, A]                     = new AddIndexApplyToSeq[CC, A](xs)
   implicit def genTraversableOnceExtensionOps[CC[X] <: GenTraversableOnce[X], A](xs: CC[A]): GenTraversableOnceExtensionOps[CC, A] = new GenTraversableOnceExtensionOps[CC, A](xs)
+}
+
+// An immutable Map with a fixed iteration order.
+// It's not a "sorted" map since it has no ordering.
+// It's true one could say its ordering is Ordering[Int] on indexOf.
+// Maybe that will seem like a good idea at some point.
+final class OrderedMap[K, +V](override val keys: Seq[K], map: Map[K, V]) extends immutable.Map[K, V] {
+  def reverse                                 = new OrderedMap(keys.reverse, map)
+  def +[V1 >: V](kv: (K, V1))                 = new OrderedMap(keys :+ kv._1, map + kv)
+  def -(key: K)                               = new OrderedMap(keys filterNot (_ == key), map - key)
+  def get(key: K): Option[V]                  = map get key
+  def iterator: Iterator[(K, V)]              = keys.iterator map (k => (k, map(k)))
+  override def keysIterator                   = keys.iterator
+  override def filter(p: ((K, V)) => Boolean) = new OrderedMap(keys filter (k => p(k -> map(k))), map)
+  override def filterKeys(p: K => Boolean)    = new OrderedMap(keys filter p, map)
 }
 
 // Have to each go into their own class because the apply methods have the same erasure.
@@ -53,23 +62,24 @@ final class AddIndexApplyToSeq[CC[X] <: scala.collection.Seq[X], A](private val 
   def apply(index: Index): A = if (index.isDefined) xs(index.value) else sys.error(s"apply($index)")
 }
 
-final class SortedMapExtensionOps[K, V](private val map: SortedMap[K, V]) extends AnyVal {
-  def reverse: SortedMap[K, V] = map sortByKey map.ordering.reverse
+final class SortedMapExtensionOps[K, V](private val map: scala.collection.SortedMap[K, V]) extends AnyVal {
+  private def ord = map.ordering
+  def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
 }
 
 final class MapExtensionOps[K, V](private val map: scala.collection.Map[K, V]) extends AnyVal {
-  def sortByKey(implicit ord: Ordering[K]): SortedMap[K, V]   = sortedMap(map.toSeq: _*)
-  def sortByValue(implicit ord: Ordering[V]): SortedMap[K, V] = sortedMap(map.toSeq: _*)(ord on map)
+  def orderByKey(implicit ord: Ordering[K]): OrderedMap[K, V]   = orderedMap(map.keys.toSeq.sorted, map.toMap)
+  def orderByValue(implicit ord: Ordering[V]): OrderedMap[K, V] = orderedMap(map.keys.toSeq sorted (ord on map), map.toMap)
 }
 
 final class GenTraversableOnceExtensionOps[CC[X] <: scala.collection.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal {
   def sortDistinct(implicit ord: Ordering[A]): Vector[A] = distinct.sorted
-  def mapOnto[B](f: A => B): OrderPreservingMap[A, B]    = orderedMap(xs.toVector map (x => (x, f(x))): _*)
+  def mapOnto[B](f: A => B): OrderedMap[A, B]            = orderedMap(xs.toVector map (x => (x, f(x))): _*)
   def sorted(implicit ord: Ordering[A]): Vector[A]       = xs.toVector.sorted
   def distinct: Vector[A]                                = xs.toVector.distinct
   def unsortedFrequencyMap: Map[A, Int]                  = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
-  def ascendingFrequency: SortedMap[A, Int]              = unsortedFrequencyMap |> (_.sortByValue)
-  def descendingFrequency: SortedMap[A, Int]             = ascendingFrequency.reverse
+  def ascendingFrequency: OrderedMap[A, Int]             = unsortedFrequencyMap |> (_.orderByValue)
+  def descendingFrequency: OrderedMap[A, Int]            = ascendingFrequency.reverse
 }
 
 final class SeqExtensionOps[CC[X] <: scala.collection.Seq[X], A](private val xs: CC[A]) extends AnyVal {
