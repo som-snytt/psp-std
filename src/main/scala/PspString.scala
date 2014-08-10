@@ -13,7 +13,7 @@ final class PspStringOps(val repr: String) extends AnyVal {
   def toBytes: PspStringAsBytes = new PspStringAsBytes(repr)
   def toChars: PspStringAsChars = new PspStringAsChars(repr)
   def toLines: PspStringAsLines = new PspStringAsLines(repr)
-  def toPath: jPath             = path(repr)
+  // def toPath: jPath             = path(repr)
   def toFile: jFile             = file(repr)
 
   def regex: Regex                      = Regex(repr)

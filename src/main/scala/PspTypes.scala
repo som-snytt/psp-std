@@ -38,7 +38,7 @@ trait PspTypes extends PspJavaTypes {
 }
 
 trait PspJavaTypes {
-  type jPath                  = java.nio.file.Path
+  // type jPath                  = java.nio.file.Path
   type jAbstractCollection[A] = java.util.AbstractCollection[A]
   type jHashSet[A]            = java.util.HashSet[A]
   type jArrayList[A]          = java.util.ArrayList[A]

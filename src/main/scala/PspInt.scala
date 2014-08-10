@@ -4,7 +4,7 @@ package core
 import java.{ lang => jl }
 
 final class PspInt(val self: Int) extends AnyVal with Ordered[Int] {
-  def compare(rhs: Int): Int = jl.Integer.compare(self, rhs)
+  def compare(rhs: Int): Int = self compare rhs
 
   def abs: Int            = math.abs(self)
   def max(that: Int): Int = math.max(self, that)

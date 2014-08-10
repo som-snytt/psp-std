@@ -2,7 +2,6 @@ package psp
 package core
 
 import impl._
-import java.nio.file.Paths
 
 trait PspUtilityMethods extends PspUniversals {
   def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
@@ -59,7 +58,7 @@ trait PspHighPriority extends PspMidPriority with CollectionHigh {
   implicit def raiseFunction2Ops[T1, T2, R](f: (T1, T2) => R): Function2Ops[T1, T2, R]                                             = new Function2Ops(f)
   implicit def raiseExtraViewOps[A, B, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[B]): ExtraViewOperations[A, B, Repr, CC] = new ExtraViewOperations[A, B, Repr, CC](xs)
   implicit def raisePpInterpolatorOps(sc: StringContext): PpInterpolatorOps                                                        = new PpInterpolatorOps(sc)
-  implicit def raiseJavaPathOps(p: jPath): JavaPathOps                                                                             = new JavaPathOps(p)
+  // implicit def raiseJavaPathOps(p: jPath): JavaPathOps                                                                             = new JavaPathOps(p)
 
   implicit def raiseForeachableBuilderOps[Repr](tc: Foreachable[Repr]): ForeachableBuilderOps[tc.A, Repr, tc.CC]    = new ForeachableBuilderOps[tc.A, Repr, tc.CC](tc)
   implicit def raiseDirectAccessBuilderOps[Repr](tc: DirectAccess[Repr]): DirectAccessBuilderOps[tc.A, Repr, tc.CC] = new DirectAccessBuilderOps[tc.A, Repr, tc.CC](tc)
@@ -87,6 +86,6 @@ trait PspShadowScala {
 }
 
 trait JioCreation {
-  def path(path: String): jPath = Paths get path
+  // def path(path: String): jPath = java.nio.file.Paths get path
   def file(path: String): jFile = new jFile(path)
 }
