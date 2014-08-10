@@ -64,10 +64,14 @@ object ShowDirect {
 final class Shown(val to_s: String) extends AnyVal with ShowDirect {
   override def toString = to_s
 }
+final class TryShown(val to_s: String) extends AnyVal with ShowDirect {
+  override def toString = to_s
+}
 final class ShowInterpolator(val sc: StringContext) extends AnyVal {
   /** The type of args forces all the interpolation variables to
    *  be of a type which is implicitly convertible to Shown, which
    *  means they have a Show[A] in scope.
    */
-  def show(args: Shown*): String = new StringContext(sc.parts: _*).raw(args: _*)
+  def show(args: Shown*): String  = StringContext(sc.parts: _*).raw(args: _*)
+  def pp(args: TryShown*): String = StringContext(sc.parts: _*).raw(args: _*)
 }

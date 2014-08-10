@@ -164,7 +164,12 @@ trait Creators {
   def vectorBuilder[A](xs: A*)          = Vector.newBuilder[A] ++= xs
 }
 
-trait Implicits {
+trait LowPriorityPspStd {
+  // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
+  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
+}
+
+trait Implicits extends LowPriorityPspStd {
   // The typesafe non-toString-using show"..." interpolator.
   implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
