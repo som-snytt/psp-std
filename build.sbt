@@ -1,8 +1,8 @@
-scalaVersion in Global := "2.11.1"
+scalaVersion in Global := "2.11.2"
 
 organization in Global := "org.improving"
 
-version in Global := "0.1.2-SNAPSHOT"
+version in Global := "0.1.3-M1"
 
 exportJars in Global := true
 
@@ -10,10 +10,9 @@ initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/re
 
 libraryDependencies ++= Seq(
   "org.scala-lang"  % "scala-compiler"  % scalaVersion.value,
-  "jline"           % "jline"           %       "2.11",
   "ch.qos.logback"  % "logback-classic" %      "1.1.2",
-  "org.scalacheck" %% "scalacheck"      %      "1.11.4"       % "test",
-  "com.lihaoyi"    %% "utest"           %       "0.1.4"       % "test"
+  "org.scalacheck" %% "scalacheck"      %      "1.11.5"       % "test",
+  "com.lihaoyi"    %% "utest"           %       "0.2.0"       % "test"
 )
 
 lazy val root = project in file(".") settings (
