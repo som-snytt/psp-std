@@ -8,7 +8,17 @@ version in Global := "0.2.0-M1"
 
 exportJars in Global := true
 
-initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/replStartup.scala".!!
+initialCommands in console := """
+import scala.collection.{ mutable, immutable }
+import scala.reflect.runtime.{ universe => ru }
+import psp.core._
+implicit final class ReplForeachOps[A](val target: Foreach[A]) {
+  def >(implicit shows: Show[A]): Unit = println(target mk_s EOL)
+}
+implicit final class ReplOps[A](val target: A) {
+  def >(implicit shows: Show[A]): Unit = println(target.to_s)
+}
+"""
 
 libraryDependencies ++= Seq(
   organization.value %% "psp-std"         %     "0.1.0-M2",
