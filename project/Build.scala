@@ -14,14 +14,19 @@ object Build extends sbt.Build {
     import psp.std._
   """.trim
 
-  def isRelease   = sys.props contains "psp.release"
-  def isMilestone = sys.props contains "psp.milestone"
-  def milestone   = 2
+  def isRelease            = sys.props contains "psp.release"
+  def isMilestone          = sys.props contains "psp.milestone"
+  def targetReleaseVersion = "0.1.0"
+  def lastReleasedArtifact = pspOrg % "psp-std_2.11" % lastReleasedVersion
 
-  def releaseVersion   = "0.1.0"
-  def milestoneVersion = "%s-M%s".format(releaseVersion, milestone)
-  def snapshotVersion  = milestoneVersion + "-SNAPSHOT"
-  def buildVersion     = if (isRelease) releaseVersion else if (isMilestone) milestoneVersion else snapshotVersion
+  def milestoneName(n: Int): String = "%s-M%s".format(targetReleaseVersion, n)
+
+  def lastMilestone        = 2
+  def nextMilestone        = lastMilestone + 1
+  def lastReleasedVersion  = milestoneName(lastMilestone)
+  def nextMilestoneVersion = milestoneName(nextMilestone)
+  def snapshotVersion      = nextMilestoneVersion + "-SNAPSHOT"
+  def buildVersion         = if (isRelease) targetReleaseVersion else if (isMilestone) nextMilestoneVersion else snapshotVersion
 
   def common = bintraySettings ++ Seq[Setting[_]](
                organization :=  pspOrg,

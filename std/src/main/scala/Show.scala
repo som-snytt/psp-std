@@ -15,7 +15,13 @@ trait ShowDirect extends Any {
   def to_s: String
 }
 
-object Show {
+trait LowPriorityShow {
+  /** I believe this is the first time I have ever been able to
+   *  use an AnyVal bound other than when demonstrating bugs.
+   */
+  implicit def anyValShow[A <: AnyVal] : Show[A] = Show.native[A]()
+}
+object Show extends LowPriorityShow {
   def apply[A](f: A => String): Show[A] = ShowClass(f)
   def native[A](): Show[A]              = ToString.castTo[Show[A]]
 
@@ -36,11 +42,8 @@ object Show {
   implicit def seqShow[CC[X] <: Seq[X], A: Show] : Show[CC[A]] = apply(xs => inBrackets(xs: _*))
   implicit def arrayShow[A: Show] : Show[Array[A]]             = apply(xs => inBrackets(xs: _*))
 
-  /** I believe this is the first time I have ever been able to
-   *  use an AnyVal bound other than when demonstrating bugs.
-   */
-  implicit def anyValShow[A <: AnyVal] : Show[A]     = native[A]()
-  implicit def showDirect[A <: ShowDirect] : Show[A] = native[A]()
+  implicit def showDirect[A <: ShowDirect] : Show[A]  = native[A]()
+  implicit def numberShow[A <: ScalaNumber] : Show[A] = native[A]() // BigInt, BigDecimal
 
   private case class ShowClass[A](f: A => String) extends AnyVal with Show[A] { def show(x: A): String = f(x) }
 }
