@@ -52,9 +52,9 @@ class Tester {
   }
 
   def run(): String = {
-    check(alpha('a', 'g'), range(2, 4), alpha('c', 'e'))(_.to_s + "(" + _.to_s + ")")(_ apply _)
-    check(alpha('a', 'g').mkString, range(2, 4), "cde")(_.to_s + "(" + _.to_s + ")")(_ apply _)
-    check(alpha('a', 'g').toArray, range(2, 4), Array('c', 'd', 'e'))(_.to_s + "(" + _.to_s + ")")(_ apply _)
+    check(alpha('a', 'g'), range(2, 4), alpha('c', 'e'))((x, y) => show"$x($y)")(_ apply _)
+    check(alpha('a', 'g').mkString, range(2, 4), "cde")((x, y) => show"$x($y)")(_ apply _)
+    check(alpha('a', 'g').toArray, range(2, 4), Array('c', 'd', 'e'))((x, y) => show"$x($y)")(_ apply _)
 
     // We don't want to protect scala library from itself so let's unmask augmentString etc.
     {

@@ -16,12 +16,19 @@ import scala.collection.{ mutable, immutable }
  *  like inheritance, specificity, method dispatch, and so forth.
  */
 trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases {
+  val EOL      = sys.props.getOrElse("line.separator", "\n")
   val NoIndex  = Index.empty
   val NoNth    = Nth.empty
   val ClassTag = scala.reflect.ClassTag
 
-  def encodeScala(s: String): String = scala.reflect.NameTransformer encode s
-  def decodeScala(s: String): String = scala.reflect.NameTransformer decode s
+  /** It's like "" + x, except, you know, for kids.
+   */
+  val `""` = ShowDirect("")
+
+  def javaClassOf[T: ClassTag] : Class[T] = classTag[T].runtimeClass.castTo[Class[T]]
+  def classTag[T: ClassTag] : ClassTag[T] = implicitly[ClassTag[T]]
+  def encodeScala(s: String): String      = scala.reflect.NameTransformer encode s
+  def decodeScala(s: String): String      = scala.reflect.NameTransformer decode s
 }
 
 /** Aliases for types I've had to import over and over and over again.
@@ -30,15 +37,18 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Ali
 trait Aliases {
   // common scala
   type ArrayBuffer[A]                  = scala.collection.mutable.ArrayBuffer[A]
+  type Builder[-Elem, +To]             = scala.collection.mutable.Builder[Elem, To]
   type CanBuildFrom[-From, -Elem, +To] = scala.collection.generic.CanBuildFrom[From, Elem, To] // ugh, it's so hideous
   type ClassTag[A]                     = scala.reflect.ClassTag[A]
   type Codec                           = scala.io.Codec
-  type IndexedSeq[+A]                  = scala.collection.immutable.IndexedSeq[A]
-  type ListBuffer[A]                   = scala.collection.mutable.ListBuffer[A]
-  type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
   type GenTraversableLike[+A, +Repr]   = scala.collection.GenTraversableLike[A, Repr]
   type GenTraversableOnce[+A]          = scala.collection.GenTraversableOnce[A]
+  type IndexedSeq[+A]                  = scala.collection.immutable.IndexedSeq[A]
+  type ListBuffer[A]                   = scala.collection.mutable.ListBuffer[A]
+  type ScalaNumber                     = scala.math.ScalaNumber
+  type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
   type VectorBuilder[A]                = scala.collection.mutable.Builder[A, Vector[A]]
+  type WrappedArray[A]                 = scala.collection.mutable.WrappedArray[A]
 
   // common annotations
   type switch  = scala.annotation.switch
@@ -129,6 +139,7 @@ trait ImplicitRemoval {
 }
 
 trait Creators {
+  def url(x: String): URL                          = new URL(x)
   def index(x: Int): Index                         = Index(x)
   def offset(x: Int): Offset                       = Offset(x)
   def nth(x: Int): Nth                             = Nth(x)
@@ -157,7 +168,7 @@ trait Implicits {
   // The typesafe non-toString-using show"..." interpolator.
   implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): Shown[A] = new Shown[A](x)
+  implicit def showableToShown[A: Show](x: A): Shown = new Shown(implicitly[Show[A]] show x)
 
   // We buried Predef's {un,}augmentString in favor of these.
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
@@ -172,7 +183,6 @@ trait Implicits {
   // If the type class is attached at creation it can't be a value class.
   // So it has to be duplicated across every method which utilizes it.
   // Another victory against boilerplate.
-  implicit def showExtensionOps[A](x: A): Show.Ops[A] = new Show.Ops[A](x)
   implicit def eqExtensionOps[A](x: A): Eq.Ops[A]     = new Eq.Ops[A](x)
 
   // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.

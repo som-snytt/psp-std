@@ -14,9 +14,18 @@ object Build extends sbt.Build {
     import psp.std._
   """.trim
 
+  def isRelease   = sys.props contains "psp.release"
+  def isMilestone = sys.props contains "psp.milestone"
+  def milestone   = 2
+
+  def releaseVersion   = "0.1.0"
+  def milestoneVersion = "%s-M%s".format(releaseVersion, milestone)
+  def snapshotVersion  = milestoneVersion + "-SNAPSHOT"
+  def buildVersion     = if (isRelease) releaseVersion else if (isMilestone) milestoneVersion else snapshotVersion
+
   def common = bintraySettings ++ Seq[Setting[_]](
                organization :=  pspOrg,
-                    version :=  "0.1.0-M2",
+                    version :=  buildVersion,
                scalaVersion :=  "2.11.2",
                 logBuffered :=  false,
               scalacOptions ++= Seq("-language:_"),

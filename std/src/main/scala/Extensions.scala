@@ -78,6 +78,16 @@ final class ArrayExtensionOps[A](private val xs: Array[A]) extends AnyVal with S
 final class AnyExtensionOps[A](private val x: A) extends AnyVal {
   // The famed forward pipe.
   @inline def |>[B](f: A => B): B = f(x)
+
+  // "Maybe we can enforce good programming practice with annoyingly long method names."
+  def castTo[U] : U = x.asInstanceOf[U]
+  def toRef: AnyRef = castTo[AnyRef]
+
+  def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else (x: A1).to_s
+  def any_s: String = x match {
+    case x: ShowDirect => x.to_s
+    case _             => "" + x
+  }
 }
 
 final class TryExtensionOps[A](private val x: scala.util.Try[A]) extends AnyVal {
