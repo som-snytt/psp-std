@@ -22,8 +22,3 @@ final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label:
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R = pf(x)
 }
-
-
-final class PpInterpolatorOps(val stringContext: StringContext) {
-  final def pp(args: Any*): String = StringContext(stringContext.parts: _*).s(args map (_.any_s): _*)
-}

@@ -13,7 +13,7 @@ import scala.collection.{ mutable, immutable }
 import scala.reflect.runtime.{ universe => ru }
 import psp.core._
 implicit final class ReplForeachOps[A](val target: Foreach[A]) {
-  def >(implicit shows: Show[A]): Unit = println(target mk_s EOL)
+  def >(implicit shows: Show[A]): Unit = println(target join EOL)
 }
 implicit final class ReplOps[A](val target: A) {
   def >(implicit shows: Show[A]): Unit = println(target.to_s)
@@ -21,11 +21,10 @@ implicit final class ReplOps[A](val target: A) {
 """
 
 libraryDependencies ++= Seq(
-  organization.value %% "psp-std"         %     "0.1.0-M2",
-  "org.scala-lang"    % "scala-compiler"  % scalaVersion.value,
-  "ch.qos.logback"    % "logback-classic" %      "1.1.2",
-  "org.scalacheck"   %% "scalacheck"      %      "1.11.5"       % "test",
-  "com.lihaoyi"      %% "utest"           %       "0.2.0"       % "test"
+  organization.value %% "psp-std"        % "0.1.0-M3-SNAPSHOT",
+  "org.scala-lang"    % "scala-compiler" % scalaVersion.value,
+  "org.scalacheck"   %% "scalacheck"     %       "1.11.5"       % "test",
+  "com.lihaoyi"      %% "utest"          %       "0.2.0"        % "test"
 )
 
 lazy val root = project in file(".") settings (

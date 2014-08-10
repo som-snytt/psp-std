@@ -88,7 +88,7 @@ object Foreach extends ForeachImplicits {
     def prefix = xs.shortClass
     def lp = "("
     def rp = ")"
-    def base = pp"""$prefix$lp${xs take max mk_s ", "}"""
+    def base = pp"""$prefix$lp${xs take max join ", "}"""
 
     xs.sizeInfo match {
       case Precise(Size(n)) if n <= max => pp"$base$rp"

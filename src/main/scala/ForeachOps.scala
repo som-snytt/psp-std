@@ -61,8 +61,12 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
       f(acc)
     }
   })
-  def mk_s(sep: String)(implicit shows: Show[A]): String = foldl(new StringBuilder)(_ append sep append _.to_s).result stripPrefix sep
-  def mkString(sep: String): String                      = foldl(new StringBuilder)(_ append sep append _.try_s).result stripPrefix sep
+
+  private def stringed(sep: String)(f: A => String): String = foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
+
+  def joinComma(implicit shows: Show[A]): String         = join(", ")
+  def join(sep: String)(implicit shows: Show[A]): String = stringed(sep)(_.to_s)
+  def mkString(sep: String): String                      = stringed(sep)(_.try_s)
 
   def find(p: Predicate[A]): Option[A] = { xs.foreach(x => if (p(x)) return Some(x)) ; None }
   def forall(p: Predicate[A]): Boolean = { xs.foreach(x => if (!p(x)) return false) ; true }

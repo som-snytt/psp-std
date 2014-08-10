@@ -6,10 +6,7 @@ psp collect
 This is an alternative to the standard scala collections, which are unwieldy.
 All operations are lazy. Computation is deferred for as long as possible.
 It's still under development. Please don't use it unless you understand what that means.
-
-Also, the bikeshed is covered in a large tarp. Renovations are postponed until further
-notice. I already know you don't like the name "mk_s" and want to fiddle with things.
-Have patience, you'll get your chance.
+I'm working on integrating it into something more comprehensive: see paulp/psp-std.
 
 Explanation of test output, reformatted to reduce width:
 
@@ -120,7 +117,7 @@ java.lang.ArithmeticException: / by zero
   at $anonfun$1.apply$mcII$sp(<console>:23)
 
 // In psp, success
-scala> xs map (5 / _) takeRight 1 mk_s ""
+scala> xs map (5 / _) takeRight 1 join ""
 res0: String = 5
 ```
 
@@ -131,7 +128,7 @@ scala> val xs = Foreach from BigInt(1)
 xs: psp.core.Foreach[BigInt] = unfold from 1
 
 // We drop 1000 elements off the right side of infinity, then take the first three.
-scala> xs dropRight 1000 take 3 mk_s ", "
+scala> xs dropRight 1000 take 3 join ", "
 res0: String = 1, 2, 3
 
 // Try it with a Stream view (it does terminate with Stream.)

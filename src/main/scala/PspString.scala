@@ -71,7 +71,7 @@ final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeafIm
   @inline def foreach(f: Line => Unit): Unit = lines foreach f
   def contains(x: Line): Boolean             = lines exists (_ == x)
 
-  override def toString = lineNumbers map (i => "%4s  %s\n".format(i, line(i))) mk_s ""
+  override def toString = lineNumbers map (i => "%4s  %s\n".format(i, line(i))) join ""
 }
 
 final class DelimitedString(repr: String, delimiter: Regex) extends IndexedLeafImpl[String] {

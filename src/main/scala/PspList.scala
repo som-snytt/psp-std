@@ -20,7 +20,7 @@ object PspList {
     val elems = xs take max
     val base = if (xs drop max isEmpty) "nil" else "..."
 
-    if (elems.isEmpty) base else (elems mk_s " :: ") + " :: nil"
+    if (elems.isEmpty) base else (elems join " :: ") + " :: nil"
   }
   implicit def ShowPspList[A: Show] : Show[PspList[A]] = Show[PspList[A]](xs =>
     if (xs.isEmpty) "nil" else show"${xs.head} :: ${xs.tail}"
