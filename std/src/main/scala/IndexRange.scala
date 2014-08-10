@@ -2,6 +2,7 @@ package psp
 package std
 
 import Index.zero
+import IndexRange.empty
 
 /** All IndexRanges are inclusive of start and exclusive of end.
  */
@@ -14,11 +15,17 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def >> (n: Int): IndexRange = IndexRange.until(start + n, end + n)
   def << (n: Int): IndexRange = IndexRange.until(start - n, end - n)
 
-  def startInt: Int = lbits
-  def endInt: Int   = rbits
-  def start: Index  = Index(startInt)
-  def end: Index    = Index(endInt)
-  def length: Long  = (end.toLong - start.toLong) max 0L
+  def startInt: Int  = lbits
+  def endInt: Int    = rbits
+  def start: Index   = Index(startInt)
+  def end: Index     = Index(endInt)
+  def length: Long   = (end.toLong - start.toLong) max 0L
+  def intLength: Int = length.toInt
+
+  def drop(n: Int): IndexRange      = if (n <= 0) this else IndexRange.until(start + n, end)
+  def dropRight(n: Int): IndexRange = if (n <= 0) this else IndexRange.until(start, end - n)
+  def take(n: Int): IndexRange      = if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(start, start + n)
+  def takeRight(n: Int): IndexRange = if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(end - n, end)
 
   def foreachNth(f: Nth => Unit): Unit            = foreach(i => f(i.toNth))
   def filterNth(p: Nth => Boolean): Vector[Index] = filter(i => p(i.toNth))
@@ -42,8 +49,7 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
 }
 
 object IndexRange {
-  def empty: IndexRange = new IndexRange(-1L)
-
+  def empty: IndexRange                 = new IndexRange(-1L)
   def zeroUntil(end: Index): IndexRange = until(zero, end)
   def zeroTo(end: Index): IndexRange    = to(zero, end)
 
