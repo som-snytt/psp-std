@@ -20,12 +20,6 @@ import scala.{ collection => sc }
 sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
   def +(size: Size): SizeInfo
   def partialCompare(that: SizeInfo): PartialOrder.Cmp = SizeInfo.SizeInfoPartialOrder.partialCompare(this, that)
-  final override def toString = this match {
-    case Infinite              => "<inf>"
-    case Bounded(lo, Infinite) => s"[$lo, <inf>)"
-    case Bounded(lo, hi)       => s"[$lo, $hi]"
-    case Precise(size)         => s"$size"
-  }
 }
 
 // This arrangement means that "x + size" results in the same type as x for any SizeInfo.
@@ -50,6 +44,13 @@ object SizeInfo {
   val NonEmpty = Bounded(One, Infinite)
 
   def apply(n: Int): SizeInfo = Precise(Size(n))
+
+  implicit def ShowSizeInfo[A <: SizeInfo]: Show[A] = Show[A] {
+    case Bounded(lo, Infinite) => show"[$lo, <inf>)"
+    case Bounded(lo, hi)       => show"[$lo, $hi]"
+    case Precise(size)         => s"$size"
+    case Infinite              => "<inf>"
+  }
 
   // no, infinity doesn't really equal infinity, but it can for our
   // purposes as long as <inf> - <inf> is ill-defined.

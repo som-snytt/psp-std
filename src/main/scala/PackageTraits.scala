@@ -5,10 +5,7 @@ import impl._
 import java.nio.file.Paths
 
 trait PspUtilityMethods extends PspUniversals {
-  def jClassOf[T: ClassTag] : jClass[T] = classTag[T].runtimeClass.castTo[jClass[T]]
-  def classTag[T: ClassTag] : ClassTag[T] = implicitly[ClassTag[T]]
-
-  def labelpf[T, R](label: String)(pf: T =?> R): T =?> R = new LabeledPartialFunction(pf, label)
+  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
   def failEmpty(operation: String): Nothing = throw new NoSuchElementException(s"$operation on empty collection")
   def fail(msg: String): Nothing            = throw new RuntimeException(msg)
 }
@@ -57,7 +54,7 @@ trait PspMidPriority extends PspLowPriority {
 }
 
 trait PspHighPriority extends PspMidPriority with CollectionHigh {
-  implicit def raisePartialFunctionOps[T, R](pf: T =?> R): PartialFunctionOps[T, R]                                                = new PartialFunctionOps[T, R](pf)
+  implicit def raisePartialFunctionOps[T, R](pf: T ?=> R): PartialFunctionOps[T, R]                                                = new PartialFunctionOps[T, R](pf)
   implicit def raiseFunction1Ops[T, R](f: T => R): Function1Ops[T, R]                                                              = new Function1Ops[T, R](f)
   implicit def raiseFunction2Ops[T1, T2, R](f: (T1, T2) => R): Function2Ops[T1, T2, R]                                             = new Function2Ops(f)
   implicit def raiseExtraViewOps[A, B, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[B]): ExtraViewOperations[A, B, Repr, CC] = new ExtraViewOperations[A, B, Repr, CC](xs)
@@ -83,17 +80,13 @@ class DirectAccessBuilderOps[A, Repr, CC[X]](tc: DirectAccessType[A, Repr, CC]) 
 /** It's kind of funny... I guess.
  */
 trait PspShadowScala {
-  val wrapByteArray, wrapShortArray, wrapCharArray, wrapIntArray, wrapLongArray, wrapFloatArray, wrapDoubleArray = null
-  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps        = null
-  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper               = null
-  val wrapString, unwrapString, augmentString, unaugmentString                                                   = null
-  val StringAdd, ArrowAssoc                                                                                      = null
-  val genericArrayOps, genericWrapArray                                                                          = null
+  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
+  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
+  val StringAdd, ArrowAssoc                                                                               = null
+  val genericArrayOps                                                                                     = null
 }
-// ViewEnvironment[A, Repr, CC]#View[B]
 
 trait JioCreation {
   def path(path: String): jPath = Paths get path
   def file(path: String): jFile = new jFile(path)
-  def url(path: String): jUrl   = new jUrl(path)
 }

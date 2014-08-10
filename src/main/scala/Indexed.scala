@@ -17,7 +17,7 @@ trait Invariant[A] extends Any
 trait HasContains[A] extends Any with Invariant[A] { def contains(x: A): Boolean }
 trait DirectLeaf[A] extends Any with Direct[A] with HasContains[A]
 
-final class PureIndexed[+A](size: Size, indexFn: Int => A) extends IndexedImpl[A](size) {
+final class PureIndexed[+A](size: Size, indexFn: Index => A) extends IndexedImpl[A](size) {
   def elemAt(index: Index): A = indexFn(index)
 }
 

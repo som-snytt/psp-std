@@ -1,7 +1,7 @@
 package psp
 package tests
 
-import core._
+import psp.core._
 import compat.ScalaNative
 import utest._
 
@@ -18,7 +18,7 @@ object CountOperationsSpec extends TestSuite {
   lazy val tupleFlatMap: Int => Foreach[Int] = ((x: Int) => Foreach.elems(x, x)) labeled "(x, x)"
   lazy val isEven: Int => Boolean            = ((x: Int) => x % 2 == 0) labeled "isEven"
   lazy val timesThree: Int => Int            = ((x: Int) => x * 3) labeled "*3"
-  lazy val collectDivSix: Int =?> Int        = labelpf("%/6")({ case x: Int if x % 6 == 0 => x / 6 })
+  lazy val collectDivSix: Int ?=> Int        = labelpf("%/6")({ case x: Int if x % 6 == 0 => x / 6 })
 
   def max    = 1000
   def numOps = 3

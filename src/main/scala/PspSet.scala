@@ -37,14 +37,14 @@ trait Map[-K, +V] {
 //   def keys: Extensional[K]
 // }
 
-// final class MappedPartialFunction[K, K1, V, V1](pf: K =?> V, in: K1 => K, out: V => V1, default: K => V1) extends PartialFunction[K1, V1] {
+// final class MappedPartialFunction[K, K1, V, V1](pf: K ?=> V, in: K1 => K, out: V => V1, default: K => V1) extends PartialFunction[K1, V1] {
 
 //   def applyOrElse(x: K1, alt: K1 => V1): V = { val v = g(x) ; if (pf isDefinedAt v) pf(v) else alt(x) }
 //   def isDefinedAt(x: K1): Boolean          = pf isDefinedAt g(x)
 //   def apply(x: K1): V1                     = out(pf(in(x)))
 // }
 
-final class PspMap[K, V](pf: K =?> V, default: K => V) extends Map[K, V] {
+final class PspMap[K, V](pf: K ?=> V, default: K => V) extends Map[K, V] {
   def contains(x: K)                        = pf isDefinedAt x
   def apply(x: K): V                        = pf.applyOrElse(x, default)
   def applyOrElse(x: K, alt: K => V): V     = pf.applyOrElse(x, alt)
@@ -53,8 +53,8 @@ final class PspMap[K, V](pf: K =?> V, default: K => V) extends Map[K, V] {
 }
 
 object PspMap {
-  def apply[K, V](pf: K =?> V): PspMap[K, V]                  = apply(pf, x => throw new NoSuchElementException(s"$x"))
-  def apply[K, V](pf: K =?> V, default: K => V): PspMap[K, V] = new PspMap[K, V](pf, default)
+  def apply[K, V](pf: K ?=> V): PspMap[K, V]                  = apply(pf, x => throw new NoSuchElementException(s"$x"))
+  def apply[K, V](pf: K ?=> V, default: K => V): PspMap[K, V] = new PspMap[K, V](pf, default)
 }
 object PspSet {
   def universal[A](xs: A*): EquivSet[A]           = EquivSet[A](Foreach.elems(xs: _*))(Equiv.universal[A])

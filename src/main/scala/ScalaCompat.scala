@@ -16,6 +16,8 @@ object FromScala {
   }
 }
 
+/*****
+
 object ScalaCompat {
   def apply[Repr](xs: Repr)(implicit tc: DirectAccess[Repr]): CompatSeq[tc.A, Repr, tc.CC] = new CompatSeq[tc.A, Repr, tc.CC](xs)(tc)
 }
@@ -190,3 +192,5 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
 
   override def toString = pp"CompatSeq($repr)"
 }
+
+*****/

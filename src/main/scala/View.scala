@@ -60,7 +60,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     final def map[B](f: A => B): MapTo[B]                       = Mapped(this, f)
     final def flatMap[B](f: A => Foreach[B]): MapTo[B]          = FlatMapped(this, f)
     final def flatten[B](implicit ev: A <:< Input[B]): MapTo[B] = flatMap(x => x)
-    final def collect[B](pf: A =?> B): MapTo[B]                 = Collected(this, pf)
+    final def collect[B](pf: A ?=> B): MapTo[B]                 = Collected(this, pf)
     final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]         = Joined(this, that.m.castTo[View[A1]])
 
     final def withFilter(p: Predicate[A]): MapTo[A] = Filtered(this, p)
@@ -127,7 +127,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   final case class Reversed   [+A   ](prev: api.View[A])                     extends CompositeView[A]("reverse",        x => x)
   final case class Mapped     [ A, B](prev: api.View[A], f: A => B)          extends CompositeView[B](pp"map $f",       x => x)
   final case class FlatMapped [ A, B](prev: api.View[A], f: A => Foreach[B]) extends CompositeView[B](pp"flatMap $f",   x => if (x.isZero) x else Unknown)
-  final case class Collected  [ A, B](prev: api.View[A], pf: A =?> B)        extends CompositeView[B](pp"collect $pf",  _.atMost)
+  final case class Collected  [ A, B](prev: api.View[A], pf: A ?=> B)        extends CompositeView[B](pp"collect $pf",  _.atMost)
 
   object FlattenIndexedSlice {
     def unapply[A](xs: api.View[A]): Option[(api.View[A], Interval)] = xs match {

@@ -12,7 +12,7 @@ object SizeInfoGenerators {
   import Gen._
 
   implicit class GenOps[A](gen: Gen[A]) {
-    def collect[B](pf: A =?> B): Gen[B] = gen suchThat pf.isDefinedAt map pf.apply
+    def collect[B](pf: A ?=> B): Gen[B] = gen suchThat pf.isDefinedAt map pf.apply
   }
 
   def genSize: Gen[Size]         = chooseNum(1, Int.MaxValue / 2) map (n => Size(n))

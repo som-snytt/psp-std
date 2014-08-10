@@ -52,7 +52,7 @@ abstract class IndexedImpl[+A](val size: Size) extends Direct[A] with HasPrecise
   def sizeInfo = size
   @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
   def isDefinedAt(index: Index): Boolean = size containsIndex index
-  override def toString = Foreach stringify this
+  override def toString = Foreach.stringify(this)(Show.native[A])
 }
 
 /** DirectAccess

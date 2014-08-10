@@ -9,10 +9,10 @@ final class Function2Ops[-T1, -T2, +R](val f: (T1, T2) => R) extends AnyVal {
   def swap: (T2, T1) => R = (x, y) => f(y, x)
 }
 
-final class PartialFunctionOps[T, R](val pf: T =?> R) extends AnyVal {
-  def labeled(label: String): T =?> R     = new LabeledPartialFunction(pf, label)
-  def contraMap[T1](f: T1 => T): T1 =?> R = { case x if pf isDefinedAt f(x) => pf(f(x)) }
-  def mapValues[R1](f: R => R1): T =?> R1 = { case x if pf isDefinedAt x => f(pf(x)) }
+final class PartialFunctionOps[T, R](val pf: T ?=> R) extends AnyVal {
+  def labeled(label: String): T ?=> R     = new LabeledPartialFunction(pf, label)
+  def contraMap[T1](f: T1 => T): T1 ?=> R = { case x if pf isDefinedAt f(x) => pf(f(x)) }
+  def mapValues[R1](f: R => R1): T ?=> R1 = { case x if pf isDefinedAt x => f(pf(x)) }
 }
 
 final class LabeledFunction[-T, +R](f: T => R, val label: String) extends (T => R) with Labeled {
@@ -25,5 +25,5 @@ final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label:
 
 
 final class PpInterpolatorOps(val stringContext: StringContext) {
-  final def pp(args: Any*): String = StringContext(stringContext.parts: _*).s(args map (_.to_s): _*)
+  final def pp(args: Any*): String = StringContext(stringContext.parts: _*).s(args map (_.any_s): _*)
 }

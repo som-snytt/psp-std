@@ -61,8 +61,8 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
       f(acc)
     }
   })
-  def mk_s(sep: String): String = foldl(new StringBuilder)(_ append sep append _.to_s).result stripPrefix sep
-  def mkString(sep: String): String = foldl(new StringBuilder)(_ append sep append _.to_s).result stripPrefix sep
+  def mk_s(sep: String)(implicit shows: Show[A]): String = foldl(new StringBuilder)(_ append sep append _.to_s).result stripPrefix sep
+  def mkString(sep: String): String                      = foldl(new StringBuilder)(_ append sep append _.try_s).result stripPrefix sep
 
   def find(p: Predicate[A]): Option[A] = { xs.foreach(x => if (p(x)) return Some(x)) ; None }
   def forall(p: Predicate[A]): Boolean = { xs.foreach(x => if (!p(x)) return false) ; true }

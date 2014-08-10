@@ -5,17 +5,12 @@ import scala.{ collection => sc }
 import sc.{ mutable => scm, generic => scg }
 
 /** A thin abstraction over some questionable assumptions. */
-trait PspTypes extends PspJavaTypes with PspScalaTypes {
-  type Index              = Int
+trait PspTypes extends PspJavaTypes {
   type Done               = Boolean
   type Suspended[+A]      = (A => Unit) => Unit
   type Ref[+A]            = A with AnyRef
   type Predicate[-A]      = A => Boolean
   type Predicate2[-A, -B] = (A, B) => Boolean
-
-  val MaxIndex = Int.MaxValue
-  val NoIndex  = -1
-  val EOL      = sys.props.getOrElse("line.separator", "\n")
 
   // With type aliases like these which include a type selection,
   // sometimes substitution fails and you get messages like
@@ -44,35 +39,13 @@ trait PspTypes extends PspJavaTypes with PspScalaTypes {
 
 trait PspJavaTypes {
   type jPath                  = java.nio.file.Path
-  type jUri                   = java.net.URI
-  type jUrl                   = java.net.URL
-  type jFile                  = java.io.File
-  type jClass[A]              = java.lang.Class[A]
   type jAbstractCollection[A] = java.util.AbstractCollection[A]
   type jHashSet[A]            = java.util.HashSet[A]
-  type jList[A]               = java.util.List[A]
   type jArrayList[A]          = java.util.ArrayList[A]
-  type jIterator[A]           = java.util.Iterator[A]
   type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]
   type BlockingQueue[A]       = java.util.concurrent.BlockingQueue[A]
   type SynchronousQueue[A]    = java.util.concurrent.SynchronousQueue[A]
 
   def jHashSet[A] = new jHashSet[A]
   def jList[A]    = new jArrayList[A]
-
-}
-
-trait PspScalaTypes {
-  type tailrec      = scala.annotation.tailrec
-  type uV           = scala.annotation.unchecked.uncheckedVariance
-  type IdFun[A]     = A => A
-  type =?> [-A, +B] = PartialFunction[A, B]
-
-  type GenTraversableOnce[+A]          = sc.GenTraversableOnce[A]
-  type Builder[-Elem, +To]             = scm.Builder[Elem, To]
-  type WrappedArray[A]                 = scm.WrappedArray[A]
-  type ArrayBuffer[A]                  = scm.ArrayBuffer[A]
-  type CanBuildFrom[-From, -Elem, +To] = scg.CanBuildFrom[From, Elem, To]
-  type ScalaNumber                     = scala.math.ScalaNumber
-  type ClassTag[A]                     = scala.reflect.ClassTag[A]
 }

@@ -21,8 +21,8 @@ final class Regex(val pattern: Pattern) extends AnyVal {
   def matchesAnywhere(input: CharSequence): Boolean = matcher(input).find()
   def splits(input: CharSequence): Direct[String]  = Direct pure (pattern split input)
 
-  def unapplySeq(input: CharSequence): Option[List[String]] = matcher(input) match {
-    case m if m.matches() => Some((1 to m.groupCount).toList map m.group)
+  def unapplySeq(input: CharSequence): Option[Vector[String]] = matcher(input) match {
+    case m if m.matches() => Some((1 to m.groupCount).toVector map (i => m.group(i)))
     case _                => None
   }
 

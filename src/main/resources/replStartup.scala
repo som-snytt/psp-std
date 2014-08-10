@@ -13,7 +13,7 @@ def stats() { println(s"lin: ${lin.calls}, ind: ${ind.calls}") }
 val s = """
 def map[B](f: A => B): MapTo[B]
 def flatMap[B](f: A => Foreach[B]): MapTo[B]
-def collect[B](pf: A =?> B): MapTo[B]
+def collect[B](pf: A ?=> B): MapTo[B]
 def withFilter(p: Predicate[A]): MapTo[A]
 def filter(p: Predicate[A]): MapTo[A]
 def filterNot(p: Predicate[A]): MapTo[A]

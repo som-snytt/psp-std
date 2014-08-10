@@ -1,18 +1,21 @@
+resolvers += "bintray/paulp" at "https://dl.bintray.com/paulp/maven"
+
 scalaVersion in Global := "2.11.2"
 
 organization in Global := "org.improving"
 
-version in Global := "0.1.3-M1"
+version in Global := "0.2.0-M1"
 
 exportJars in Global := true
 
 initialCommands in console := s"cat ${baseDirectory.value}/src/main/resources/replStartup.scala".!!
 
 libraryDependencies ++= Seq(
-  "org.scala-lang"  % "scala-compiler"  % scalaVersion.value,
-  "ch.qos.logback"  % "logback-classic" %      "1.1.2",
-  "org.scalacheck" %% "scalacheck"      %      "1.11.5"       % "test",
-  "com.lihaoyi"    %% "utest"           %       "0.2.0"       % "test"
+  organization.value %% "psp-std"         %     "0.1.0-M2",
+  "org.scala-lang"    % "scala-compiler"  % scalaVersion.value,
+  "ch.qos.logback"    % "logback-classic" %      "1.1.2",
+  "org.scalacheck"   %% "scalacheck"      %      "1.11.5"       % "test",
+  "com.lihaoyi"      %% "utest"           %       "0.2.0"       % "test"
 )
 
 lazy val root = project in file(".") settings (

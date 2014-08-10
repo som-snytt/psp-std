@@ -49,7 +49,7 @@ trait MapElementView[+A] extends Any with TypeConstructors[A] {
   def map[B](f: A => B): MapTo[B]
   def flatten[B](implicit ev: A <:< Input[B]): MapTo[B]
   def flatMap[B](f: A => Input[B]): MapTo[B]
-  def collect[B](pf: A =?> B): MapTo[B]
+  def collect[B](pf: A ?=> B): MapTo[B]
 }
 
 trait DirectAccessView[+A] extends Any with TypeConstructors[A] {

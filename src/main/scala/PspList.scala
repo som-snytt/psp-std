@@ -16,14 +16,15 @@ object PspList {
   def fill[A](n: Int)(body: => A): PspList[A] = if (n <= 0) nil() else body :: fill(n - 1)(body)
   def apply[A](xs: A*): PspList[A]            = xs.foldRight(nil[A]())(_ :: _)
 
-  def stringOf[A](xs: PspList[A], max: Int = 7): String = {
-    def loop(n: Int, xs: PspList[A], res: String): String = (
-      if (n <= 0 || xs.isEmpty) res + ( if (xs.isEmpty) " :: nil" else " :: ..." )
-      else if (res == "") loop(n - 1, xs.tail, xs.head.to_s)
-      else loop(n - 1, xs.tail, res + " :: " + xs.head.to_s)
-    )
-    loop(max, xs, "")
+  def ShowMax[A: Show](max: Int): Show[PspList[A]] = Show[PspList[A]] { xs =>
+    val elems = xs take max
+    val base = if (xs drop max isEmpty) "nil" else "..."
+
+    if (elems.isEmpty) base else (elems mk_s " :: ") + " :: nil"
   }
+  implicit def ShowPspList[A: Show] : Show[PspList[A]] = Show[PspList[A]](xs =>
+    if (xs.isEmpty) "nil" else show"${xs.head} :: ${xs.tail}"
+  )
 }
 
 sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
@@ -51,7 +52,6 @@ sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
     case x :: xs => x :: (xs ::: this)
     case _       => this
   }
-  final override def toString = if (isEmpty) "nil" else PspList.stringOf(this)
 }
 
 final case object nil extends PspList[Nothing] {

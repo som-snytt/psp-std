@@ -9,7 +9,15 @@ package core {
   abstract class PackageTraits extends PackageTraitsExceptShadowing with PspShadowScala
 }
 
-package object core extends PackageTraits {
+package object core extends PackageTraits with psp.std.PackageLevel {
+  // Temporary helpers to ease reconciliation with psp.std.
+  type Show[A] = psp.std.Show[A]
+  type Index   = psp.std.Index
+  val Index = psp.std.Index
+  val Show = psp.std.Show
+  implicit def intToIndex(x: Int): Index = psp.std.Index(x)
+  implicit def indexToInt(x: psp.std.Index): Int = x.intIndex
+
   def zeroSize    = Size.Zero
   def unknownSize = SizeInfo.Unknown
 

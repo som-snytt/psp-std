@@ -84,7 +84,7 @@ object Foreach extends ForeachImplicits {
   def apply[A](mf: Suspended[A]): Foreach[A] = new PureForeach[A](mf, unknownSize)
   def elems[A](xs: A*): Foreach[A] = Direct.elems(xs: _*)
 
-  def stringify[A](xs: Foreach[A], max: Int = 3): String = {
+  def stringify[A: Show](xs: Foreach[A], max: Int = 3): String = {
     def prefix = xs.shortClass
     def lp = "("
     def rp = ")"
