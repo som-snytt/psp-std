@@ -12,15 +12,36 @@ See [psp-view](view/README.md) for some details.
 Usage
 -----
 
-    resolvers += "bintray/paulp" at "https://dl.bintray.com/paulp/maven"
+Suggested contents for ```project/Build.scala```. You'll also want [sbt](https://github.com/paulp/sbt-extras).
 
-    scalaVersion := "2.11.2"
+```scala
+package scratch
 
-    // psp-view depends on psp-std
-    libraryDependencies += "org.improving" %% "psp-std" % "0.2.0-M1"
-    libraryDependencies += "org.improving" %% "psp-view" % "0.2.0-M1"
+import sbt._, Keys._
 
-    initialCommands in console := "import psp.std._"
+object ScratchProject extends sbt.Build {
+  def pspArtifact(id: String) = "org.improving" %% s"psp-$id" % pspVersion
+  def pspVersion              = "0.2.0-M1"
+  def pspView                 = pspArtifact("view") // pspView depends on pspStd
+  def pspStd                  = pspArtifact("std")  // pspStd only depends on scala-librar
+
+  def common = Seq(
+                   resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
+                scalaVersion :=  "2.11.2",
+               scalacOptions ++= Seq("-language:_"),
+  initialCommands in console :=  "import psp.std._",
+         libraryDependencies +=  pspStd
+  )
+  lazy val scratch = project in file(".") settings (common: _*) settings (name := "scratch-project")
+}
+```
+
+Then ```sbt console``` and you can look around.
+
+```
+scala> Array(1, 2) === Array(1, 2)
+res0: Boolean = true
+```
 
 Requirements
 ------------
