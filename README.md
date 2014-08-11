@@ -21,7 +21,7 @@ import sbt._, Keys._
 
 object ScratchProject extends sbt.Build {
   def pspArtifact(id: String) = "org.improving" %% s"psp-$id" % pspVersion
-  def pspVersion              = "0.2.0-M1"
+  def pspVersion              = "0.2.0-M2"
   def pspView                 = pspArtifact("view") // pspView depends on pspStd
   def pspStd                  = pspArtifact("std")  // pspStd only depends on scala-librar
 
@@ -42,8 +42,8 @@ object ScratchProject extends sbt.Build {
 
 Or if a self-contained project isn't your bag:
 ```
-libraryDependencies += "org.improving" %% s"psp-std" % "0.2.0-M1"
-libraryDependencies += "org.improving" %% s"psp-view" % "0.2.0-M1"
+libraryDependencies += "org.improving" %% s"psp-std" % "0.2.0-M2"
+libraryDependencies += "org.improving" %% s"psp-view" % "0.2.0-M2"
 ```
 
 Then ```sbt console``` and you can look around.
