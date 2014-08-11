@@ -8,7 +8,7 @@ trait LowPriorityNatList {
   self: NatList.type =>
 
   implicit class AmbiguousEmptyListOps[A](xs: NatList[_0, A]) {
-    def head: Nothing                    = ???
+    def head: Nothing                   = ???
     def tail: NatList[Nothing, Nothing] = ???
   }
 }
@@ -48,8 +48,6 @@ object NatList extends LowPriorityNatList {
     case (Nil, Nil, Nil)             => Nil
     case _                           => ???
   }
-
-  def demo = NatList(1, 2, 3, 4) zip NatList[Double](1, 2, 3, 4)
 
   class SafeZipped2[N <: Nat, A, B](xs: NatList[N, A], ys: NatList[N, B]) {
     def map[R](f: (A, B) => R): Foreach[R]                  = map2(xs, ys)(f)

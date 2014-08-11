@@ -25,7 +25,7 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
   def toInt: Int               = value
   def toLong: Long             = value
   def toOption: Option[Int]    = if (isUndefined) None else Some(toInt)
-  def toInfo: Precise          = if (isUndefined) fail(s"Cannot translate erroneous size") else Precise(this)
+  def toInfo: Precise          = if (isUndefined) fail(s"Cannot translate undefined size") else Precise(this)
 
   @inline def foreachIndex(f: Index => Unit): Unit = toIndexRange foreach f
   def containsIndex(index: Index): Boolean         = !index.isUndefined && index <= lastIndex
@@ -38,7 +38,6 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
   implicit def sizeToSizeInfo(s: Size): SizeInfo = s.toInfo
-
   def undefined = new Size(-1)
 
   final val NoSize = undefined
