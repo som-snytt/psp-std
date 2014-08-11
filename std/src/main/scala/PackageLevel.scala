@@ -188,7 +188,7 @@ trait Implicits extends LowPriorityPspStd {
   // If the type class is attached at creation it can't be a value class.
   // So it has to be duplicated across every method which utilizes it.
   // Another victory against boilerplate.
-  implicit def eqExtensionOps[A](x: A): Eq.Ops[A]     = new Eq.Ops[A](x)
+  implicit def eqExtensionOps[A](x: A): Eq.Ops[A] = new Eq.Ops[A](x)
 
   // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
   // It's not like you have any idea what the performance characteristics of the target are anyway.
