@@ -16,9 +16,11 @@ final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
   private[this] def bufferUpdate(offset: Int, x: A): Unit = buffer(bufferIndex(offset)) = x
   private[this] def bufferIndex(index: Int): Int          = (pointer + index) % capacity.value
 
-  private[this] def indices: Direct[Int] = if (isFull) size.toIndexed map bufferIndex force else size.toIndexed
+  private[this] def indices: Direct[Int] = if (isFull) indexed map bufferIndex force else indexed
   private[this] def andThis(op: Unit): this.type = this
   private[this] def intSize = size.value
+
+  private def indexed = IntRange.until(0, size.value)
 
   def contents: Direct[A] = indices map bufferAt toIndexed
   def size: Size          = capacity min Size(seen)

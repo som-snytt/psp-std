@@ -3,23 +3,13 @@ package psp
 import scala.{ collection => sc }
 import sc.{ mutable => scm, immutable => sci }
 import psp.core.impl._
-import psp.std.{ IndexRange, SizeInfo }
+import psp.std.SizeInfo
 
 package core {
   trait PackageLevel extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods
 }
 
 package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
-  def intRange(start: Int, end: Int): Direct[Int] = IntRange.until(start, end)
-
-  implicit class TemporarySizeOps(val s: psp.std.Size) {
-    def toIndexed: Direct[Int]       = intRange(0, s.value)
-    def reverseInterval: Direct[Int] = toIndexed.reverse
-  }
-  // implicit class TemporaryIndexRangeOps(val r: IndexRange) {
-  //   def toIndexed: Direct[Int] = intRange(r.startInt, r.endInt)
-  // }
-
   def unknownSize = SizeInfo.Unknown
 
   implicit class TraversableToPsp[A](xs: GenTraversableOnce[A]) {
