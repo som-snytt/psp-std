@@ -32,7 +32,11 @@ object ScratchProject extends sbt.Build {
   initialCommands in console :=  "import psp.std._",
          libraryDependencies +=  pspStd
   )
-  lazy val scratch = project in file(".") settings (common: _*) settings (name := "scratch-project")
+  lazy val scratch = (
+    project in file(".")
+      settings (common: _*)
+      settings (name := "scratch-project")
+  )
 }
 ```
 
