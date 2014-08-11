@@ -4,6 +4,7 @@ package impl
 
 import scala.{ collection => sc }
 import sc.{ mutable => scm }
+import psp.std.HasPreciseSize
 
 /** Compat
  */

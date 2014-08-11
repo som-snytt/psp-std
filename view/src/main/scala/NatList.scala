@@ -1,7 +1,7 @@
 package psp
 package core
 
-import Nat._
+import psp.std._, Nat._
 import NatList._
 
 trait LowPriorityNatList {

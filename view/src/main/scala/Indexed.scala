@@ -1,6 +1,7 @@
 package psp
 package core
 
+import psp.std._
 import impl._
 
 trait Indexed[+A] extends Any with Foreach[A] {

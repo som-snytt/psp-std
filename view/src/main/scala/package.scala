@@ -20,11 +20,6 @@ package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   val Precise = psp.std.Precise
   type SizeInfo = psp.std.SizeInfo
   val SizeInfo = psp.std.SizeInfo
-  type HasSizeInfo = psp.std.HasSizeInfo
-  type HasPreciseSize = psp.std.HasPreciseSize
-  type HasStaticSize[N <: Nat] = psp.std.HasStaticSize[N]
-  type Nat = psp.std.Nat
-  val Nat = psp.std.Nat
   val Infinite = psp.std.Infinite
   type Interval = psp.std.IndexRange
   type IndexRange = psp.std.IndexRange
