@@ -1,7 +1,5 @@
-[![Build Status](https://travis-ci.org/paulp/psp-view.png)](https://travis-ci.org/paulp/psp-view)
-
-psp collect
-===========
+psp view
+========
 
 This is an alternative to the standard scala collections, which are unwieldy.
 All operations are lazy. Computation is deferred for as long as possible.

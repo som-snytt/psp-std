@@ -7,6 +7,7 @@ Background
 ----------
 
 The scala standard library is lacking. This library attempts to fill some of the gaps and play defense against its hostility to correctness where possible.
+See [psp-view](view/README.md) for some details.
 
 Usage
 -----
@@ -15,7 +16,9 @@ Usage
 
     scalaVersion := "2.11.2"
 
+    // psp-view depends on psp-std
     libraryDependencies += "org.improving" %% "psp-std" % "0.2.0-M1"
+    libraryDependencies += "org.improving" %% "psp-view" % "0.2.0-M1"
 
     initialCommands in console := "import psp.std._"
 
