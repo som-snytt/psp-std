@@ -8,14 +8,10 @@ final class Line(val text: String) extends AnyVal {
 }
 
 final class PspStringOps(val repr: String) extends AnyVal {
-  private def augment = Predef augmentString repr
-
-  def toBytes: PspStringAsBytes = new PspStringAsBytes(repr)
-  def toChars: PspStringAsChars = new PspStringAsChars(repr)
-  def toLines: PspStringAsLines = new PspStringAsLines(repr)
-  // def toPath: jPath             = path(repr)
-  def toFile: jFile             = file(repr)
-
+  def toBytes: PspStringAsBytes         = new PspStringAsBytes(repr)
+  def toChars: PspStringAsChars         = new PspStringAsChars(repr)
+  def toLines: PspStringAsLines         = new PspStringAsLines(repr)
+  def toFile: jFile                     = new jFile(repr)
   def regex: Regex                      = Regex(repr)
   def literal: Regex                    = regex.literal
   def split(re: Regex): DelimitedString = new DelimitedString(repr, re)

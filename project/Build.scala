@@ -37,7 +37,7 @@ object Build extends sbt.Build with Versioning {
   /** mima command optionally takes a baseline version, e.g. sbt 'mima 0.1.0-M1'
    */
   def mimaCommand = stateCommand {
-    case (s, Nil)            => mimaRun(s, stdArtifact("0.1.0-M3"))
+    case (s, Nil)            => mimaRun(s, stdArtifact("0.2.0-M1"))
     case (s, version :: Nil) => mimaRun(s, stdArtifact(version))
     case (s, _)              => s.fail
   }

@@ -15,7 +15,7 @@ Usage
 
     scalaVersion := "2.11.2"
 
-    libraryDependencies += "org.improving" %% "psp-std" % "0.2.1-M1"
+    libraryDependencies += "org.improving" %% "psp-std" % "0.2.0-M1"
 
     initialCommands in console := "import psp.std._"
 

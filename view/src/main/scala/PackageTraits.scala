@@ -69,8 +69,3 @@ class DirectAccessBuilderOps[A, Repr, CC[X]](tc: DirectAccessType[A, Repr, CC]) 
   def genericBuilder[B]: Builder[B, CC[B]] = ??? // pcb.newBuilder()
   def nativeBuilder: Builder[A, Repr]      = ??? // pcb.newBuilder()
 }
-
-trait JioCreation {
-  // def path(path: String): jPath = java.nio.file.Paths get path
-  def file(path: String): jFile = new jFile(path)
-}
