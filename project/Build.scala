@@ -62,8 +62,8 @@ object Build extends sbt.Build with Versioning {
           aggregate in publish :=  false,
      aggregate in publishLocal :=  false,
                publishArtifact :=  false,
-                       publish <<= Def task runPublish(subprojects, state.value),
-                  publishLocal <<= Def task runPublishLocal(subprojects, state.value),
+                       publish <<= runPublish(publish),
+                  publishLocal <<= runPublish(publishLocal),
                       commands +=  Command.args("mima", "<version>")(mimaCommand),
                           test <<= run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
   )
@@ -95,25 +95,38 @@ object Build extends sbt.Build with Versioning {
 }
 
 trait Versioning {
-  def pspOrg             = "org.improving"
-  def isRepoClean        = Process("git diff --quiet --exit-code HEAD").! == 0
-  def currentSha: String = Process("git rev-parse HEAD").lines.mkString take 10
+  import scala.sys.process._
 
-  def runPublish(projects: Seq[Project], state: State): Unit = (
-    if (!isRepoClean)
+  def subprojects: List[Project]
+
+  // It's a pretty hideous version string, but it should guarantee we never overwrite
+  // artifacts and that dependency managers will see the local version numbers as increasing.
+  def pspOrg           = "org.improving"
+  def releaseProp      = "psp.release"
+  def hasReleaseProp   = sys.props contains releaseProp
+  def isRepoClean      = "git diff --quiet --exit-code HEAD".! == 0
+  def repoSha: String  = "git rev-parse HEAD".!! take 10
+  def repoDiff: String = ("git diff" #| "md5").!! take 10 // not using at present - hopefully "dirty" is enough
+  def localSuffix      = "-%s-%s%s".format(dateTime, repoSha, if (isRepoClean) "" else "-dirty")
+
+  // TODO - Distinguish between milestones and releases.
+  def runPublish[A](key: TaskKey[A]) = Def.task[Unit] {
+    val state = Keys.state.value
+    def isPublishKey               = key eq publish
+    def versionString              = state(version) + ( if (isPublishKey) "" else localSuffix )
+    def publishProject(p: Project) = state.put(version in p, versionString) runTask (key in Compile in p)
+    def finish()                   = subprojects foreach publishProject
+
+    // TODO - Require the git tag to exist (not for milestones) or create it.
+    if (!isPublishKey)
+      finish()
+    else if (!isRepoClean)
       state err "Can't publish with a dirty repository."
-    else if (!isRelease)
-      state err "As a safeguard, publishing release artifacts requires -Dpsp.release."
+    else if (!hasReleaseProp)
+      state err s"As a safeguard, publishing release artifacts requires -D$releaseProp."
     else
-      runPublishes(projects, state, publish, state(version))
-  )
-  def runPublishLocal(projects: Seq[Project], state: State): Unit = {
-    def suffix = "-%s%s".format(currentSha, if (isRepoClean) "" else "-dirty")
-    runPublishes(projects, state, publishLocal, state(version) + suffix)
+      finish()
   }
-
-  private def runPublishes(projects: Seq[Project], state: State, key: TaskKey[Unit], versionString: String): Unit =
-    projects foreach (p => state.put(version in p, versionString) runTask (key in Compile in p))
 
   // Mima won't resolve the %% cross version.
   def stdArtifact(version: String): ModuleID = pspOrg % "psp-std_2.11" % version
