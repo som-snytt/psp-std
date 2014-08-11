@@ -3,6 +3,7 @@ package tests
 
 import psp.core._
 import compat.ScalaNative
+import psp.std.Size
 import utest._
 
 object CountOperationsSpec extends TestSuite {

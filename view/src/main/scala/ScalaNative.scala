@@ -4,6 +4,7 @@ package compat
 import psp.core._
 import psp.std.IndexRange
 import psp.std.SizeInfo
+import psp.std.Size
 
 /** Compatibility layer for wrapping scala views on their own terms.
  */

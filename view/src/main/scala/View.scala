@@ -4,6 +4,7 @@ package core
 import psp.std.{ SizeInfo, Precise, IndexRange }
 import psp.std.SizeInfo._
 import psp.std.Index
+import psp.std.Size
 
 // TODO: Distinct, Reverse, Zip
 //

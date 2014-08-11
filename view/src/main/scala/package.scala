@@ -10,19 +10,15 @@ package core {
 }
 
 package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
-  // Temporary helpers to ease reconciliation with psp.std.
-  type Size = psp.std.Size
-  val Size = psp.std.Size
-
   def intRange(start: Int, end: Int): Direct[Int] = IntRange.until(start, end)
 
-  implicit class TemporarySizeOps(val s: Size) {
+  implicit class TemporarySizeOps(val s: psp.std.Size) {
     def toIndexed: Direct[Int]       = intRange(0, s.value)
     def reverseInterval: Direct[Int] = toIndexed.reverse
   }
-  implicit class TemporaryIndexRangeOps(val r: IndexRange) {
-    def toIndexed: Direct[Int] = intRange(r.startInt, r.endInt)
-  }
+  // implicit class TemporaryIndexRangeOps(val r: IndexRange) {
+  //   def toIndexed: Direct[Int] = intRange(r.startInt, r.endInt)
+  // }
 
   def unknownSize = SizeInfo.Unknown
 

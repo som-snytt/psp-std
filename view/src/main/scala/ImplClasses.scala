@@ -8,6 +8,7 @@ import psp.std.HasPreciseSize
 import psp.std.SizeInfo
 import psp.std.Show
 import psp.std.Index
+import psp.std.Size
 
 /** Compat
  */

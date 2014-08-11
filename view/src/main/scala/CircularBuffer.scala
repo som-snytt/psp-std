@@ -2,6 +2,7 @@ package psp
 package core
 
 import psp.std.Precise
+import psp.std.Size
 
 final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
   assert(!capacity.isZero, capacity)
