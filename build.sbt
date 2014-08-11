@@ -4,7 +4,7 @@ scalaVersion in Global := "2.11.2"
 
 organization in Global := "org.improving"
 
-version in Global := "0.2.0-M1"
+version in Global := "0.2.0-M2"
 
 exportJars in Global := true
 
@@ -21,10 +21,10 @@ implicit final class ReplOps[A](val target: A) {
 """
 
 libraryDependencies ++= Seq(
-  organization.value %% "psp-std"        % "0.1.0-M3-SNAPSHOT",
+  organization.value %% "psp-std"        %     "0.1.0-M4",
   "org.scala-lang"    % "scala-compiler" % scalaVersion.value,
-  "org.scalacheck"   %% "scalacheck"     %       "1.11.5"       % "test",
-  "com.lihaoyi"      %% "utest"          %       "0.2.0"        % "test"
+  "org.scalacheck"   %% "scalacheck"     %      "1.11.5"       % "test",
+  "com.lihaoyi"      %% "utest"          %       "0.2.0"       % "test"
 )
 
 lazy val root = project in file(".") settings (
