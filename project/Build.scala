@@ -7,12 +7,10 @@ import com.typesafe.tools.mima.plugin.MimaKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 
 object Build extends sbt.Build with Versioning {
-  def targetReleaseVersion = "0.1.0"
-
   def common = bintraySettings ++ Seq[Setting[_]](
                organization :=  pspOrg,
                scalaVersion :=  "2.11.2",
-                    version :=  "0.1.0",
+                    version :=  "0.1.0-M4",
                 logBuffered :=  false,
               scalacOptions ++= Seq("-language:_"),
                javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
