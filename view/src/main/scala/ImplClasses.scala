@@ -7,6 +7,7 @@ import sc.{ mutable => scm }
 import psp.std.HasPreciseSize
 import psp.std.SizeInfo
 import psp.std.Show
+import psp.std.Index
 
 /** Compat
  */
@@ -40,7 +41,7 @@ abstract class IndexedImpl[+A](val size: Size) extends Direct[A] with HasPrecise
  */
 object StringIsCharSequence extends DirectAccessImpl[Char, String, Direct] {
   def length(repr: String): Size               = Size(repr.length)
-  def elemAt(repr: String)(index: Index): Char = repr charAt index
+  def elemAt(repr: String)(index: Index): Char = repr charAt index.value
 }
 object StringIsLineSequence extends DirectAccessImpl[Line, String, Direct] {
   def length(repr: String): Size               = wrap(repr).size
@@ -50,7 +51,7 @@ object StringIsLineSequence extends DirectAccessImpl[Line, String, Direct] {
 
 final class ArrayIsDirectAccess[A: ClassTag] extends DirectAccessImpl[A, Array[A], Direct] {
   def length(repr: Array[A]): Size            = Size(repr.length)
-  def elemAt(repr: Array[A])(index: Index): A = repr(index)
+  def elemAt(repr: Array[A])(index: Index): A = repr(index.value)
 }
 final class IndexedSeqIsDirectAccess[CC[X] <: IndexedSeq[X], A] extends DirectAccessImpl[A, CC[A], CC] {
   def length(repr: CC[A]): Size            = Size(repr.length)

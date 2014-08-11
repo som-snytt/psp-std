@@ -26,6 +26,7 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
   def get         = value
   def isEmpty     = isUndefined
   def isUndefined = this == undefined
+  def isDefined   = !isUndefined
 
   def spaces                    = " " * value
   def compare(that: Index): Int = value compare that.value
@@ -42,6 +43,8 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
   def intIndex: Int  = value
   def intNth: Int    = toNth.value
   def toSize: Size   = Size(value)
+
+  def toSizeInfo: SizeInfo = toSize
 
   override def toString         = s"$value"
 }

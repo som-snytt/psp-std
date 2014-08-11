@@ -1,8 +1,9 @@
 package psp
 package core
 
-import psp.std.{ SizeInfo, IndexRange }
+import psp.std.{ SizeInfo, Precise, IndexRange }
 import psp.std.SizeInfo._
+import psp.std.Index
 
 // TODO: Distinct, Reverse, Zip
 //
@@ -88,11 +89,11 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     self: AtomicView =>
 
     final def foreachSlice(range: IndexRange)(f: tc.A => Unit): Unit = {
-      var i = 0
+      var i = psp.std.Index.zero
       (tc foreach repr) { x =>
         recordCall(x)
         if (range contains i) f(x)
-        i += 1
+        i = i.next
         if (i >= range.end) return
       }
     }
@@ -181,11 +182,11 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     }
 
     private def foreachSlice[A](xs: api.View[A], f: A => Unit, range: IndexRange): Unit = {
-      var i = 0
+      var i = psp.std.Index.zero
       def runThrough(xs: Foreach[A]): Boolean = {
         xs foreach { x =>
           if (range contains i) f(x)
-          i += 1
+          i = i.next
           if (i >= range.end) return true
         }
         i >= range.end
@@ -196,10 +197,10 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
         case Mapped(xs, g)    => foreachSlice(xs, g andThen f, range)
         case xs: Direct[A]   => var i = range.start ; while (i < range.end) { f(xs elemAt i) ; i += 1 }
         case Joined(ys1, ys2) =>
-          ys1.sizeInfo.precisely match {
-            case Some(n) if n < range.start => ys2 slice (range << n) foreach f
-            case Some(n) if n > range.end   => ys1 slice range foreach f
-            case _                          => runThrough(ys1) || runThrough(ys2)
+          ys1.sizeInfo match {
+            case Precise(n) if n.lastIndex < range.start => ys2 slice (range << n.toInt) foreach f
+            case Precise(n) if n.lastIndex > range.end   => ys1 slice range foreach f
+            case _                                       => runThrough(ys1) || runThrough(ys2)
           }
         case _              => runThrough(xs)
       }

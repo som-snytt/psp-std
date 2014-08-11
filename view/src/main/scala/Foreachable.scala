@@ -3,6 +3,7 @@ package core
 
 import impl._
 import psp.std.SizeInfo
+import psp.std.Index
 
 trait WalkableTypes {
   type A

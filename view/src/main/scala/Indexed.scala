@@ -46,9 +46,9 @@ object Direct {
   )
 
   /** Immutability (particularly of Arrays) is on the honor system. */
-  def pureArray[A](xs: Array[A]): Direct[A]                            = pure(Size(xs.length), xs apply _)
+  def pureArray[A](xs: Array[A]): Direct[A]                               = pure(Size(xs.length), xs apply _.value)
   def pure[Repr](xs: Repr)(implicit tc: DirectAccess[Repr]): Direct[tc.A] = pure(tc length xs, index => (tc elemAt xs)(index))
-  def pure[A](size: Size, indexFn: Index => A): Direct[A]              = new PureIndexed(size, indexFn)
+  def pure[A](size: Size, indexFn: Index => A): Direct[A]                 = new PureIndexed(size, indexFn)
 
   def fill[A](times: Int)(body: => A): Direct[A] = {
     val buf = Vector.newBuilder[A]
@@ -70,6 +70,6 @@ final class IntRange private (val start: Int, val last: Int, isInclusive: Boolea
   def contains(x: Int): Boolean = start <= x && x <= last
   def isEmpty               = last < start
   def end                   = last + 1
-  def elemAt(i: Index): Int = start + i
+  def elemAt(i: Index): Int = start + i.value
   override def toString     = if (isInclusive) s"$start to $last" else s"$start until $end"
 }

@@ -39,7 +39,7 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   def labeled(label: String): MapTo[A]               = this
   def reverse: MapTo[A]                              = xs.reverse
   def sized(size: Size): MapTo[A]                    = this
-  def slice(range: IndexRange): MapTo[A]             = xs.slice(range.start, range.end)
+  def slice(range: IndexRange): MapTo[A]             = xs.slice(range.startInt, range.endInt)
   def withFilter(p: Predicate[A]): MapTo[A]          = xs filter p
 
   def description = xs.shortClass

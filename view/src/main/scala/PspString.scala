@@ -28,7 +28,7 @@ final class PspStringAsBytes(val repr: String) extends IndexedLeafImpl[Byte] {
   private[this] val bytes: Array[Byte] = repr.getBytes()
 
   def size: Size                             = Size(bytes.length)
-  def elemAt(index: Index): Byte             = bytes(index)
+  def elemAt(index: Index): Byte             = bytes(index.value)
   def isDefinedAt(index: Index): Boolean     = size containsIndex index
   @inline def foreach(f: Byte => Unit): Unit = Direct pure bytes foreach f
   def contains(x: Byte): Boolean             = bytes contains x
@@ -40,7 +40,7 @@ final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeafIm
   private def chars: Array[Char] = repr.toCharArray
 
   def size                                   = Size(chars.length)
-  def elemAt(index: Index): Char             = repr charAt index
+  def elemAt(index: Index): Char             = repr charAt index.value
   def isDefinedAt(index: Index): Boolean     = size containsIndex index
   @inline def foreach(f: Char => Unit): Unit = Direct pure chars foreach f
   def contains(x: Char): Boolean             = chars contains x
@@ -58,8 +58,8 @@ final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeafIm
   private def lines: Direct[Line]     = strings map (x => new Line(x)) force
 
   def ranges: Direct[IndexRange]             = starts.zipWith(ends)(indexRange).toIndexed
-  def indicesOfLine(lineno: Int): IndexRange = ranges elemAt lineno - 1
-  def line(lineno: Int): Line                = elemAt(lineno - 1)
+  def indicesOfLine(lineno: Int): IndexRange = ranges elemAt Nth(lineno)
+  def line(lineno: Int): Line                = elemAt(Nth(lineno))
   def lineNumbers: IntRange                  = IntRange.to(1, size.value)
 
   def size                                   = strings.size

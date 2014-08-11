@@ -11,7 +11,6 @@ package core {
 
 package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   // Temporary helpers to ease reconciliation with psp.std.
-  type Index   = psp.std.Index
   type Size = psp.std.Size
   val Size = psp.std.Size
 
@@ -24,9 +23,6 @@ package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   implicit class TemporaryIndexRangeOps(val r: IndexRange) {
     def toIndexed: Direct[Int] = intRange(r.startInt, r.endInt)
   }
-
-  implicit def intToIndex(x: Int): psp.std.Index = psp.std.Index(x)
-  implicit def indexToInt(x: psp.std.Index): Int = x.intIndex
 
   def unknownSize = SizeInfo.Unknown
 

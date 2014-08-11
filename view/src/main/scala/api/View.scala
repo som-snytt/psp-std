@@ -3,6 +3,7 @@ package core
 package api
 
 import psp.std.IndexRange
+import psp.std.Index
 
 trait View[+A] extends Any with TypeConstructors[A] with IsoView[A] with MapElementView[A] with MeasurementView {
   type MapTo[+X] <: View[X]

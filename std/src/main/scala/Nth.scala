@@ -38,6 +38,8 @@ final class Nth private (val value: Int) extends AnyVal with Ordered[Nth] with I
   override def toString = if (isUndefined) "Nth.undefined" else s"Nth($value)"
 }
 object Nth extends (Int => Nth) {
+  implicit def nthToIndex(n: Nth): Index = n.toIndex
+
   // 0 is excluded, but we use -1 for the undefined case anyway.
   def undefined                    = new Nth(-1)
   def fromIndex(index: Index): Nth = apply(index.value + 1)

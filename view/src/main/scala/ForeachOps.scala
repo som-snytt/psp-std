@@ -2,6 +2,7 @@ package psp
 package core
 
 import psp.std.Show
+import psp.std.Index
 
 final class IndexedConversions[A](val xs: Direct[A]) extends AnyVal { }
 
@@ -26,7 +27,7 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
    */
   @inline final def foreachWithIndex(f: (A, Index) => Done): Unit = {
     var i = 0
-    xs foreach (x => if (f(x, i)) return else i += 1)
+    xs foreach (x => if (f(x, index(i))) return else i += 1)
   }
   def sum(implicit num: Numeric[A]): A     = foldl(num.zero)(num.plus)
   def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
