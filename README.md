@@ -40,8 +40,13 @@ object ScratchProject extends sbt.Build {
 }
 ```
 
-Then ```sbt console``` and you can look around.
+Or if a self-contained project isn't your bag:
+```
+libraryDependencies += "org.improving" %% s"psp-std" % "0.2.0-M1"
+libraryDependencies += "org.improving" %% s"psp-view" % "0.2.0-M1"
+```
 
+Then ```sbt console``` and you can look around.
 ```
 scala> Array(1, 2) === Array(1, 2)
 res0: Boolean = true
