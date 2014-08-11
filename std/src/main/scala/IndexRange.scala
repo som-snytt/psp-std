@@ -43,7 +43,7 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def contains(i: Index): Boolean             = i.isDefined && (start <= i && i < end)
   def toSeq: Seq[Index]                       = toVector
   def toVector: Vector[Index]                 = mapInt(Index)
-  def toIntRange: Range                       = lbits until rbits
+  def toIntRange: Range                       = Range(lbits, rbits)
 
   override def toString = s"[$start,$end)"
 }

@@ -5,11 +5,12 @@ import sc.{ mutable => scm, immutable => sci }
 import psp.core.impl._
 
 package core {
-  abstract class PackageTraitsExceptShadowing extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods with JioCreation
-  abstract class PackageTraits extends PackageTraitsExceptShadowing with PspShadowScala
+  // abstract class PackageTraitsExceptShadowing extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods with JioCreation
+  // abstract class PackageTraits extends PackageTraitsExceptShadowing //with PspShadowScala
+  trait PackageLevel extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods with JioCreation
 }
 
-package object core extends PackageTraits with psp.std.PackageLevel {
+package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   // Temporary helpers to ease reconciliation with psp.std.
   type Show[A] = psp.std.Show[A]
   type Index   = psp.std.Index

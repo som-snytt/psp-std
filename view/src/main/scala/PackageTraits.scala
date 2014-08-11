@@ -20,20 +20,15 @@ trait CollectionHigh extends CollectionMid {
   implicit def raiseIndexedView[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): Env[Repr, tc.type]#IndexedView = tc wrap repr
 }
 
-trait ArrowAssocLow {
-  @inline final implicit def arrowAssocRef[A](x: A): ArrowAssocRef[A]    = new ArrowAssocRef(x)
-}
-trait ArrowAssocHigh extends ArrowAssocLow {
- @inline final implicit def arrowAssocInt(x: Int): ArrowAssocInt             = new ArrowAssocInt(x)
- @inline final implicit def arrowAssocLong(x: Long): ArrowAssocLong          = new ArrowAssocLong(x)
- @inline final implicit def arrowAssocDouble(x: Double): ArrowAssocDouble    = new ArrowAssocDouble(x)
- @inline final implicit def arrowAssocChar(x: Char): ArrowAssocChar          = new ArrowAssocChar(x)
- @inline final implicit def arrowAssocBoolean(x: Boolean): ArrowAssocBoolean = new ArrowAssocBoolean(x)
+trait PspUniversals {
+  @inline final implicit def raisePspViewInt(x: Int): PspViewInt         = new PspViewInt(x)
+  @inline final implicit def raiseUniversalOps[T](x: T): UniversalOps[T] = new UniversalOps(x)
 }
 
-trait PspUniversals extends ArrowAssocHigh {
-  @inline final implicit def raisePspInt(x: Int): PspInt                 = new PspInt(x)
-  @inline final implicit def raiseUniversalOps[T](x: T): UniversalOps[T] = new UniversalOps(x)
+final class PspViewInt(val self: Int) extends AnyVal {
+  def until(end: Int): IntRange        = IntRange.until(self, end)
+  def to(end: Int): IntRange           = IntRange.to(self, end)
+  def times[A](body: => A): Foreach[A] = Direct.fill(self)(body)
 }
 
 trait PspLowPriority extends PspUniversals {
@@ -73,15 +68,6 @@ class ForeachableBuilderOps[A, Repr, CC[X]](tc: ForeachableType[A, Repr, CC]) {
 class DirectAccessBuilderOps[A, Repr, CC[X]](tc: DirectAccessType[A, Repr, CC]) {
   def genericBuilder[B]: Builder[B, CC[B]] = ??? // pcb.newBuilder()
   def nativeBuilder: Builder[A, Repr]      = ??? // pcb.newBuilder()
-}
-
-/** It's kind of funny... I guess.
- */
-trait PspShadowScala {
-  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
-  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
-  val StringAdd, ArrowAssoc                                                                               = null
-  val genericArrayOps                                                                                     = null
 }
 
 trait JioCreation {

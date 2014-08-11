@@ -10,8 +10,8 @@ class Tester {
   private var testsPassed = 0
   private var testsFailed = 0
 
-  def alpha(s: Char, e: Char): Vector[Char] = s to e toVector
-  def range(s: Int, e: Int): IndexRange     = Index(s) to Index(e)
+  def alpha(s: Char, e: Char): Seq[Char] = NumericRange.inclusive[Char](s, e, 1)
+  def range(s: Int, e: Int): IndexRange  = Index(s) to Index(e)
 
   def atoz     = alpha('a', 'z')
   def alphabet = atoz.mkString
@@ -20,7 +20,7 @@ class Tester {
   private def pass_s = GREEN + BOLD + "[pass]" + RESET
   private def fail_s = RED + BOLD + "[fail]" + RESET
 
-  def echo(msg: Any)    = System.err.println(msg)
+  def echo(msg: Any)    = System.out.println(msg)
   def pass(msg: String) = try testsPassed += 1 finally echo(s"$pass_s $msg")
   def fail(msg: String) = try testsFailed += 1 finally echo(s"$fail_s $msg")
 

@@ -30,7 +30,7 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
 
   def length                      = xs.length
   def lines: Iterator[String]     = (xs split EOL).iterator
-  def * (n: Int): String          = 1 to n map (_ => xs) mkString ""
+  def * (n: Int): String          = Range.inclusive(1, n) map (_ => xs) mkString ""
   def format(args : Any*): String = java.lang.String.format(xs, args map unwrapArg: _*)
 
   def index(elem: Char): Index                    = Index(xs indexOf elem)

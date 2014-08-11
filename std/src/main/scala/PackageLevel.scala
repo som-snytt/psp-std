@@ -15,11 +15,12 @@ import scala.collection.{ mutable, immutable }
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases {
-  val EOL      = sys.props.getOrElse("line.separator", "\n")
-  val NoIndex  = Index.empty
-  val NoNth    = Nth.empty
-  val ClassTag = scala.reflect.ClassTag
+trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh {
+  val EOL          = sys.props.getOrElse("line.separator", "\n")
+  val NoIndex      = Index.empty
+  val NoNth        = Nth.empty
+  val ClassTag     = scala.reflect.ClassTag
+  val NumericRange = scala.collection.immutable.NumericRange
 
   /** It's like "" + x, except, you know, for kids.
    */
@@ -136,6 +137,11 @@ trait ImplicitRemoval {
   // We reimplement these.
   val augmentString   = null
   val unaugmentString = null
+
+  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
+  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
+  val StringAdd, ArrowAssoc                                                                               = null
+  // val genericArrayOps                                                                                     = null
 }
 
 trait Creators {
@@ -183,6 +189,8 @@ trait Implicits extends LowPriorityPspStd {
   implicit def arrayExtensionOps[A](xs: Array[A]): ArrayExtensionOps[A]     = new ArrayExtensionOps[A](xs)
   implicit def anyExtensionOps[A](x: A): AnyExtensionOps[A]                 = new AnyExtensionOps[A](x)
   implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A] = new TryExtensionOps[A](x)
+  implicit def intExtensionOps(x: Int): IntExtensionOps                     = new IntExtensionOps(x)
+  implicit def longExtensionOps(x: Long): LongExtensionOps                  = new LongExtensionOps(x)
 
   // Extension methods which depend on a typeclass.
   // If the type class is attached at creation it can't be a value class.

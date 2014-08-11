@@ -19,9 +19,8 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
   def to(end: Index): IndexRange    = IndexRange.to(this, end)
   def take(n: Int): IndexRange      = this until this + (n max 0)
 
-  def indicesDownToZero = value to 0 by -1 map Index
-  def indicesUntil      = zero until this
-  def indicesTo         = zero to this
+  def indicesUntil = zero until this
+  def indicesTo    = zero to this
 
   // Name based extractors
   def get       = value
