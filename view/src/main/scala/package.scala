@@ -14,6 +14,38 @@ package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   type Index   = psp.std.Index
   val Index = psp.std.Index
   val Show = psp.std.Show
+  type Size = psp.std.Size
+  val Size = psp.std.Size
+  type Precise = psp.std.Precise
+  val Precise = psp.std.Precise
+  type SizeInfo = psp.std.SizeInfo
+  val SizeInfo = psp.std.SizeInfo
+  type HasSizeInfo = psp.std.HasSizeInfo
+  type HasPreciseSize = psp.std.HasPreciseSize
+  type HasStaticSize[N <: Nat] = psp.std.HasStaticSize[N]
+  type Nat = psp.std.Nat
+  val Nat = psp.std.Nat
+  val Infinite = psp.std.Infinite
+  type Interval = psp.std.IndexRange
+  type IndexRange = psp.std.IndexRange
+  val IndexRange = psp.std.IndexRange
+  type PartiallyOrdered[A] = psp.std.PartiallyOrdered[A]
+
+  implicit class TemporarySizeOps(val s: Size) {
+    def toIndexed: Direct[Int]       = IntRange.until(0, s.value)
+    def reverseInterval: Direct[Int] = toIndexed.reverse
+  }
+  implicit class TemporaryIndexRangeOps(val r: IndexRange) {
+    def toIndexed: Direct[Int] = IntRange.until(r.start.value, r.end.value)
+  }
+
+  object Interval {
+    val Empty = apply(0, 0)
+    val Full  = apply(0, Int.MaxValue)
+    def apply(start: Int, end: Int): IndexRange = IndexRange.until(start, end)
+  }
+  implicit def intervalToIndexRange(x: Interval.type): psp.std.IndexRange.type = psp.std.IndexRange
+
   implicit def intToIndex(x: Int): Index = psp.std.Index(x)
   implicit def indexToInt(x: psp.std.Index): Int = x.intIndex
 

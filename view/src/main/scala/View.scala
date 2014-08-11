@@ -196,7 +196,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
         case xs: Direct[A]   => var i = range.start ; while (i < range.end) { f(xs elemAt i) ; i += 1 }
         case Joined(ys1, ys2) =>
           ys1.sizeInfo.precisely match {
-            case Some(n) if n < range.start => ys2 slice (range - n) foreach f
+            case Some(n) if n < range.start => ys2 slice (range << n) foreach f
             case Some(n) if n > range.end   => ys1 slice range foreach f
             case _                          => runThrough(ys1) || runThrough(ys2)
           }

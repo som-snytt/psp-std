@@ -1,5 +1,5 @@
 package psp
-package core
+package std
 
 import ThreeValue._
 

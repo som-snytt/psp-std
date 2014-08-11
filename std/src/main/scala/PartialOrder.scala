@@ -1,5 +1,5 @@
 package psp
-package core
+package std
 
 import PartialOrder._
 import ThreeValue._
@@ -10,34 +10,6 @@ trait PartialOrder[-A] extends Any {
 
 trait PartiallyOrdered[-A] extends Any {
   def partialCompare(that: A): Cmp
-}
-
-final class PartiallyOrderedOps[A](val lhs: PartiallyOrdered[A]) extends AnyVal {
-  def <(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
-    case LT      => True
-    case NA | LE => Undefined
-    case _       => False
-  }
-  def <=(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
-    case LT | EQ | LE => True
-    case NA           => Undefined
-    case _            => False
-  }
-  def >(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
-    case GT      => True
-    case NA | GE => Undefined
-    case _       => False
-  }
-  def >=(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
-    case GT | EQ  | GE => True
-    case NA            => Undefined
-    case _             => False
-  }
-  def <==> (rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
-    case EQ           => True
-    case NA | LE | GE => Undefined
-    case _            => False
-  }
 }
 
 object PartialOrder {
@@ -72,6 +44,36 @@ object PartialOrder {
       case _             => False
     }
     def <==> (rhs: A): ThreeValue = pord.partialCompare(lhs, rhs) match {
+      case EQ           => True
+      case NA | LE | GE => Undefined
+      case _            => False
+    }
+  }
+}
+
+object PartiallyOrdered {
+  final class Ops[A](val lhs: PartiallyOrdered[A]) extends AnyVal {
+    def <(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
+      case LT      => True
+      case NA | LE => Undefined
+      case _       => False
+    }
+    def <=(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
+      case LT | EQ | LE => True
+      case NA           => Undefined
+      case _            => False
+    }
+    def >(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
+      case GT      => True
+      case NA | GE => Undefined
+      case _       => False
+    }
+    def >=(rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
+      case GT | EQ  | GE => True
+      case NA            => Undefined
+      case _             => False
+    }
+    def <==> (rhs: A): ThreeValue = lhs.partialCompare(rhs) match {
       case EQ           => True
       case NA | LE | GE => Undefined
       case _            => False

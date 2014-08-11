@@ -1,5 +1,5 @@
 package psp
-package core
+package std
 
 import PartialOrder._
 import SizeInfo._
@@ -16,6 +16,8 @@ import scala.{ collection => sc }
  *  Precise implies the exact size is known. Infinite means it's infinite.
  *  Bounded is a size lower bound and a (possibly infinite) atomic upper bound.
  *  SizeInfo forms a partial order, with some liberties taken at present.
+ *  Operations on sizes which are ill-defined will result in "Unknown", which
+ *  encodes no available size information: Bounded(Zero, Infinite).
  */
 sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
   def +(size: Size): SizeInfo
@@ -133,22 +135,7 @@ final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
     case x: Atomic      => x
   }
 
-  private def preciseSliceSize(size: Int, start: Int, end: Int): Size = (
-    if (start < 0) preciseSliceSize(size, 0, end)
-    else if (size <= start || end <= start) Size(0)
-    else if (end < size) Size(end - start)
-    else Size(size - start)
-  )
-
-  def slice(range: Interval): SizeInfo = {
-    val Interval(start, end) = range
-    lhs match {
-      case Precise(Size(n))                     => Precise(preciseSliceSize(n, start, end))
-      case Bounded(Size(lo), Precise(Size(hi))) => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(hi, start, end)))
-      case Bounded(Size(lo), Infinite)          => bounded(preciseSliceSize(lo, start, end), Precise(preciseSliceSize(Int.MaxValue, start, end)))
-      case Infinite                             => Precise(preciseSliceSize(Int.MaxValue, start, end))
-    }
-  }
+  def slice(range: IndexRange): SizeInfo = (lhs - range.start.toSize) min range.size
 
   def precisely: Option[Int] = lhs match { case Precise(Size(n)) => Some(n) ; case _ => None }
   def preciseOr(alt: => Int): Int = precisely getOrElse alt

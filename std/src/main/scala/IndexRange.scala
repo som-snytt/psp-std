@@ -15,12 +15,20 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def >> (n: Int): IndexRange = IndexRange.until(start + n, end + n)
   def << (n: Int): IndexRange = IndexRange.until(start - n, end - n)
 
+  def isUndefined = this == empty
+  def isDefined   = !isUndefined
+
+  def slice(range: IndexRange): IndexRange =
+    if (this.isUndefined || range.isUndefined) empty
+    else this drop range.start.value take range.intLength
+
   def startInt: Int  = lbits
   def endInt: Int    = rbits
   def start: Index   = Index(startInt)
   def end: Index     = Index(endInt)
   def length: Long   = (end.toLong - start.toLong) max 0L
   def intLength: Int = length.toInt
+  def size: Size     = if (length > Int.MaxValue) Size.NoSize else Size(intLength)
 
   def drop(n: Int): IndexRange      = if (n <= 0) this else IndexRange.until(start + n, end)
   def dropRight(n: Int): IndexRange = if (n <= 0) this else IndexRange.until(start, end - n)
@@ -44,6 +52,7 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def toSeq: Seq[Index]                       = toVector
   def toVector: Vector[Index]                 = mapInt(Index)
   def toIntRange: Range                       = Range(lbits, rbits)
+  def toScalaRange: scala.Range               = scala.Range(lbits, rbits)
 
   override def toString = s"[$start,$end)"
 }

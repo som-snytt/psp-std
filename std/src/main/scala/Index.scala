@@ -41,6 +41,7 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
   def toIndex: Index = this
   def intIndex: Int  = value
   def intNth: Int    = toNth.value
+  def toSize: Size   = Size(value)
 
   override def toString         = s"$value"
 }

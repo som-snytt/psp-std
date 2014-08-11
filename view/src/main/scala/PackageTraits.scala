@@ -37,9 +37,8 @@ trait PspLowPriority extends PspUniversals {
 }
 
 trait PspMidPriority extends PspLowPriority {
-  implicit def raisePartiallyOrderOps[A](x: PartiallyOrdered[A]): PartiallyOrderedOps[A]                           = new PartiallyOrderedOps(x)
-  implicit def raisePspStringOps(s: String): PspStringOps                                                          = new PspStringOps(s)
-  implicit def lowerPspStringOps(s: PspStringOps): String                                                          = s.repr
+  implicit def raisePspStringOps(s: String): PspStringOps = new PspStringOps(s)
+  implicit def lowerPspStringOps(s: PspStringOps): String = s.repr
 
   // I don't think this should be implicit, but people are so easily impressed
   // and so easily latch onto irrelevant details, we are sort of forced to be

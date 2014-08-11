@@ -22,7 +22,7 @@ object Build extends sbt.Build with Versioning {
                     resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                  organization :=  pspOrg,
                  scalaVersion :=  "2.11.2",
-                      version :=  "0.2.0-M1",
+                      version :=  "0.2.0-M2",
                   logBuffered :=  false,
                 scalacOptions ++= Seq("-language:_"),
                  javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),

@@ -2,7 +2,7 @@ package psp
 package tests
 
 import utest._
-import core._
+import psp.std._
 import org.scalacheck._
 import SizeInfo._
 import SizeInfoGenerators._

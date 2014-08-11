@@ -1,5 +1,5 @@
 package psp
-package core
+package std
 
 sealed trait Nat {
   type Prev <: Nat { type Succ = Nat.this.type }

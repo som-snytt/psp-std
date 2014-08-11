@@ -54,7 +54,7 @@ object Foreach extends ForeachImplicits {
     override def toString = pp"unfold from $zero"
   }
 
-  final case class Times[A](size: Size, elem: A) extends Foreach[A] with HasPreciseSizeImpl {
+  final case class Times[A](size: Size, elem: A) extends Foreach[A] with psp.std.HasPreciseSizeImpl {
     @inline def foreach(f: A => Unit): Unit = 0 until size.value foreach (_ => f(elem))
     override def toString = pp"$elem x$size"
   }
