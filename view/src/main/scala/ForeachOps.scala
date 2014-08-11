@@ -1,6 +1,8 @@
 package psp
 package core
 
+import psp.std.Show
+
 final class IndexedConversions[A](val xs: Direct[A]) extends AnyVal { }
 
 final class ExtraViewOperations[A, B, Repr, CC[X]](val xs: ViewEnvironment[A, Repr, CC]#View[B]) extends AnyVal {

@@ -2,7 +2,7 @@ package psp
 package core
 
 import scala.{ collection => sc }
-import SizeInfo._
+import psp.std.SizeInfo._
 import impl._
 import psp.std._
 

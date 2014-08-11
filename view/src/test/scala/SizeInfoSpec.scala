@@ -4,7 +4,7 @@ package tests
 import utest._
 import psp.std._
 import org.scalacheck._
-import SizeInfo._
+import psp.std.SizeInfo._
 import SizeInfoGenerators._
 import org.scalacheck.Prop._
 

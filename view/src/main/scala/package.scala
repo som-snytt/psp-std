@@ -3,7 +3,7 @@ package psp
 import scala.{ collection => sc }
 import sc.{ mutable => scm, immutable => sci }
 import psp.core.impl._
-import psp.std.IndexRange
+import psp.std.{ IndexRange, SizeInfo }
 
 package core {
   trait PackageLevel extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods
@@ -11,17 +11,9 @@ package core {
 
 package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   // Temporary helpers to ease reconciliation with psp.std.
-  type Show[A] = psp.std.Show[A]
   type Index   = psp.std.Index
-  val Index = psp.std.Index
-  val Show = psp.std.Show
   type Size = psp.std.Size
   val Size = psp.std.Size
-  type Precise = psp.std.Precise
-  val Precise = psp.std.Precise
-  type SizeInfo = psp.std.SizeInfo
-  val SizeInfo = psp.std.SizeInfo
-  type PartiallyOrdered[A] = psp.std.PartiallyOrdered[A]
 
   def intRange(start: Int, end: Int): Direct[Int] = IntRange.until(start, end)
 
@@ -33,10 +25,9 @@ package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
     def toIndexed: Direct[Int] = intRange(r.startInt, r.endInt)
   }
 
-  implicit def intToIndex(x: Int): Index = psp.std.Index(x)
+  implicit def intToIndex(x: Int): psp.std.Index = psp.std.Index(x)
   implicit def indexToInt(x: psp.std.Index): Int = x.intIndex
 
-  def zeroSize    = Size.Zero
   def unknownSize = SizeInfo.Unknown
 
   implicit class TraversableToPsp[A](xs: GenTraversableOnce[A]) {

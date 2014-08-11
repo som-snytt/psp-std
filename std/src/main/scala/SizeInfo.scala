@@ -2,7 +2,7 @@ package psp
 package std
 
 import PartialOrder._
-import SizeInfo._
+import psp.std.SizeInfo._
 import ThreeValue._
 import scala.{ collection => sc }
 
@@ -121,7 +121,7 @@ object SizeInfo {
 
 final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
   import PartialOrder._
-  import SizeInfo._
+  import psp.std.SizeInfo._
   import ThreeValue._
 
   def isZero    = lhs == Precise(Zero)

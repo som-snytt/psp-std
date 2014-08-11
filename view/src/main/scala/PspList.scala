@@ -1,6 +1,8 @@
 package psp
 package core
 
+import psp.std.Show
+
 object PspList {
   implicit def newBuilder[A] : Builds[A, PspList[A]] = Builds(fromForeach)
 

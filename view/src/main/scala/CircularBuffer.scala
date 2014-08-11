@@ -1,6 +1,8 @@
 package psp
 package core
 
+import psp.std.Precise
+
 final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
   assert(!capacity.isZero, capacity)
 
@@ -18,9 +20,9 @@ final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
   private[this] def intSize = size.value
 
   def contents: Direct[A] = indices map bufferAt toIndexed
-  def size: Size           = capacity min Size(seen)
-  def isFull: Boolean      = size == capacity
-  def sizeInfo: Precise    = size.toInfo
+  def size: Size          = capacity min Size(seen)
+  def isFull: Boolean     = size == capacity
+  def sizeInfo            = size.toInfo
 
   def foreach(f: A => Unit): Unit = contents foreach f
 

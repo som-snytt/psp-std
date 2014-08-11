@@ -1,8 +1,8 @@
 package psp
 package core
 
-import SizeInfo._
-import psp.std.IndexRange
+import psp.std.{ SizeInfo, IndexRange }
+import psp.std.SizeInfo._
 
 // TODO: Distinct, Reverse, Zip
 //
