@@ -6,38 +6,42 @@ import Size._
 class OverflowException extends RuntimeException
 
 final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
-  private def checkSum(sum: Int): Size = try Size(sum) finally if (sum < value) fail(s"overflow: $value + ... == $sum")
-
   def compare(that: Size): Int = value compare that.value
-  def + (n: Size): Size        = checkSum(value + n.value)
-  def - (n: Size): Size        = Size(value - n.value)
-  def * (n: Int): Size         = Size(value * n)
-  def / (n: Int): Size         = if (n == 0) fail("division by zero") else Size(value / n)
-  def min(that: Size): Size    = Size(value min that.value)
-  def max(that: Size): Size    = Size(value max that.value)
+
+  def + (n: Size): Size     = if (isUndefined) undefined else (value + n.value) |> (sum => if (sum < value) undefined else Size(sum))
+  def - (n: Size): Size     = if (isUndefined) undefined else Size(value - n.value)
+  def * (n: Int): Size      = if (isUndefined) undefined else Size(value * n)
+  def min(that: Size): Size = if (isUndefined || that.isUndefined) undefined else Size(value min that.value)
+  def max(that: Size): Size = if (isUndefined || that.isUndefined) undefined else Size(value max that.value)
+
+  def / (n: Int): Size          = if (isUndefined || n <= 0) undefined else Size(value / n)
+  def % (n: Int): Size          = if (isUndefined || n <= 0) undefined else Size(value % n)
+  def /% (n: Int): (Size, Size) = (this / n, this % n)
 
   def isZero                   = this == Zero
-  def isError                  = this == NoSize
-  def toIndexRange: IndexRange = IndexRange zeroTo lastIndex
+  def isUndefined              = this == undefined
+  def toIndexRange: IndexRange = if (isUndefined) IndexRange.undefined else IndexRange zeroTo lastIndex
   def toScalaRange             = toIndexRange.toScalaRange
   def toInt: Int               = value
   def toLong: Long             = value
-  def toOption: Option[Int]    = if (isError) None else Some(toInt)
-  def toInfo: Precise          = if (isError) fail(s"Cannot translate erroneous size") else Precise(this)
+  def toOption: Option[Int]    = if (isUndefined) None else Some(toInt)
+  def toInfo: Precise          = if (isUndefined) fail(s"Cannot translate erroneous size") else Precise(this)
 
   @inline def foreachIndex(f: Index => Unit): Unit = toIndexRange foreach f
-  def containsIndex(index: Index): Boolean = !index.isUndefined && index <= lastIndex
+  def containsIndex(index: Index): Boolean         = !index.isUndefined && index <= lastIndex
 
-  def lastIndex: Index = if (value <= 0) fail("empty.last") else Index(value - 1)
+  def lastIndex: Index = if (value <= 0) Index.undefined else Index(value - 1)
 
-  override def toString = if (isError) "<no size>" else s"$value"
+  override def toString = if (isUndefined) "undefined" else s"$value"
 }
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
   implicit def sizeToSizeInfo(s: Size): SizeInfo = s.toInfo
 
-  final val NoSize = new Size(-1)
+  def undefined = new Size(-1)
+
+  final val NoSize = undefined
   final val Zero   = new Size(0)
   final val One    = new Size(1)
   final val Two    = new Size(2)

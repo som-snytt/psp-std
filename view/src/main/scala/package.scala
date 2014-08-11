@@ -23,12 +23,14 @@ package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   val SizeInfo = psp.std.SizeInfo
   type PartiallyOrdered[A] = psp.std.PartiallyOrdered[A]
 
+  def intRange(start: Int, end: Int): Direct[Int] = IntRange.until(start, end)
+
   implicit class TemporarySizeOps(val s: Size) {
-    def toIndexed: Direct[Int]       = IntRange.until(0, s.value)
+    def toIndexed: Direct[Int]       = intRange(0, s.value)
     def reverseInterval: Direct[Int] = toIndexed.reverse
   }
   implicit class TemporaryIndexRangeOps(val r: IndexRange) {
-    def toIndexed: Direct[Int] = IntRange.until(r.start.value, r.end.value)
+    def toIndexed: Direct[Int] = intRange(r.startInt, r.endInt)
   }
 
   implicit def intToIndex(x: Int): Index = psp.std.Index(x)
