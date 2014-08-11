@@ -52,7 +52,7 @@ object Direct {
 
   def fill[A](times: Int)(body: => A): Direct[A] = {
     val buf = Vector.newBuilder[A]
-    Interval(0, times) foreach (_ => buf += body)
+    indexRange(0, times) foreach (_ => buf += body)
     pure(buf.result)
   }
   def empty[A] : Direct[A] = Foreach.Empty

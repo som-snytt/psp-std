@@ -138,7 +138,7 @@ final class CompatSeq[A, Repr, CC[X]](val repr: Repr)(implicit val tc: DirectAcc
   def dropWhile(pred: Predicate[A]): Repr = wrapOp(_ dropWhile pred)
   def filter(pred: Predicate[A]): Repr    = wrapOp(_ filter pred)
   def filterNot(pred: Predicate[A]): Repr = wrapOp(_ filterNot pred)
-  def slice(start: Int, end: Int): Repr   = wrapOp(_ slice Interval(start, end))
+  def slice(start: Int, end: Int): Repr   = wrapOp(_ slice indexRange(start, end))
   def take(n: Int): Repr                  = wrapOp(_ take n)
   def takeRight(n: Int): Repr             = wrapOp(_ takeRight n)
   def takeWhile(pred: Predicate[A]): Repr = wrapOp(_ takeWhile pred)

@@ -2,6 +2,7 @@ package psp
 package core
 
 import java.{ lang => jl }
+import psp.std._
 
 final class Line(val text: String) extends AnyVal {
   override def toString = text
@@ -56,10 +57,10 @@ final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeafIm
   private def strings: Direct[String] = Regex(EOL) splits repr
   private def lines: Direct[Line]     = strings map (x => new Line(x)) force
 
-  def ranges: Direct[Interval]             = starts.zipWith(ends)((x, y) => Interval(x, y)).toIndexed
-  def indicesOfLine(lineno: Int): Interval = ranges elemAt lineno - 1
-  def line(lineno: Int): Line              = elemAt(lineno - 1)
-  def lineNumbers: IntRange                = IntRange.to(1, size.value)
+  def ranges: Direct[IndexRange]             = starts.zipWith(ends)(indexRange).toIndexed
+  def indicesOfLine(lineno: Int): IndexRange = ranges elemAt lineno - 1
+  def line(lineno: Int): Line                = elemAt(lineno - 1)
+  def lineNumbers: IntRange                  = IntRange.to(1, size.value)
 
   def size                                   = strings.size
   def elemAt(index: Index): Line             = lines elemAt index

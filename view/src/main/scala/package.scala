@@ -3,6 +3,7 @@ package psp
 import scala.{ collection => sc }
 import sc.{ mutable => scm, immutable => sci }
 import psp.core.impl._
+import psp.std.IndexRange
 
 package core {
   trait PackageLevel extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods
@@ -20,10 +21,6 @@ package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   val Precise = psp.std.Precise
   type SizeInfo = psp.std.SizeInfo
   val SizeInfo = psp.std.SizeInfo
-  val Infinite = psp.std.Infinite
-  type Interval = psp.std.IndexRange
-  type IndexRange = psp.std.IndexRange
-  val IndexRange = psp.std.IndexRange
   type PartiallyOrdered[A] = psp.std.PartiallyOrdered[A]
 
   implicit class TemporarySizeOps(val s: Size) {
@@ -33,13 +30,6 @@ package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
   implicit class TemporaryIndexRangeOps(val r: IndexRange) {
     def toIndexed: Direct[Int] = IntRange.until(r.start.value, r.end.value)
   }
-
-  object Interval {
-    val Empty = apply(0, 0)
-    val Full  = apply(0, Int.MaxValue)
-    def apply(start: Int, end: Int): IndexRange = IndexRange.until(start, end)
-  }
-  implicit def intervalToIndexRange(x: Interval.type): psp.std.IndexRange.type = psp.std.IndexRange
 
   implicit def intToIndex(x: Int): Index = psp.std.Index(x)
   implicit def indexToInt(x: psp.std.Index): Int = x.intIndex

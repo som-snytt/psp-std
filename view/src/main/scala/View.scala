@@ -2,6 +2,7 @@ package psp
 package core
 
 import SizeInfo._
+import psp.std.IndexRange
 
 // TODO: Distinct, Reverse, Zip
 //
@@ -27,7 +28,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
 
   final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView with LinearViewImpls {
     def sizeInfo = unknownSize
-    @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
+    @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   }
 
   final class LinearView(val tc: SequentialAccessType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
@@ -38,16 +39,16 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     def tail: Tail = tc wrap (tc tail repr)
     def sizeInfo   = if (isEmpty) Empty else NonEmpty
 
-    @inline def foreach(f: A => Unit): Unit = foreachSlice(Interval.Full)(f)
+    @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   }
 
   final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with IndexedLeafImpl[A] {
-    def isDefinedAt(index: Index): Boolean                = size containsIndex index
-    def size: Size                                        = tc length repr
-    def elemAt(index: Index): A                           = recordCall(tc.elemAt(repr)(index))
-    def contains(x: A): Boolean                           = this exists (_ == x)
-    def foreach(f: A => Unit): Unit                       = foreachSlice(size.toInterval)(f)
-    def foreachSlice(range: Interval)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
+    def isDefinedAt(index: Index): Boolean                  = size containsIndex index
+    def size: Size                                          = tc length repr
+    def elemAt(index: Index): A                             = recordCall(tc.elemAt(repr)(index))
+    def contains(x: A): Boolean                             = this exists (_ == x)
+    def foreach(f: A => Unit): Unit                         = foreachSlice(size.toIndexRange)(f)
+    def foreachSlice(range: IndexRange)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
   }
 
   sealed trait View[+A] extends Any with api.BuilderView[A, Repr] {
@@ -72,7 +73,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     final def dropWhile(p: Predicate[A]): MapTo[A]  = DropWhile(this, p)
     final def dropRight(n: Int): MapTo[A]           = DroppedR(this, Size(n))
     final def takeRight(n: Int): MapTo[A]           = TakenR(this, Size(n))
-    final def slice(range: Interval): MapTo[A]      = Sliced(this, range)
+    final def slice(range: IndexRange): MapTo[A]    = Sliced(this, range)
     final def labeled(label: String): MapTo[A]      = LabeledView(this, label)
     final def sized(size: Size): MapTo[A]           = Sized(this, size)
     final def reverse: MapTo[A]                     = Reversed(this)
@@ -86,7 +87,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   trait LinearViewImpls {
     self: AtomicView =>
 
-    final def foreachSlice(range: Interval)(f: tc.A => Unit): Unit = {
+    final def foreachSlice(range: IndexRange)(f: tc.A => Unit): Unit = {
       var i = 0
       (tc foreach repr) { x =>
         recordCall(x)
@@ -99,7 +100,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
 
   sealed abstract class AtomicView extends api.AtomicView[A] with View[A] with CountCalls {
     val tc: Walkable[Repr]
-    def foreachSlice(range: Interval)(f: A => Unit): Unit
+    def foreachSlice(range: IndexRange)(f: A => Unit): Unit
 
     val counter: Counter = new Counter()
     final def m: this.type = this
@@ -117,7 +118,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   final case class Sized      [+A   ](prev: api.View[A], size: Size)         extends CompositeView[A](pp"sized $size",  _ => size)
   final case class Joined     [+A   ](prev: api.View[A], ys: api.View[A])    extends CompositeView[A](pp"++ $ys",       _ + ys.sizeInfo)
   final case class Filtered   [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"filter $p",    _.atMost)
-  final case class Sliced     [+A   ](prev: api.View[A], range: Interval)    extends CompositeView[A](pp"slice $range", _ slice range)
+  final case class Sliced     [+A   ](prev: api.View[A], range: IndexRange)  extends CompositeView[A](pp"slice $range", _ slice range)
   final case class Dropped    [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"drop $n",      _ - n)
   final case class DroppedR   [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"dropR $n",     _ - n)
   final case class Taken      [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"take $n",      _ min n)
@@ -130,17 +131,17 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
   final case class Collected  [ A, B](prev: api.View[A], pf: A ?=> B)        extends CompositeView[B](pp"collect $pf",  _.atMost)
 
   object FlattenIndexedSlice {
-    def unapply[A](xs: api.View[A]): Option[(api.View[A], Interval)] = xs match {
-      case xs: IndexedView       => Some(xs -> xs.size.toInterval)
+    def unapply[A](xs: api.View[A]): Option[(api.View[A], IndexRange)] = xs match {
+      case xs: IndexedView       => Some(xs -> xs.size.toIndexRange)
       case LabeledView(xs, _)    => unapply(xs)
-      case Sized(xs, Size(n))    => Some(xs -> Interval(0, n))
+      case Sized(xs, Size(n))    => Some(xs -> indexRange(0, n))
       case Mapped(xs, f)         => unapply(xs) map { case (xs, range) => (xs map f, range) }
       case DroppedR(xs, Size(n)) => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
       case TakenR(xs, Size(n))   => unapply(xs) map { case (xs, range) => (xs, range takeRight n) }
       case Dropped(xs, Size(n))  => unapply(xs) map { case (xs, range) => (xs, range drop n) }
       case Taken(xs, Size(n))    => unapply(xs) map { case (xs, range) => (xs, range take n) }
       case Sliced(xs, indices)   => unapply(xs) map { case (xs, range) => (xs, range slice indices) }
-      case _                     => xs.sizeInfo.precisely map (size => xs -> Interval(0, size))
+      case _                     => xs.sizeInfo.precisely map (size => xs -> indexRange(0, size))
     }
   }
 
@@ -170,8 +171,8 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
         case Joined(xs, ys)                  => loop(xs)(f) ; loop(ys)(f)
         case DroppedR(xs, Size(n))           => foreachDropRight(xs, f, Size(n))
         case TakenR(xs, Size(n))             => foreachTakeRight(xs, f, Size(n))
-        case Dropped(xs, Size(n))            => foreachSlice(xs, f, Interval.Full drop n)
-        case Taken(xs, Size(n))              => foreachSlice(xs, f, Interval.Full take n)
+        case Dropped(xs, Size(n))            => foreachSlice(xs, f, IndexRange.full drop n)
+        case Taken(xs, Size(n))              => foreachSlice(xs, f, IndexRange.full take n)
         case Sliced(xs, range)               => foreachSlice(xs, f, range)
         case xs: api.View[_]                 => xs foreach f
         case xs                              => sys.error(pp"Unexpected view class ${xs.shortClass}")
@@ -179,7 +180,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
       loop(this)(f)
     }
 
-    private def foreachSlice[A](xs: api.View[A], f: A => Unit, range: Interval): Unit = {
+    private def foreachSlice[A](xs: api.View[A], f: A => Unit, range: IndexRange): Unit = {
       var i = 0
       def runThrough(xs: Foreach[A]): Boolean = {
         xs foreach { x =>

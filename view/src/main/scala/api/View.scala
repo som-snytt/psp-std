@@ -2,6 +2,8 @@ package psp
 package core
 package api
 
+import psp.std.IndexRange
+
 trait View[+A] extends Any with TypeConstructors[A] with IsoView[A] with MapElementView[A] with MeasurementView {
   type MapTo[+X] <: View[X]
 
@@ -75,7 +77,7 @@ trait IsoView[+A] extends Any with TypeConstructors[A] {
   def dropWhile(p: Predicate[A]): This
   def dropRight(n: Int): This
   def takeRight(n: Int): This
-  def slice(range: Interval): This
+  def slice(range: IndexRange): This
   def labeled(label: String): This
   def sized(size: Size): This
   def reverse: This

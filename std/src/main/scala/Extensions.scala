@@ -5,10 +5,10 @@ import scala.collection.{ mutable, immutable, generic }
 
 // Have to each go into their own class because the apply methods have the same erasure.
 final class AddNthApplyToSeq[CC[X] <: scala.collection.Seq[X], A](private val xs: CC[A]) extends AnyVal {
-  def apply(nth: Nth): A = if (nth.isDefined) xs(nth.intIndex) else sys.error(s"apply($nth)")
+  def apply(nth: Nth): A = if (nth.isUndefined) sys.error(s"apply($nth)") else xs(nth.intIndex)
 }
 final class AddIndexApplyToSeq[CC[X] <: scala.collection.Seq[X], A](private val xs: CC[A]) extends AnyVal {
-  def apply(index: Index): A = if (index.isDefined) xs(index.value) else sys.error(s"apply($index)")
+  def apply(index: Index): A = if (index.isUndefined) sys.error(s"apply($index)") else xs(index.value)
 }
 
 final class SortedMapExtensionOps[K, V](private val map: scala.collection.SortedMap[K, V]) extends AnyVal {

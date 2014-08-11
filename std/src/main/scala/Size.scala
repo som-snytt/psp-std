@@ -16,17 +16,17 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
   def min(that: Size): Size    = Size(value min that.value)
   def max(that: Size): Size    = Size(value max that.value)
 
-  def isZero                 = this == Zero
-  def isError                = this == NoSize
-  def toInterval: IndexRange = IndexRange zeroTo lastIndex
-  def toScalaRange           = toInterval.toScalaRange
-  def toInt: Int             = value
-  def toLong: Long           = value
-  def toOption: Option[Int]  = if (isError) None else Some(toInt)
-  def toInfo: Precise        = if (isError) fail(s"Cannot translate erroneous size") else Precise(this)
+  def isZero                   = this == Zero
+  def isError                  = this == NoSize
+  def toIndexRange: IndexRange = IndexRange zeroTo lastIndex
+  def toScalaRange             = toIndexRange.toScalaRange
+  def toInt: Int               = value
+  def toLong: Long             = value
+  def toOption: Option[Int]    = if (isError) None else Some(toInt)
+  def toInfo: Precise          = if (isError) fail(s"Cannot translate erroneous size") else Precise(this)
 
-  @inline def foreachIndex(f: Index => Unit): Unit = toInterval foreach f
-  def containsIndex(index: Index): Boolean = index.isDefined && index <= lastIndex
+  @inline def foreachIndex(f: Index => Unit): Unit = toIndexRange foreach f
+  def containsIndex(index: Index): Boolean = !index.isUndefined && index <= lastIndex
 
   def lastIndex: Index = if (value <= 0) fail("empty.last") else Index(value - 1)
 

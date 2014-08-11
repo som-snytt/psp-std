@@ -17,8 +17,8 @@ import scala.collection.{ mutable, immutable }
  */
 trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh {
   val EOL          = sys.props.getOrElse("line.separator", "\n")
-  val NoIndex      = Index.empty
-  val NoNth        = Nth.empty
+  val NoIndex      = Index.undefined
+  val NoNth        = Nth.undefined
   val ClassTag     = scala.reflect.ClassTag
   val NumericRange = scala.collection.immutable.NumericRange
 

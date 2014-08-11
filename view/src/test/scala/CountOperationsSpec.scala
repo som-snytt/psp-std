@@ -25,7 +25,7 @@ object CountOperationsSpec extends TestSuite {
   def basicOps = List[IntView => IntView](
     _ drop 5,
     _ dropRight 11,
-    _ slice Interval(7, 41),
+    _ slice indexRange(7, 41),
     _ take 13,
     _ takeRight 17,
     _ flatMap tupleFlatMap,

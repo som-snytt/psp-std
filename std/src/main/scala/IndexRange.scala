@@ -2,7 +2,7 @@ package psp
 package std
 
 import Index.zero
-import IndexRange.empty
+import IndexRange.{ undefined, empty }
 
 /** All IndexRanges are inclusive of start and exclusive of end.
  */
@@ -11,15 +11,15 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   private def rbits: Int = bits.toInt
 
   // Shift the range left or right. Attempts to go past the minimum
-  // or maximum representable index will yield IndexRange.empty.
+  // or maximum representable index will yield IndexRange.undefined.
   def >> (n: Int): IndexRange = IndexRange.until(start + n, end + n)
   def << (n: Int): IndexRange = IndexRange.until(start - n, end - n)
 
-  def isUndefined = this == empty
+  def isUndefined = this == undefined
   def isDefined   = !isUndefined
 
   def slice(range: IndexRange): IndexRange =
-    if (this.isUndefined || range.isUndefined) empty
+    if (this.isUndefined || range.isUndefined) undefined
     else this drop range.start.value take range.intLength
 
   def startInt: Int  = lbits
@@ -30,10 +30,10 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def intLength: Int = length.toInt
   def size: Size     = if (length > Int.MaxValue) Size.NoSize else Size(intLength)
 
-  def drop(n: Int): IndexRange      = if (n <= 0) this else IndexRange.until(start + n, end)
-  def dropRight(n: Int): IndexRange = if (n <= 0) this else IndexRange.until(start, end - n)
-  def take(n: Int): IndexRange      = if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(start, start + n)
-  def takeRight(n: Int): IndexRange = if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(end - n, end)
+  def drop(n: Int): IndexRange      = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start + n, end)
+  def dropRight(n: Int): IndexRange = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start, end - n)
+  def take(n: Int): IndexRange      = if (isUndefined) undefined else if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(start, start + n)
+  def takeRight(n: Int): IndexRange = if (isUndefined) undefined else if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(end - n, end)
 
   def foreachNth(f: Nth => Unit): Unit            = foreach(i => f(i.toNth))
   def filterNth(p: Nth => Boolean): Vector[Index] = filter(i => p(i.toNth))
@@ -48,7 +48,7 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def map[A](f: Index => A): Vector[A]           = mapInt(i => f(Index(i)))
 
   def intersect(that: IndexRange): IndexRange = IndexRange.until(start max that.start, end min that.end)
-  def contains(i: Index): Boolean             = i.isDefined && (start <= i && i < end)
+  def contains(i: Index): Boolean             = !i.isUndefined && (start <= i && i < end)
   def toSeq: Seq[Index]                       = toVector
   def toVector: Vector[Index]                 = mapInt(Index)
   def toIntRange: Range                       = Range(lbits, rbits)
@@ -58,17 +58,19 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
 }
 
 object IndexRange {
-  def empty: IndexRange                 = new IndexRange(-1L)
+  def full: IndexRange                  = until(zero, Index.max)
+  def empty: IndexRange                 = until(zero, zero)
+  def undefined: IndexRange             = new IndexRange(-1L)
   def zeroUntil(end: Index): IndexRange = until(zero, end)
   def zeroTo(end: Index): IndexRange    = to(zero, end)
 
   def to(start: Index, end: Index): IndexRange =
-    if (start.isEmpty || end.isEmpty) empty
-    else if (end.value == Int.MaxValue) throw new IllegalArgumentException("Cannot encode Int.MaxValue")
+    if (start.isUndefined || end.isUndefined) undefined
+    else if (end.value == Int.MaxValue) throw new IllegalArgumentException("Cannot create IndexRange which contains Int.MaxValue")
     else until(start, end.next)
 
   def until(start: Index, end: Index): IndexRange =
-    if (start.isEmpty || end.isEmpty) empty
+    if (start.isUndefined || end.isUndefined) undefined
     else if (end < start) until(start, start)
-    else new IndexRange((start.value.toLong << 32) | end.value.toLong)
+    else new IndexRange((start.toLong << 32) | end.toLong)
 }
