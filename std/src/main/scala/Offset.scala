@@ -5,9 +5,9 @@ package std
  *  A negative offset is a positive offset from the other reference point.
  */
 final class Offset private (val value: Int) extends AnyVal with Ordered[Offset] {
-  def unary_- : Offset           = Offset(-value)
-  def >>(n: Int): Offset         = Offset(value + n)
-  def <<(n: Int): Offset         = Offset(value - n)
+  def unary_- : Offset   = Offset(-value)
+  def >>(n: Int): Offset = Offset(value + n)
+  def <<(n: Int): Offset = Offset(value - n)
 
   def compare(that: Offset): Int = value compare that.value
   override def toString = s"$value"
