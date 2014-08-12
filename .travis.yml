@@ -1,5 +1,5 @@
 language: scala
-script: "sbt test"
+script: bin/test
 jdk:
   - openjdk6
   - oraclejdk7

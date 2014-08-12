@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+
+run () { echo "$@" && "$@"; }
+
+file='https://www.dropbox.com/s/h7phfk779btgccs/cache.tgz'
+run curl -# -L -o cache.tgz "$file" && run tar xvf cache.tgz -C $HOME
+
+exit 0

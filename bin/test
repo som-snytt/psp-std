@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#
+
+$(dirname $0)/get-cache
+
+sbt test
