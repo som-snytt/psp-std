@@ -1,8 +1,6 @@
 package psp
 package core
 
-import scala.reflect.io.Streamable
-
 final class UniversalOps[T](val x: T) extends AnyVal {
   def nTimes(n: Int): Foreach[T] = Foreach.times(n, x)
   def ref_==(y: Any): Boolean    = x.toRef eq y.toRef
@@ -18,8 +16,3 @@ final class UniversalOps[T](val x: T) extends AnyVal {
   }
   def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
 }
-
-// final class JavaPathOps(val path: jPath) extends AnyVal {
-//   def toUrl = path.toUri.toURL
-//   def slurp(): String = Streamable slurp toUrl
-// }

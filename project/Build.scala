@@ -83,13 +83,11 @@ object Build extends sbt.Build with Versioning {
   lazy val view = project dependsOn std settings (common: _*) settings (
                           name :=  "psp-view",
                    description :=  "collections for psp's non-standard standard library",
-           libraryDependencies +=  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     initialCommands in console :=  imports,
                 testFrameworks +=  new TestFramework("utest.runner.JvmFramework"),
            libraryDependencies ++= Seq(
-              "org.scala-lang"  % "scala-compiler" % scalaVersion.value,
-              "org.scalacheck" %% "scalacheck"     %      "1.11.5"       % "test" exceptScala,
-              "com.lihaoyi"    %% "utest"          %       "0.2.0"       % "test" exceptScala
+              "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
+              "com.lihaoyi"    %% "utest"      % "0.2.0"  % "test"
           )
 
   )
