@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 #
 
-echo "Starting cache download at " "$(date)"
+echo "$(date)" " - starting cache download"
 $(dirname $0)/get-cache
-echo "Starting sbt test at " "$(date)"
-sbt test
-echo "Finished at " "$(date)"
+echo "$(date)" " - starting sbt test"
+sbt test && echo "$(date)" " - finished sbt test"
