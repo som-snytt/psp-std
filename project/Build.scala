@@ -5,6 +5,7 @@ import sbt._, Keys._
 import bintray.Plugin.bintraySettings
 import com.typesafe.tools.mima.plugin.MimaKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import psp.meta._
 
 object Build extends sbt.Build with Versioning {
   def imports = """
@@ -86,10 +87,10 @@ object Build extends sbt.Build with Versioning {
     initialCommands in console :=  imports,
                 testFrameworks +=  new TestFramework("utest.runner.JvmFramework"),
            libraryDependencies ++= Seq(
-            "org.scala-lang"    % "scala-compiler" % scalaVersion.value,
-            "org.scalacheck"   %% "scalacheck"     %      "1.11.5"       % "test",
-            "com.lihaoyi"      %% "utest"          %       "0.2.0"       % "test"
-         )
+              "org.scala-lang"  % "scala-compiler" % scalaVersion.value,
+              "org.scalacheck" %% "scalacheck"     %      "1.11.5"       % "test" exceptScala,
+              "com.lihaoyi"    %% "utest"          %       "0.2.0"       % "test" exceptScala
+          )
 
   )
 }
