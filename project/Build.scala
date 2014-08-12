@@ -5,6 +5,9 @@ import sbt._, Keys._
 import bintray.Plugin.bintraySettings
 import com.typesafe.tools.mima.plugin.MimaKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import scoverage.ScoverageSbtPlugin.instrumentSettings
+import scoverage.ScoverageSbtPlugin.ScoverageKeys
+// import org.scoverage.coveralls.CoverallsPlugin.coverallsSettings
 import psp.meta._
 
 object Build extends sbt.Build with Versioning {
@@ -19,18 +22,19 @@ object Build extends sbt.Build with Versioning {
     }
   """
 
-  def common = bintraySettings ++ mimaDefaultSettings ++ Seq[Setting[_]](
-                    resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
-                 organization :=  pspOrg,
-                 scalaVersion :=  "2.11.2",
-                      version :=  "0.2.0-M2",
-                  logBuffered :=  false,
-                scalacOptions ++= Seq("-language:_"),
-                 javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
-                     licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-      publishArtifact in Test :=  false,
-    parallelExecution in Test :=  false,
-                 fork in Test :=  true
+  def common = bintraySettings ++ mimaDefaultSettings ++ instrumentSettings /*++ coverallsSettings*/ ++ Seq[Setting[_]](
+    ScoverageKeys.highlighting :=  true,
+                     resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
+                  organization :=  pspOrg,
+                  scalaVersion :=  "2.11.2",
+                       version :=  "0.2.0-M2",
+                   logBuffered :=  false,
+                 scalacOptions ++= Seq("-language:_"),
+                  javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
+                      licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+       publishArtifact in Test :=  false,
+     parallelExecution in Test :=  false,
+                  fork in Test :=  true
   )
 
   def subprojects = List(std, macros, view)

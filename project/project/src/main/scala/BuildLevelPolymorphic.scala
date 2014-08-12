@@ -7,9 +7,11 @@ import sbt._, Keys._
  */
 package object meta {
   def pluginIDs = Seq(
-    "me.lessis"    % "bintray-sbt"                % "0.1.2",
-    "com.typesafe" % "sbt-mima-plugin"            % "0.1.6",
-    "com.gilt"     % "sbt-dependency-graph-sugar" % "0.7.4"
+    "me.lessis"               % "bintray-sbt"                %  "0.1.2",
+    "com.typesafe"            % "sbt-mima-plugin"            %  "0.1.6",
+    "com.gilt"                % "sbt-dependency-graph-sugar" %  "0.7.4",
+    "org.scoverage"          %% "sbt-scoverage"              % "0.99.7.1"
+    // "com.sksamuel.scoverage" %% "sbt-coveralls"              %   "0.0.5"
   )
   implicit class ModuleIDOps(val m: ModuleID) extends AnyVal {
     def exceptScala: ModuleID = m excludeAll ExclusionRule("org.scala-lang")
