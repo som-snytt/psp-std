@@ -1,12 +1,7 @@
-// https://issues.scala-lang.org/browse/SI-8772
-// resolvers += Resolver.sonatypeRepo("releases")
-// Nope
-//
-// http://central.stage.sonatype.org/pages/consumers.html
-resolvers += "Secured Central Repository" at "https://repo1.maven.org/maven2"
+// No thank you re: scala 2.10.2 artifacts.
+def plugin(m: ModuleID) = Defaults.sbtPluginExtra(m, "0.13", "2.10") excludeAll ExclusionRule("org.scala-lang")
 
-externalResolvers := Resolver.withDefaultResolvers(resolvers.value, mavenCentral = false)
-
-addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")
-
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.1.6")
+libraryDependencies ++= Seq(
+  plugin("me.lessis"    % "bintray-sbt"     % "0.1.2"),
+  plugin("com.typesafe" % "sbt-mima-plugin" % "0.1.6")
+)
