@@ -6,6 +6,7 @@ import org.scalacheck._
 import psp.std._, SizeInfo._
 import SizeInfoGenerators._
 import org.scalacheck.Prop._
+import PartialOrder._
 
 object SizeInfoGenerators {
   import Gen._
@@ -53,11 +54,12 @@ object SizeInfoSpec extends Properties("SizeInfo") with SizeInfoGenerators.Pri3 
     case _                                => r
   }
 
+  // ...Aaaaand right on cue, a bunch of these tests broke until I added a type annotation.
   property("`+` on precises")      = forAll((s: Precise, n: Size) => (s + n).size == s.size + n)
-  property("s1 <= (s1 max s2)")    = certain((s1: Atomic, s2: Atomic) => s1 <= (s1 max s2))
-  property("s1 >= (s1 min s2)")    = certain((s1: Atomic, s2: Atomic) => s1 >= (s1 min s2))
-  property("s1 <= (s1 + s2)")      = certain((s1: Atomic, s2: Atomic) => s1 <= (s1 + s2))
-  property("s1 >= (s1 - s2)")      = certain((s1: Atomic, s2: Precise) => s1 >= (s1 - s2))
+  property("s1 <= (s1 max s2)")    = certain[Atomic, Atomic]((s1, s2) => (s1: SI) <= (s1 max s2))
+  property("s1 >= (s1 min s2)")    = certain[Atomic, Atomic]((s1, s2) => (s1: SI) >= (s1 min s2))
+  property("s1 <= (s1 + s2)")      = certain[Atomic, Atomic]((s1, s2) => (s1: SI) <= (s1 + s2))
+  property("s1 >= (s1 - s2)")      = certain[Atomic, Precise]((s1, s2) => (s1: SI) >= (s1 - s2))
   property("<inf> + n")            = certain((s1: SI) => (Infinite + s1) <==> Infinite)
   property("`+` is associative")   = associative[SI](_ + _)
   property("`max` is associative") = associative[SI](_ max _)

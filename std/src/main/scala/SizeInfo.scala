@@ -19,9 +19,8 @@ import scala.{ collection => sc }
  *  Operations on sizes which are ill-defined will result in "Unknown", which
  *  encodes no available size information: Bounded(Zero, Infinite).
  */
-sealed trait SizeInfo extends PartiallyOrdered[SizeInfo] {
+sealed trait SizeInfo {
   def +(size: Size): SizeInfo
-  def partialCompare(that: SizeInfo): PartialOrder.Cmp = SizeInfo.SizeInfoPartialOrder.partialCompare(this, that)
 }
 
 // This arrangement means that "x + size" results in the same type as x for any SizeInfo.

@@ -198,6 +198,8 @@ trait Creators {
 trait LowPriorityPspStd {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
+  // Deprioritize PartialOrder vs. Order since they both have comparison methods.
+  implicit def hasPartialOrderExtensionOps[A: PartialOrder](x: A): PartialOrder.Ops[A] = new PartialOrder.Ops[A](x)
 }
 
 trait Implicits extends LowPriorityPspStd {
@@ -223,11 +225,8 @@ trait Implicits extends LowPriorityPspStd {
   // Another victory against boilerplate.
   implicit def hasEqExtensionOps[A](x: A): Eq.Ops[A] = new Eq.Ops[A](x)
   // And already we're defeated in that regard - just too difficult to walk the line.
-  implicit def hasOrderExtensionOps[A](x: A)(implicit ord: Order[A]): Order.Ops[A] = new Order.Ops[A](x)
-  implicit def orderExtensionOps[A](x: Order[A]): Order.OrderOps[A]                = new Order.OrderOps[A](x)
-
-  // implicit def eqAndOrdExtensionOps[A](x: A): Eq.Ops[A]                             = new Eq.Ops[A](x)
-  implicit def partiallyOrderedOps[A](x: PartiallyOrdered[A]): PartiallyOrdered.Ops[A] = new PartiallyOrdered.Ops(x)
+  implicit def hasOrderExtensionOps[A: Order](x: A): Order.Ops[A]   = new Order.Ops[A](x)
+  implicit def orderExtensionOps[A](x: Order[A]): Order.OrderOps[A] = new Order.OrderOps[A](x)
 
   // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
   // It's not like you have any idea what the performance characteristics of the target are anyway.
