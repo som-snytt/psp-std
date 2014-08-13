@@ -8,8 +8,8 @@ import Ansi._
  *  (foreground or background) or an attribute (e.g. bright, underline.)
  *  Control sequences are created from Atoms with the / operator.
  */
-final class Atom private (val code: Int) extends AnyVal with Ordered[Atom] {
-  def compare(that: Atom): Int = code compare that.code
+final class Atom private (val value: Int) extends AnyVal {
+  def code: Int = value
   override def toString = s"$code"
 }
 

@@ -30,8 +30,8 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   }
   def sum(implicit num: Numeric[A]): A     = foldl(num.zero)(num.plus)
   def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
-  def min(implicit ord: Order[A]): A       = reduce(ord.min)
-  def max(implicit ord: Order[A]): A       = reduce(ord.max)
+  def min(implicit ord: Order[A]): A       = reduce(_ min _)
+  def max(implicit ord: Order[A]): A       = reduce(_ max _)
 
   def forcedSize: Long = xs.sizeInfo.precisely match {
     case Some(x) => x

@@ -8,7 +8,7 @@ import Index.{ zero, undefined }
  *  In principle we could double the usable range by treating
  *  value as an unsigned Int other than -1.
  */
-final class Index private (val value: Int) extends AnyVal with Ordered[Index] with IndexOrNth {
+final class Index private (val value: Int) extends AnyVal with IndexOrNth {
   type This = Index
 
   // Manipulations of NoIndex result in NoIndex, it's like NaN in that way.
@@ -28,9 +28,7 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
   def isUndefined = this == undefined
   def isDefined   = !isUndefined
 
-  def spaces                    = " " * value
-  def compare(that: Index): Int = value compare that.value
-
+  def spaces = " " * value
   def prev = this - 1
   def next = this + 1
   def max(that: Index): Index = Index(value max that.value)
@@ -50,6 +48,8 @@ final class Index private (val value: Int) extends AnyVal with Ordered[Index] wi
 }
 
 object Index extends (Int => Index) {
+  implicit def IndexOrder = order[Index] (_.value)
+
   def max: Index       = new Index(Int.MaxValue)
   def zero: Index      = new Index(0)
   def undefined: Index = new Index(-1)

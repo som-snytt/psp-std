@@ -7,7 +7,7 @@ import Nth.undefined
  *  same behavior for all values n >= 0, assuming things type check.
  *  I resist cosmetic implicits.
  */
-final class Nth private (val value: Int) extends AnyVal with Ordered[Nth] with IndexOrNth {
+final class Nth private (val value: Int) extends AnyVal with IndexOrNth {
   type This = Nth
 
   def +(n: Int): Nth = if (isUndefined) this else Nth(value + n)
@@ -20,8 +20,6 @@ final class Nth private (val value: Int) extends AnyVal with Ordered[Nth] with I
   def get         = value
   def isEmpty     = isUndefined
   def isUndefined = this == undefined
-
-  def compare(that: Nth): Int = value compare that.value
 
   def prev = this - 1
   def next = this + 1
@@ -39,6 +37,7 @@ final class Nth private (val value: Int) extends AnyVal with Ordered[Nth] with I
 }
 object Nth extends (Int => Nth) {
   implicit def nthToIndex(n: Nth): Index = n.toIndex
+  implicit def NthOrder = order[Nth] (_.value)
 
   // 0 is excluded, but we use -1 for the undefined case anyway.
   def undefined                    = new Nth(-1)

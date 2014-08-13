@@ -5,9 +5,7 @@ import Size._
 
 class OverflowException extends RuntimeException
 
-final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
-  def compare(that: Size): Int = value compare that.value
-
+final class Size private (val value: Int) extends AnyVal {
   def + (n: Size): Size     = if (isUndefined) undefined else (value + n.value) |> (sum => if (sum < value) undefined else Size(sum))
   def - (n: Size): Size     = if (isUndefined) undefined else Size(value - n.value)
   def * (n: Int): Size      = if (isUndefined) undefined else Size(value * n)
@@ -37,6 +35,7 @@ final class Size private (val value: Int) extends AnyVal with Ordered[Size] {
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
+  implicit def SizeOrder = order[Size] (_.value)
   implicit def sizeToSizeInfo(s: Size): SizeInfo = s.toInfo
   def undefined = new Size(-1)
 
@@ -50,6 +49,4 @@ object Size {
 
   def apply(n: Int): Size           = if (n <= 0) Zero else new Size(n)
   def unapply(s: Size): Option[Int] = s.toOption
-
-  private def fail(msg: String): Nothing = throw new ArithmeticException(msg)
 }

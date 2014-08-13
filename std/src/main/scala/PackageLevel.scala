@@ -164,6 +164,7 @@ trait Utility {
 }
 
 trait Creators {
+  def order[A] : Order.By[A]                       = Order.by[A]
   def uri(x: String): URI                          = java.net.URI create x
   def url(x: String): URL                          = new URL(x)
   def index(x: Int): Index                         = Index(x)
@@ -220,7 +221,12 @@ trait Implicits extends LowPriorityPspStd {
   // If the type class is attached at creation it can't be a value class.
   // So it has to be duplicated across every method which utilizes it.
   // Another victory against boilerplate.
-  implicit def eqExtensionOps[A](x: A): Eq.Ops[A]                                      = new Eq.Ops[A](x)
+  implicit def hasEqExtensionOps[A](x: A): Eq.Ops[A] = new Eq.Ops[A](x)
+  // And already we're defeated in that regard - just too difficult to walk the line.
+  implicit def hasOrderExtensionOps[A](x: A)(implicit ord: Order[A]): Order.Ops[A] = new Order.Ops[A](x)
+  implicit def orderExtensionOps[A](x: Order[A]): Order.OrderOps[A]                = new Order.OrderOps[A](x)
+
+  // implicit def eqAndOrdExtensionOps[A](x: A): Eq.Ops[A]                             = new Eq.Ops[A](x)
   implicit def partiallyOrderedOps[A](x: PartiallyOrdered[A]): PartiallyOrdered.Ops[A] = new PartiallyOrdered.Ops(x)
 
   // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
