@@ -151,6 +151,9 @@ trait Creators {
   def nth(x: Int): Nth                             = Nth(x)
   def indexRange(start: Int, end: Int): IndexRange = IndexRange.until(Index(start), Index(end))
 
+  // Utility.
+  def printResult[A](msg: String)(result: A): A = try result finally Console.err.println(s"$msg: $result")
+
   // Mostly obviating the need for those mutable/immutable identifiers.
   def mutableSeq[A](xs: A*): mutable.Seq[A]                 = mutable.Seq(xs: _*)
   def mutableSet[A](xs: A*): mutable.Set[A]                 = mutable.Set(xs: _*)

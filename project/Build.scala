@@ -10,7 +10,7 @@ import psp.meta._
 object Build extends sbt.Build with Versioning {
   def imports = """
     import scala.collection.{ mutable, immutable }
-    import psp.std._, psp.core._
+    import psp.std._, psp.core._, ansi._
     implicit final class ReplForeachOps[A](val target: Foreach[A]) {
       def >(implicit shows: Show[A]): Unit = println(target join EOL)
     }
@@ -66,6 +66,7 @@ object Build extends sbt.Build with Versioning {
                        publish <<= runPublish(publish),
                   publishLocal <<= runPublish(publishLocal),
                       commands +=  Command.args("mima", "<version>")(mimaCommand),
+                      commands +=  Command.command("ccon")(s => s set (libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value) runTask (console in Compile) _1),
                           test <<= run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
   )
 
