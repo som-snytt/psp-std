@@ -15,7 +15,7 @@ import scala.collection.{ mutable, immutable }
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh {
+trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh with Utility {
   val EOL          = sys.props.getOrElse("line.separator", "\n")
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
@@ -57,41 +57,45 @@ trait Aliases {
   type uV      = scala.annotation.unchecked.uncheckedVariance
 
   // java types which I acknowledge as victors in the battle for simple names.
-  type BufferedInputStream  = java.io.BufferedInputStream
-  type BufferedReader       = java.io.BufferedReader
-  type BufferedWriter       = java.io.BufferedWriter
-  type ByteArrayInputStream = java.io.ByteArrayInputStream
-  type Charset              = java.nio.charset.Charset
-  type DataInput            = java.io.DataInput
-  type DataInputStream      = java.io.DataInputStream
-  type DataOutputStream     = java.io.DataOutputStream
-  type File                 = java.io.File
-  type FileInputStream      = java.io.FileInputStream
-  type FileOutputStream     = java.io.FileOutputStream
-  // type FileTime             = java.nio.file.attribute.FileTime
-  type IOException          = java.io.IOException
-  type InputStream          = java.io.InputStream
-  type JarEntry             = java.util.jar.JarEntry
-  type JarInputStream       = java.util.jar.JarInputStream
-  type ObjectInputStream    = java.io.ObjectInputStream
-  type ObjectOutputStream   = java.io.ObjectOutputStream
-  type OutputStream         = java.io.OutputStream
-  type URI                  = java.net.URI
-  type URL                  = java.net.URL
-  type URLClassLoader       = java.net.URLClassLoader
+  type BufferedInputStream    = java.io.BufferedInputStream
+  type BufferedReader         = java.io.BufferedReader
+  type BufferedWriter         = java.io.BufferedWriter
+  type ByteArrayInputStream   = java.io.ByteArrayInputStream
+  type Charset                = java.nio.charset.Charset
+  type DataInput              = java.io.DataInput
+  type DataInputStream        = java.io.DataInputStream
+  type DataOutputStream       = java.io.DataOutputStream
+  type File                   = java.io.File
+  type FileInputStream        = java.io.FileInputStream
+  type FileOutputStream       = java.io.FileOutputStream
+  // type FileTime            = java.nio.file.attribute.FileTime
+  type IOException            = java.io.IOException
+  type InputStream            = java.io.InputStream
+  type JarEntry               = java.util.jar.JarEntry
+  type JarInputStream         = java.util.jar.JarInputStream
+  type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]
+  type ObjectInputStream      = java.io.ObjectInputStream
+  type ObjectOutputStream     = java.io.ObjectOutputStream
+  type OutputStream           = java.io.OutputStream
+  type URI                    = java.net.URI
+  type URL                    = java.net.URL
+  type URLClassLoader         = java.net.URLClassLoader
 
   // java types for which the battle rages on.
-  type jArray[A]     = Array[A with Object]
-  type jClass        = java.lang.Class[_]
-  type jField        = java.lang.reflect.Field
-  type jFile         = java.io.File
-  type jIterable[+A] = java.lang.Iterable[A @uV]
-  type jIterator[+A] = java.util.Iterator[A @uV]
-  type jList[A]      = java.util.List[A]
-  type jManifest     = java.util.jar.Manifest
-  type jMap[K, V]    = java.util.Map[K, V]
-  type jMethod       = java.lang.reflect.Method
-  type jSet[A]       = java.util.Set[A]
+  type jAbstractCollection[A] = java.util.AbstractCollection[A]
+  type jArrayList[A]          = java.util.ArrayList[A]
+  type jArray[A]              = Array[A with Object]
+  type jClass                 = java.lang.Class[_]
+  type jField                 = java.lang.reflect.Field
+  type jFile                  = java.io.File
+  type jHashSet[A]            = java.util.HashSet[A]
+  type jIterable[+A]          = java.lang.Iterable[A @uV]
+  type jIterator[+A]          = java.util.Iterator[A @uV]
+  type jList[A]               = java.util.List[A]
+  type jManifest              = java.util.jar.Manifest
+  type jMap[K, V]             = java.util.Map[K, V]
+  type jMethod                = java.lang.reflect.Method
+  type jSet[A]                = java.util.Set[A]
 
   // scala types which I won't let win.
   type sIterator[+A] = scala.collection.Iterator[A]
@@ -144,15 +148,28 @@ trait ImplicitRemoval {
   // val genericArrayOps                                                                                     = null
 }
 
+trait Utility {
+  def andTrue(x: Unit): Boolean  = true
+  def andFalse(x: Unit): Boolean = false
+
+  def nullAs[A] : A                             = (null: AnyRef).castTo[A]
+  def decodeName(s: String): String             = scala.reflect.NameTransformer.decode(s)
+  def log(msg: String): Unit                    = Console.err println msg
+  def printResult[A](msg: String)(result: A): A = try result finally log(s"$msg: $result")
+
+  def timed[A](body: => A): A = {
+    val start = System.nanoTime
+    try body finally log("Elapsed: %.3f ms" format (System.nanoTime - start) / 1e6)
+  }
+}
+
 trait Creators {
+  def uri(x: String): URI                          = java.net.URI create x
   def url(x: String): URL                          = new URL(x)
   def index(x: Int): Index                         = Index(x)
   def offset(x: Int): Offset                       = Offset(x)
   def nth(x: Int): Nth                             = Nth(x)
   def indexRange(start: Int, end: Int): IndexRange = IndexRange.until(Index(start), Index(end))
-
-  // Utility.
-  def printResult[A](msg: String)(result: A): A = try result finally Console.err.println(s"$msg: $result")
 
   // Mostly obviating the need for those mutable/immutable identifiers.
   def mutableSeq[A](xs: A*): mutable.Seq[A]                 = mutable.Seq(xs: _*)
@@ -166,6 +183,10 @@ trait Creators {
   // and LinkedHashMap is too slow and only comes in a mutable variety.
   def orderedMap[K, V](kvs: (K, V)*): OrderedMap[K, V]                 = new OrderedMap[K, V](kvs map (_._1), kvs.toMap)
   def orderedMap[K, V](keys: Seq[K], map: Map[K, V]): OrderedMap[K, V] = new OrderedMap[K, V](keys, map)
+
+  // Java.
+  def jHashSet[A] : jHashSet[A] = new jHashSet[A]
+  def jList[A] : jArrayList[A]  = new jArrayList[A]
 
   // A few builders.
   def listBuilder[A](xs: A*)            = List.newBuilder[A] ++= xs

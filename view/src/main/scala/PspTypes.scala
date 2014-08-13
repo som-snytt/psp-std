@@ -5,7 +5,7 @@ import scala.{ collection => sc }
 import sc.{ mutable => scm, generic => scg }
 
 /** A thin abstraction over some questionable assumptions. */
-trait PspTypes extends PspJavaTypes {
+trait PspTypes {
   type Done               = Boolean
   type Suspended[+A]      = (A => Unit) => Unit
   type Ref[+A]            = A with AnyRef
@@ -35,17 +35,4 @@ trait PspTypes extends PspJavaTypes {
     type A = A0
     type CC[B] = CC0[B]
   }
-}
-
-trait PspJavaTypes {
-  // type jPath                  = java.nio.file.Path
-  type jAbstractCollection[A] = java.util.AbstractCollection[A]
-  type jHashSet[A]            = java.util.HashSet[A]
-  type jArrayList[A]          = java.util.ArrayList[A]
-  type LinkedBlockingQueue[A] = java.util.concurrent.LinkedBlockingQueue[A]
-  type BlockingQueue[A]       = java.util.concurrent.BlockingQueue[A]
-  type SynchronousQueue[A]    = java.util.concurrent.SynchronousQueue[A]
-
-  def jHashSet[A] = new jHashSet[A]
-  def jList[A]    = new jArrayList[A]
 }

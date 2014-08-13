@@ -80,8 +80,9 @@ final class AnyExtensionOps[A](private val x: A) extends AnyVal {
   @inline def |>[B](f: A => B): B = f(x)
 
   // "Maybe we can enforce good programming practice with annoyingly long method names."
-  def castTo[U] : U = x.asInstanceOf[U]
-  def toRef: AnyRef = castTo[AnyRef]
+  def castTo[U] : U         = x.asInstanceOf[U]
+  def toRef: AnyRef         = castTo[AnyRef]
+  def doto(f: A => Unit): A = try x finally f(x)
 
   def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else (x: A1).to_s
   def any_s: String = x match {
