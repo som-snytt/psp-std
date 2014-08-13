@@ -2,6 +2,7 @@ package psp
 package core
 
 import java.util.regex.{ Pattern, Matcher, MatchResult }
+import psp.std._
 
 final class MyResult {
   def end(x$1: Int): Int = ???

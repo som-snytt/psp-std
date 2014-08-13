@@ -1,6 +1,8 @@
 package psp
 package core
 
+import psp.std._
+
 trait Builds[-Elem, +To] {
   def +=(elem: Elem): this.type
   def ++=(xs: TraversableOnce[Elem]): this.type

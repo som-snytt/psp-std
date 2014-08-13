@@ -1,6 +1,7 @@
 package psp
 package core
 
+import psp.std._
 import scala.collection.{ mutable, immutable }
 
 abstract class Equiv[A] {

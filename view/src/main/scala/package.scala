@@ -3,13 +3,13 @@ package psp
 import scala.{ collection => sc }
 import sc.{ mutable => scm, immutable => sci }
 import psp.core.impl._
-import psp.std.SizeInfo
+import psp.std._
 
 package core {
   trait PackageLevel extends PspUtility with PspTypes with PspHighPriority with PspUtilityMethods
 }
 
-package object core extends psp.core.PackageLevel with psp.std.PackageLevel {
+package object core extends psp.core.PackageLevel {
   def unknownSize = SizeInfo.Unknown
 
   implicit class TraversableToPsp[A](xs: GenTraversableOnce[A]) {

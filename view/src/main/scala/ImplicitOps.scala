@@ -2,6 +2,8 @@ package psp
 package core
 package impl
 
+import psp.std._
+
 final class Function1Ops[-T, +R](val f: T => R) extends AnyVal {
   def labeled(label: String): T => R = new LabeledFunction(f, label)
 }

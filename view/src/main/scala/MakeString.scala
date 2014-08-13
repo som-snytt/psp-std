@@ -1,6 +1,8 @@
 package psp
 package core
 
+import psp.std._
+
 final class UniversalOps[T](val x: T) extends AnyVal {
   def nTimes(n: Int): Foreach[T] = Foreach.times(n, x)
   def ref_==(y: Any): Boolean    = x.toRef eq y.toRef

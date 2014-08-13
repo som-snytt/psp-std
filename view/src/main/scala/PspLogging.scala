@@ -2,6 +2,8 @@ package psp
 package core
 package impl
 
+import psp.std._
+
 trait PspUtility {
   def join(sep: String)(xs: Any*): String = xs mkString sep
   def andTrue(x: Unit): Boolean           = true

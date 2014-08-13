@@ -59,7 +59,7 @@ object Build extends sbt.Build with Versioning {
                           name :=  "psp-std-root",
                    description :=  "psp's project which exists to please sbt",
                    shellPrompt :=  (s => "%s#%s> ".format(name.value, (Project extract s).currentRef.project)),
-    initialCommands in console :=  "import psp.std._",
+    initialCommands in console :=  imports,
           aggregate in publish :=  false,
      aggregate in publishLocal :=  false,
                publishArtifact :=  false,
@@ -83,7 +83,6 @@ object Build extends sbt.Build with Versioning {
   lazy val view = project dependsOn std settings (common: _*) settings (
                           name :=  "psp-view",
                    description :=  "collections for psp's non-standard standard library",
-    initialCommands in console :=  imports,
                 testFrameworks +=  new TestFramework("utest.runner.JvmFramework"),
            libraryDependencies ++= Seq(
               "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",

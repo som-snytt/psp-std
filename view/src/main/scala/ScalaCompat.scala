@@ -4,6 +4,7 @@ package core
 import scala.{ collection => sc }
 import sc.{ GenIterable => GIterable, GenSeq => GSeq }
 import impl._
+import psp.std._
 
 object ToScala {
   def apply[A](xs: Foreach[A]): Traversable[A] = new ForeachAsTraversable[A](xs)

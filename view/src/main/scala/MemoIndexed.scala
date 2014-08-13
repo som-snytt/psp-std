@@ -3,9 +3,7 @@ package core
 
 import java.{ lang => jl }
 import impl._
-import psp.std.{ SizeInfo }
-import psp.std.Index
-import psp.std.Index.zero
+import psp.std._, Index.zero
 
 final class MemoIndexed[+A](xs: Foreach[A]) extends Indexed[A] {
   @volatile private[this] var seen = zero

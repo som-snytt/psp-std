@@ -1,10 +1,8 @@
 package psp
 package core
 
-import scala.{ collection => sc }
-import psp.std.SizeInfo._
 import impl._
-import psp.std._
+import psp.std._, SizeInfo._
 
 trait Foreach[+A] extends Any with HasSizeInfo {
   def foreach(f: A => Unit): Unit

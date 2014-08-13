@@ -4,6 +4,7 @@ package tests
 import scala.collection.immutable
 import utest._
 import psp.core._
+import psp.std._
 
 object ViewSpec extends TestSuite {
   def checkResult[T: ClassTag](result: Object) = assert(classTag[T].runtimeClass isAssignableFrom result.getClass)
