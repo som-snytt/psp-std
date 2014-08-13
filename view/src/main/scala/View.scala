@@ -160,10 +160,14 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
 
       def loop[B](xs: api.View[B])(f: B => Unit): Unit = xs match {
 
-        case LabeledView(xs, _)              => loop(xs)(f)
-        case Sized(xs, size)                 => loop(xs)(f)
-        case Mapped(xs, g)                   => loop(xs)(g andThen f)
-        case FlatMapped(xs, g)               => loop(xs)(x => g(x) foreach f)
+        case LabeledView(xs, _)              => loop[B](xs)(f)
+        case Sized(xs, size)                 => loop[B](xs)(f)
+        // wartremover informs me the loop type argument is inferred as Any!
+        // To the extent that scala is sound, it is by accident.
+        // case Mapped(xs, g)                   => loop(xs)(g andThen f)
+        // case FlatMapped(xs, g)               => loop(xs)(x => g(x) foreach f)
+        case m: Mapped[a, _]                 => loop[a](m.prev)(m.f andThen f)
+        case m: FlatMapped[a, _]             => loop[a](m.prev)(x => m.f(x) foreach f)
         case Filtered(xs, p: Predicate[B])   => loop(xs)(x => if (p(x)) f(x))
         case TakenWhile(xs, p: Predicate[B]) => foreachTakeWhile(xs, f, p)
         case DropWhile(xs, p: Predicate[B])  => foreachDropWhile(xs, f, p)
@@ -183,25 +187,25 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironm
     }
 
     private def foreachSlice[A](xs: api.View[A], f: A => Unit, range: IndexRange): Unit = {
-      var i = psp.std.Index.zero
-      def runThrough(xs: Foreach[A]): Boolean = {
+      var i = Index.zero
+      def isDone = range.end <= i
+      def runThrough(xs: Foreach[A]): Unit = {
         xs foreach { x =>
           if (range contains i) f(x)
           i = i.next
-          if (i >= range.end) return true
+          if (isDone) return
         }
-        i >= range.end
       }
 
       xs match {
         case xs: AtomicView   => (xs foreachSlice range)(f)
-        case Mapped(xs, g)    => foreachSlice(xs, g andThen f, range)
-        case xs: Direct[A]   => var i = range.start ; while (i < range.end) { f(xs elemAt i) ; i += 1 }
+        case m: Mapped[a, _]  => foreachSlice[a](m.prev, m.f andThen f, range)
+        case xs: Direct[A]    => range foreach (i => f(xs(i)))
         case Joined(ys1, ys2) =>
           ys1.sizeInfo match {
             case Precise(n) if n.lastIndex < range.start => ys2 slice (range << n.toInt) foreach f
             case Precise(n) if n.lastIndex > range.end   => ys1 slice range foreach f
-            case _                                       => runThrough(ys1) || runThrough(ys2)
+            case _                                       => runThrough(ys1) ; if (!isDone) runThrough(ys2)
           }
         case _              => runThrough(xs)
       }
