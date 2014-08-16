@@ -16,10 +16,11 @@ trait ShowDirect extends Any {
 }
 
 trait LowPriorityShow {
-  /** I believe this is the first time I have ever been able to
-   *  use an AnyVal bound other than when demonstrating bugs.
-   */
-  implicit def anyValShow[A <: AnyVal] : Show[A] = Show.native[A]()
+  implicit def intShow     = Show.native[Int]()
+  implicit def longShow    = Show.native[Long]()
+  implicit def doubleShow  = Show.native[Double]()
+  implicit def booleanShow = Show.native[Boolean]()
+  implicit def charShow    = Show.native[Char]()
 }
 object Show extends LowPriorityShow {
   def apply[A](f: A => String): Show[A] = ShowClass(f)
@@ -41,11 +42,19 @@ object Show extends LowPriorityShow {
   implicit def optShow[A: Show] : Show[Option[A]]              = apply(_.fold("-")(x => show"$x"))
   implicit def seqShow[CC[X] <: Seq[X], A: Show] : Show[CC[A]] = apply(xs => inBrackets(xs: _*))
   implicit def arrayShow[A: Show] : Show[Array[A]]             = apply(xs => inBrackets(xs: _*))
+  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)]      = apply { case (x, y) => show"$x -> $y" }
 
   implicit def showDirect[A <: ShowDirect] : Show[A]  = native[A]()
   implicit def numberShow[A <: ScalaNumber] : Show[A] = native[A]() // BigInt, BigDecimal
 
   private case class ShowClass[A](f: A => String) extends AnyVal with Show[A] { def show(x: A): String = f(x) }
+
+  final class By[A] {
+    def apply[B](f: A => B)(implicit shows: Show[B]): Show[A] = shows on f
+  }
+  final class ShowOps[A](val shows: Show[A]) extends AnyVal {
+    def on[B](f: B => A): Show[B] = Show[B](x => shows show f(x))
+  }
 }
 
 object ShowDirect {
