@@ -17,7 +17,7 @@ import scala.collection.{ mutable, immutable }
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh with Utility {
+trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh with Utility with ScalaCompat {
   val EOL          = sys.props.getOrElse("line.separator", "\n")
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
@@ -167,6 +167,11 @@ trait Utility {
     val start = System.nanoTime
     try body finally log("Elapsed: %.3f ms" format (System.nanoTime - start) / 1e6)
   }
+}
+
+// Purely for temporary compat.
+trait ScalaCompat {
+  implicit def orderOrdering[A](implicit ord: Order[A]): Ordering[A] = new Ordering[A] { def compare(x: A, y: A): Int = ord.compare(x, y).intValue }
 }
 
 trait Creators {

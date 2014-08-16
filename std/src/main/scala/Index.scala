@@ -48,7 +48,7 @@ final class Index private (val value: Int) extends AnyVal with IndexOrNth {
 }
 
 object Index extends (Int => Index) {
-  implicit def IndexOrder = order[Index] (_.value)
+  implicit def IndexOrder: Order[Index] = order[Index](_.value)
 
   def max: Index       = new Index(Int.MaxValue)
   def zero: Index      = new Index(0)

@@ -13,13 +13,14 @@ package object ansi extends BasicAtoms[Ansi] {
 
   private def actualLines(resource: String) = resourceString(resource).lines filterNot (_ startsWith "#")
 
-  lazy val colorMap: RgbMap = new RgbMap(
-    actualLines("xkcd-rgb-tabular.txt") mapToMapPairs { s =>
+  lazy val colorMap: RgbMap = {
+    val map = actualLines("xkcd-colors.txt") mapToMapPairs { s =>
       val Vector(name, r, g, b) = s.words
       ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
-    },
-    actualLines("xterm256-rgb.txt") map (s => RGB fromBits Integer.parseInt(s.words.last, 16))
-  )
+    }
+    val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.to[RGB])
+    new RgbMap(map.keys.toVector, map, palette)
+  }
 
   implicit def impliciStringOps(x: String): TextOps               = new TextOps(x)
   implicit def implicitColorStringOps(x: ColorString): ColoredOps = new ColoredOps(x)
