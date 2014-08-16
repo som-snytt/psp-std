@@ -29,7 +29,8 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
   def dropRight(n: Int): String             = if (n <= 0) xs else if (xs.length <= n) "" else xs.substring(0, xs.length - n)
 
   def length                      = xs.length
-  def lines: Iterator[String]     = (xs split EOL).iterator
+  def words: Vector[String]       = (xs.trim split "\\s+").toVector
+  def lines: Vector[String]       = (xs split EOL).toVector
   def * (n: Int): String          = Range.inclusive(1, n) map (_ => xs) mkString ""
   def format(args : Any*): String = java.lang.String.format(xs, args map unwrapArg: _*)
 
@@ -42,8 +43,12 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
   def apply(index: Index): Char        = xs charAt index.value
   def apply(range: IndexRange): String = (indexRange intersect range) |> (r => slice(r.startInt, r.endInt))
 
-  def toInt: Int                  = jl.Integer parseInt xs
-  def toDouble: Double            = jl.Double parseDouble xs
+  def toInt: Int       = if (xs startsWith "0x") jl.Integer.parseInt(xs drop 2, 16) else jl.Integer parseInt xs
+  def toLong: Long     = if (xs startsWith "0x") jl.Long.parseLong(xs drop 2, 16) else jl.Long parseLong xs
+  def toDouble: Double = jl.Double parseDouble xs
+  def toFloat: Float   = jl.Float parseFloat xs
+
+  def to[A](implicit reads: Read[A]): A = reads read xs
 
   override def toString = xs
 }
