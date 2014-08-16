@@ -22,14 +22,16 @@ final class MapExtensionOps[K, V](private val map: scala.collection.Map[K, V]) e
 }
 
 final class GenTraversableOnceExtensionOps[CC[X] <: scala.collection.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal {
-  def sortDistinct(implicit ord: Ordering[A]): Vector[A] = distinct.sorted
-  def mapFrom[B](f: A => B): OrderedMap[B, A]            = orderedMap(xs.toVector map (x => (f(x), x)): _*)
-  def mapOnto[B](f: A => B): OrderedMap[A, B]            = orderedMap(xs.toVector map (x => (x, f(x))): _*)
-  def sorted(implicit ord: Ordering[A]): Vector[A]       = xs.toVector.sorted
-  def distinct: Vector[A]                                = xs.toVector.distinct
-  def unsortedFrequencyMap: Map[A, Int]                  = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
-  def ascendingFrequency: OrderedMap[A, Int]             = unsortedFrequencyMap |> (_.orderByValue)
-  def descendingFrequency: OrderedMap[A, Int]            = ascendingFrequency.reverse
+  def sortDistinct(implicit ord: Ordering[A]): Vector[A]         = distinct.sorted
+  def mapFrom[B](f: A => B): OrderedMap[B, A]                    = orderedMap(xs.toVector map (x => (f(x), x)): _*)
+  def mapOnto[B](f: A => B): OrderedMap[A, B]                    = orderedMap(xs.toVector map (x => (x, f(x))): _*)
+  def mapToAndOnto[B, C](k: A => B, v: A => C): OrderedMap[B, C] = xs.toVector |> (xs => orderedMap(xs map (x => k(x) -> v(x)): _*))
+  def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]      = xs.toVector |> (xs => orderedMap(xs map f: _*))
+  def sorted(implicit ord: Ordering[A]): Vector[A]               = xs.toVector.sorted
+  def distinct: Vector[A]                                        = xs.toVector.distinct
+  def unsortedFrequencyMap: Map[A, Int]                          = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
+  def ascendingFrequency: OrderedMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
+  def descendingFrequency: OrderedMap[A, Int]                    = ascendingFrequency.reverse
 }
 
 /** We could avoid this duplication with some of scala's incredibly high-cost
@@ -91,7 +93,7 @@ final class AnyExtensionOps[A](private val x: A) extends AnyVal {
   }
 }
 
-final class TryExtensionOps[A](private val x: scala.util.Try[A]) extends AnyVal {
+final class TryExtensionOps[A](private val x: Try[A]) extends AnyVal {
   def fold[B](f: A => B, g: Throwable => B): B = x match {
     case scala.util.Success(x) => f(x)
     case scala.util.Failure(t) => g(t)

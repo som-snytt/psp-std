@@ -1,0 +1,6 @@
+
+ClassLoader server
+ - give it a module ID, get back a classloader
+ - threadsafe, shareable
+
+- When truncating a repl string, don't lose the ansi reset code

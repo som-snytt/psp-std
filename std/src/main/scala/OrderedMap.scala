@@ -18,3 +18,13 @@ final class OrderedMap[K, +V](override val keys: Seq[K], map: immutable.Map[K, V
   override def filter(p: ((K, V)) => Boolean) = new OrderedMap(keys filter (k => p(k -> map(k))), map)
   override def filterKeys(p: K => Boolean)    = new OrderedMap(keys filter p, map)
 }
+
+object OrderedMap {
+  implicit def ShowOrderedMap[K: Show, V: Show] = Show[OrderedMap[K, V]] { map =>
+    def len(k: K) = k.to_s.stripAnsi.length
+    val width = map.keys map len max
+    def fmt(pad: String, k: K, v: V): String = show"$pad$k: $v"
+
+    map.keys map (k => fmt(" " * (width - len(k)), k, map(k))) mkString EOL
+  }
+}

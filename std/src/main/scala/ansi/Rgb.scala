@@ -57,8 +57,6 @@ object RGB {
     def blueValue   = (rgb.bits >>  0) & 0xFF
     def colorValues = Vector(redValue, greenValue, blueValue)
     def colorAtoms  = colorValues map Atom
-    // def foreground  = Ansi(38 +: 5 +: colorValues: _*)
-    // def background  = Ansi(48 +: 5 +: colorValues: _*)
     def distanceTo(that: RGB): Double = {
       val squares = colorValues zip that.colorValues map { case (x, y) => math.pow((x - y).abs, 2) }
       math.sqrt(squares.sum)

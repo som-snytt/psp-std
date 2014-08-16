@@ -21,6 +21,13 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
     else xs.substring(start, length min until)
   }
 
+  def stripAnsi: String = {
+    val baos = new ByteArrayOutputStream()
+    val aos = new AnsiOutputStream(baos)
+    aos write bytes
+    aos.flush()
+    baos.toString
+  }
   def stripMargin(marginChar: Char): String = augment stripMargin marginChar
   def stripMargin: String                   = stripMargin('|')
   def stripPrefix(prefix: String): String   = if (xs startsWith prefix) this drop prefix.length else xs
@@ -29,6 +36,7 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
   def dropRight(n: Int): String             = if (n <= 0) xs else if (xs.length <= n) "" else xs.substring(0, xs.length - n)
 
   def length                      = xs.length
+  def bytes: Array[Byte]          = xs.getBytes
   def words: Vector[String]       = (xs.trim split "\\s+").toVector
   def lines: Vector[String]       = (xs split EOL).toVector
   def * (n: Int): String          = Range.inclusive(1, n) map (_ => xs) mkString ""

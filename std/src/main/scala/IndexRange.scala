@@ -58,6 +58,8 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
 }
 
 object IndexRange {
+  implicit def ShowIndexRange = Show.native[IndexRange]()
+
   def full: IndexRange                  = until(zero, Index.max)
   def empty: IndexRange                 = until(zero, zero)
   def undefined: IndexRange             = new IndexRange(-1L)
