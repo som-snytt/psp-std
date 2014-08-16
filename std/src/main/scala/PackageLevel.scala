@@ -1,6 +1,8 @@
 package psp
 package std
 
+import io._
+
 /** Sorry there's no way to put mutable and immutable into the namespace.
  *  You can import them individually into every file until you die.
  */
@@ -48,6 +50,7 @@ trait Aliases {
   type ListBuffer[A]                   = scala.collection.mutable.ListBuffer[A]
   type ScalaNumber                     = scala.math.ScalaNumber
   type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
+  type Try[+A]                         = scala.util.Try[A]
   type VectorBuilder[A]                = scala.collection.mutable.Builder[A, Vector[A]]
   type WrappedArray[A]                 = scala.collection.mutable.WrappedArray[A]
 
@@ -61,6 +64,7 @@ trait Aliases {
   type BufferedReader         = java.io.BufferedReader
   type BufferedWriter         = java.io.BufferedWriter
   type ByteArrayInputStream   = java.io.ByteArrayInputStream
+  type ByteArrayOutputStream  = java.io.ByteArrayOutputStream
   type Charset                = java.nio.charset.Charset
   type DataInput              = java.io.DataInput
   type DataInputStream        = java.io.DataInputStream
@@ -157,6 +161,8 @@ trait Utility {
   def log(msg: String): Unit                    = Console.err println msg
   def printResult[A](msg: String)(result: A): A = try result finally log(s"$msg: $result")
 
+  def fromUTF8(xs: Array[Byte]): String = new String(scala.io.Codec fromUTF8 xs)
+
   def timed[A](body: => A): A = {
     val start = System.nanoTime
     try body finally log("Elapsed: %.3f ms" format (System.nanoTime - start) / 1e6)
@@ -164,6 +170,18 @@ trait Utility {
 }
 
 trait Creators {
+  def nullStream(): InputStream           = new NullIputStream
+  def nullLoader(): NullClassLoader       = new NullClassLoader
+  def contextLoader: ClassLoader          = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
+  def loaderOf[A: ClassTag] : ClassLoader = noNull(javaClassOf[A].getClassLoader, nullLoader)
+
+  def resourceString(name: String): String = fromUTF8(resource(name))
+  def resource(name: String): Array[Byte] = (
+    Try(contextLoader).fold(_ getResourceAsStream name slurp, _ =>
+      Try(loaderOf[this.type]).fold(_ getResourceAsStream name slurp, _ => Array[Byte]())
+    )
+  )
+  def readInto[A] : Read.ReadInto[A]               = Read.into[A]
   def order[A] : Order.By[A]                       = Order.by[A]
   def uri(x: String): URI                          = java.net.URI create x
   def url(x: String): URL                          = new URL(x)
@@ -171,6 +189,8 @@ trait Creators {
   def offset(x: Int): Offset                       = Offset(x)
   def nth(x: Int): Nth                             = Nth(x)
   def indexRange(start: Int, end: Int): IndexRange = IndexRange.until(Index(start), Index(end))
+  def Try[A](body: => A): Try[A]                   = scala.util.Try[A](body)
+  def noNull[A](value: A, orElse: => A): A         = if (value == null) orElse else value
 
   // Mostly obviating the need for those mutable/immutable identifiers.
   def mutableSeq[A](xs: A*): mutable.Seq[A]                 = mutable.Seq(xs: _*)
@@ -213,20 +233,23 @@ trait Implicits extends LowPriorityPspStd {
   @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
 
   // Extension methods for non-collection types.
-  implicit def arrayExtensionOps[A](xs: Array[A]): ArrayExtensionOps[A]     = new ArrayExtensionOps[A](xs)
-  implicit def anyExtensionOps[A](x: A): AnyExtensionOps[A]                 = new AnyExtensionOps[A](x)
-  implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A] = new TryExtensionOps[A](x)
-  implicit def intExtensionOps(x: Int): IntExtensionOps                     = new IntExtensionOps(x)
-  implicit def longExtensionOps(x: Long): LongExtensionOps                  = new LongExtensionOps(x)
+  implicit def arrayExtensionOps[A](xs: Array[A]): ArrayExtensionOps[A]         = new ArrayExtensionOps[A](xs)
+  implicit def anyExtensionOps[A](x: A): AnyExtensionOps[A]                     = new AnyExtensionOps[A](x)
+  implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A]     = new TryExtensionOps[A](x)
+  implicit def intExtensionOps(x: Int): IntExtensionOps                         = new IntExtensionOps(x)
+  implicit def inputStreamExtensionOps(x: InputStream): InputStreamExtensionOps = new InputStreamExtensionOps(x)
+  implicit def longExtensionOps(x: Long): LongExtensionOps                      = new LongExtensionOps(x)
 
   // Extension methods which depend on a typeclass.
   // If the type class is attached at creation it can't be a value class.
   // So it has to be duplicated across every method which utilizes it.
   // Another victory against boilerplate.
-  implicit def hasEqExtensionOps[A](x: A): Eq.Ops[A] = new Eq.Ops[A](x)
+  implicit def hasEqExtensionOps[A](x: A): Eq.Ops[A]           = new Eq.Ops[A](x)
+  implicit def canReadExtensionOps(s: String): Read.CanReadOps = new Read.CanReadOps(s)
   // And already we're defeated in that regard - just too difficult to walk the line.
   implicit def hasOrderExtensionOps[A: Order](x: A): Order.Ops[A]   = new Order.Ops[A](x)
   implicit def orderExtensionOps[A](x: Order[A]): Order.OrderOps[A] = new Order.OrderOps[A](x)
+  implicit def showExtensionOps[A](x: Show[A]): Show.ShowOps[A]     = new Show.ShowOps[A](x)
 
   // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
   // It's not like you have any idea what the performance characteristics of the target are anyway.
