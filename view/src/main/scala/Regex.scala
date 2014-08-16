@@ -4,25 +4,14 @@ package core
 import java.util.regex.{ Pattern, Matcher, MatchResult }
 import psp.std._
 
-final class MyResult {
-  def end(x$1: Int): Int = ???
-  def end(): Int = ???
-  def group(x$1: Int): String = ???
-  def group(): String = ???
-  def groupCount(): Int = ???
-  def start(x$1: Int): Int = ???
-  def start(): Int = ???
-}
-
 final class Regex(val pattern: Pattern) extends AnyVal {
-  private def matcher(input: CharSequence): Matcher = pattern matcher input
+  private def matcher(input: String): Matcher = pattern matcher input
 
-  // def allIn(input: CharSequence): Direct[String]   =
-  def matchesWhole(input: CharSequence): Boolean    = matcher(input).matches()
-  def matchesAnywhere(input: CharSequence): Boolean = matcher(input).find()
-  def splits(input: CharSequence): Direct[String]  = Direct pure (pattern split input)
+  def matchesWhole(input: String): Boolean    = matcher(input).matches()
+  def matchesAnywhere(input: String): Boolean = matcher(input).find()
+  def splits(input: String): Direct[String]   = Direct pure (pattern split input)
 
-  def unapplySeq(input: CharSequence): Option[Vector[String]] = matcher(input) match {
+  def unapplySeq(input: String): Option[Vector[String]] = matcher(input) match {
     case m if m.matches() => Some((1 to m.groupCount).toVector map (i => m.group(i)))
     case _                => None
   }
