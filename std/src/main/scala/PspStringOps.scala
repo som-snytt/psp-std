@@ -21,13 +21,7 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
     else xs.substring(start, length min until)
   }
 
-  def stripAnsi: String = {
-    val baos = new ByteArrayOutputStream()
-    val aos = new AnsiOutputStream(baos)
-    aos write bytes
-    aos.flush()
-    baos.toString
-  }
+  def stripAnsi: String                     = ansi.Ansi strip xs
   def stripMargin(marginChar: Char): String = augment stripMargin marginChar
   def stripMargin: String                   = stripMargin('|')
   def stripPrefix(prefix: String): String   = if (xs startsWith prefix) this drop prefix.length else xs

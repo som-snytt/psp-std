@@ -12,11 +12,14 @@ object Ansi {
   final val SEMI      = ";"
   final val RESET     = apply(0)
 
+  private val StripRegex = """\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]"""
+
   val empty: Ansi = new Ansi(Vector())
 
   def apply(atom: Atom, atoms: Atom*): Ansi = new Ansi(atom +: atoms.toVector)
   def apply(codes: Int*): Ansi              = if (codes.isEmpty) empty else apply(Atom(codes.head), codes.tail map Atom: _*)
   def csi(codes: Int*): String              = codes.mkString(CSI, SEMI, CSI_FINAL)
+  def strip(s: String): String              = s.replaceAll(StripRegex, "")
 }
 
 /** An ansi control sequence. Applying it to a String
