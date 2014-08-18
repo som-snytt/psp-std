@@ -28,10 +28,6 @@ object Build extends sbt.Build with Versioning {
                 scalacOptions ++= Seq("-language:_"),
                  javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
                      licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-              ivyLoggingLevel :=  UpdateLogging.Quiet,
-             logLevel in Test :=  Level.Warn,
-                    maxErrors :=  10,
-       showSuccess in Compile :=  false,
       publishArtifact in Test :=  false,
     parallelExecution in Test :=  false,
                  fork in Test :=  true
