@@ -23,6 +23,7 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Ali
   val NoNth        = Nth.undefined
   val ClassTag     = scala.reflect.ClassTag
   val NumericRange = scala.collection.immutable.NumericRange
+  val ScalaNil     = scala.collection.immutable.Nil
 
   /** It's like "" + x, except, you know, for kids.
    */
@@ -109,6 +110,7 @@ trait Aliases {
   type ?=>[-A, +B]            = PartialFunction[A, B]
   type CanBuildSelf[A, CC[X]] = CanBuildFrom[CC[A], A, CC[A]]
   type Predicate[-A]          = A => Boolean
+  type Suspended[+A]          = (A => Unit) => Unit
 }
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
@@ -157,6 +159,7 @@ trait Utility {
   def andTrue(x: Unit): Boolean  = true
   def andFalse(x: Unit): Boolean = false
 
+  def asExpected[A](body: Any): A               = body.castTo[A]
   def nullAs[A] : A                             = (null: AnyRef).castTo[A]
   def decodeName(s: String): String             = scala.reflect.NameTransformer.decode(s)
   def log(msg: String): Unit                    = Console.err println msg

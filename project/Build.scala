@@ -8,13 +8,18 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import psp.meta._
 
 object Build extends sbt.Build with Versioning {
+  // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
+  def opts = if (sys.props contains "debug") Seq("-Ylog:all") else Nil
+
   def imports = """
     import scala.collection.{ mutable, immutable }
     import psp.std._, psp.core._, ansi._
     implicit final class ReplForeachOps[A](val target: Foreach[A]) {
-      def >(implicit shows: Show[A]): Unit = println(target join EOL)
+      def !> : Unit = println(target mkString EOL)
+      def  >(implicit shows: Show[A]): Unit = println(target join EOL)
     }
     implicit final class ReplOps[A](val target: A) {
+      def !> : Unit = println(target)
       def >(implicit shows: Show[A]): Unit = println(target.to_s)
     }
   """
@@ -25,7 +30,7 @@ object Build extends sbt.Build with Versioning {
                  scalaVersion :=  "2.11.2",
                       version :=  "0.2.0-M2",
                   logBuffered :=  false,
-                scalacOptions ++= Seq("-language:_"),
+                scalacOptions ++= (Seq("-language:_") ++ opts),
                  javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
                      licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
       publishArtifact in Test :=  false,

@@ -12,15 +12,6 @@ final class ExtraViewOperations[A, B, Repr, CC[X]](val xs: ViewEnvironment[A, Re
   }
 }
 
-// implicit def lowerNativeView[A, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[A])(implicit pcb: Builds[A, Repr]): Repr = xs.native
-
-
-// @inline final def mapWithIndex(f: (A, Index) => Unit):  = {
-//   var i = 0
-//   xs foreach (x => if (f(x, i)) return else i += 1)
-// }
-
-
 final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   /** Abort traversal if/when f returns true.
    */

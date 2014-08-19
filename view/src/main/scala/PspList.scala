@@ -49,6 +49,7 @@ sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
     loop(n, this)
   }
 
+  def ?::[A1 >: A](x: A1): PspList[A1] = new ::[A1](x, this.asInstanceOf[PspList[A1]])
   def ::(x: A): PspList[A] = new ::(x, this)
   def :::(xs: PspList[A]): PspList[A] = xs match {
     case x :: xs => x :: (xs ::: this)

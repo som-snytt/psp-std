@@ -32,7 +32,7 @@ object InvariantLinear {
   }
 }
 
-object Foreach extends ForeachImplicits {
+object Foreach {
   def Empty = Direct.Empty
 
   final class Constant[A](elem: A) extends Foreach[A] {
@@ -96,13 +96,5 @@ object Foreach extends ForeachImplicits {
       case info                         => pp"$base, ... $info$rp"
     }
   }
-}
-
-trait ForeachImplicits {
-  implicit def tuple2ToForeach[A](p: Tuple2[A, A]): Foreach[A]          = Foreach.elems(p._1, p._2)
-  implicit def tuple3ToForeach[A](p: Tuple3[A, A, A]): Foreach[A]       = Foreach.elems(p._1, p._2, p._3)
-  implicit def tuple4ToForeach[A](p: Tuple4[A, A, A, A]): Foreach[A]    = Foreach.elems(p._1, p._2, p._3, p._4)
-  implicit def tuple5ToForeach[A](p: Tuple5[A, A, A, A, A]): Foreach[A] = Foreach.elems(p._1, p._2, p._3, p._4, p._5)
-
   implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A] = new ForeachOperations(xs)
 }

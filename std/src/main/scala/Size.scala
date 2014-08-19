@@ -19,6 +19,7 @@ final class Size private (val value: Int) extends AnyVal {
   def isZero                   = this == Zero
   def isUndefined              = this == undefined
   def toIndexRange: IndexRange = if (isUndefined) IndexRange.undefined else IndexRange zeroTo lastIndex
+  def toIndex: Index           = Index(value)
   def toScalaRange             = toIndexRange.toScalaRange
   def toInt: Int               = value
   def toLong: Long             = value

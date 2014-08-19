@@ -7,7 +7,6 @@ import sc.{ mutable => scm, generic => scg }
 /** A thin abstraction over some questionable assumptions. */
 trait PspTypes {
   type Done               = Boolean
-  type Suspended[+A]      = (A => Unit) => Unit
   type Ref[+A]            = A with AnyRef
   type Predicate2[-A, -B] = (A, B) => Boolean
 

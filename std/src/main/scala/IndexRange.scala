@@ -39,13 +39,17 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def filterNth(p: Nth => Boolean): Vector[Index] = filter(i => p(i.toNth))
   def mapNth[A](f: Nth => A): Vector[A]           = map(i => f(i.toNth))
 
-  def foreachInt(f: Int => Unit): Unit            = toIntRange foreach f
-  def filterInt(p: Int => Boolean): Vector[Index] = toIntRange filter p map Index toVector
-  def mapInt[A](f: Int => A): Vector[A]           = toIntRange map f toVector
+  def foreachInt(f: Int => Unit): Unit                  = toIntRange foreach f
+  def filterInt(p: Int => Boolean): Vector[Index]       = toIntRange filter p map Index toVector
+  def mapInt[A](f: Int => A): Vector[A]                 = toIntRange map f toVector
+  def findInt[A](p: Int => Boolean): Option[Int]        = toIntRange find p
+  def findIntReverse[A](p: Int => Boolean): Option[Int] = toIntRange.reverse find p
 
   def filter(p: Index => Boolean): Vector[Index] = filterInt(i => p(Index(i)))
   def foreach(f: Index => Unit): Unit            = foreachInt(i => f(Index(i)))
   def map[A](f: Index => A): Vector[A]           = mapInt(i => f(Index(i)))
+  def find(p: Index => Boolean): Index           = findInt(i => p(Index(i))).fold(NoIndex)(Index)
+  def findReverse(p: Index => Boolean): Index    = findIntReverse(i => p(Index(i))).fold(NoIndex)(Index)
 
   def intersect(that: IndexRange): IndexRange = IndexRange.until(start max that.start, end min that.end)
   def contains(i: Index): Boolean             = !i.isUndefined && (start <= i && i < end)
