@@ -9,7 +9,6 @@ trait PspTypes {
   type Done               = Boolean
   type Suspended[+A]      = (A => Unit) => Unit
   type Ref[+A]            = A with AnyRef
-  type Predicate[A]       = A => Boolean
   type Predicate2[-A, -B] = (A, B) => Boolean
 
   // With type aliases like these which include a type selection,

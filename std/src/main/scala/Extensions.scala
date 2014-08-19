@@ -22,16 +22,17 @@ final class MapExtensionOps[K, V](private val map: scala.collection.Map[K, V]) e
 }
 
 final class GenTraversableOnceExtensionOps[CC[X] <: scala.collection.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal {
-  def sortDistinct(implicit ord: Ordering[A]): Vector[A]         = distinct.sorted
-  def mapFrom[B](f: A => B): OrderedMap[B, A]                    = orderedMap(xs.toVector map (x => (f(x), x)): _*)
-  def mapOnto[B](f: A => B): OrderedMap[A, B]                    = orderedMap(xs.toVector map (x => (x, f(x))): _*)
-  def mapToAndOnto[B, C](k: A => B, v: A => C): OrderedMap[B, C] = xs.toVector |> (xs => orderedMap(xs map (x => k(x) -> v(x)): _*))
-  def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]      = xs.toVector |> (xs => orderedMap(xs map f: _*))
-  def sorted(implicit ord: Ordering[A]): Vector[A]               = xs.toVector.sorted
-  def distinct: Vector[A]                                        = xs.toVector.distinct
-  def unsortedFrequencyMap: Map[A, Int]                          = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
-  def ascendingFrequency: OrderedMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
-  def descendingFrequency: OrderedMap[A, Int]                    = ascendingFrequency.reverse
+  def sortDistinct(implicit ord: Ordering[A]): Vector[A]                 = distinct.sorted
+  def mapZip[B, C](ys: GenTraversableOnce[B])(f: (A, B) => C): Vector[C] = for ((x, y) <- xs.toVector zip ys.toVector) yield f(x, y)
+  def mapFrom[B](f: A => B): OrderedMap[B, A]                            = orderedMap(xs.toVector map (x => (f(x), x)): _*)
+  def mapOnto[B](f: A => B): OrderedMap[A, B]                            = orderedMap(xs.toVector map (x => (x, f(x))): _*)
+  def mapToAndOnto[B, C](k: A => B, v: A => C): OrderedMap[B, C]         = xs.toVector |> (xs => orderedMap(xs map (x => k(x) -> v(x)): _*))
+  def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]              = xs.toVector |> (xs => orderedMap(xs map f: _*))
+  def sorted(implicit ord: Ordering[A]): Vector[A]                       = xs.toVector.sorted
+  def distinct: Vector[A]                                                = xs.toVector.distinct
+  def unsortedFrequencyMap: Map[A, Int]                                  = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
+  def ascendingFrequency: OrderedMap[A, Int]                             = unsortedFrequencyMap |> (_.orderByValue)
+  def descendingFrequency: OrderedMap[A, Int]                            = ascendingFrequency.reverse
 }
 
 /** We could avoid this duplication with some of scala's incredibly high-cost
@@ -85,6 +86,9 @@ final class AnyExtensionOps[A](private val x: A) extends AnyVal {
   def castTo[U] : U         = x.asInstanceOf[U]
   def toRef: AnyRef         = castTo[AnyRef]
   def doto(f: A => Unit): A = try x finally f(x)
+
+  // Calling eq on Anys.
+  def ref_==(y: Any): Boolean = x.toRef eq y.toRef
 
   def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else (x: A1).to_s
   def any_s: String = x match {

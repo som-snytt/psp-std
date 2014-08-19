@@ -108,6 +108,7 @@ trait Aliases {
   // originals.
   type ?=>[-A, +B]            = PartialFunction[A, B]
   type CanBuildSelf[A, CC[X]] = CanBuildFrom[CC[A], A, CC[A]]
+  type Predicate[-A]          = A => Boolean
 }
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
@@ -249,12 +250,16 @@ trait Implicits extends LowPriorityPspStd {
   // If the type class is attached at creation it can't be a value class.
   // So it has to be duplicated across every method which utilizes it.
   // Another victory against boilerplate.
-  implicit def hasEqExtensionOps[A](x: A): Eq.Ops[A]           = new Eq.Ops[A](x)
+  implicit def hasEqExtensionOps[A](x: A): Eq.Ops[A]    = new Eq.Ops[A](x)
+  implicit def eqExtensionOps[A](x: Eq[A]): Eq.EqOps[A] = new Eq.EqOps[A](x)
   implicit def canReadExtensionOps(s: String): Read.CanReadOps = new Read.CanReadOps(s)
   // And already we're defeated in that regard - just too difficult to walk the line.
   implicit def hasOrderExtensionOps[A: Order](x: A): Order.Ops[A]   = new Order.Ops[A](x)
   implicit def orderExtensionOps[A](x: Order[A]): Order.OrderOps[A] = new Order.OrderOps[A](x)
   implicit def showExtensionOps[A](x: Show[A]): Show.ShowOps[A]     = new Show.ShowOps[A](x)
+
+  implicit def hasBooleanAlgebraOps[A: BooleanAlgebra](lhs: A): BooleanAlgebra.HasAlgebra[A]   = new BooleanAlgebra.HasAlgebra[A](lhs)
+  implicit def onBooleanAlgebraOps[A](algebra: BooleanAlgebra[A]): BooleanAlgebra.OnAlgebra[A] = new BooleanAlgebra.OnAlgebra[A](algebra)
 
   // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
   // It's not like you have any idea what the performance characteristics of the target are anyway.

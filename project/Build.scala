@@ -67,6 +67,8 @@ object Build extends sbt.Build with Versioning {
                   publishLocal <<= runPublish(publishLocal),
                       commands +=  Command.args("mima", "<version>")(mimaCommand),
                       commands +=  Command.command("ccon")(s => s set (libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value) runTask (console in Compile) _1),
+           testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "0"),
+           libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
                           test <<= run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
   )
 

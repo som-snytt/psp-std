@@ -6,7 +6,7 @@ import macros._
 import scala.Console._
 import Generated._
 
-class Tester {
+class StdTests {
   private var testsPassed = 0
   private var testsFailed = 0
 
@@ -66,16 +66,5 @@ class Tester {
     divide("psp-show", typecheckedLines(pspShowCode))
 
     "%s/%s tests passed.".format(testsPassed, testsPassed + testsFailed)
-  }
-}
-
-object PspStdTests {
-  def main(args: Array[String]): Unit = {
-    val t = new Tester
-    val msg = t.run
-    if (t.failed)
-      throw new Exception(msg)
-    else
-      println(msg)
   }
 }
