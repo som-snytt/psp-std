@@ -11,7 +11,8 @@ runTests () {
 }
 
 runTests |& \
-  egrep -v '^\[info\] (Resolving|Loading|Updating|Done updating|Done packaging)' | \
+  egrep -v '^\[info\] (Resolving|Loading|Updating|Packaging|Done updating|Done packaging)' | \
   egrep -v '[.]bintray[/][.]credentials' | \
   egrep -v 're[-]run with [-]unchecked for details' | \
+  egrep -v 'ignoring option MaxPermSize' | \
   egrep -v 'one warning found'
