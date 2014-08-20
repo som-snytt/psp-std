@@ -4,15 +4,13 @@ package tests
 import psp.core._
 import compat.ScalaNative
 import psp.std._
-import utest._
 
-object CountOperationsSpec extends TestSuite {
-  val tests = TestSuite {
-    "composite" - {
-      "agreement" - assert(results forall (_.isAgreement))
-    }
+class OperationCounts extends Bundle {
+  def run(): Boolean = {
+    results foreach (r => assert(r.isAgreement, r))
+    showResults()
+    finish()
   }
-  showResults()
 
   type IntView = api.View[Int]
 
@@ -97,9 +95,9 @@ object CountOperationsSpec extends TestSuite {
     def display     = (
          !isAgreement
       || (usCounts.distinct.size == usCollections.size)
-      || (allCounts.distinct.size > 4)
-      || (allCounts.distinct.size > 2 && ratioDouble < 1.3d)
-      || true
+      // || (allCounts.distinct.size > 4)
+      // || (allCounts.distinct.size > 2 && ratioDouble < 1.3d)
+      // || true
     )
     def countsString   = allCounts map ("%7s" format _) mkString " "
     def resultsString  = if (isAgreement) headResult.result else "!!! " + failedString
@@ -131,5 +129,4 @@ object CountOperationsSpec extends TestSuite {
       |${show mkString EOL}
       |""".stripMargin)
   }
-
 }

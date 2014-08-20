@@ -1,5 +1,5 @@
 package psp
-package stdtests
+package tests
 
 import psp.std._
 import org.scalacheck._
@@ -16,15 +16,19 @@ object TestRunner {
   implicit def Fun[A : Arbitrary : Eq] = Eq[Predicate[A]]((f, g) => Test.check(forAll((x: A) => f(x) === g(x)))(identity).passed)
 
   def main(args: Array[String]): Unit = {
-    AlgebraPoliceman.check[Boolean]("Boolean")
-    AlgebraPoliceman.check[Predicate[Int]]("Predicate[Int]")
-    AlgebraPoliceman.check[Set[Int]]("Set[Int]")
+    val results = List[Boolean](
+      AlgebraPoliceman.check[Boolean]("Boolean"),
+      AlgebraPoliceman.check[Predicate[Int]]("Predicate[Int]"),
+      AlgebraPoliceman.check[Set[Int]]("Set[Int]"),
+      (new OperationCounts).run(),
+      (new Nats).run(),
+      (new Collections).run(),
+      (new Typecheck).run()
+    )
 
-    val tests = new StdTests
-    val msg = tests.run
-    if (tests.failed)
-      throw new Exception(msg)
+    if (results reduceLeft (_ && _))
+      println("\nAll tests passed.")
     else
-      println(msg)
+      throw new Exception("Some tests failed.")
   }
 }

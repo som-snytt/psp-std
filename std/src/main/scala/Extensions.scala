@@ -90,6 +90,9 @@ final class AnyExtensionOps[A](private val x: A) extends AnyVal {
   // Calling eq on Anys.
   def ref_==(y: Any): Boolean = x.toRef eq y.toRef
 
+  // Short decoded class name.
+  def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
+
   def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else (x: A1).to_s
   def any_s: String = x match {
     case x: ShowDirect => x.to_s

@@ -1,5 +1,5 @@
 package psp
-package stdtests
+package tests
 
 import psp.std._
 import macros._

@@ -1,33 +1,18 @@
 package psp
 package tests
 
-import utest._
 import org.scalacheck._
 import psp.std._, SizeInfo._
-import SizeInfoGenerators._
 import org.scalacheck.Prop._
 import PartialOrder._
+import Gen._
 
-object SizeInfoGenerators {
-  import Gen._
+trait PspArb0                 { implicit def arbSize: Arbitrary[Size]         = Arbitrary(genSize)     }
+trait PspArb1 extends PspArb0 { implicit def arbSizeInfo: Arbitrary[SizeInfo] = Arbitrary(genSizeInfo) }
+trait PspArb2 extends PspArb1 { implicit def arbAtomic: Arbitrary[Atomic]     = Arbitrary(genAtomic)   }
+trait PspArb3 extends PspArb2 { implicit def arbPrecise: Arbitrary[Precise]   = Arbitrary(genPrecise)  }
 
-  implicit class GenOps[A](gen: Gen[A]) {
-    def collect[B](pf: A ?=> B): Gen[B] = gen suchThat pf.isDefinedAt map pf.apply
-  }
-
-  def genSize: Gen[Size]         = chooseNum(1, Int.MaxValue / 2) map (n => Size(n))
-  def genPrecise: Gen[Precise]   = genSize map (s => Precise(s))
-  def genBounded: Gen[Bounded]   = genSize flatMap (lo => genAtomic map (hi => bounded(lo, hi))) collect { case b: Bounded => b }
-  def genAtomic: Gen[Atomic]     = frequency(10 -> genPrecise, 1 -> Empty, 1 -> Infinite)
-  def genSizeInfo: Gen[SizeInfo] = oneOf(genAtomic, genBounded)
-
-  trait Pri0              { implicit def arbSize: Arbitrary[Size]         = Arbitrary(genSize) }
-  trait Pri1 extends Pri0 { implicit def arbSizeInfo: Arbitrary[SizeInfo] = Arbitrary(genSizeInfo) }
-  trait Pri2 extends Pri1 { implicit def arbAtomic: Arbitrary[Atomic]     = Arbitrary(genAtomic) }
-  trait Pri3 extends Pri2 { implicit def arbPrecise: Arbitrary[Precise]   = Arbitrary(genPrecise) }
-}
-
-object SizeInfoSpec extends Properties("SizeInfo") with SizeInfoGenerators.Pri3 {
+object SizeInfoSpec extends Properties("SizeInfo") with PspArb3 {
   type SI = SizeInfo
   type BinOp[T] = (T, T) => T
   type Tried[T] = Either[Throwable, T]

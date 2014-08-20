@@ -1,5 +1,5 @@
 package psp
-package stdtests
+package tests
 
 import psp.std._
 import org.scalacheck._
@@ -14,24 +14,12 @@ object AlgebraPoliceman {
     case x                                                            => try x.passed finally println(s"+ OK, passed ${x.succeeded} tests.     $label")
   }
 
-  def check[A : BooleanAlgebra : Arbitrary : Eq](name: String) = new AlgebraPoliceman[A](name) checkAll top
+  def check[A : BooleanAlgebra : Arbitrary : Eq](name: String): Boolean = new AlgebraPoliceman[A](name) checkAll top
 }
 
-class AlgebraPoliceman[A : BooleanAlgebra : Arbitrary : Eq](name: String) {
-  type BinOp[A]    = (A, A) => A
-  type Forall1[-A] = A => Boolean
-  type Forall2[-A] = (A, A) => Boolean
-  type Forall3[-A] = (A, A, A) => Boolean
-
+class AlgebraPoliceman[A : BooleanAlgebra : Arbitrary : Eq](name: String) extends Laws[A] {
   val algebra = implicitly[BooleanAlgebra[A]]
   import algebra._
-
-  def associative(f: BinOp[A]): Forall3[A]               = (a, b, c) => f(a, f(b, c)) === f(f(a, b), c)
-  def distributive(f: BinOp[A], g: BinOp[A]): Forall3[A] = (a, b, c) => f(a, g(b, c)) === g(f(a, b), f(a, c))
-  def commutative(f: BinOp[A]): Forall2[A]               = (a, b)    => f(a, b) === f(b, a)
-  def absorption(f: BinOp[A], g: BinOp[A]): Forall2[A]   = (a, b)    => f(a, g(a, b)) === a
-  def identity(f: BinOp[A], id: A): Forall1[A]           = a         => f(a, id) === a
-  def complement(f: BinOp[A], id: A): Forall1[A]         = a         => f(a, !a) === id
 
   val props = List[(String, Prop)](
     "a ∧ (b ∧ c) = (a ∧ b) ∧ c"       -> forAll(associative(and)),
@@ -49,15 +37,4 @@ class AlgebraPoliceman[A : BooleanAlgebra : Arbitrary : Eq](name: String) {
   )
 
   def checkAll(f: (String, Prop) => Boolean): Boolean = ( for ((label, prop) <- props) yield f("%-40s  %s".format(label, name), prop) ) forall (x => x)
-}
-
-class ScalacheckCallback extends Test.TestCallback {
-  private def log(msg: String): Unit = ()
-  override def onPropEval(name: String, threadIdx: Int, succeeded: Int, discarded: Int): Unit = {
-    log(s"onPropEval($name, $threadIdx, $succeeded, $discarded)")
-  }
-  override def onTestResult(name: String, result: Test.Result): Unit = {
-    log(s"onTestResult($name, $result)")
-  }
-  override def chain(testCallback: TestCallback): TestCallback = super.chain(testCallback)
 }

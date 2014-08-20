@@ -16,5 +16,4 @@ final class UniversalOps[T](val x: T) extends AnyVal {
     case s if s.length <= maxlen => s
     case s                       => pp"${s.substring(0, (maxlen - 3) max 0)}..."
   }
-  def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
 }
