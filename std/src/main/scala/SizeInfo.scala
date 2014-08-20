@@ -2,9 +2,6 @@ package psp
 package std
 
 import PartialOrder._
-import psp.std.SizeInfo._
-import ThreeValue._
-import scala.{ collection => sc }
 
 /** The SizeInfo hierarchy is:
  *                   SizeInfo
@@ -79,10 +76,10 @@ object SizeInfo {
   }
 
   def apply(x: Any): SizeInfo = x match {
-    case x: HasSizeInfo       => x.sizeInfo
-    case xs: sc.IndexedSeq[_] => Size(xs.size)
-    case xs: Traversable[_]   => if (xs.isEmpty) Zero else NonEmpty
-    case _                    => Unknown
+    case x: HasSizeInfo                     => x.sizeInfo
+    case xs: scala.collection.IndexedSeq[_] => Size(xs.size)
+    case xs: Traversable[_]                 => if (xs.isEmpty) Zero else NonEmpty
+    case _                                  => Unknown
   }
   def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
     case hi: Atomic     => bounded(lo, hi)
