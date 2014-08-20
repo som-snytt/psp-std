@@ -1,18 +1,24 @@
 #!/usr/bin/env bash
 #
 
-echo "$(date)" " - starting cache download"
+echo "[info] $(uname -a)"
+echo "[info] $(date) - starting cache download"
 $(dirname $0)/get-cache
-echo "$(date)" " - starting sbt test"
+echo "[info] $(date) - starting sbt test"
 
 runTests () {
   sbt -no-colors test || exit 1
-  echo "$(date)" " - finished sbt test"
+  echo "[info] $(date) - finished sbt test"
 }
 
-runTests |& \
-  egrep -v '^\[info\] (Resolving|Loading|Updating|Packaging|Done updating|Done packaging)' | \
-  egrep -v '[.]bintray[/][.]credentials' | \
-  egrep -v 're[-]run with [-]unchecked for details' | \
-  egrep -v 'ignoring option MaxPermSize' | \
-  egrep -v 'one warning found'
+mkRegex () { ( IFS="|" && echo "$*" ); }
+
+regex=$(mkRegex \
+  '^\[info\] (Resolving|Loading|Updating|Packaging|Done updating|Done packaging)' \
+  '[.]bintray[/][.]credentials' \
+  're[-]run with [-]unchecked for details' \
+  'ignoring option MaxPermSize' \
+  'one warning found'
+)
+
+runTests |& egrep --line-buffered -v "$regex"
