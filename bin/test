@@ -4,5 +4,10 @@
 echo "$(date)" " - starting cache download"
 $(dirname $0)/get-cache
 echo "$(date)" " - starting sbt test"
-sbt -no-colors test |& egrep -v '^\[info\] (Resolving|Loading|Updating|Done updating|Done packaging)'
+sbt -no-colors test |& \
+  egrep -v '^\[info\] (Resolving|Loading|Updating|Done updating|Done packaging)' | \
+  egrep -v '[.]bintray[/][.]credentials' | \
+  egrep -v 're[-]run with [-]unchecked for details' | \
+  egrep -v 'one warning found'
+
 echo "$(date)" " - finished sbt test"
