@@ -4,6 +4,6 @@
 run () { echo "$@" && "$@"; }
 
 file='https://www.dropbox.com/s/zorqzskm17f4dgy/cache.tar.gz'
-run curl -# -L -o cache.tgz "$file" && run tar xf cache.tgz -C $HOME
+run curl -s -L -o cache.tgz "$file" && run tar xf cache.tgz -C $HOME
 
 exit 0
