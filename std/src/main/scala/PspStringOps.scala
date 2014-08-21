@@ -13,7 +13,7 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
 
   private def unwrapArg(arg: Any): AnyRef = arg match {
     case x: ScalaNumber => x.underlying
-    case x              => x.asInstanceOf[AnyRef]
+    case x: AnyRef      => x
   }
   private def slice(from: Int, until: Int): String = {
     val start = from max 0

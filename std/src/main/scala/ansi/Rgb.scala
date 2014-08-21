@@ -83,7 +83,7 @@ object RGB {
       math.sqrt(squares.sum)
     }
   }
-  private def inRange(x: Int): Unit = require(0 <= x && x < 256, s"0 <= x && x < 256")
+  private def inRange(x: Int): Unit = require(0 <= x && x < 256, "0 <= x && x < 256")
   def apply(r: Int, g: Int, b: Int): RGB = {
     inRange(r) ; inRange(g) ; inRange(b)
     new RGB((r << 16) | (g << 8) | b)
