@@ -24,6 +24,27 @@ object Build extends sbt.Build with Versioning {
     }
   """
 
+  def inAllProjects[T](projects: => Seq[ProjectReference], key: SettingKey[T]): Project.Initialize[Seq[T]] = Def settingDyn {
+    val lb = loadedBuild.value
+    val pr = thisProjectRef.value
+    def resolve(ref: ProjectReference): ProjectRef = Scope.resolveProjectRef(pr.build, Load.getRootProject(lb.units), ref)
+    val refs = projects flatMap { base => Defaults.transitiveDependencies(resolve(base.project), lb, includeRoot = true, classpath = true, aggregate = true) }
+    refs map (ref => (key in ref).?) joinWith (_ flatMap { x => x })
+  }
+
+  def deepTasks[T](scoped: TaskKey[Seq[T]]): TaskOf[Seq[T]] =
+    deep(scoped.task)(_.join map (_.flatten.distinct))
+
+  def deep[T](scoped: SettingKey[T]): SettingOf[Seq[T]] =
+    inAllProjects(subprojects map (p => LocalProject(p.id)), scoped)
+
+  import Sxr._
+  def fullSxrSettings: SettingSeq = Sxr.settings ++ Seq(
+      libraryDependencies +=  "org.improving" %% "sxr" % "1.0.0" % SxrConfig.name,
+           sources in sxr <<= deepTasks(sources in Compile),
+     sxrSourceDirectories <<= deep(sourceDirectories in Compile).map(_.flatten), // to properly relativize the source paths
+     fullClasspath in sxr <<= deepTasks(externalDependencyClasspath in Compile)
+  )
   def common = bintraySettings ++ mimaDefaultSettings ++ Seq[Setting[_]](
                     resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                  organization :=  pspOrg,
@@ -78,18 +99,23 @@ object Build extends sbt.Build with Versioning {
                           test <<= run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
   )
 
-  lazy val std = project settings (common: _*) settings (
+  implicit class ProjectOps(val p: Project) {
+    def sxr: Project                  = p configs SxrConfig settings (fullSxrSettings: _*)
+    def also(ss: SettingSeq): Project = p settings (ss: _*)
+  }
+
+  lazy val std = project.sxr also common settings (
             name := "psp-std",
      description := "psp's non-standard standard library"
   )
 
-  lazy val macros = project dependsOn std settings (common: _*) settings (
+  lazy val macros = project dependsOn std also common settings (
                    name := "psp-std-macros",
             description := "macros for psp's non-standard standard library",
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   )
 
-  lazy val view = project dependsOn std settings (common: _*) settings (
+  lazy val view = project.sxr dependsOn std also common settings (
             name :=  "psp-view",
      description :=  "collections for psp's non-standard standard library"
   )
