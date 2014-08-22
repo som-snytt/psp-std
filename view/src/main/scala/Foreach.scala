@@ -66,12 +66,12 @@ object Foreach {
   def from(n: Long): Foreach[Long]     = unfold(n)(_ + 1)
   def from(n: BigInt): Foreach[BigInt] = unfold(n)(_ + 1)
 
-  def to(start: Int, last: Int): Foreach[Int]     = PspList fromForeach IntRange.to(start, last)
-  def const[A](elem: A): Constant[A]              = new Constant(elem)
-  def times[A](times: Int, elem: A): Foreach[A]   = Times(Size(times), elem)
+  def to(start: Int, last: Int): Foreach[Int]   = PspList fromForeach IntRange.to(start, last)
+  def const[A](elem: A): Constant[A]            = new Constant(elem)
+  def times[A](times: Int, elem: A): Foreach[A] = Times(Size(times), elem)
 
   def unfold[A](start: A)(next: A => A): Unfold[A]          = Unfold[A](start)(next)
-  def traversable[A](xs: GenTraversableOnce[A]): Foreach[A] = FromScala(xs)
+  def traversable[A](xs: GenTraversableOnce[A]): Foreach[A] = new impl.TraversableAsForeach[A](xs.toTraversable.seq)
 
   def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A] = {
     val sizeInfo = xs.sizeInfo + ys.sizeInfo

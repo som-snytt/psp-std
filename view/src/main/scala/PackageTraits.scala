@@ -45,5 +45,5 @@ trait PspHighPriority extends PspMidPriority with CollectionHigh {
   implicit def raiseFunction2Ops[T1, T2, R](f: (T1, T2) => R): Function2Ops[T1, T2, R]                                             = new Function2Ops(f)
   implicit def raiseExtraViewOps[A, B, Repr, CC[X]](xs: ViewEnvironment[A, Repr, CC]#View[B]): ExtraViewOperations[A, B, Repr, CC] = new ExtraViewOperations[A, B, Repr, CC](xs)
 
-  implicit def convertCanBuildFrom[Elem, To](implicit cbf: CanBuildFrom[_, Elem, To]): Builds[Elem, To] = Builds wrap cbf
+  implicit def convertCanBuildFrom[Elem, To](implicit cbf: CanBuild[Elem, To]): Builds[Elem, To] = Builds wrap cbf
 }

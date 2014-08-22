@@ -47,6 +47,7 @@ trait Aliases {
   type ArrayBuffer[A]                  = scala.collection.mutable.ArrayBuffer[A]
   type Builder[-Elem, +To]             = scala.collection.mutable.Builder[Elem, To]
   type CanBuildFrom[-From, -Elem, +To] = scala.collection.generic.CanBuildFrom[From, Elem, To] // ugh, it's so hideous
+  type CanBuild[-Elem, +To]            = scala.collection.generic.CanBuildFrom[_, Elem, To]
   type ClassTag[A]                     = scala.reflect.ClassTag[A]
   type Codec                           = scala.io.Codec
   type GenTraversableLike[+A, +Repr]   = scala.collection.GenTraversableLike[A, Repr]

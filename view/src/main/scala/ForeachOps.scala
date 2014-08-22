@@ -75,11 +75,11 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
   def toScalaSet: Set[A]                            = to[Set]
   def toStream: Stream[A]                           = to[Stream]
   def toIterable: Iterable[A]                       = to[Iterable]
-  def toTraversable: Traversable[A]                 = ToScala(xs)
+  def toTraversable: Traversable[A]                 = new impl.ForeachAsTraversable[A](xs)
   def trav: Traversable[A]                          = toTraversable
   def scalaIterator: Iterator[A]                    = toIterable.iterator
 
-  def buildInto[To](cbf: CanBuildFrom[_, A, To]): To = cbf() ++= toTraversable result
+  def buildInto[To](cbf: CanBuild[A, To]): To = cbf() ++= toTraversable result
 
   def toRepr[Repr](implicit pcb: Builds[A, Repr]): Repr = pcb build xs
   def to[CC[X]](implicit pcb: Builds[A, CC[A]]): CC[A]  = pcb build xs

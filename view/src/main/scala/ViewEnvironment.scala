@@ -4,21 +4,13 @@ package core
 import psp.std._
 import SizeInfo._
 
-// TODO: Distinct, Reverse, Zip
-//
-// -Xexperimental SAM
-//   abstract class FlatMapF1[-T, +R] { def apply(x: T): Foreach[R] }
-// final class StaticSizeFlatMap[-A, +B](val size: Size, f: A => Foreach[B]) extends (A => Foreach[B]) with HasStaticSize {
-//   def apply(x: A): Foreach[B] = f(x)
-// }
-
 object AtomicView {
   def linear[Repr](repr: Repr)(implicit tc: SequentialAccess[Repr]): LinearView[Repr, tc.type]   = new Env[Repr, tc.type](repr) linearView tc
   def indexed[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): IndexedView[Repr, tc.type]  = new Env[Repr, tc.type](repr) indexedView tc
   def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): AtomicView[Repr, tc.type] = new Env[Repr, tc.type](repr) unknownView tc
 }
 
-class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) extends api.ViewEnvironment[A0, Repr, CC0] {
+class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
   type A = A0
   type CC[X] = CC0[X]
 
