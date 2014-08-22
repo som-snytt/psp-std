@@ -15,10 +15,6 @@ final class TraversableAsForeach[+A](underlying: Traversable[A]) extends Foreach
   override def toString           = underlying.shortClass + " (wrapped)"
 }
 
-final class ForeachAsTraversable[+A](underlying: Foreach[A]) extends sc.immutable.Traversable[A] {
-  def foreach[U](f: A => U): Unit = underlying foreach (x => f(x))
-}
-
 /** Direct
  */
 

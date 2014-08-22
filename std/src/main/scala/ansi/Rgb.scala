@@ -71,7 +71,6 @@ object RGB {
   def ReadRGBHex1: Read[RGB] = Read[RGB](s => fromBits(("0x" + s).toInt))
   def ReadRGBDec3: Read[RGB] = Read[RGB](s => s.words match { case Vector(r, g, b) => RGB(r.toInt, g.toInt, b.toInt) })
 
-
   implicit class RGBOps(val rgb: RGB) {
     def redValue    = (rgb.bits >> 16) & 0xFF
     def greenValue  = (rgb.bits >>  8) & 0xFF

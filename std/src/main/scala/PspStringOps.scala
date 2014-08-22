@@ -2,7 +2,6 @@ package psp
 package std
 
 import java.{ lang => jl }
-import scala.collection.immutable.{ WrappedString, StringLike, StringOps }
 
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll
  *  bury it and reimplement what we want.

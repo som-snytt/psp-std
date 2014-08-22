@@ -3,33 +3,8 @@ package core
 
 import psp.std._, SizeInfo._
 
-trait Foreach[+A] extends Any with HasSizeInfo {
-  def foreach(f: A => Unit): Unit
-}
-trait Linear[+A] extends Any with Foreach[A] {
-  type Tail <: Linear[A]
-
-  def isEmpty: Boolean
-  def head: A
-  def tail: Tail
-}
-trait LinearImpl[+A] extends Any with Linear[A] {
-  def sizeInfo = if (isEmpty) Empty else NonEmpty
-  @inline final def foreach(f: A => Unit): Unit = {
-    @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
-    loop(this)
-  }
-}
-trait InvariantLinear[A] extends Any with Linear[A] with Invariant[A]
-
-object InvariantLinear {
-  implicit final class InvariantLinearOps[A](val xs: InvariantLinear[A]) extends AnyVal {
-    def contains(x: A): Boolean = {
-      @tailrec def loop(xs: Linear[A]): Boolean = !xs.isEmpty && (x == xs.head || loop(xs.tail))
-      loop(xs)
-    }
-  }
-}
+trait Foreach[+A] extends Any with HasSizeInfo { def foreach(f: A => Unit): Unit }
+trait Invariant[A] extends Any
 
 object Foreach {
   def Empty = Direct.Empty

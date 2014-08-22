@@ -17,26 +17,16 @@ import scala.collection.{ mutable, immutable }
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh with Utility with ScalaCompat {
+trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh with Utility {
   val EOL          = sys.props.getOrElse("line.separator", "\n")
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
   val ClassTag     = scala.reflect.ClassTag
   val NumericRange = scala.collection.immutable.NumericRange
   val ScalaNil     = scala.collection.immutable.Nil
-
   /** It's like "" + x, except, you know, for kids.
    */
   val `""` = ShowDirect("")
-
-  def javaClassOf[T: ClassTag] : Class[T] = classTag[T].runtimeClass.castTo[Class[T]]
-  def classTag[T: ClassTag] : ClassTag[T] = implicitly[ClassTag[T]]
-  def encodeScala(s: String): String      = scala.reflect.NameTransformer encode s
-  def decodeScala(s: String): String      = scala.reflect.NameTransformer decode s
-
-  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
-  def failEmpty(operation: String): Nothing              = throw new NoSuchElementException(s"$operation on empty collection")
-  def fail(msg: String): Nothing                         = throw new RuntimeException(msg)
 }
 
 /** Aliases for types I've had to import over and over and over again.
@@ -44,22 +34,21 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Ali
  */
 trait Aliases {
   // common scala
-  type ArrayBuffer[A]                  = scala.collection.mutable.ArrayBuffer[A]
-  type Builder[-Elem, +To]             = scala.collection.mutable.Builder[Elem, To]
-  type CanBuildFrom[-From, -Elem, +To] = scala.collection.generic.CanBuildFrom[From, Elem, To] // ugh, it's so hideous
-  type CanBuild[-Elem, +To]            = scala.collection.generic.CanBuildFrom[_, Elem, To]
-  type ClassTag[A]                     = scala.reflect.ClassTag[A]
-  type Codec                           = scala.io.Codec
-  type GenTraversableLike[+A, +Repr]   = scala.collection.GenTraversableLike[A, Repr]
-  type GenTraversableOnce[+A]          = scala.collection.GenTraversableOnce[A]
-  type IndexedSeq[+A]                  = scala.collection.immutable.IndexedSeq[A]
-  type LinearSeq[+A]                   = scala.collection.immutable.LinearSeq[A]
-  type ListBuffer[A]                   = scala.collection.mutable.ListBuffer[A]
-  type ScalaNumber                     = scala.math.ScalaNumber
-  type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
-  type Try[+A]                         = scala.util.Try[A]
-  type VectorBuilder[A]                = scala.collection.mutable.Builder[A, Vector[A]]
-  type WrappedArray[A]                 = scala.collection.mutable.WrappedArray[A]
+  type ArrayBuffer[A]                = scala.collection.mutable.ArrayBuffer[A]
+  type Builder[-Elem, +To]           = scala.collection.mutable.Builder[Elem, To]
+  type CanBuild[-Elem, +To]          = scala.collection.generic.CanBuildFrom[_, Elem, To]
+  type ClassTag[A]                   = scala.reflect.ClassTag[A]
+  type Codec                         = scala.io.Codec
+  type GenTraversableLike[+A, +Repr] = scala.collection.GenTraversableLike[A, Repr]
+  type GenTraversableOnce[+A]        = scala.collection.GenTraversableOnce[A]
+  type IndexedSeq[+A]                = scala.collection.immutable.IndexedSeq[A]
+  type LinearSeq[+A]                 = scala.collection.immutable.LinearSeq[A]
+  type ListBuffer[A]                 = scala.collection.mutable.ListBuffer[A]
+  type ScalaNumber                   = scala.math.ScalaNumber
+  type TraversableLike[+A, CC[+X]]   = scala.collection.TraversableLike[A, CC[A]]
+  type Try[+A]                       = scala.util.Try[A]
+  type VectorBuilder[A]              = scala.collection.mutable.Builder[A, Vector[A]]
+  type WrappedArray[A]               = scala.collection.mutable.WrappedArray[A]
 
   // common annotations
   type switch  = scala.annotation.switch
@@ -79,7 +68,6 @@ trait Aliases {
   type File                   = java.io.File
   type FileInputStream        = java.io.FileInputStream
   type FileOutputStream       = java.io.FileOutputStream
-  // type FileTime            = java.nio.file.attribute.FileTime
   type IOException            = java.io.IOException
   type InputStream            = java.io.InputStream
   type JarEntry               = java.util.jar.JarEntry
@@ -115,10 +103,9 @@ trait Aliases {
   type sIterable[+A] = scala.collection.Iterable[A]
 
   // originals.
-  type ?=>[-A, +B]            = PartialFunction[A, B]
-  type CanBuildSelf[A, CC[X]] = CanBuildFrom[CC[A], A, CC[A]]
-  type Predicate[-A]          = A => Boolean
-  type Suspended[+A]          = (A => Unit) => Unit
+  type ?=>[-A, +B]   = PartialFunction[A, B]
+  type Predicate[-A] = A => Boolean
+  type Suspended[+A] = (A => Unit) => Unit
 }
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
@@ -164,26 +151,24 @@ trait ImplicitRemoval {
 }
 
 trait Utility {
-  def andTrue(x: Unit): Boolean  = true
-  def andFalse(x: Unit): Boolean = false
-
-  def asExpected[A](body: Any): A               = body.castTo[A]
-  def nullAs[A] : A                             = (null: AnyRef).castTo[A]
-  def decodeName(s: String): String             = scala.reflect.NameTransformer.decode(s)
-  def log(msg: String): Unit                    = Console.err println msg
-  def printResult[A](msg: String)(result: A): A = try result finally log(s"$msg: $result")
-
-  def fromUTF8(xs: Array[Byte]): String = new String(scala.io.Codec fromUTF8 xs)
+  def andFalse(x: Unit): Boolean                         = false
+  def andTrue(x: Unit): Boolean                          = true
+  def asExpected[A](body: Any): A                        = body.castTo[A]
+  def classTag[T: ClassTag] : ClassTag[T]                = implicitly[ClassTag[T]]
+  def decodeName(s: String): String                      = scala.reflect.NameTransformer decode s
+  def fail(msg: String): Nothing                         = throw new RuntimeException(msg)
+  def failEmpty(operation: String): Nothing              = throw new NoSuchElementException(s"$operation on empty collection")
+  def fromUTF8(xs: Array[Byte]): String                  = new String(scala.io.Codec fromUTF8 xs)
+  def javaClassOf[T: ClassTag] : Class[T]                = classTag[T].runtimeClass.castTo[Class[T]]
+  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
+  def log(msg: String): Unit                             = Console.err println msg
+  def nullAs[A] : A                                      = (null: AnyRef).castTo[A]
+  def printResult[A](msg: String)(result: A): A          = try result finally log(s"$msg: $result")
 
   def timed[A](body: => A): A = {
     val start = System.nanoTime
     try body finally log("Elapsed: %.3f ms" format (System.nanoTime - start) / 1e6)
   }
-}
-
-// Purely for temporary compat.
-trait ScalaCompat {
-  implicit def orderOrdering[A](implicit ord: Order[A]): Ordering[A] = new Ordering[A] { def compare(x: A, y: A): Int = ord.compare(x, y).intValue }
 }
 
 trait Creators {
@@ -193,15 +178,12 @@ trait Creators {
   def loaderOf[A: ClassTag] : ClassLoader = noNull(javaClassOf[A].getClassLoader, nullLoader)
 
   def resourceString(name: String): String = fromUTF8(resource(name))
-  def resource(name: String): Array[Byte] = (
-    Try(contextLoader).fold(_ getResourceAsStream name slurp, _ =>
-      Try(loaderOf[this.type]).fold(_ getResourceAsStream name slurp, _ => Array[Byte]())
-    )
-  )
+  def resource(name: String): Array[Byte] = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
+
   def readInto[A] : Read.ReadInto[A]               = Read.into[A]
   def order[A] : Order.By[A]                       = Order.by[A]
   def uri(x: String): URI                          = java.net.URI create x
-  def url(x: String): URL                          = new URL(x)
+  def url(x: String): URL                          = uri(x).toURL
   def index(x: Int): Index                         = Index(x)
   def offset(x: Int): Offset                       = Offset(x)
   def nth(x: Int): Nth                             = Nth(x)
@@ -238,6 +220,8 @@ trait LowPriorityPspStd {
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def hasPartialOrderExtensionOps[A: PartialOrder](x: A): PartialOrder.Ops[A] = new PartialOrder.Ops[A](x)
+  // Temporary compat with scala's Ordering.
+  implicit def orderOrdering[A](implicit ord: Order[A]): Ordering[A] = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
 }
 
 trait Implicits extends LowPriorityPspStd {
@@ -257,6 +241,7 @@ trait Implicits extends LowPriorityPspStd {
   implicit def intExtensionOps(x: Int): IntExtensionOps                         = new IntExtensionOps(x)
   implicit def inputStreamExtensionOps(x: InputStream): InputStreamExtensionOps = new InputStreamExtensionOps(x)
   implicit def longExtensionOps(x: Long): LongExtensionOps                      = new LongExtensionOps(x)
+  implicit def javaIteratorToScala[A](it: jIterator[A]): sIterator[A]           = new ScalaIterator(it)
 
   // Extension methods which depend on a typeclass.
   // If the type class is attached at creation it can't be a value class.

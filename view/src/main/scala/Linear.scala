@@ -1,7 +1,32 @@
 package psp
 package core
 
-import psp.std._
+import psp.std._, SizeInfo._
+
+trait Linear[+A] extends Any with Foreach[A] {
+  type Tail <: Linear[A]
+  def isEmpty: Boolean
+  def head: A
+  def tail: Tail
+}
+trait InvariantLinear[A] extends Any with Linear[A] with Invariant[A]
+
+trait LinearImpl[+A] extends Any with Linear[A] {
+  def sizeInfo = if (isEmpty) Empty else NonEmpty
+  @inline final def foreach(f: A => Unit): Unit = {
+    @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
+    loop(this)
+  }
+}
+
+object InvariantLinear {
+  implicit final class InvariantLinearOps[A](val xs: InvariantLinear[A]) extends AnyVal {
+    def contains(x: A): Boolean = {
+      @tailrec def loop(xs: Linear[A]): Boolean = !xs.isEmpty && (x == xs.head || loop(xs.tail))
+      loop(xs)
+    }
+  }
+}
 
 object PspList {
   implicit def newBuilder[A] : Builds[A, PspList[A]] = Builds(_.foldr(empty[A])(_ :: _).reverse)
@@ -14,8 +39,7 @@ object PspList {
 }
 
 sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
-  type Tail = PspList[A]
-
+  type Tail                    = PspList[A]
   def reverse: PspList[A]      = reverser(this, nil())
   def take(n: Int): PspList[A] = taker(this, nil(), n)
   def drop(n: Int): PspList[A] = dropper(this, n)
@@ -29,7 +53,6 @@ sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
 
   @tailrec private def dropper(xs: PspList[A], n: Int): PspList[A] =
     if (n <= 0 || xs.isEmpty) xs else dropper(xs.tail, n - 1)
-
 }
 
 final case object nil extends PspList[Nothing] {
@@ -55,5 +78,4 @@ final class PspStream[A](headFn: => A, tailFn: => InvariantLinear[A]) extends Li
 object PspStream {
   def empty[A]                                                           = nil.castTo[InvariantLinear[A]]
   def cons[A](headFn: => A, tailFn: => InvariantLinear[A]): PspStream[A] = new PspStream[A](headFn, tailFn)
-  def fromForeach[A](xs: Foreach[A]): InvariantLinear[A]                 = xs.foldr(empty[A])((x, res) => cons(x, res))
 }

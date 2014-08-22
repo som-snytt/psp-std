@@ -44,7 +44,7 @@ final class Index private (val value: Int) extends AnyVal with IndexOrNth {
 
   def toSizeInfo: SizeInfo = toSize
 
-  override def toString         = s"$value"
+  override def toString = s"$value"
 }
 
 object Index extends (Int => Index) {

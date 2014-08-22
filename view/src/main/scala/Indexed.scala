@@ -1,35 +1,38 @@
 package psp
 package core
 
-import psp.std._
+import psp.std._, Index.zero
 import impl._
 
 trait Indexed[+A] extends Any with Foreach[A] {
   def isDefinedAt(index: Index): Boolean
   def elemAt(index: Index): A
-  // TODO - move onto Ops
-  def zip[B](that: Indexed[B]): Indexed[(A, B)]                                                       = zipWith(that)(_ -> _)
-  def zipWith[A1, B](that: Indexed[A1])(f: (A, A1) => B): Indexed[B]                                  = new ZippedIndexed2(this, that, f)
-  def zipWith[A1, A2, B](that1: Indexed[A1], that2: Indexed[A2])(f: (A, A1, A2) => B): Indexed[B] = new ZippedIndexed3(this, that1, that2, f)
 }
 
 trait Direct[+A] extends Any with Indexed[A] with HasPreciseSize
-trait Invariant[A] extends Any
-trait HasContains[A] extends Any with Invariant[A] { def contains(x: A): Boolean }
-trait DirectLeaf[A] extends Any with Direct[A] with HasContains[A]
+trait DirectLeaf[A] extends Any with Direct[A] with Invariant[A] { def contains(x: A): Boolean }
 
 final class PureIndexed[+A](size: Size, indexFn: Index => A) extends IndexedImpl[A](size) {
   def elemAt(index: Index): A = indexFn(index)
 }
 
 object Indexed {
-  implicit final class BippyBooOperations[A](val xs: Indexed[A]) extends AnyVal {
+  implicit final class IndexedExtensionOps[A](val xs: Indexed[A]) extends AnyVal {
     def apply(index: Index): A = xs elemAt index
+
+    def zip[B](that: Indexed[B]): Indexed[(A, B)]                                                   = zipWith(that)(_ -> _)
+    def zipWith[A1, B](that: Indexed[A1])(f: (A, A1) => B): Indexed[B]                              = new ZippedIndexed2(xs, that, f)
+    def zipWith[A1, A2, B](that1: Indexed[A1], that2: Indexed[A2])(f: (A, A1, A2) => B): Indexed[B] = new ZippedIndexed3(xs, that1, that2, f)
   }
 }
 
 object Direct {
-  implicit def newBuilder[A] : Builds[A, Direct[A]] = Builds(_.toIndexed)
+  implicit def newBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) =>
+    xs match {
+      case xs: Direct[A] => xs
+      case _             => Direct.elems(xs.toSeq: _*)
+    }
+  )
 
   implicit final class IndexedOperations[A](val xs: Direct[A]) extends AnyVal {
     def ++(ys: Direct[A]): Direct[A] = join(xs, ys)
@@ -72,4 +75,26 @@ final class IntRange private (val start: Int, val last: Int, isInclusive: Boolea
   def end                   = last + 1
   def elemAt(i: Index): Int = start + i.value
   override def toString     = if (isInclusive) s"$start to $last" else s"$start until $end"
+}
+
+final class ZippedIndexed2[A, B, +C](left: Indexed[A], right: Indexed[B], f: (A, B) => C) extends Indexed[C] {
+  def foreach(f: C => Unit): Unit = {
+    var i = zero
+    while (isDefinedAt(i)) { f(elemAt(i)); i = i.next }
+  }
+  def isDefinedAt(index: Index): Boolean = (left isDefinedAt index) && (right isDefinedAt index)
+  def apply(index: Index): C             = elemAt(index)
+  def elemAt(index: Index): C            = f(left elemAt index, right elemAt index)
+  def sizeInfo: SizeInfo               = left.sizeInfo min right.sizeInfo
+}
+
+final class ZippedIndexed3[A, A1, A2, +B](xs1: Indexed[A], xs2: Indexed[A1], xs3: Indexed[A2], f: (A, A1, A2) => B) extends Indexed[B] {
+  def foreach(f: B => Unit): Unit = {
+    var i = zero
+    while (isDefinedAt(i)) { f(elemAt(i)); i = i.next }
+  }
+  def isDefinedAt(index: Index): Boolean = (xs1 isDefinedAt index) && (xs2 isDefinedAt index) && (xs3 isDefinedAt index)
+  def apply(index: Index): B             = elemAt(index)
+  def elemAt(index: Index): B            = f(xs1(index), xs2(index), xs3(index))
+  def sizeInfo: SizeInfo                 = xs1.sizeInfo min xs2.sizeInfo min xs3.sizeInfo
 }
