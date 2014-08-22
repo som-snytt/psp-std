@@ -66,7 +66,6 @@ object Foreach {
   def from(n: Long): Foreach[Long]     = unfold(n)(_ + 1)
   def from(n: BigInt): Foreach[BigInt] = unfold(n)(_ + 1)
 
-  def to(start: Int, last: Int): Foreach[Int]   = PspList fromForeach IntRange.to(start, last)
   def const[A](elem: A): Constant[A]            = new Constant(elem)
   def times[A](times: Int, elem: A): Foreach[A] = Times(Size(times), elem)
 

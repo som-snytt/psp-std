@@ -5,9 +5,9 @@ import psp.std._
 import SizeInfo._
 
 object AtomicView {
-  def linear[Repr](repr: Repr)(implicit tc: SequentialAccess[Repr]): LinearView[Repr, tc.type]   = new Env[Repr, tc.type](repr) linearView tc
-  def indexed[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): IndexedView[Repr, tc.type]  = new Env[Repr, tc.type](repr) indexedView tc
-  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): AtomicView[Repr, tc.type] = new Env[Repr, tc.type](repr) unknownView tc
+  def linear[Repr](repr: Repr)(implicit tc: SequentialAccess[Repr]): LinearView[Repr, tc.type] = new Env[Repr, tc.type](repr) linearView tc
+  def indexed[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): IndexedView[Repr, tc.type]   = new Env[Repr, tc.type](repr) indexedView tc
+  def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): AtomicView[Repr, tc.type]     = new Env[Repr, tc.type](repr) unknownView tc
 }
 
 class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {

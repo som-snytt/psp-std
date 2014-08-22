@@ -4,55 +4,32 @@ package core
 import psp.std._
 
 object PspList {
-  implicit def newBuilder[A] : Builds[A, PspList[A]] = Builds(fromForeach)
-
-  def to(start: Int, end: Int): PspList[Int] = fromForeach(Foreach.to(start, end))
-
-  // implicit def nilIsCovariant[A](xs: nil.type): PspList[A] = empty[A]
-  def fromForeach[A](xs: Foreach[A]): PspList[A] = xs match {
-    case xs: PspList[A] => xs
-    case _              => xs.foldr(empty[A])(_ :: _).reverse
-  }
+  implicit def newBuilder[A] : Builds[A, PspList[A]] = Builds(_.foldr(empty[A])(_ :: _).reverse)
 
   def empty[A] = nil.castTo[PspList[A]]
   def fill[A](n: Int)(body: => A): PspList[A] = if (n <= 0) nil() else body :: fill(n - 1)(body)
   def apply[A](xs: A*): PspList[A]            = xs.foldRight(nil[A]())(_ :: _)
 
-  def ShowMax[A: Show](max: Int): Show[PspList[A]] = Show[PspList[A]] { xs =>
-    val elems = xs take max
-    val base = if (xs drop max isEmpty) "nil" else "..."
-
-    if (elems.isEmpty) base else (elems join " :: ") + " :: nil"
-  }
-  implicit def ShowPspList[A: Show] : Show[PspList[A]] = Show[PspList[A]](xs =>
-    if (xs.isEmpty) "nil" else show"${xs.head} :: ${xs.tail}"
-  )
+  implicit def ShowPspList[A: Show] = Show[PspList[A]](xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
 }
 
 sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
   type Tail = PspList[A]
-  def reverse: PspList[A] = {
-    def loop(in: PspList[A], out: PspList[A]): PspList[A] = if (in.isEmpty) out else loop(in.tail, in.head :: out)
-    loop(this, PspList.empty[A])
-  }
 
-  def take(n: Int): PspList[A] = {
-    @tailrec def loop(n: Int, in: PspList[A], out: PspList[A]): PspList[A] =
-      if (n <= 0 || in.isEmpty) out.reverse else loop(n - 1, in.tail, in.head :: out)
+  def reverse: PspList[A]      = reverser(this, nil())
+  def take(n: Int): PspList[A] = taker(this, nil(), n)
+  def drop(n: Int): PspList[A] = dropper(this, n)
+  def ::(x: A): PspList[A]     = new ::(x, this)
 
-    loop(n, this, PspList[A]())
-  }
-  def drop(n: Int): PspList[A] = {
-    @tailrec def loop(n: Int, xs: PspList[A]): PspList[A] = if (n <= 0 || xs.isEmpty) xs else loop(n - 1, xs.tail)
-    loop(n, this)
-  }
+  @tailrec private def reverser(in: PspList[A], out: PspList[A]): PspList[A] =
+    if (in.isEmpty) out else reverser(in.tail, in.head :: out)
 
-  def ?::[A1 >: A](x: A1): PspList[A1] = new ::[A1](x, this.asInstanceOf[PspList[A1]])
-  def ::(x: A): PspList[A] = new ::(x, this)
-  def :::(xs: PspList[A]): PspList[A] = xs match {
-    case x :: xs => x :: (xs ::: this)
-    case _       => this
-  }
+  @tailrec private def taker(in: PspList[A], out: PspList[A], n: Int): PspList[A] =
+    if (n <= 0 || in.isEmpty) out.reverse else taker(in.tail, in.head :: out, n - 1)
+
+  @tailrec private def dropper(xs: PspList[A], n: Int): PspList[A] =
+    if (n <= 0 || xs.isEmpty) xs else dropper(xs.tail, n - 1)
+
 }
 
 final case object nil extends PspList[Nothing] {
@@ -76,8 +53,7 @@ final class PspStream[A](headFn: => A, tailFn: => InvariantLinear[A]) extends Li
 }
 
 object PspStream {
-  def empty[A] = nil.castTo[InvariantLinear[A]]
+  def empty[A]                                                           = nil.castTo[InvariantLinear[A]]
   def cons[A](headFn: => A, tailFn: => InvariantLinear[A]): PspStream[A] = new PspStream[A](headFn, tailFn)
-
-  def fromForeach[A](xs: Foreach[A]): InvariantLinear[A] = xs.foldr(empty[A])((x, res) => cons(x, res))
+  def fromForeach[A](xs: Foreach[A]): InvariantLinear[A]                 = xs.foldr(empty[A])((x, res) => cons(x, res))
 }
