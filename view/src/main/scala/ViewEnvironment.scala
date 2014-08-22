@@ -14,22 +14,26 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
   type A = A0
   type CC[X] = CC0[X]
 
-  def linearView(tc: SequentialAccessType[A, Repr, CC]): LinearView    = new LinearView(tc)
+  implicit def showView[A] : Show[View[A]] = Show[View[A]](_.viewChain reverseMap (_.description) mkString " ")
+
+  def linearView(tc: SequentialAccessType[A, Repr, CC]): LinearView = new LinearView(tc)
   def indexedView(tc: DirectAccessType[A, Repr, CC]): IndexedView   = new IndexedView(tc)
-  def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView = new UnknownView(tc)
+  def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView    = new UnknownView(tc)
 
   final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView with LinearViewImpls {
-    def sizeInfo = unknownSize
+    def description = ""
+    def sizeInfo    = unknownSize
     @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   }
 
   final class LinearView(val tc: SequentialAccessType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
     type Tail = psp.core.LinearView[Repr, tc.type]
 
-    def isEmpty    = tc isEmpty repr
-    def head: A    = recordCall(tc head repr)
-    def tail: Tail = tc wrap (tc tail repr)
-    def sizeInfo   = if (isEmpty) Empty else NonEmpty
+    def description = ""
+    def isEmpty     = tc isEmpty repr
+    def head: A     = recordCall(tc head repr)
+    def tail: Tail  = tc wrap (tc tail repr)
+    def sizeInfo    = if (isEmpty) Empty else NonEmpty
 
     @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   }
@@ -41,6 +45,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     def contains(x: A): Boolean                             = this exists (_ == x)
     def foreach(f: A => Unit): Unit                         = foreachSlice(size.toIndexRange)(f)
     def foreachSlice(range: IndexRange)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
+    def description                                         = ""
   }
 
   sealed trait View[+A] extends Any with api.BuilderView[A, Repr] {
@@ -97,7 +102,6 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     val counter: Counter = new Counter()
     final def m: this.type = this
 
-    def description: String = ""
     def isAtomic = true
     def viewChain: List[api.View[_]] = this :: Nil
   }

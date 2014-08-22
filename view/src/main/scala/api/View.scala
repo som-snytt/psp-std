@@ -9,7 +9,6 @@ trait View[+A] extends Any with TypeConstructors[A] with IsoView[A] with MapElem
 
   // Defined here for the moment out of expedience.
   type Input[+X] = Foreach[X]
-  type Split[+X] <: (MapTo[A], MapTo[A])
   def ++[A1 >: A](that: Input[A1]): MapTo[A1]
 }
 
@@ -35,9 +34,7 @@ trait BuilderView[+A, Repr] extends Any with View[A] {
 
 trait TypeConstructors[+A] extends Any with Foreach[A] {
   type MapTo[+X]
-  type Split[+X]
   type Input[+X]
-  type Joined[+X]
 }
 
 trait MapElementView[+A] extends Any with TypeConstructors[A] {

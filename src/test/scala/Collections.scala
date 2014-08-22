@@ -10,6 +10,11 @@ class Collections extends Bundle {
 
   val xs = immutable.BitSet(1, 2, 3)
 
+  implicit object StringIsCharSequence extends impl.DirectAccessImpl[Char, String, Direct] {
+    def length(repr: String): Size               = Size(repr.length)
+    def elemAt(repr: String)(index: Index): Char = repr charAt index.value
+  }
+
   def run(): Boolean = {
     checkResult[immutable.BitSet](xs.m map (_.toString.length) native)
     checkResult[immutable.BitSet](xs.m map (_.toString) map (_.length) native)

@@ -53,7 +53,7 @@ object Foreach {
   }
 
   final case class Times[A](size: Size, elem: A) extends Foreach[A] with psp.std.HasPreciseSizeImpl {
-    @inline def foreach(f: A => Unit): Unit = 0 until size.value foreach (_ => f(elem))
+    @inline def foreach(f: A => Unit): Unit = IntRange.until(0, size.value) foreach (_ => f(elem))
     override def toString = pp"$elem x$size"
   }
 

@@ -9,11 +9,6 @@ import psp.std._
 final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends api.View[A] with CountCalls {
   type MapTo[+X] = ScalaNative[X]
 
-  // TODO:
-  // type Input[X]  = GenTraversableOnce[X]
-  // def flatMap[B](f: A => Input[B]): MapTo[B]            = xs flatMap f
-  // def flatten[B](implicit ev: A <:< Input[B]): MapTo[B] = xs flatMap ev
-
   private implicit def lift[B](result: Iterable[B]): MapTo[B] = new ScalaNative(result, counter)
 
   def sizeInfo: SizeInfo = xs match {

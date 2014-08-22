@@ -9,11 +9,6 @@ import psp.std._
 /** Compat
  */
 
-final class ScalaIndexedSeqAsIndexed[+A](underlying: sc.IndexedSeq[A]) extends IndexedImpl[A](Size(underlying.size)) {
-  def elemAt(index: Index) = underlying(index)
-  override def toString = underlying.shortClass + " (wrapped)"
-}
-
 final class TraversableAsForeach[+A](underlying: Traversable[A]) extends Foreach[A] {
   def sizeInfo: SizeInfo          = SizeInfo(underlying)
   def foreach(f: A => Unit): Unit = underlying foreach f
@@ -36,15 +31,6 @@ abstract class IndexedImpl[+A](val size: Size) extends Direct[A] with HasPrecise
 
 /** DirectAccess
  */
-object StringIsCharSequence extends DirectAccessImpl[Char, String, Direct] {
-  def length(repr: String): Size               = Size(repr.length)
-  def elemAt(repr: String)(index: Index): Char = repr charAt index.value
-}
-object StringIsLineSequence extends DirectAccessImpl[Line, String, Direct] {
-  def length(repr: String): Size               = wrap(repr).size
-  def elemAt(repr: String)(index: Index): Line = wrap(repr) elemAt index
-  def wrap(repr: String): DirectLeaf[Line]    = new PspStringAsLines(repr)
-}
 
 final class ArrayIsDirectAccess[A: ClassTag] extends DirectAccessImpl[A, Array[A], Direct] {
   def length(repr: Array[A]): Size            = Size(repr.length)

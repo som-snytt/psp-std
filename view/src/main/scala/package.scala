@@ -3,10 +3,22 @@ package psp
 import psp.std._
 
 package core {
-  trait PackageLevel extends PspHighPriority {
+  trait CollectionLow {
+    // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
+    implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): Env[Repr, tc.type]#AtomicView = tc wrap repr
+  }
+  trait CollectionMid extends CollectionLow {
+    implicit def raiseSequentialAccessView[Repr](repr: Repr)(implicit tc: SequentialAccess[Repr]): Env[Repr, tc.type]#LinearView = tc wrap repr
+  }
+  trait CollectionHigh extends CollectionMid {
+    implicit def raiseIndexedView[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): Env[Repr, tc.type]#IndexedView = tc wrap repr
+  }
+  trait PackageLevel extends CollectionHigh {
     type Done               = Boolean
     type Ref[+A]            = A with AnyRef
     type Predicate2[-A, -B] = (A, B) => Boolean
+
+    implicit def raiseFunction1Ops[T, R](f: T => R): Function1Ops[T, R] = new Function1Ops[T, R](f)
 
     // With type aliases like these which include a type selection,
     // sometimes substitution fails and you get messages like

@@ -92,13 +92,7 @@ class OperationCounts extends Bundle {
     }
     def headView    = us.head.toString
     def isAgreement = allResults.distinct.size == 1
-    def display     = (
-         !isAgreement
-      || (usCounts.distinct.size == usCollections.size)
-      // || (allCounts.distinct.size > 4)
-      // || (allCounts.distinct.size > 2 && ratioDouble < 1.3d)
-      // || true
-    )
+    def display     = !isAgreement || (usCounts.distinct.size == usCollections.size)
     def countsString   = allCounts map ("%7s" format _) mkString " "
     def resultsString  = if (isAgreement) headResult.result else "!!! " + failedString
     def failedString   = {
