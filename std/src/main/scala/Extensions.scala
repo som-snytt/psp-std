@@ -85,7 +85,8 @@ final class AnyExtensionOps[A](private val x: A) extends AnyVal {
   // "Maybe we can enforce good programming practice with annoyingly long method names."
   def castTo[U] : U         = x.asInstanceOf[U]
   def toRef: AnyRef         = castTo[AnyRef]
-  def doto(f: A => Unit): A = try x finally f(x)
+  @inline def doto(f: A => Unit): A = try x finally f(x)
+  @inline def also(body: Unit): A   = x
 
   // Calling eq on Anys.
   def ref_==(y: Any): Boolean = x.toRef eq y.toRef
@@ -101,8 +102,35 @@ final class AnyExtensionOps[A](private val x: A) extends AnyVal {
 }
 
 final class TryExtensionOps[A](private val x: Try[A]) extends AnyVal {
+  def | (expr: => A): A = x.toOption getOrElse expr
+  def ||(expr: => A): Try[A] = x match {
+    case scala.util.Failure(_) => Try(expr)
+    case _                     => x
+  }
   def fold[B](f: A => B, g: Throwable => B): B = x match {
     case scala.util.Success(x) => f(x)
     case scala.util.Failure(t) => g(t)
   }
+}
+
+
+final class PartialFunctionOps[T, R](val pf: T ?=> R) extends AnyVal {
+  def labeled(label: String): T ?=> R     = new LabeledPartialFunction(pf, label)
+  def contraMap[T1](f: T1 => T): T1 ?=> R = { case x if pf isDefinedAt f(x) => pf(f(x)) }
+  def mapValues[R1](f: R => R1): T ?=> R1 = { case x if pf isDefinedAt x => f(pf(x)) }
+}
+
+final class LabeledFunction[-T, +R](f: T => R, val label: String) extends (T => R) with Labeled {
+  def apply(x: T): R = f(x)
+}
+final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label: String) extends PartialFunction[T, R] with Labeled {
+  def isDefinedAt(x: T) = pf isDefinedAt x
+  def apply(x: T): R = pf(x)
+}
+
+final class Function1Ops[-T, +R](val f: T => R) extends AnyVal {
+  def labeled(label: String): T => R = new LabeledFunction(f, label)
+}
+final class Function2Ops[-T1, -T2, +R](val f: (T1, T2) => R) extends AnyVal {
+  def swap: (T2, T1) => R = (x, y) => f(y, x)
 }

@@ -3,9 +3,27 @@ package std
 
 /** The classic type class for encoding value equivalence.
  */
+
 trait Eq[A] {
   def equiv(x: A, y: A): Boolean
 }
+trait HashEq[A] extends Eq[A] {
+  def hash(x: A): Int
+}
+
+object HashEq {
+  implicit def assumeHashCode[A](implicit eqs: Eq[A]): HashEq[A] = apply[A](eqs.equiv, _.##)
+
+  def universal[A]           = apply[A](_ == _, _.##)
+  def reference[A <: AnyRef] = apply[A](_ eq _, System.identityHashCode)
+  def shown[A: Show]         = apply[A](_.to_s === _.to_s, _.to_s.##)
+
+  def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): HashEq[A] = new HashEq[A] {
+    def equiv(x: A, y: A) = cmp(x, y)
+    def hash(x: A)        = hashFn(x)
+  }
+}
+
 object Eq {
   def by[A] : By[A] = new By[A]
 

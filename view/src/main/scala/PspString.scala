@@ -9,13 +9,10 @@ final class Line(val text: String) extends AnyVal {
 }
 
 final class PspStringOps(val repr: String) extends AnyVal {
-  def toBytes: PspStringAsBytes         = new PspStringAsBytes(repr)
-  def toChars: PspStringAsChars         = new PspStringAsChars(repr)
-  def toLines: PspStringAsLines         = new PspStringAsLines(repr)
-  def toFile: jFile                     = new jFile(repr)
-  def regex: Regex                      = Regex(repr)
-  def literal: Regex                    = regex.literal
-  def split(re: Regex): DelimitedString = new DelimitedString(repr, re)
+  def toBytes: PspStringAsBytes = new PspStringAsBytes(repr)
+  def toChars: PspStringAsChars = new PspStringAsChars(repr)
+  def toLines: PspStringAsLines = new PspStringAsLines(repr)
+  def toFile: jFile             = new jFile(repr)
 
   override def toString = repr
 }
@@ -49,36 +46,23 @@ final class PspStringAsChars(val repr: String) extends AnyVal with IndexedLeafIm
 }
 
 final class PspStringAsLines(val repr: String) extends AnyVal with IndexedLeafImpl[Line] {
-  private def isEol(index: Int)       = index >= 0 && repr.startsWith(EOL, index)
-  private def isStart(index: Int)     = index == 0 || isEol(index - EOL.length)
-  private def isEnd(index: Int)       = index == repr.length || isEol(index)
-  private def starts: Direct[Int]     = IntRange.to(0, repr.length) filter isStart force
-  private def ends: Direct[Int]       = IntRange.to(0, repr.length) filter isEnd force
-  private def strings: Direct[String] = Regex(EOL) splits repr
-  private def lines: Direct[Line]     = strings map (x => new Line(x)) force
+  private def isEol(index: Int)   = index >= 0 && repr.startsWith(EOL, index)
+  private def isStart(index: Int) = index == 0 || isEol(index - EOL.length)
+  private def isEnd(index: Int)   = index == repr.length || isEol(index)
+  private def starts: Direct[Int] = IntRange.to(0, repr.length) filter isStart force
+  private def ends: Direct[Int]   = IntRange.to(0, repr.length) filter isEnd force
+  private def lines: Direct[Line] = repr split EOL map (x => new Line(x)) force
 
   def ranges: Direct[IndexRange]             = starts.zipWith(ends)(indexRange).toIndexed
   def indicesOfLine(lineno: Int): IndexRange = ranges elemAt Nth(lineno)
   def line(lineno: Int): Line                = elemAt(Nth(lineno))
   def lineNumbers: IntRange                  = IntRange.to(1, size.value)
 
-  def size                                   = strings.size
+  def size                                   = lines.size
   def elemAt(index: Index): Line             = lines elemAt index
   def isDefinedAt(index: Index): Boolean     = size containsIndex index
   @inline def foreach(f: Line => Unit): Unit = lines foreach f
   def contains(x: Line): Boolean             = lines exists (_ == x)
 
   override def toString = lineNumbers map (i => "%4s  %s\n".format(i, line(i))) join ""
-}
-
-final class DelimitedString(repr: String, delimiter: Regex) extends IndexedLeafImpl[String] {
-  private[this] val elements: Direct[String] = delimiter splits repr
-
-  def size                                     = elements.size
-  def elemAt(index: Index): String             = elements elemAt index
-  def isDefinedAt(index: Index): Boolean       = size containsIndex index
-  @inline def foreach(f: String => Unit): Unit = elements foreach f
-  def contains(x: String): Boolean             = elements exists (_ == x)
-
-  override def toString = pp"String(delimited by $delimiter to size $size)"
 }

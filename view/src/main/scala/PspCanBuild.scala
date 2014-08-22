@@ -26,6 +26,4 @@ class CompatBuilder[-Elem, +To](f: Foreach[Elem] => To) extends Builder[Elem, To
 object Builds {
   def wrap[Elem, To](cbf: CanBuildFrom[Nothing, Elem, To]): Builds[Elem, To] = apply(_ buildInto cbf)
   def apply[Elem, To](f: Foreach[Elem] => To): Builds[Elem, To]              = new CompatBuilder[Elem, To](f)
-
-  // implicit def raiseCanBuildFrom[Elem, To](implicit cbf: CanBuildFrom[Nothing, Elem, To]): Builds[Elem, To] = wrap(cbf)
 }

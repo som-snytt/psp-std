@@ -61,7 +61,7 @@ trait TypeClassOps {
 }
 
 trait ScalaTypeClasses {
-  import scala.collection.immutable.{ Traversable, LinearSeq, Set, Seq, Map }
+  import scala.collection.immutable.{ Traversable, Set, Seq, Map }
 
   class ForeachClass[A] extends TypeClasses.Extensional[Traversable[A], A] {
     def members(xs: Traversable[A])            = xs.foreach

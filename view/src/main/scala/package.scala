@@ -6,7 +6,7 @@ import psp.core.impl._
 import psp.std._
 
 package core {
-  trait PackageLevel extends PspTypes with PspHighPriority with PspUtilityMethods
+  trait PackageLevel extends PspTypes with PspHighPriority
 }
 
 package object core extends psp.core.PackageLevel {

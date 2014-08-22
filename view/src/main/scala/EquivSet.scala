@@ -4,54 +4,35 @@ package core
 import psp.std._
 import scala.collection.{ mutable, immutable }
 
-abstract class Equiv[A] {
-  def equiv(x: A, y: A): Boolean
-  def hash(x: A): Int
+object EquivSet {
+  def universal[A](xs: Foreach[A]): EquivSet[A]           = apply[A](xs)(HashEq.universal[A])
+  def reference[A <: AnyRef](xs: Foreach[A]): EquivSet[A] = apply[A](xs)(HashEq.reference[A])
+  def shown[A: Show](xs: Foreach[A]): EquivSet[A]         = apply[A](xs)(HashEq.shown[A])
+  def apply[A: HashEq](xs: Foreach[A]): EquivSet[A]       = new EquivSet[A](xs)
+}
 
-  final class Wrap(val element: A) {
-    def unwrap = element
+final class EquivSet[A : HashEq](basis: Foreach[A]) extends immutable.Set[A] {
+  private def hasheq              = implicitly[HashEq[A]]
+  private[this] val wrapSet       = basis map wrap toScalaSet
+  private def wrap(elem: A): Wrap = new Wrap(elem)
+  private class Wrap(val unwrap: A) {
     final override def equals(that: Any): Boolean = that match {
-      case x: Wrap => try equiv(element, x.element.castTo[A]) catch { case _: ClassCastException => false }
+      case x: Wrap => unwrap === x.unwrap
       case _       => false
     }
-    override def hashCode = hash(element)
-    override def toString = s"$element (wrapped)"
+    override def hashCode = hasheq hash unwrap
+    override def toString = s"$unwrap (wrapped)"
   }
-  def wrap(elem: A): Wrap = new Wrap(elem)
-  def wrappedSet(xs: Foreach[A]): Set[Wrap] = (xs map wrap).toScalaSet
-}
 
-object Equiv {
-  def universal[A]               = apply[A](_ == _, _.##)
-  def reference[A <: AnyRef]     = apply[A](_ eq _, System.identityHashCode)
-  def string[A](to: A => String) = apply[A]((x, y) => to(x) == to(y), x => to(x).##)
+  def byUniversal = EquivSet[A](basis)(HashEq.universal)
+  def byReference = EquivSet[A with AnyRef](basis map (_.castTo[A with AnyRef]))(HashEq.reference)
+  def byShown     = EquivSet[A](basis)(HashEq shown Show.native[A])
 
-  def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): Equiv[A] = new Equiv[A] {
-    def equiv(x: A, y: A) = cmp(x, y)
-    def hash(x: A)        = hashFn(x)
-  }
-}
-
-object EquivSet {
-  def universal[A](xs: Foreach[A]): EquivSet[A]                     = apply[A](xs)(Equiv.universal[A])
-  def reference[A <: AnyRef](xs: Foreach[A]): EquivSet[A]           = apply[A](xs)(Equiv.reference[A])
-  def string[A](xs: Foreach[A])(to: A => String): EquivSet[A]       = apply[A](xs)(Equiv.string[A](to))
-  def apply[A](xs: Foreach[A])(implicit cmp: Equiv[A]): EquivSet[A] = new EquivSet[A](xs, cmp)
-}
-
-final class EquivSet[A](basis: Foreach[A], equiv: Equiv[A]) extends immutable.Set[A] {
-  import Equiv._
-  private[this] val wrapSet = equiv wrappedSet basis
-
-  def byReference(implicit ev: A <:< A with AnyRef)           = EquivSet.reference[A with AnyRef](basis map (x => ev(x)))
-  def byUniversal                                             = by(universal[A])
-  def byString                                                = by(string[A](s => s"$s"))
-  def by[A1 >: A](equiv: Equiv[A1]): EquivSet[A1] = EquivSet[A1](basis)(equiv) // new EquivSet[A1](basis)(equiv)
-  def grouped = (basis map equiv.wrap).toList groupBy (x => x) map { case (k, vs) => (k.unwrap, vs map (_.unwrap)) }
+  def grouped = wrapSet.toList groupBy (x => x) map { case (k, vs) => (k.unwrap, vs map (_.unwrap)) }
 
   override def size              = wrapSet.size
-  def iterator: Iterator[A]      = wrapSet.iterator map (_.element)
-  def contains(elem: A): Boolean = wrapSet(equiv wrap elem)
+  def iterator: Iterator[A]      = wrapSet.iterator map (_.unwrap)
+  def contains(elem: A): Boolean = wrapSet(wrap(elem))
   def -(elem: A)                 = this
   def +(elem: A)                 = this
 }

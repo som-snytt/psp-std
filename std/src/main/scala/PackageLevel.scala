@@ -33,6 +33,10 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Ali
   def classTag[T: ClassTag] : ClassTag[T] = implicitly[ClassTag[T]]
   def encodeScala(s: String): String      = scala.reflect.NameTransformer encode s
   def decodeScala(s: String): String      = scala.reflect.NameTransformer decode s
+
+  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
+  def failEmpty(operation: String): Nothing              = throw new NoSuchElementException(s"$operation on empty collection")
+  def fail(msg: String): Nothing                         = throw new RuntimeException(msg)
 }
 
 /** Aliases for types I've had to import over and over and over again.
@@ -48,6 +52,7 @@ trait Aliases {
   type GenTraversableLike[+A, +Repr]   = scala.collection.GenTraversableLike[A, Repr]
   type GenTraversableOnce[+A]          = scala.collection.GenTraversableOnce[A]
   type IndexedSeq[+A]                  = scala.collection.immutable.IndexedSeq[A]
+  type LinearSeq[+A]                   = scala.collection.immutable.LinearSeq[A]
   type ListBuffer[A]                   = scala.collection.mutable.ListBuffer[A]
   type ScalaNumber                     = scala.math.ScalaNumber
   type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
@@ -91,8 +96,10 @@ trait Aliases {
   type jArrayList[A]          = java.util.ArrayList[A]
   type jArray[A]              = Array[A with Object]
   type jClass                 = java.lang.Class[_]
+  type jCollection[A]         = java.util.Collection[A]
   type jField                 = java.lang.reflect.Field
   type jFile                  = java.io.File
+  type jHashMap[K, V]         = java.util.HashMap[K, V]
   type jHashSet[A]            = java.util.HashSet[A]
   type jIterable[+A]          = java.lang.Iterable[A @uV]
   type jIterator[+A]          = java.util.Iterator[A @uV]
@@ -215,8 +222,9 @@ trait Creators {
   def orderedMap[K, V](keys: Seq[K], map: Map[K, V]): OrderedMap[K, V] = new OrderedMap[K, V](keys, map)
 
   // Java.
-  def jHashSet[A] : jHashSet[A] = new jHashSet[A]
-  def jList[A] : jArrayList[A]  = new jArrayList[A]
+  def jHashMap[K, V] : jHashMap[K, V] = new jHashMap[K, V]
+  def jHashSet[A] : jHashSet[A]       = new jHashSet[A]
+  def jList[A] : jArrayList[A]        = new jArrayList[A]
 
   // A few builders.
   def listBuilder[A](xs: A*)            = List.newBuilder[A] ++= xs

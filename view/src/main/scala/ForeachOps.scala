@@ -92,9 +92,4 @@ final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {
     case xs: PspList[A] => xs
     case _              => to[PspList]
   }
-
-  def toUniversalSet: EquivSet[A]                                 = EquivSet universal xs
-  def toReferenceSet(implicit ev: A <:< Ref[A]): EquivSet[Ref[A]] = EquivSet.reference[Ref[A]](xs map (x => ev(x)))
-  def toExtensionalSet: ExtensionalSet[A]                         = new ExtensionalSet(xs)
-  def toIntensionalSet: IntensionalSet[A]                         = IntensionalSet(xs)
 }
