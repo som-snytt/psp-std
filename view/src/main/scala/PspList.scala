@@ -31,8 +31,6 @@ object PspList {
 
 sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
   type Tail = PspList[A]
-  private def upcast[A1 >: A] : PspList[A1] = this.castTo[PspList[A1]]
-
   def reverse: PspList[A] = {
     def loop(in: PspList[A], out: PspList[A]): PspList[A] = if (in.isEmpty) out else loop(in.tail, in.head :: out)
     loop(this, PspList.empty[A])

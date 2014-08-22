@@ -3,7 +3,6 @@ package tests
 
 import psp.std._
 import macros._
-import scala.Console._
 import Generated._
 
 class Typecheck extends Bundle {
@@ -27,7 +26,7 @@ class Typecheck extends Bundle {
    */
   def divide(what: String, xs: Vector[Typechecked]): Unit = divide(what, xs, xs count (_.code startsWith "/* ok */"))
   def divide(what: String, xs: Vector[Typechecked], expectedTypecheck: Int): Unit = {
-    val (good, bad) = xs partition (_.typechecks)
+    val good = xs filter (_.typechecks)
     val passed = expectedTypecheck == good.size
     assert(passed, s"%s/%s expressions typechecked in %s, but expected %s/%s".format(good.size, xs.size, what, expectedTypecheck, xs.size))
   }

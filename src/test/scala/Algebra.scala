@@ -5,7 +5,7 @@ import psp.std._
 import org.scalacheck._
 import org.scalacheck.Prop.forAll
 import org.scalacheck.util.{ Pretty, ConsoleReporter }
-import Test.{ Result, Failed, TestCallback }
+import Test.{ Result, Failed }
 
 object AlgebraPoliceman {
   def pp(r: Result)                           = Pretty.pretty(r, Pretty.Params(0))

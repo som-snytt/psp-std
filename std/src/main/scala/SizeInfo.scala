@@ -118,7 +118,6 @@ object SizeInfo {
 final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
   import PartialOrder._
   import psp.std.SizeInfo._
-  import ThreeValue._
 
   def isZero    = lhs == Precise(Zero)
   def isFinite  = lhs.hiBound != Infinite

@@ -4,7 +4,6 @@ package tests
 import org.scalacheck._
 import psp.std._, SizeInfo._
 import org.scalacheck.Prop._
-import PartialOrder._
 import Gen._
 
 trait PspArb0                 { implicit def arbSize: Arbitrary[Size]         = Arbitrary(genSize)     }

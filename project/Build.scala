@@ -51,7 +51,7 @@ object Build extends sbt.Build with Versioning {
                  scalaVersion :=  "2.11.2",
                       version :=  "0.2.0-M2",
                   logBuffered :=  false,
-                scalacOptions ++= (Seq("-language:_") ++ opts),
+                scalacOptions ++= (Seq("-Ywarn-unused-import", "-Ywarn-unused", "-Ywarn-dead-code", "-language:_") ++ opts),
                  javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
                      licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
       publishArtifact in Test :=  false,

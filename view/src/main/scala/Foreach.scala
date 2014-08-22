@@ -1,7 +1,6 @@
 package psp
 package core
 
-import impl._
 import psp.std._, SizeInfo._
 
 trait Foreach[+A] extends Any with HasSizeInfo {

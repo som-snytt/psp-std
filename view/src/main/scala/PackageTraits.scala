@@ -1,7 +1,6 @@
 package psp
 package core
 
-import impl._
 import psp.std._
 
 trait CollectionLow {

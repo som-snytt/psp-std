@@ -2,7 +2,6 @@ package psp
 package core
 
 import scala.{ collection => sc }
-import sc.{ GenIterable => GIterable, GenSeq => GSeq }
 import impl._
 import psp.std._
 

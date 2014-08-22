@@ -46,7 +46,6 @@ package macros {
 
     private def fail(msg: String) = c.abort(c.enclosingPosition, msg)
     private def check(code: String): c.Expr[Typechecked] = {
-      def treeStr(tree: Tree) = "%s: %s".format(tree, tree.tpe)
       def typed()             = scala.util.Try(c.typecheck(c.parse(code)))
       def good(tree: Tree)    = q"Typechecked.typed($code, ${tree.toString}, ${tree.tpe.toString})"
       def bad(t: Throwable)   = q"Typechecked.error($code, ${t.getMessage})"

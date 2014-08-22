@@ -1,8 +1,5 @@
 package psp
 
-import scala.{ collection => sc }
-import sc.{ mutable => scm, immutable => sci }
-import psp.core.impl._
 import psp.std._
 
 package core {

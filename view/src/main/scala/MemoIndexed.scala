@@ -2,7 +2,6 @@ package psp
 package core
 
 import java.{ lang => jl }
-import impl._
 import psp.std._, Index.zero
 
 final class MemoIndexed[+A](xs: Foreach[A]) extends Indexed[A] {

@@ -17,7 +17,6 @@ final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
 
   private[this] def indices: Direct[Int] = if (isFull) indexed map bufferIndex force else indexed
   private[this] def andThis(op: Unit): this.type = this
-  private[this] def intSize = size.value
 
   private def indexed = IntRange.until(0, size.value)
 
