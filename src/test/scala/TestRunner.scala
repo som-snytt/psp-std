@@ -29,9 +29,7 @@ object TestRunner {
     )
     val results = bundles mapOnto (_.run)
     results.keys.toList filterNot results match {
-      case Nil =>
-        println("\nAll tests passed.")
-        println(ansi.colorMap.to_s)
+      case Nil => println("\nAll tests passed.")
       case ks  => println("Some tests failed in bundles: " + ks.mkString(", ")) ; throw new Exception
     }
   }
