@@ -31,6 +31,7 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
   def length                      = xs.length
   def bytes: Array[Byte]          = xs.getBytes
   def words: Vector[String]       = (xs.trim split "\\s+").toVector
+  def wordSet: Set[String]        = words.toSet
   def lines: Vector[String]       = (xs split EOL).toVector
   def * (n: Int): String          = Range.inclusive(1, n) map (_ => xs) mkString ""
   def format(args : Any*): String = java.lang.String.format(xs, args map unwrapArg: _*)

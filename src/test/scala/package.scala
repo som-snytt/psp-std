@@ -51,6 +51,7 @@ package tests {
     def commutative(f: BinOp[A]): Forall2[A]               = (a, b)    => f(a, b) === f(b, a)
     def absorption(f: BinOp[A], g: BinOp[A]): Forall2[A]   = (a, b)    => f(a, g(a, b)) === a
     def identity(f: BinOp[A], id: A): Forall1[A]           = a         => f(a, id) === a
+    def idempotence(f: BinOp[A]): Forall1[A]               = a         => f(a, a) === a
   }
   abstract class AlgebraLaws[A : Eq : BooleanAlgebra] extends Laws[A] {
     def complement(f: BinOp[A], id: A): Forall1[A] = a => f(a, !a) === id

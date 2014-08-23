@@ -17,9 +17,9 @@ object TestRunner {
 
   def main(args: Array[String]): Unit = {
     val bundles = Seq[Bundle](
-      new AlgebraPoliceman[Boolean]("Boolean"),
+      new AlgebraPoliceman[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
       new AlgebraPoliceman[Predicate[Int]]("Int => Boolean"),
-      new AlgebraPoliceman[Set[Int]]("Set[Int]"),
+      new AlgebraPoliceman[Set[Int]]("Set[Int]") { override def join = "||" ; override def meet = "&&" },
       new ValuesSpec,
       new SizeInfoSpec,
       new OperationCounts,

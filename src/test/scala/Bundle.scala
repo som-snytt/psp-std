@@ -2,7 +2,7 @@ package psp
 package tests
 
 import psp.std._, psp.core._
-import org.scalacheck.Test, Test._
+import org.scalacheck.Test
 
 // TODO - leverage now-available it-doesn't-typecheck test machinery.
 class Nats extends Bundle {
@@ -50,9 +50,8 @@ trait ScalacheckBundle extends Bundle {
 
   def pp(r: Result) = Pretty.pretty(r, Pretty.Params(0))
   def runOne(p: NamedProp): Boolean = Test.check(p.prop)(identity) match {
-    case r @ Result(Failed(args, labels), succeeded, discarded, _, _) => andFalse(println("- FAIL  %s\nFalsified after %s passed tests\n%s".format(p.label, succeeded, pp(r))))
-    case x if x.passed                                                => andTrue(println("+ PASS  %s".format(p.label)))
-    case x                                                            => andFalse(println("+ FAIL  %s".format(p.label)))
+    case x if x.passed => andTrue(println("+ PASS  %s".format(p.label)))
+    case r             => andFalse(println("- FAIL  %s\nFalsified after %s passed tests\n%s".format(p.label, r.succeeded, pp(r))))
   }
 
   def run() = props map runOne forall (x => x)
