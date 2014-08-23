@@ -19,7 +19,7 @@ runTests () {
 }
 
 stripTerminalEscapeCodes () {
-  sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGKM]//g"
+  sed -r 's/\x1B\[[0-9;]*[JKmsu]//g'
 }
 
 mkRegex () { ( IFS="|" && echo "$*" ); }
