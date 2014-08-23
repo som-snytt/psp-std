@@ -21,14 +21,6 @@ stripTerminalEscapeCodes () {
 }
 mkRegex () { ( IFS="|" && echo "$*" ); }
 
-filterOutput() {
-  while read line; do
-    if ! [[ $(echo $line | stripTerminalEscapeCodes) =~ $excludeRegex ]] ; then
-      printf "%s\n" "$line"
-    fi
-  done
-}
-
 main() {
   # sbt output filter
   local excludeRegex=$(mkRegex \
@@ -38,6 +30,13 @@ main() {
     'ignoring option MaxPermSize' \
     'one warning found'
   )
+  filterOutput() {
+    while read line; do
+      if ! [[ $(echo $line | stripTerminalEscapeCodes) =~ $excludeRegex ]] ; then
+        printf "%s\n" "$line"
+      fi
+    done
+  }
   echo "[info] $(date) - starting sbt test"
   (set -o pipefail && runTests |& filterOutput)
 }
