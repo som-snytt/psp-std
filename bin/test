@@ -3,7 +3,7 @@
 
 uname="$(uname -a)"
 
-runTravis () {
+runOnTravis () {
   cat <<EOM
 ------------------------------------------------------------
 -------------------- End Travis Prelude --------------------
@@ -13,22 +13,36 @@ EOM
   $(dirname $0)/get-cache
 }
 runTests () {
-  sbt -no-colors test || exit 1
+  sbt test || exit 1
   echo "[info] $(date) - finished sbt test"
+}
+stripTerminalEscapeCodes () {
+  sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[mGKM]//g"
 }
 mkRegex () { ( IFS="|" && echo "$*" ); }
 
+filterOutput() {
+  while read line; do
+    if ! [[ $(echo $line | stripTerminalEscapeCodes) =~ $excludeRegex ]] ; then
+      printf "%s\n" "$line"
+    fi
+  done
+}
+
+main() {
+  # sbt output filter
+  local excludeRegex=$(mkRegex \
+    '^\[info\] (Resolving|Loading|Updating|Packaging|Done updating|Done packaging)' \
+    '[.]bintray[/][.]credentials' \
+    're[-]run with [-]unchecked for details' \
+    'ignoring option MaxPermSize' \
+    'one warning found'
+  )
+  echo "[info] $(date) - starting sbt test"
+  (set -o pipefail && runTests |& filterOutput)
+}
+
 echo "[info] $uname"
-[[ $uname = *testing-worker-* ]] && runTravis  # only download the cache on travis
-echo "[info] $(date) - starting sbt test"
+[[ $uname = *testing-worker-* ]] && runOnTravis  # only download the cache on travis
 
-# sbt output filter
-regex=$(mkRegex \
-  '^\[info\] (Resolving|Loading|Updating|Packaging|Done updating|Done packaging)' \
-  '[.]bintray[/][.]credentials' \
-  're[-]run with [-]unchecked for details' \
-  'ignoring option MaxPermSize' \
-  'one warning found'
-)
-
-runTests |& egrep --line-buffered -v "$regex"
+main $@
