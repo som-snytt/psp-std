@@ -82,21 +82,22 @@ object Build extends sbt.Build with Versioning {
    *  It's harder to get all those at once than you may think.
    */
   lazy val root = project in file(".") dependsOn (std, macros, view) aggregate (std, macros, view) settings (common: _*) settings (
-                          name :=  "psp-std-root",
-                   description :=  "psp's project which exists to please sbt",
-                   shellPrompt :=  (s => "%s#%s> ".format(name.value, (Project extract s).currentRef.project)),
-    initialCommands in console :=  imports,
-          aggregate in publish :=  false,
-     aggregate in publishLocal :=  false,
-               publishArtifact :=  false,
-                       publish <<= runPublish(publish),
-                  publishLocal <<= runPublish(publishLocal),
-                      commands +=  Command.args("mima", "<version>")(mimaCommand),
-                      commands +=  Command.command("ccon")(s => s set (libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value) runTask (console in Compile) _1),
-           testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
-           libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
-             mainClass in Test :=  Some("psp.tests.TestRunner"),
-                          test <<= run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
+                                   name :=  "psp-std-root",
+                            description :=  "psp's project which exists to please sbt",
+                            shellPrompt :=  (s => "%s#%s> ".format(name.value, (Project extract s).currentRef.project)),
+             initialCommands in console :=  imports,
+                   aggregate in publish :=  false,
+              aggregate in publishLocal :=  false,
+                        publishArtifact :=  false,
+                                publish <<= runPublish(publish),
+                           publishLocal <<= runPublish(publishLocal),
+    scalacOptions in console in Compile :=  Seq("-language:_"),
+                               commands +=  Command.args("mima", "<version>")(mimaCommand),
+                               commands +=  Command.command("ccon")(s => s set (libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value) runTask (console in Compile) _1),
+                    testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
+                    libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
+                      mainClass in Test :=  Some("psp.tests.TestRunner"),
+                                   test <<= run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
   )
 
   implicit class ProjectOps(val p: Project) {

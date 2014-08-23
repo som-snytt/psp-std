@@ -27,6 +27,11 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Ali
   /** It's like "" + x, except, you know, for kids.
    */
   val `""` = ShowDirect("")
+
+  final val MaxInt  = Int.MaxValue
+  final val MinInt  = Int.MinValue
+  final val MaxLong = Long.MaxValue
+  final val MinLong = Long.MinValue
 }
 
 /** Aliases for types I've had to import over and over and over again.
