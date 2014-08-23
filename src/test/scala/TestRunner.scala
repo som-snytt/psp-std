@@ -16,19 +16,21 @@ object TestRunner {
   implicit def Fun[A : Arbitrary : Eq] = Eq[Predicate[A]]((f, g) => Test.check(forAll((x: A) => f(x) === g(x)))(identity).passed)
 
   def main(args: Array[String]): Unit = {
-    val results = List[Boolean](
-      AlgebraPoliceman.check[Boolean]("Boolean"),
-      AlgebraPoliceman.check[Predicate[Int]]("Predicate[Int]"),
-      AlgebraPoliceman.check[Set[Int]]("Set[Int]"),
-      (new OperationCounts).run(),
-      (new Nats).run(),
-      (new Collections).run(),
-      (new Typecheck).run()
+    val bundles = Seq[Bundle](
+      new AlgebraPoliceman[Boolean]("Boolean"),
+      new AlgebraPoliceman[Predicate[Int]]("Int => Boolean"),
+      new AlgebraPoliceman[Set[Int]]("Set[Int]"),
+      new ValuesSpec,
+      new SizeInfoSpec,
+      new OperationCounts,
+      new Nats,
+      new Collections,
+      new Typecheck
     )
-
-    if (results reduceLeft (_ && _))
-      println("\nAll tests passed.")
-    else
-      throw new Exception("Some tests failed.")
+    val results = bundles mapOnto (_.run)
+    results.keys.toList filterNot results match {
+      case Nil => println("\nAll tests passed.")
+      case ks  => println("Some tests failed in bundles: " + ks.mkString(", ")) ; throw new Exception
+    }
   }
 }

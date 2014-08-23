@@ -156,6 +156,7 @@ trait ImplicitRemoval {
 }
 
 trait Utility {
+  def ?[A](implicit value: A): A                         = value // aka implicitly
   def andFalse(x: Unit): Boolean                         = false
   def andTrue(x: Unit): Boolean                          = true
   def asExpected[A](body: Any): A                        = body.castTo[A]

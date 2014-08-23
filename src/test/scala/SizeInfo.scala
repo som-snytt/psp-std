@@ -1,17 +1,15 @@
 package psp
 package tests
 
-import org.scalacheck._
+import org.scalacheck._, Prop._, Gen._
 import psp.std._, SizeInfo._
-import org.scalacheck.Prop._
-import Gen._
 
 trait PspArb0                 { implicit def arbSize: Arbitrary[Size]         = Arbitrary(genSize)     }
 trait PspArb1 extends PspArb0 { implicit def arbSizeInfo: Arbitrary[SizeInfo] = Arbitrary(genSizeInfo) }
 trait PspArb2 extends PspArb1 { implicit def arbAtomic: Arbitrary[Atomic]     = Arbitrary(genAtomic)   }
 trait PspArb3 extends PspArb2 { implicit def arbPrecise: Arbitrary[Precise]   = Arbitrary(genPrecise)  }
 
-object SizeInfoSpec extends Properties("SizeInfo") with PspArb3 {
+class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
   type SI = SizeInfo
   type BinOp[T] = (T, T) => T
   type Tried[T] = Either[Throwable, T]
@@ -38,17 +36,20 @@ object SizeInfoSpec extends Properties("SizeInfo") with PspArb3 {
     case _                                => r
   }
 
+  def bundle = "SizeInfo"
   // ...Aaaaand right on cue, a bunch of these tests broke until I added a type annotation.
-  property("`+` on precises")      = forAll((s: Precise, n: Size) => (s + n).size == s.size + n)
-  property("s1 <= (s1 max s2)")    = certain[Atomic, Atomic]((s1, s2) => (s1: SI) <= (s1 max s2))
-  property("s1 >= (s1 min s2)")    = certain[Atomic, Atomic]((s1, s2) => (s1: SI) >= (s1 min s2))
-  property("s1 <= (s1 + s2)")      = certain[Atomic, Atomic]((s1, s2) => (s1: SI) <= (s1 + s2))
-  property("s1 >= (s1 - s2)")      = certain[Atomic, Precise]((s1, s2) => (s1: SI) >= (s1 - s2))
-  property("<inf> + n")            = certain((s1: SI) => (Infinite + s1) <==> Infinite)
-  property("`+` is associative")   = associative[SI](_ + _)
-  property("`max` is associative") = associative[SI](_ max _)
-  property("`min` is associative") = associative[SI](_ min _)
-  property("`+` is commutative")   = commutative[SI](_ + _)
-  property("`max` is commutative") = commutative[SI](_ max _)
-  property("`min` is commutative") = commutative[SI](_ min _)
+  def props = Seq[NamedProp](
+    "`+` on precises"      -> forAll((s: Precise, n: Size) => (s + n).size == s.size + n),
+    "s1 <= (s1 max s2)"    -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) <= (s1 max s2)),
+    "s1 >= (s1 min s2)"    -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) >= (s1 min s2)),
+    "s1 <= (s1 + s2)"      -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) <= (s1 + s2)),
+    "s1 >= (s1 - s2)"      -> certain[Atomic, Precise]((s1, s2) => (s1: SI) >= (s1 - s2)),
+    "<inf> + n"            -> certain((s1: SI) => (Infinite + s1) <==> Infinite),
+    "`+` is associative"   -> associative[SI](_ + _),
+    "`max` is associative" -> associative[SI](_ max _),
+    "`min` is associative" -> associative[SI](_ min _),
+    "`+` is commutative"   -> commutative[SI](_ + _),
+    "`max` is commutative" -> commutative[SI](_ max _),
+    "`min` is commutative" -> commutative[SI](_ min _)
+  )
 }
