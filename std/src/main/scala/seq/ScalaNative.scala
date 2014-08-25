@@ -19,7 +19,6 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   def filter(p: Predicate[A]): MapTo[A]                   = xs filter p
   def filterNot(p: Predicate[A]): MapTo[A]                = xs filterNot p
   def flatMap[B](f: A => Foreach[B]): MapTo[B]            = xs flatMap (x => f(x).trav)
-  def flatten[B](implicit ev: A <:< Foreach[B]): MapTo[B] = xs flatMap (x => ev(x).trav)
   def foreach(f: A => Unit): Unit                         = xs foreach f
   def labeled(label: String): MapTo[A]                    = this
   def map[B](f: A => B): MapTo[B]                         = xs map f

@@ -1,8 +1,6 @@
 package psp
 package std
 
-import io._
-
 /** Sorry there's no way to put mutable and immutable into the namespace.
  *  You can import them individually into every file until you die.
  */
@@ -28,10 +26,11 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Aliases with Arro
    */
   val `""` = Shown("")
 
-  final val MaxInt  = Int.MaxValue
-  final val MinInt  = Int.MinValue
-  final val MaxLong = Long.MaxValue
-  final val MinLong = Long.MinValue
+  final val InputStreamBufferSize = 8192
+  final val MaxInt                = Int.MaxValue
+  final val MinInt                = Int.MinValue
+  final val MaxLong               = Long.MaxValue
+  final val MinLong               = Long.MinValue
 
   // With type aliases like these which include a type selection,
   // sometimes substitution fails and you get messages like
@@ -157,8 +156,8 @@ trait PackageMethods {
   def noNull[A](value: A, orElse: => A): A               = if (value == null) orElse else value
   def nth(x: Int): Nth                                   = Nth(x)
   def nullAs[A] : A                                      = (null: AnyRef).castTo[A]
-  def nullLoader(): NullClassLoader                      = new NullClassLoader
-  def nullStream(): InputStream                          = new NullIputStream
+  def nullLoader(): ClassLoader                          = NullClassLoader
+  def nullStream(): InputStream                          = NullInputStream
   def offset(x: Int): Offset                             = Offset(x)
   def orderBy[A]                                         = new OrderBy[A]
   def printResult[A](msg: String)(result: A): A          = try result finally log(s"$msg: $result")

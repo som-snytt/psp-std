@@ -2,18 +2,28 @@ package psp
 package std
 package api
 
-trait View[+A] extends Any with Foreach[A] with View.Iso[A] {
+trait View[+A] extends Any with Foreach[A] {
   type MapTo[+X] <: View[X]
 
-  def calls: Int
-  def description: String
-  def viewChain: List[View[_]]
-
   def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]
-  def map[B](f: A => B): MapTo[B]
-  def flatten[B](implicit ev: A <:< Foreach[B]): MapTo[B]
-  def flatMap[B](f: A => Foreach[B]): MapTo[B]
+  def calls: Int
   def collect[B](pf: A ?=> B): MapTo[B]
+  def description: String
+  def drop(n: Int): MapTo[A]
+  def dropRight(n: Int): MapTo[A]
+  def dropWhile(p: Predicate[A]): MapTo[A]
+  def filter(p: Predicate[A]): MapTo[A]
+  def filterNot(p: Predicate[A]): MapTo[A]
+  def flatMap[B](f: A => Foreach[B]): MapTo[B]
+  def labeled(label: String): MapTo[A]
+  def map[B](f: A => B): MapTo[B]
+  def sized(size: Size): MapTo[A]
+  def slice(range: IndexRange): MapTo[A]
+  def take(n: Int): MapTo[A]
+  def takeRight(n: Int): MapTo[A]
+  def takeWhile(p: Predicate[A]): MapTo[A]
+  def viewChain: List[View[_]]
+  def withFilter(p: Predicate[A]): MapTo[A]
 }
 
 object View {
@@ -28,23 +38,5 @@ object View {
 
     def native(implicit z: Builds[A, Repr]): Repr
     def force[That](implicit z: Builds[A, That]): That
-  }
-  trait Iso[+A] extends Any {
-    self: View[A] =>
-
-    private[this] type This = MapTo[A]
-
-    def drop(n: Int): This
-    def dropRight(n: Int): This
-    def dropWhile(p: Predicate[A]): This
-    def filter(p: Predicate[A]): This
-    def filterNot(p: Predicate[A]): This
-    def labeled(label: String): This
-    def sized(size: Size): This
-    def slice(range: IndexRange): This
-    def take(n: Int): This
-    def takeRight(n: Int): This
-    def takeWhile(p: Predicate[A]): This
-    def withFilter(p: Predicate[A]): This
   }
 }

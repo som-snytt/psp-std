@@ -54,7 +54,6 @@ class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
     final def filter(p: Predicate[A]): MapTo[A]                   = Filtered(this, p)
     final def filterNot(p: Predicate[A]): MapTo[A]                = Filtered(this, (x: A) => !p(x))
     final def flatMap[B](f: A => Foreach[B]): MapTo[B]            = FlatMapped(this, f)
-    final def flatten[B](implicit ev: A <:< Foreach[B]): MapTo[B] = FlatMapped(this, ev)
     final def labeled(label: String): MapTo[A]                    = LabeledView(this, label)
     final def map[B](f: A => B): MapTo[B]                         = Mapped(this, f)
     final def sized(size: Size): MapTo[A]                         = Sized(this, size)

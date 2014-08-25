@@ -5,14 +5,8 @@ import scala.collection.immutable
 import psp.std._
 
 class Collections extends Bundle {
-  def checkResult[T: ClassTag](result: Object) = assert(classTag[T].runtimeClass isAssignableFrom result.getClass)
-
   val xs = immutable.BitSet(1, 2, 3)
-
-  implicit object StringIsCharSequence extends DirectAccess.Impl[Char, String, Direct] {
-    def length(repr: String): Size               = Size(repr.length)
-    def elemAt(repr: String)(index: Index): Char = repr charAt index.value
-  }
+  def checkResult[T: ClassTag](result: Object) = assert(classTag[T].runtimeClass isAssignableFrom result.getClass)
 
   def run(): Boolean = {
     checkResult[immutable.BitSet](xs.m map (_.toString.length) native)

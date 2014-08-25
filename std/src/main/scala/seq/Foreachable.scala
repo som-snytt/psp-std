@@ -37,6 +37,10 @@ object DirectAccess {
     type CC[X] = M[X]
     type A     = AIn
   }
+  object StringIs extends Impl[Char, String, Direct] {
+    def length(repr: String): Size               = Size(repr.length)
+    def elemAt(repr: String)(index: Index): Char = repr charAt index.value
+  }
   final class ArrayIs[A: ClassTag] extends Impl[A, Array[A], Direct] {
     def length(repr: Array[A]): Size            = Size(repr.length)
     def elemAt(repr: Array[A])(index: Index): A = repr(index.value)
@@ -50,6 +54,7 @@ object DirectAccess {
     def elemAt(repr: Direct[A])(index: Index): A = repr elemAt index
   }
 
+  implicit def stringIs: StringIs.type                                                                    = StringIs
   implicit def pspIndexedIs[A] : PspIndexedIs[A]                                                          = new PspIndexedIs[A]
   implicit def arrayIs[A: ClassTag] : ArrayIs[A]                                                          = new ArrayIs[A]
   implicit def indexedSeqIs[CC[X] <: IndexedSeq[X], A](implicit z: Builds[A, CC[A]]): IndexedSeqIs[CC, A] = new IndexedSeqIs[CC, A]

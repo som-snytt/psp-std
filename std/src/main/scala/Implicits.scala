@@ -33,13 +33,6 @@ trait Implicits extends LowPriorityPspStd {
   implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A] = new ForeachOperations(xs)
   implicit def implicitHasForeach[R: Has.Foreach](xs: R)                   = new ForeachOperations(Foreach(?[Has.Foreach[R]] hasForeach xs))
 
-  implicit def directBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) =>
-    xs match {
-      case xs: Direct[A] => xs
-      case _             => Direct.elems(xs.toSeq: _*)
-    }
-  )
-
   // Typeclass requiring extension methods. There is something very depraved going on here,
   // see if you can tell what it is.
   implicit def tclassShowDirectOps[A: Show](x: A): TClass.ShowDirectOps        = new TClass.ShowDirectOps(x.to_s)
@@ -54,8 +47,10 @@ trait Implicits extends LowPriorityPspStd {
   implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]                                       = new Ops.EqOps[A](x)
   implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)
   implicit def opsGTOnce[CC[X] <: GTOnce[X], A](xs: CC[A]): Ops.GTOnce[CC, A]         = new Ops.GTOnce[CC, A](xs)
-  implicit def opsInputStream(x: InputStream): io.Ops.InputStreamOps                  = new io.Ops.InputStreamOps(x)
+  implicit def opsInputStream(x: InputStream): Ops.InputStreamOps                     = new Ops.InputStreamOps(x)
   implicit def opsInt(x: Int): Ops.IntOps                                             = new Ops.IntOps(x)
+  implicit def opsIterator[A](it: jIterator[A]): Ops.IteratorOps[A]                   = new Ops.IteratorOps(it)
+  implicit def opsCollection[A](x: jAbstractCollection[A]): Ops.jCollectionOps[A]     = new Ops.jCollectionOps(x)
   implicit def opsLong(x: Long): Ops.LongOps                                          = new Ops.LongOps(x)
   implicit def opsMap[K, V](xs: sc.Map[K, V]): Ops.Map[K, V]                          = new Ops.Map[K, V](xs)
   implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]                           = new Ops.OptionOps[A](x)
@@ -72,40 +67,14 @@ trait Implicits extends LowPriorityPspStd {
  *  This list is subject to renegotiation.
  */
 trait ImplicitRemoval {
-  val any2stringadd              = null
-  val fallbackStringCanBuildFrom = null
-  val tuple2ToZippedOps          = null
-  val tuple3ToZippedOps          = null
-  val unwrapString               = null
-
-  val Boolean2boolean = null
-  val Byte2byte       = null
-  val Character2char  = null
-  val Double2double   = null
-  val Float2float     = null
-  val Integer2int     = null
-  val Long2long       = null
-  val Short2short     = null
-
-  val genericWrapArray = null
-  val wrapBooleanArray = null
-  val wrapByteArray    = null
-  val wrapCharArray    = null
-  val wrapDoubleArray  = null
-  val wrapFloatArray   = null
-  val wrapIntArray     = null
-  val wrapLongArray    = null
-  val wrapRefArray     = null
-  val wrapShortArray   = null
-  val wrapString       = null
-  val wrapUnitArray    = null
-
-  // We reimplement these.
-  val augmentString   = null
-  val unaugmentString = null
-
-  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
+  val any2stringadd, fallbackStringCanBuildFrom                                                           = null
+  val tuple2ToZippedOps, tuple3ToZippedOps                                                                = null
+  val wrapString, unwrapString, augmentString, unaugmentString                                            = null
+  val StringAdd, ArrowAssoc, Boolean2boolean, Byte2byte, Character2char                                   = null
+  val Double2double, Float2float, Integer2int, Long2long, Short2short                                     = null
+  val genericWrapArray, wrapBooleanArray, wrapByteArray, wrapCharArray, wrapDoubleArray, wrapFloatArray   = null
+  val wrapIntArray, wrapLongArray, wrapRefArray, wrapShortArray, wrapUnitArray                            = null
   val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
-  val StringAdd, ArrowAssoc                                                                               = null
+  // val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
   // val genericArrayOps                                                                                     = null
 }

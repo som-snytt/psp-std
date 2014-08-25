@@ -208,8 +208,47 @@ object Ops {
   final class Function1Ops[-T, +R](private val f: T => R) extends AnyVal {
     def labeled(label: String): T => R = new LabeledFunction(f, label)
   }
+  final class InputStreamOps(private val in: InputStream) extends AnyVal {
+    private def wrap[A] (f: InputStream => A): A = {
+      val in = this.buffered()
+      try f(in) finally in.close()
+    }
+    def slurp(): Array[Byte] = slurp(-1)
+    def slurp(len: Int): Array[Byte] = {
+      val buf = Array.newBuilder[Byte]
+      if (len >= 0) buf sizeHint len
+      wrap { in =>
+        var offset = 0
+        val arr = new Array[Byte](InputStreamBufferSize)
+        def loop() {
+          if (offset < len || len < 0) {
+            val read = in.read(arr, 0, InputStreamBufferSize)
+            if (read >= 0) {
+              offset += read
+              buf ++= (arr take read)
+              loop()
+            }
+          }
+        }
+        loop()
+        buf.result doto (xs => assert(len < 0 || xs.length == len, s"Could not read entire source ($offset of $len bytes)"))
+      }
+    }
+    def buffered(): BufferedInputStream = in match {
+      case buf: BufferedInputStream => buf
+      case _                        => new BufferedInputStream(in)
+    }
+  }
+  final class IteratorOps[A](it: jIterator[A]) {
+    def toScalaIterator: sIterator[A] = new ScalaIterator(it)
+    def toForeach: Foreach[A]         = each(toScalaIterator)
+  }
+  final class jCollectionOps[A](private val xs: jAbstractCollection[A]) extends AnyVal {
+    def toForeach: Foreach[A]         = each(toTraversable)
+    def toTraversable: Traversable[A] = toScalaIterator.toTraversable
+    def toScalaIterator: sIterator[A] = new ScalaIterator(xs.iterator)
+  }
 }
-
 
 final class PartialFunctionOps[T, R](private val pf: T ?=> R) extends AnyVal {
   def labeled(label: String): T ?=> R     = new LabeledPartialFunction(pf, label)
@@ -222,8 +261,4 @@ final class LabeledFunction[-T, +R](f: T => R, val label: String) extends (T => 
 final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label: String) extends PartialFunction[T, R] with Labeled {
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R    = pf(x)
-}
-final class ScalaIterator[A](xs: jIterator[A]) extends scala.Iterator[A] {
-  def next    = xs.next
-  def hasNext = xs.hasNext
 }

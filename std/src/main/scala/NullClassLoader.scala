@@ -1,7 +1,12 @@
 package psp
 package std
 
-/** An empty classloader with enough identity that we can
- *  distinguish it as such.
+/** Wrapping java classes.
  */
-final class NullClassLoader extends ClassLoader
+object NullClassLoader extends ClassLoader
+object NullInputStream extends InputStream { def read(): Int = -1 }
+
+final class ScalaIterator[A](xs: jIterator[A]) extends scala.Iterator[A] {
+  def next    = xs.next
+  def hasNext = xs.hasNext
+}

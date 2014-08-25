@@ -7,6 +7,8 @@ trait Direct[+A] extends Any with Indexed[A] with HasPreciseSize
 trait DirectLeaf[A] extends Any with Direct[A] with Invariant[A] { def contains(x: A): Boolean }
 
 object Direct {
+  implicit def newBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) => xs maybe { case xs: Direct[A] => xs } or Direct.elems(xs.toSeq: _*))
+
   abstract class IndexedImpl[+A](val size: Size) extends Direct[A] with HasPreciseSize {
     def sizeInfo = size
     @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
