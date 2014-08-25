@@ -46,19 +46,6 @@ object BooleanAlgebra {
     def zero: R            = ConstantFalse
     def one: R             = ConstantTrue
   }
-
-  final class HasAlgebra[A](lhs: A)(implicit algebra: BooleanAlgebra[A]) {
-    import algebra._
-
-    def && (rhs: A): A  = if (isOne) rhs else if (rhs.isOne) lhs else if (lhs.isZero || rhs.isZero) zero else and(lhs, rhs)
-    def || (rhs: A): A  = if (isZero) rhs else if (rhs.isZero) lhs else if (lhs.isOne || rhs.isOne) one else or(lhs, rhs)
-    def unary_! : A     = if (isZero) one else if (isOne) zero else not(lhs)
-    def isZero: Boolean = zero ref_== lhs
-    def isOne: Boolean  = one ref_== lhs
-  }
-  final class OnAlgebra[A](algebra: BooleanAlgebra[A]) {
-    def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new MappedAlgebra[A, B](algebra, f, g)
-  }
   implicit def predicateAlgebra[A] : PredicateAlgebra[A] = new PredicateAlgebra[A]
   implicit def scalaSetAlgebra[A] : ScalaSet.Algebra[A]  = new ScalaSet.Algebra[A]
 }

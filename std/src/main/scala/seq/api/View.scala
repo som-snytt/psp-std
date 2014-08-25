@@ -1,9 +1,6 @@
 package psp
 package std
-package core
 package api
-
-// import psp.std._
 
 trait View[+A] extends Any with View.Constructors[A] with View.Iso[A] with View.MapElement[A] {
   type MapTo[+X] <: View[X]

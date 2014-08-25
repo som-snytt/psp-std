@@ -1,6 +1,5 @@
 package psp
 package std
-package core
 
 class Counter() {
   private[this] var counted = 0

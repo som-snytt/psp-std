@@ -4,10 +4,10 @@ package std
 /** The classic type class for encoding value equivalence.
  */
 
-trait Eq[A] {
+trait Eq[A] extends Any {
   def equiv(x: A, y: A): Boolean
 }
-trait HashEq[A] extends Eq[A] {
+trait HashEq[A] extends Any with Eq[A] {
   def hash(x: A): Int
 }
 
@@ -16,7 +16,7 @@ object HashEq {
 
   def universal[A]           = apply[A](_ == _, _.##)
   def reference[A <: AnyRef] = apply[A](_ eq _, System.identityHashCode)
-  def shown[A: Show]         = apply[A](_.to_s === _.to_s, _.to_s.##)
+  def shown[A: Show]         = apply[A](_.to_s == _.to_s, _.to_s.##)
 
   def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): HashEq[A] = new HashEq[A] {
     def equiv(x: A, y: A) = cmp(x, y)
@@ -25,27 +25,29 @@ object HashEq {
 }
 
 object Eq {
-  def by[A] : By[A] = new By[A]
+  def apply[A](f: (A, A) => Boolean): EqClass[A] = new EqClass[A](f)
 
-  def apply[A](f: (A, A) => Boolean): Eq[A] = new Eq[A] { def equiv(x: A, y: A) = f(x, y) }
+  implicit val stringEq  = Eq[String](_ == _)
+  implicit val byteEq    = Eq[Byte](_ == _)
+  implicit val shortEq   = Eq[Short](_ == _)
+  implicit val charEq    = Eq[Char](_ == _)
+  implicit val intEq     = Eq[Int](_ == _)
+  implicit val longEq    = Eq[Long](_ == _)
+  implicit val floatEq   = Eq[Float](_ == _)
+  implicit val doubleEq  = Eq[Double](_ == _)
+  implicit val booleanEq = Eq[Boolean](_ == _)
+  implicit val unitEq    = Eq[Unit]((x, y) => true)
 
-  implicit def stringEq: Eq[String]                      = Eq[String](_ == _)
-  implicit def seqEq[CC[X] <: Seq[X], A: Eq] : Eq[CC[A]] = Eq[CC[A]]((xs, ys) => (xs corresponds ys)(_ === _))
-  implicit def arrayEq[A: Eq] : Eq[Array[A]]             = Eq[Array[A]](_.toSeq === _.toSeq)
-  implicit def anyValEq[A <: AnyVal] : Eq[A]             = Eq[A](_ == _)
+  implicit def mapEq[CC[X, Y] <: Map[X, Y], K: Eq, V: Eq] : Eq[CC[K, V]] = Eq[CC[K, V]]((xs, ys) => xs.keys.toSet === ys.keys.toSet && xs.keys.forall(k => xs(k) === ys(k)))
+  implicit def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]]             = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
+  implicit def seqEq[CC[X] <: Seq[X], A: Eq] : Eq[CC[A]]                 = Eq[CC[A]]((xs, ys) => (xs corresponds ys)(_ === _))
+  implicit def arrayEq[A: Eq] : Eq[Array[A]]                             = Eq[Array[A]](_.toSeq == _.toSeq)
 
-  final class Ops[A](val x: A) extends AnyVal {
-    def ===(that: A)(implicit eq: Eq[A]): Boolean = eq.equiv(x, that)
-    def !==(that: A)(implicit eq: Eq[A]): Boolean = !(this === that)
-  }
-
-  final class By[A] {
-    def apply[B](f: A => B)(implicit eqs: Eq[B]): Eq[A] = eqs on f
-  }
-  final class EqClass[A](f: (A, A) => Boolean) extends Eq[A] {
-    def equiv(x: A, y: A) = f(x, y)
-  }
-  final class EqOps[A](val eqs: Eq[A]) extends AnyVal {
-    def on[B](f: B => A): Eq[B] = new EqClass[B]((x, y) => eqs.equiv(f(x), f(y)))
+  final class EqClass[A](private val f: (A, A) => Boolean) extends AnyVal with Eq[A] {
+    def equiv(x: A, y: A): Boolean = f(x, y)
   }
 }
+
+class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = ord on f   }
+class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = equiv on f }
+class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = show on f  }

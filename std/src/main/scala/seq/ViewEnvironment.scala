@@ -1,8 +1,6 @@
 package psp
 package std
-package core
 
-// import psp.std._
 import SizeInfo._
 
 object AtomicView {
@@ -28,7 +26,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
   }
 
   final class LinearView(val tc: SequentialAccessType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
-    type Tail = psp.std.core.LinearView[Repr, tc.type]
+    type Tail = std.LinearView[Repr, tc.type]
 
     def description = ""
     def isEmpty     = tc isEmpty repr
@@ -39,9 +37,9 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   }
 
-  final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with IndexedLeafImpl[A] {
-    def isDefinedAt(index: Index): Boolean                  = size containsIndex index
+  final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with DirectLeaf[A] {
     def size: Size                                          = tc length repr
+    def sizeInfo: Precise                                   = Precise(size)
     def elemAt(index: Index): A                             = recordCall(tc.elemAt(repr)(index))
     def contains(x: A): Boolean                             = this exists (_ == x)
     def foreach(f: A => Unit): Unit                         = foreachSlice(size.toIndexRange)(f)
@@ -55,7 +53,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
 
     final def map[B](f: A => B): MapTo[B]                         = Mapped(this, f)
     final def flatMap[B](f: A => Foreach[B]): MapTo[B]            = FlatMapped(this, f)
-    final def flatten[B](implicit ev: A <:< Foreach[B]): MapTo[B] = FlatMapped(this, ev) // flatMap((x: A) => ev(x))
+    final def flatten[B](implicit ev: A <:< Foreach[B]): MapTo[B] = FlatMapped(this, ev)
     final def collect[B](pf: A ?=> B): MapTo[B]                   = Collected(this, pf)
     final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]           = Joined(this, that.m.castTo[View[A1]])
 
@@ -83,7 +81,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     self: AtomicView =>
 
     final def foreachSlice(range: IndexRange)(f: tc.A => Unit): Unit = {
-      var i = psp.std.Index.zero
+      var i = Index.zero
       (tc foreach repr) { x =>
         recordCall(x)
         if (range contains i) f(x)
@@ -192,7 +190,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
       xs match {
         case xs: AtomicView   => (xs foreachSlice range)(f)
         case m: Mapped[a, _]  => foreachSlice[a](m.prev, m.f andThen f, range)
-        case xs: Direct[A]    => range foreach (i => f(xs(i)))
+        case xs: Direct[A]    => range foreach (i => f(xs elemAt i))
         case Joined(ys1, ys2) =>
           ys1.sizeInfo match {
             case Precise(n) if n.lastIndex < range.start => ys2 slice (range << n.toInt) foreach f

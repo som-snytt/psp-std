@@ -6,7 +6,7 @@ import java.{ lang => jl }
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll
  *  bury it and reimplement what we want.
  */
-final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExtensionOps[Char] {
+final class PspStringOps(private val xs: String) extends AnyVal with Ops.SeqLikeOps[Char] {
   private def augment = Predef augmentString xs
   private def chars   = xs.toCharArray
 
@@ -50,6 +50,12 @@ final class PspStringOps(private val xs: String) extends AnyVal with SeqLikeExte
   def toDouble: Double = jl.Double parseDouble xs
   def toFloat: Float   = jl.Float parseFloat xs
 
+  // def toBytes: PspStringAsBytes = new PspStringAsBytes(xs)
+  // def toChars: PspStringAsChars = new PspStringAsChars(xs)
+  // def toLines: PspStringAsLines = new PspStringAsLines(xs)
+  def toFile: jFile             = new jFile(xs)
+
+  def from_s[A](implicit reads: Read[A]): A = reads read xs
   def to[A](implicit reads: Read[A]): A = reads read xs
 
   override def toString = xs

@@ -1,20 +1,22 @@
 package psp
 package std
 
-import PartialOrder._
-import ThreeValue._
+import PartialOrder.Cmp
 
 trait PartialOrder[-A] extends Any {
   def partialCompare(lhs: A, rhs: A): Cmp
 }
 
 object PartialOrder {
-  // type < = LT.type
-  // type ≤ = LE.type
-  // type ~ = NA.type
-  // type ≥ = GE.type
-  // type > = GT.type
-  // type ⊥ = NA.type
+  def apply[A](f: (A, A) => Cmp): PartialOrderClass[A] = new PartialOrderClass[A](f)
+
+  implicit def orderIsPartialOrder[A: Order] : PartialOrder[A] = apply[A]((x, y) => translate(x compare y))
+
+  def translate(cmp: Order.Cmp): PartialOrder.Cmp = cmp match {
+    case Order.Cmp.LT => LT
+    case Order.Cmp.GT => GT
+    case _            => EQ
+  }
 
   sealed trait Cmp { def invert: Cmp }
   case object LT extends Cmp { def invert = GE }
@@ -24,19 +26,7 @@ object PartialOrder {
   case object GT extends Cmp { def invert = LE }
   case object NA extends Cmp { def invert = NA }
 
-  final class Ops[A](val lhs: A)(implicit pord: PartialOrder[A]) {
-    def partial: this.type = this
-    def partialCompare(rhs: A): Cmp = pord.partialCompare(lhs, rhs)
-    private def evaluate(rhs: A)(trues: Cmp*)(undefs: Cmp*): ThreeValue = {
-      val res = partialCompare(rhs)
-      if (trues contains res) True
-      else if (undefs contains res) Undefined
-      else False
-    }
-    def <(rhs: A): ThreeValue     = evaluate(rhs)(LT)(NA, LE)
-    def <=(rhs: A): ThreeValue    = evaluate(rhs)(LT, LE, EQ)(NA)
-    def >=(rhs: A): ThreeValue    = evaluate(rhs)(GT, GE, EQ)(NA)
-    def >(rhs: A): ThreeValue     = evaluate(rhs)(GT)(NA, GE)
-    def <==> (rhs: A): ThreeValue = evaluate(rhs)(EQ)(NA, LE, GE)
+  final class PartialOrderClass[A](private val f: (A, A) => Cmp) extends AnyVal with PartialOrder[A] {
+    def partialCompare(x: A, y: A): Cmp = f(x, y)
   }
 }

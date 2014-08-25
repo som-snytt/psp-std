@@ -15,28 +15,24 @@ trait Read[A] extends Any {
  *  That's what into[A] is for, to obtain the type up front.
  */
 object Read {
+  implicit val bigIntRead = Read[BigInt](s => BigInt(s))
+  implicit val bigDecRead = Read[BigDecimal](s => BigDecimal(s))
+  implicit val stringRead = Read[String](s => s)
+  implicit val floatRead  = Read[Float](_.toFloat)
+  implicit val doubleRead = Read[Double](_.toDouble)
+  implicit val longRead   = Read[Long](_.toLong)
+  implicit val intRead    = Read[Int](_.toInt)
+
   def apply[A](f: String => A): Read[A]                         = ReadClass(f)
   def unapply[A](s: String)(implicit reads: Read[A]): Option[A] = Try(reads read s).toOption
-
-  implicit val bigIntRead  = Read[BigInt](s => BigInt(s))
-  implicit val bigDecRead  = Read[BigDecimal](s => BigDecimal(s))
-  implicit val stringRead  = Read[String](s => s)
-  implicit val floatRead   = Read[Float](_.toFloat)
-  implicit val doubleRead  = Read[Double](_.toDouble)
-  implicit val longRead    = Read[Long](_.toLong)
-  implicit val intRead     = Read[Int](_.toInt)
-
   def into[A] = new ReadInto[A]
+
 
   final class ReadInto[A]() {
     def apply(s: String)(implicit reads: Read[A]): A           = reads read s
     def unapply(s: String)(implicit reads: Read[A]): Option[A] = opt(s)
     def wrap(s: String)(implicit reads: Read[A]): Try[A]       = Try(reads read s)
     def opt(s: String)(implicit reads: Read[A]): Option[A]     = wrap(s).toOption
-  }
-
-  final class CanReadOps(val s: String) {
-    def from_s[A](implicit reads: Read[A]): A = reads read s
   }
   private case class ReadClass[A](f: String => A) extends AnyVal with Read[A] { def read(s: String): A = f(s) }
 }

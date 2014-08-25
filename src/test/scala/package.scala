@@ -3,7 +3,6 @@ package psp
 import psp.std._
 import org.scalacheck._, Gen._, Prop._
 import SizeInfo._
-import psp.std.core._
 
 package object tests {
   type BinOp[A]           = (A, A) => A
@@ -16,14 +15,8 @@ package object tests {
   type Failed             = org.scalacheck.Test.Failed
   type Buildable[A, C[X]] = org.scalacheck.util.Buildable[A, C]
 
-  implicit def buildsToBuildable[CC[X], A](implicit z: Builds[A, CC[A]]): Buildable[A, CC] = {
-    new Buildable[A, CC] {
-      def builder = Vector.newBuilder[A] mapResult (r => z build Foreach.elems(r: _*))
-      // def builder: mutable.Builder[T,C[T]]
-
-      // def builder = z.apply
-    }
-  }
+  implicit def buildsToBuildable[CC[X], A](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
+    new Buildable[A, CC] { def builder = Vector.newBuilder[A] mapResult (r => z build Foreach.elems(r: _*)) }
 
   implicit class GenOps[A](gen: Gen[A]) {
     def collect[B](pf: A ?=> B): Gen[B] = gen suchThat pf.isDefinedAt map pf.apply

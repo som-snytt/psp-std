@@ -36,8 +36,8 @@ final class Size private (val value: Int) extends AnyVal {
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
-  implicit def SizeShow = Show[Size](_.value.to_s)
-  implicit def SizeOrder = order[Size](_.value)
+  implicit def SizeShow =  showBy[Size](_.value.to_s) // Show[Size](_.value.to_s)
+  implicit def SizeOrder = orderBy[Size](_.value)
   implicit def sizeToSizeInfo(s: Size): SizeInfo = s.toInfo
   def undefined = new Size(-1)
 

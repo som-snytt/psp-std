@@ -30,10 +30,6 @@ trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
 trait HasPreciseSize extends Any with HasSizeInfo { def size: Size }
 trait HasStaticSize[N <: Nat] extends HasPreciseSize
 
-trait HasPreciseSizeImpl extends Any with HasPreciseSize {
-  final override def sizeInfo = Precise(size)
-}
-
 object SizeInfo {
   val Zero     = Size(0)
   val One      = Size(1)
@@ -116,8 +112,7 @@ object SizeInfo {
 }
 
 final class SizeInfoOperations(val lhs: SizeInfo) extends AnyVal {
-  import PartialOrder._
-  import psp.std.SizeInfo._
+  import PartialOrder._, SizeInfo._
 
   def isZero    = lhs == Precise(Zero)
   def isFinite  = lhs.hiBound != Infinite

@@ -16,9 +16,6 @@ abstract class AlgebraLaws[A : Eq : BooleanAlgebra] extends Laws[A] {
   def complement(f: BinOp[A], id: A): Forall1[A] = a => f(a, !a) === id
 }
 
-
-  // def antisymmetry(f: BinOp[A]): Forall2[A]      = (a, b) => f(a, b) && f(b, a) implies a === b
-
 class ScalacheckCallback extends Test.TestCallback {
   private def log(msg: String): Unit = ()
   override def onPropEval(name: String, threadIdx: Int, succeeded: Int, discarded: Int): Unit = {

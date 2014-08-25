@@ -90,8 +90,8 @@ Elapsed: 1016.358 ms
 res1: String = 4, 5, 6
 
 // Shadow it so we use psp collections.
-scala> import psp.std.core.intArrayOps
-import psp.std.core.intArrayOps
+scala> import psp.std.intArrayOps
+import psp.std.intArrayOps
 
 // Typically about 1ms to complete.
 scala> timed(xs map (_ + 1) map (_ + 1) map (_ + 1) take 3 mk_s ", ")

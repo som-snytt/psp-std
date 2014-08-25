@@ -17,7 +17,7 @@ import scala.collection.{ mutable, immutable }
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Aliases with ArrowAssocHigh with Utility {
+trait PackageLevel extends Implicits with ImplicitRemoval with Aliases with ArrowAssocHigh with PackageMethods with CollectionPackageLevel {
   val EOL          = sys.props.getOrElse("line.separator", "\n")
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
@@ -26,7 +26,7 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Creators with Ali
   val ScalaNil     = scala.collection.immutable.Nil
   /** It's like "" + x, except, you know, for kids.
    */
-  val `""` = ShowDirect("")
+  val `""` = Shown("")
 
   final val MaxInt  = Int.MaxValue
   final val MinInt  = Int.MinValue
@@ -54,6 +54,7 @@ trait Aliases {
   type Try[+A]                       = scala.util.Try[A]
   type VectorBuilder[A]              = scala.collection.mutable.Builder[A, Vector[A]]
   type WrappedArray[A]               = scala.collection.mutable.WrappedArray[A]
+  type GTOnce[+A]                    = scala.collection.GenTraversableOnce[A]
 
   // common annotations
   type switch  = scala.annotation.switch
@@ -113,89 +114,44 @@ trait Aliases {
   type Suspended[+A] = (A => Unit) => Unit
 }
 
-/** Various lame global-scope implicits, made to disappear with our friend null.
- *  This list is subject to renegotiation.
- */
-trait ImplicitRemoval {
-  val any2stringadd              = null
-  val fallbackStringCanBuildFrom = null
-  val tuple2ToZippedOps          = null
-  val tuple3ToZippedOps          = null
-  val unwrapString               = null
-
-  val Boolean2boolean = null
-  val Byte2byte       = null
-  val Character2char  = null
-  val Double2double   = null
-  val Float2float     = null
-  val Integer2int     = null
-  val Long2long       = null
-  val Short2short     = null
-
-  val genericWrapArray = null
-  val wrapBooleanArray = null
-  val wrapByteArray    = null
-  val wrapCharArray    = null
-  val wrapDoubleArray  = null
-  val wrapFloatArray   = null
-  val wrapIntArray     = null
-  val wrapLongArray    = null
-  val wrapRefArray     = null
-  val wrapShortArray   = null
-  val wrapString       = null
-  val wrapUnitArray    = null
-
-  // We reimplement these.
-  val augmentString   = null
-  val unaugmentString = null
-
-  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
-  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
-  val StringAdd, ArrowAssoc                                                                               = null
-  // val genericArrayOps                                                                                     = null
-}
-
-trait Utility {
+trait PackageMethods {
   def ?[A](implicit value: A): A                         = value // aka implicitly
+  def Try[A](body: => A): Try[A]                         = scala.util.Try[A](body)
   def andFalse(x: Unit): Boolean                         = false
   def andTrue(x: Unit): Boolean                          = true
   def asExpected[A](body: Any): A                        = body.castTo[A]
   def classTag[T: ClassTag] : ClassTag[T]                = implicitly[ClassTag[T]]
+  def contextLoader(): ClassLoader                       = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
   def decodeName(s: String): String                      = scala.reflect.NameTransformer decode s
+  def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
+  def show[A: Show] : Show[A]                            = implicitly
+  def eqBy[A]                                            = new EqBy[A]
   def fail(msg: String): Nothing                         = throw new RuntimeException(msg)
   def failEmpty(operation: String): Nothing              = throw new NoSuchElementException(s"$operation on empty collection")
   def fromUTF8(xs: Array[Byte]): String                  = new String(scala.io.Codec fromUTF8 xs)
+  def index(x: Int): Index                               = Index(x)
+  def indexRange(start: Int, end: Int): IndexRange       = IndexRange.until(Index(start), Index(end))
   def javaClassOf[T: ClassTag] : Class[T]                = classTag[T].runtimeClass.castTo[Class[T]]
   def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
+  def loaderOf[A: ClassTag] : ClassLoader                = noNull(javaClassOf[A].getClassLoader, nullLoader)
   def log(msg: String): Unit                             = Console.err println msg
+  def nanoTime: Long                                     = System.nanoTime
+  def noNull[A](value: A, orElse: => A): A               = if (value == null) orElse else value
+  def nth(x: Int): Nth                                   = Nth(x)
   def nullAs[A] : A                                      = (null: AnyRef).castTo[A]
+  def nullLoader(): NullClassLoader                      = new NullClassLoader
+  def nullStream(): InputStream                          = new NullIputStream
+  def offset(x: Int): Offset                             = Offset(x)
+  def orderBy[A]                                         = new OrderBy[A]
   def printResult[A](msg: String)(result: A): A          = try result finally log(s"$msg: $result")
-
-  def timed[A](body: => A): A = {
-    val start = System.nanoTime
-    try body finally log("Elapsed: %.3f ms" format (System.nanoTime - start) / 1e6)
-  }
-}
-
-trait Creators {
-  def nullStream(): InputStream           = new NullIputStream
-  def nullLoader(): NullClassLoader       = new NullClassLoader
-  def contextLoader: ClassLoader          = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
-  def loaderOf[A: ClassTag] : ClassLoader = noNull(javaClassOf[A].getClassLoader, nullLoader)
-
-  def resourceString(name: String): String = fromUTF8(resource(name))
-  def resource(name: String): Array[Byte] = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
-
-  def readInto[A] : Read.ReadInto[A]               = Read.into[A]
-  def order[A] : Order.By[A]                       = Order.by[A]
-  def uri(x: String): URI                          = java.net.URI create x
-  def url(x: String): URL                          = uri(x).toURL
-  def index(x: Int): Index                         = Index(x)
-  def offset(x: Int): Offset                       = Offset(x)
-  def nth(x: Int): Nth                             = Nth(x)
-  def indexRange(start: Int, end: Int): IndexRange = IndexRange.until(Index(start), Index(end))
-  def Try[A](body: => A): Try[A]                   = scala.util.Try[A](body)
-  def noNull[A](value: A, orElse: => A): A         = if (value == null) orElse else value
+  def readInto[A] : Read.ReadInto[A]                     = Read.into[A]
+  def resource(name: String): Array[Byte]                = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
+  def resourceString(name: String): String               = fromUTF8(resource(name))
+  def showBy[A]                                          = new ShowBy[A]
+  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally log("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
+  def unknownSize                                        = SizeInfo.Unknown
+  def uri(x: String): URI                                = java.net.URI create x
+  def url(x: String): URL                                = uri(x).toURL
 
   // Mostly obviating the need for those mutable/immutable identifiers.
   def mutableSeq[A](xs: A*): mutable.Seq[A]                 = mutable.Seq(xs: _*)
@@ -219,58 +175,4 @@ trait Creators {
   def listBuilder[A](xs: A*)            = List.newBuilder[A] ++= xs
   def arrayBuilder[A: ClassTag](xs: A*) = Array.newBuilder[A] ++= xs
   def vectorBuilder[A](xs: A*)          = Vector.newBuilder[A] ++= xs
-}
-
-trait LowPriorityPspStd {
-  // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
-  // Deprioritize PartialOrder vs. Order since they both have comparison methods.
-  implicit def hasPartialOrderExtensionOps[A: PartialOrder](x: A): PartialOrder.Ops[A] = new PartialOrder.Ops[A](x)
-  // Temporary compat with scala's Ordering.
-  implicit def orderOrdering[A](implicit ord: Order[A]): Ordering[A] = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
-}
-
-trait Implicits extends LowPriorityPspStd {
-  // The typesafe non-toString-using show"..." interpolator.
-  implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
-  // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): Shown = new Shown(implicitly[Show[A]] show x)
-
-  // We buried Predef's {un,}augmentString in favor of these.
-  @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
-  @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
-
-  // Extension methods for non-collection types.
-  implicit def arrayExtensionOps[A](xs: Array[A]): ArrayExtensionOps[A]         = new ArrayExtensionOps[A](xs)
-  implicit def anyExtensionOps[A](x: A): AnyExtensionOps[A]                     = new AnyExtensionOps[A](x)
-  implicit def tryExtensionOps[A](x: scala.util.Try[A]): TryExtensionOps[A]     = new TryExtensionOps[A](x)
-  implicit def intExtensionOps(x: Int): IntExtensionOps                         = new IntExtensionOps(x)
-  implicit def inputStreamExtensionOps(x: InputStream): InputStreamExtensionOps = new InputStreamExtensionOps(x)
-  implicit def longExtensionOps(x: Long): LongExtensionOps                      = new LongExtensionOps(x)
-  implicit def javaIteratorToScala[A](it: jIterator[A]): sIterator[A]           = new ScalaIterator(it)
-
-  // Extension methods which depend on a typeclass.
-  // If the type class is attached at creation it can't be a value class.
-  // So it has to be duplicated across every method which utilizes it.
-  // Another victory against boilerplate.
-  implicit def hasEqExtensionOps[A](x: A): Eq.Ops[A]    = new Eq.Ops[A](x)
-  implicit def eqExtensionOps[A](x: Eq[A]): Eq.EqOps[A] = new Eq.EqOps[A](x)
-  implicit def canReadExtensionOps(s: String): Read.CanReadOps = new Read.CanReadOps(s)
-  // And already we're defeated in that regard - just too difficult to walk the line.
-  implicit def hasOrderExtensionOps[A: Order](x: A): Order.Ops[A]   = new Order.Ops[A](x)
-  implicit def orderExtensionOps[A](x: Order[A]): Order.OrderOps[A] = new Order.OrderOps[A](x)
-  implicit def showExtensionOps[A](x: Show[A]): Show.ShowOps[A]     = new Show.ShowOps[A](x)
-
-  implicit def hasBooleanAlgebraOps[A: BooleanAlgebra](lhs: A): BooleanAlgebra.HasAlgebra[A]   = new BooleanAlgebra.HasAlgebra[A](lhs)
-  implicit def onBooleanAlgebraOps[A](algebra: BooleanAlgebra[A]): BooleanAlgebra.OnAlgebra[A] = new BooleanAlgebra.OnAlgebra[A](algebra)
-
-  // Extension methods for various collections. Mostly we try not to split hairs and attach to GenTraversableOnce.
-  // It's not like you have any idea what the performance characteristics of the target are anyway.
-  // If you think you do, and you ever call standard collections methods, then think again.
-  implicit def sortedMapExtensionOps[K, V](xs: scala.collection.SortedMap[K, V]): SortedMapExtensionOps[K, V]                      = new SortedMapExtensionOps[K, V](xs)
-  implicit def mapExtensionOps[K, V](xs: scala.collection.Map[K, V]): MapExtensionOps[K, V]                                        = new MapExtensionOps[K, V](xs)
-  implicit def seqExtensionOps[CC[X] <: scala.collection.Seq[X], A](xs: CC[A]): SeqExtensionOps[CC, A]                             = new SeqExtensionOps[CC, A](xs)
-  implicit def seqNthExtensionOps[CC[X] <: scala.collection.Seq[X], A](xs: CC[A]): AddNthApplyToSeq[CC, A]                         = new AddNthApplyToSeq[CC, A](xs)
-  implicit def seqIndexExtensionOps[CC[X] <: scala.collection.Seq[X], A](xs: CC[A]): AddIndexApplyToSeq[CC, A]                     = new AddIndexApplyToSeq[CC, A](xs)
-  implicit def genTraversableOnceExtensionOps[CC[X] <: GenTraversableOnce[X], A](xs: CC[A]): GenTraversableOnceExtensionOps[CC, A] = new GenTraversableOnceExtensionOps[CC, A](xs)
 }

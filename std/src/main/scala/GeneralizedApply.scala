@@ -12,7 +12,7 @@ import Nat._
  *  All the TupleN overloads are given first crack. So, in e.g. NatList:
  *
  *  scala> NatList((1, 2, 3))
- *  res0: psp.core.NatList[psp.std.Nat._3,Int] = 1 :: 2 :: 3 :: Nil
+ *  res0: psp.std.core.NatList[psp.std.Nat._3,Int] = 1 :: 2 :: 3 :: Nil
  *
  */
 trait GeneralizedApply {

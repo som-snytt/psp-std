@@ -37,7 +37,7 @@ final class Nth private (val value: Int) extends AnyVal with IndexOrNth {
 }
 object Nth extends (Int => Nth) {
   implicit def nthToIndex(n: Nth): Index = n.toIndex
-  implicit def NthOrder = order[Nth] (_.value)
+  implicit def NthOrder                  = orderBy[Nth](_.value)
 
   // 0 is excluded, but we use -1 for the undefined case anyway.
   def undefined                    = new Nth(-1)

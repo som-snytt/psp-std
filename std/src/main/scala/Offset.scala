@@ -11,6 +11,7 @@ final class Offset private (val value: Int) extends AnyVal {
   override def toString = s"$value"
 }
 object Offset extends (Int => Offset) {
-  implicit def OffsetOrder = order[Offset] (_.value)
+  implicit def OffsetOrder = orderBy[Offset](_.value)
+
   def apply(value: Int): Offset = new Offset(value)
 }

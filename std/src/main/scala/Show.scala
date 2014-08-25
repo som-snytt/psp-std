@@ -23,12 +23,12 @@ trait LowPriorityShow {
   implicit def charShow    = Show.native[Char]()
 }
 object Show extends LowPriorityShow {
-  def apply[A](f: A => String): Show[A] = ShowClass(f)
+  def apply[A](f: A => String): Show[A] = new ShowClass(f)
   def native[A](): Show[A]              = ToString.castTo[Show[A]]
 
   /** This of course is not implicit as that would defeat the purpose of the endeavor.
    */
-  val ToString: Show[Any] = ShowClass[Any] {
+  val ToString: Show[Any] = apply[Any] {
     case x: ShowDirect => x.to_s
     case x             => "" + x
   }
@@ -43,28 +43,16 @@ object Show extends LowPriorityShow {
   implicit def seqShow[CC[X] <: Seq[X], A: Show] : Show[CC[A]] = apply(xs => inBrackets(xs: _*))
   implicit def arrayShow[A: Show] : Show[Array[A]]             = apply(xs => inBrackets(xs: _*))
   implicit def tupleShow[A: Show, B: Show] : Show[(A, B)]      = apply { case (x, y) => show"$x -> $y" }
+  implicit def showDirect[A <: ShowDirect] : Show[A]           = native[A]()
+  implicit def numberShow[A <: ScalaNumber] : Show[A]          = native[A]() // BigInt, BigDecimal
 
-  implicit def showDirect[A <: ShowDirect] : Show[A]  = native[A]()
-  implicit def numberShow[A <: ScalaNumber] : Show[A] = native[A]() // BigInt, BigDecimal
-
-  private case class ShowClass[A](f: A => String) extends AnyVal with Show[A] { def show(x: A): String = f(x) }
-
-  final class By[A] {
-    def apply[B](f: A => B)(implicit shows: Show[B]): Show[A] = shows on f
-  }
-  final class ShowOps[A](val shows: Show[A]) extends AnyVal {
-    def on[B](f: B => A): Show[B] = Show[B](x => shows show f(x))
+  private class ShowClass[A](private val f: A => String) extends AnyVal with Show[A] {
+    def show(x: A): String = f(x)
   }
 }
 
-object ShowDirect {
-  implicit class ShowDirectOps(val x: ShowDirect) extends AnyVal {
-    /** Java-style String addition without abandoning type safety.
-     */
-    def + (that: ShowDirect): ShowDirect = ShowDirect(show"$x$that")
-    def + [A: Show](that: A): ShowDirect = ShowDirect(show"$x$that")
-  }
-  def apply(s: String): ShowDirect = new Shown(s)
+object Shown {
+  def apply(s: String): Shown = new Shown(s)
 }
 
 /** Used to achieve type-safety in the show interpolator.

@@ -1,8 +1,6 @@
 package psp
 package std
-package core
 
-// import psp.std._,
 import SizeInfo._
 
 trait Linear[+A] extends Any with Foreach[A] {

@@ -13,7 +13,7 @@ object Build extends sbt.Build with Versioning {
 
   def imports = """
     import scala.collection.{ mutable, immutable }
-    import psp.std._, psp.core._, ansi._
+    import psp.api._, psp.std._, ansi._
     implicit final class ReplForeachOps[A](val target: Foreach[A]) {
       def !> : Unit = println(target mkString EOL)
       def  >(implicit shows: Show[A]): Unit = println(target join EOL)
@@ -46,20 +46,21 @@ object Build extends sbt.Build with Versioning {
      fullClasspath in sxr <<= deepTasks(externalDependencyClasspath in Compile)
   )
   def common = bintraySettings ++ mimaDefaultSettings ++ Seq[Setting[_]](
-                    resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
-                 organization :=  pspOrg,
-                 scalaVersion :=  "2.11.2",
-                      version :=  "0.2.0-M2",
-                  logBuffered :=  false,
-                scalacOptions ++= (Seq("-Ywarn-unused-import", "-Ywarn-unused", "-Ywarn-dead-code", "-language:_") ++ opts),
-                 javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
-                     licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-      publishArtifact in Test :=  false,
-    parallelExecution in Test :=  false,
-                 fork in Test :=  true
+                              resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
+                           organization :=  pspOrg,
+                           scalaVersion :=  "2.11.2",
+                                version :=  "0.2.0-M2",
+                            logBuffered :=  false,
+                          scalacOptions ++= (Seq("-Ywarn-unused-import", "-Ywarn-unused", "-Ywarn-dead-code", "-language:_") ++ opts),
+                           javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
+                               licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+                publishArtifact in Test :=  false,
+              parallelExecution in Test :=  false,
+                           fork in Test :=  true,
+    scalacOptions in console in Compile :=  Seq("-language:_")
   )
 
-  def subprojects = List(std, macros, view)
+  def subprojects = List(api, std, macros)
 
   /** mima command optionally takes a baseline version, e.g. sbt 'mima 0.1.0-M1'
    */
@@ -81,7 +82,7 @@ object Build extends sbt.Build with Versioning {
    *
    *  It's harder to get all those at once than you may think.
    */
-  lazy val root = project in file(".") dependsOn (std, macros, view) aggregate (std, macros, view) settings (common: _*) settings (
+  lazy val root = project in file(".") dependsOn (api, std, macros) aggregate (api, std, macros) settings (common: _*) settings (
                                    name :=  "psp-std-root",
                             description :=  "psp's project which exists to please sbt",
                             shellPrompt :=  (s => "%s#%s> ".format(name.value, (Project extract s).currentRef.project)),
@@ -91,7 +92,6 @@ object Build extends sbt.Build with Versioning {
                         publishArtifact :=  false,
                                 publish <<= runPublish(publish),
                            publishLocal <<= runPublish(publishLocal),
-    scalacOptions in console in Compile :=  Seq("-language:_"),
                                commands +=  Command.args("mima", "<version>")(mimaCommand),
                                commands +=  Command.command("ccon")(s => s set (libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value) runTask (console in Compile) _1),
                     testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
@@ -105,20 +105,33 @@ object Build extends sbt.Build with Versioning {
     def also(ss: SettingSeq): Project = p settings (ss: _*)
   }
 
-  lazy val std = project.sxr also common settings (
+  // A project with misc dependencies currently being explored.
+  lazy val depends = project also common settings (
+                          name := "psp-deps",
+                   description := "code with bonus dependecies",
+           libraryDependencies ++= Seq(
+              "org.spire-math"           %% "spire"     % "0.8.2",
+              "com.chuusai"              %% "shapeless" % "2.0.0",
+              "com.google.guava"          % "guava"     % "17.0",
+              "net.sourceforge.findbugs"  % "jsr305"    % "1.3.7"
+          ),
+    initialCommands in console ~= (_ + "\nimport spire.algebra._, spire.math._, spire.implicits._, com.google.common.collect._")
+  )
+
+  lazy val std = project.sxr dependsOn api also common settings (
             name := "psp-std",
      description := "psp's non-standard standard library"
   )
 
-  lazy val macros = project dependsOn std also common settings (
+  lazy val macros = project dependsOn (api, std) also common settings (
                    name := "psp-std-macros",
             description := "macros for psp's non-standard standard library",
     libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
   )
 
-  lazy val view = project.sxr dependsOn std also common settings (
-            name :=  "psp-view",
-     description :=  "collections for psp's non-standard standard library"
+  lazy val api = project.sxr also common settings (
+            name :=  "psp-api",
+     description :=  "api for psp's non-standard standard library"
   )
 }
 

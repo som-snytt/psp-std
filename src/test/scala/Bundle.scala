@@ -1,7 +1,7 @@
 package psp
 package tests
 
-import psp.std._, psp.std.core._
+import psp.std._
 import org.scalacheck.Test
 
 // TODO - leverage now-available it-doesn't-typecheck test machinery.

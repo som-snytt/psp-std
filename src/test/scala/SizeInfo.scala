@@ -27,8 +27,8 @@ class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
   def commutative[T: Arbitrary](op: BinOp[T]): Prop = forAll((p1: T, p2: T) => sameOutcome(op(p1, p2), op(p2, p1)))
   def associative[T: Arbitrary](op: BinOp[T]): Prop = forAll((p1: T, p2: T, p3: T) => sameOutcome(op(op(p1, p2), p3), op(p1, op(p2, p3))))
 
-  def certain[T: Arbitrary](f: T => ThreeValue): Prop                    = forAll((p1: T) => f(p1).isTrue)
-  def certain[T: Arbitrary, U: Arbitrary](f: (T, U) => ThreeValue): Prop = forAll((p1: T, p2: U) => f(p1, p2).isTrue)
+  def certain[T: Arbitrary](f: T => Trilean): Prop                    = forAll((p1: T) => f(p1).isTrue)
+  def certain[T: Arbitrary, U: Arbitrary](f: (T, U) => Trilean): Prop = forAll((p1: T, p2: U) => f(p1, p2).isTrue)
 
   def flip(r: Prop.Result): Prop.Result = r match {
     case Prop.Result(Prop.True, _, _, _)  => r.copy(status = Prop.False)
@@ -44,7 +44,7 @@ class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
     "s1 >= (s1 min s2)"    -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) >= (s1 min s2)),
     "s1 <= (s1 + s2)"      -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) <= (s1 + s2)),
     "s1 >= (s1 - s2)"      -> certain[Atomic, Precise]((s1, s2) => (s1: SI) >= (s1 - s2)),
-    "<inf> + n"            -> certain((s1: SI) => (Infinite + s1) <==> Infinite),
+    "<inf> + n"            -> forAll((s1: SI) => ((Infinite + s1) partialCompare Infinite) == PartialOrder.EQ),
     "`+` is associative"   -> associative[SI](_ + _),
     "`max` is associative" -> associative[SI](_ max _),
     "`min` is associative" -> associative[SI](_ min _),

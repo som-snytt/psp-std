@@ -1,7 +1,6 @@
 package psp
 package tests
 
-import psp.std.core._
 import compat.ScalaNative
 import psp.std._
 

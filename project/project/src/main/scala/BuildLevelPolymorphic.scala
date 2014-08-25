@@ -10,7 +10,6 @@ package object meta {
     "me.lessis"               % "bintray-sbt"                % "0.1.2",
     "com.typesafe"            % "sbt-mima-plugin"            % "0.1.6",
     "com.gilt"                % "sbt-dependency-graph-sugar" % "0.7.4"
-    // "com.sksamuel.scapegoat" %% "sbt-scapegoat"              % "0.92.1"
   )
   implicit class ModuleIDOps(val m: ModuleID) extends AnyVal {
     def exceptScala: ModuleID = m excludeAll ExclusionRule("org.scala-lang")
