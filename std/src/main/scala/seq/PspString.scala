@@ -1,8 +1,9 @@
 package psp
+package std
 package core
 
 import java.{ lang => jl }
-import psp.std._
+// import psp.std._
 
 final class Line(val text: String) extends AnyVal {
   override def toString = text

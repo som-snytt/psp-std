@@ -1,6 +1,7 @@
 package psp
+package std
 
-import psp.std._
+// import psp.std._
 
 package core {
   trait CollectionLow {
@@ -46,8 +47,15 @@ package core {
   }
 }
 
-package object core extends psp.core.PackageLevel {
+package object core extends psp.std.core.PackageLevel {
   def unknownSize = SizeInfo.Unknown
+
+  implicit def directBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) =>
+    xs match {
+      case xs: Direct[A] => xs
+      case _             => Direct.elems(xs.toSeq: _*)
+    }
+  )
 
   // Suicide is painless... I'm sure I'll move or remove these.
   // implicit def convertTuple2[A](p: Tuple2[A, A])                      = NatList(p._1, p._2)
@@ -66,6 +74,20 @@ package object core extends psp.core.PackageLevel {
   //   at scala.reflect.internal.tpe.TypeMaps$adaptToNewRunMap$.adaptToNewRun(TypeMaps.scala:1077)
   //   at scala.reflect.internal.tpe.TypeMaps$adaptToNewRunMap$.apply(TypeMaps.scala:1121)
   //   at scala.reflect.internal.tpe.TypeMaps$adaptToNewRunMap$.apply(TypeMaps.scala:1050)
+
+  implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A] = new ForeachOperations(xs)
+
+  implicit final class IndexedExtensionOps[A](val xs: Indexed[A]) extends AnyVal {
+    def apply(index: Index): A = xs elemAt index
+
+    def zip[B](that: Indexed[B]): Indexed[(A, B)]                                                   = zipWith(that)(_ -> _)
+    def zipWith[A1, B](that: Indexed[A1])(f: (A, A1) => B): Indexed[B]                              = new ZippedIndexed2(xs, that, f)
+    def zipWith[A1, A2, B](that1: Indexed[A1], that2: Indexed[A2])(f: (A, A1, A2) => B): Indexed[B] = new ZippedIndexed3(xs, that1, that2, f)
+  }
+
+  implicit final class DirectExtensionOps[A](val xs: Direct[A]) extends AnyVal {
+    def ++(ys: Direct[A]): Direct[A] = Direct.join(xs, ys)
+  }
 
   implicit class TraversableToPsp[A](xs: GenTraversableOnce[A]) {
     def toPsp: Foreach[A] = Foreach traversable xs

@@ -1,7 +1,8 @@
 package psp
+package std
 package core
 
-import psp.std._
+// import psp.std._
 import scala.collection.immutable
 
 final class ForeachOperations[A](val xs: Foreach[A]) extends AnyVal {

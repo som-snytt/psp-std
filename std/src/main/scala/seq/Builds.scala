@@ -1,7 +1,8 @@
 package psp
+package std
 package core
 
-import psp.std._
+// import psp.std._
 
 trait Builds[-Elem, +To] {
   def build(xs: Foreach[Elem]): To

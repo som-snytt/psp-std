@@ -1,8 +1,9 @@
 package psp
+package std
 package core
 
 import impl._
-import psp.std._
+// import psp.std._
 
 trait WalkableTypes {
   type A

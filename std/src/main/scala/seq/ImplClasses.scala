@@ -1,10 +1,11 @@
 package psp
+package std
 package core
 package impl
 
 import scala.{ collection => sc }
 import sc.{ mutable => scm }
-import psp.std._
+// import psp.std._
 
 /** Compat
  */
@@ -18,7 +19,7 @@ final class TraversableAsForeach[+A](underlying: Traversable[A]) extends Foreach
 /** Direct
  */
 
-abstract class IndexedImpl[+A](val size: Size) extends Direct[A] with HasPreciseSize {
+abstract class IndexedImpl[+A](val size: Size) extends psp.std.core.Direct[A] with HasPreciseSize {
   def sizeInfo = size
   @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
   def isDefinedAt(index: Index): Boolean = size containsIndex index

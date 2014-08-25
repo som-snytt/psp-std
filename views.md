@@ -90,8 +90,8 @@ Elapsed: 1016.358 ms
 res1: String = 4, 5, 6
 
 // Shadow it so we use psp collections.
-scala> import psp.core.intArrayOps
-import psp.core.intArrayOps
+scala> import psp.std.core.intArrayOps
+import psp.std.core.intArrayOps
 
 // Typically about 1ms to complete.
 scala> timed(xs map (_ + 1) map (_ + 1) map (_ + 1) take 3 mk_s ", ")
@@ -123,7 +123,7 @@ Other times we succeed where scala opts for non-termination.
 
 ```
 scala> val xs = Foreach from BigInt(1)
-xs: psp.core.Foreach[BigInt] = unfold from 1
+xs: psp.std.core.Foreach[BigInt] = unfold from 1
 
 // We drop 1000 elements off the right side of infinity, then take the first three.
 scala> xs dropRight 1000 take 3 join ", "

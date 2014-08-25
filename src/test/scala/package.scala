@@ -3,16 +3,27 @@ package psp
 import psp.std._
 import org.scalacheck._, Gen._, Prop._
 import SizeInfo._
+import psp.std.core._
 
 package object tests {
-  type BinOp[A]    = (A, A) => A
-  type Forall1[-A] = A => Boolean
-  type Forall2[-A] = (A, A) => Boolean
-  type Forall3[-A] = (A, A, A) => Boolean
-  type Prop        = org.scalacheck.Prop
-  val Pretty       = org.scalacheck.util.Pretty
-  type Result      = org.scalacheck.Test.Result
-  type Failed      = org.scalacheck.Test.Failed
+  type BinOp[A]           = (A, A) => A
+  type Forall1[-A]        = A => Boolean
+  type Forall2[-A]        = (A, A) => Boolean
+  type Forall3[-A]        = (A, A, A) => Boolean
+  type Prop               = org.scalacheck.Prop
+  val Pretty              = org.scalacheck.util.Pretty
+  type Result             = org.scalacheck.Test.Result
+  type Failed             = org.scalacheck.Test.Failed
+  type Buildable[A, C[X]] = org.scalacheck.util.Buildable[A, C]
+
+  implicit def buildsToBuildable[CC[X], A](implicit z: Builds[A, CC[A]]): Buildable[A, CC] = {
+    new Buildable[A, CC] {
+      def builder = Vector.newBuilder[A] mapResult (r => z build Foreach.elems(r: _*))
+      // def builder: mutable.Builder[T,C[T]]
+
+      // def builder = z.apply
+    }
+  }
 
   implicit class GenOps[A](gen: Gen[A]) {
     def collect[B](pf: A ?=> B): Gen[B] = gen suchThat pf.isDefinedAt map pf.apply
@@ -42,29 +53,4 @@ package object tests {
   def genInt: Gen[Int]    = Gen.choose(MinInt, MaxInt)
   def genPosInt: Gen[Int] = Gen.choose(0, MaxInt)
   def genUInt: Gen[UInt]  = genInt map UInt
-}
-
-package tests {
-  abstract class Laws[A : Eq] {
-    def associative(f: BinOp[A]): Forall3[A]               = (a, b, c) => f(a, f(b, c)) === f(f(a, b), c)
-    def distributive(f: BinOp[A], g: BinOp[A]): Forall3[A] = (a, b, c) => f(a, g(b, c)) === g(f(a, b), f(a, c))
-    def commutative(f: BinOp[A]): Forall2[A]               = (a, b)    => f(a, b) === f(b, a)
-    def absorption(f: BinOp[A], g: BinOp[A]): Forall2[A]   = (a, b)    => f(a, g(a, b)) === a
-    def identity(f: BinOp[A], id: A): Forall1[A]           = a         => f(a, id) === a
-    def idempotence(f: BinOp[A]): Forall1[A]               = a         => f(a, a) === a
-  }
-  abstract class AlgebraLaws[A : Eq : BooleanAlgebra] extends Laws[A] {
-    def complement(f: BinOp[A], id: A): Forall1[A] = a => f(a, !a) === id
-  }
-
-  class ScalacheckCallback extends Test.TestCallback {
-    private def log(msg: String): Unit = ()
-    override def onPropEval(name: String, threadIdx: Int, succeeded: Int, discarded: Int): Unit = {
-      log(s"onPropEval($name, $threadIdx, $succeeded, $discarded)")
-    }
-    override def onTestResult(name: String, result: Test.Result): Unit = {
-      log(s"onTestResult($name, $result)")
-    }
-    override def chain(testCallback: Test.TestCallback): Test.TestCallback = super.chain(testCallback)
-  }
 }

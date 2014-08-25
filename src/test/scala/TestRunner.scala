@@ -25,6 +25,7 @@ object TestRunner {
       new OperationCounts,
       new Nats,
       new Collections,
+      // new CollectionEquivalents(Size(100)),
       new Typecheck
     )
     val results = bundles mapOnto (_.run)

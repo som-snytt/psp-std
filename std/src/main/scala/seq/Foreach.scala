@@ -1,10 +1,9 @@
 package psp
+package std
 package core
 
-import psp.std._, SizeInfo._
-
-trait Foreach[+A] extends Any with HasSizeInfo { def foreach(f: A => Unit): Unit }
-trait Invariant[A] extends Any
+// import psp.std._,
+import SizeInfo._
 
 object Foreach {
   def Empty = Direct.Empty
@@ -69,5 +68,4 @@ object Foreach {
       case info                         => pp"$base, ... $info$rp"
     }
   }
-  implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A] = new ForeachOperations(xs)
 }

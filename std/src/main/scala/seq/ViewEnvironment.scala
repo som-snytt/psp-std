@@ -1,7 +1,8 @@
 package psp
+package std
 package core
 
-import psp.std._
+// import psp.std._
 import SizeInfo._
 
 object AtomicView {
@@ -27,7 +28,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
   }
 
   final class LinearView(val tc: SequentialAccessType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
-    type Tail = psp.core.LinearView[Repr, tc.type]
+    type Tail = psp.std.core.LinearView[Repr, tc.type]
 
     def description = ""
     def isEmpty     = tc isEmpty repr
@@ -48,18 +49,15 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     def description                                         = ""
   }
 
-  sealed trait View[+A] extends Any with api.BuilderView[A, Repr] {
+  sealed trait View[+A] extends Any with api.View.Builder[A, Repr] {
     type MapTo[+X] = View[X]
-    // Eventually
-    // type Input[X]  = Foreach[X]
-
     def isAtomic: Boolean
 
-    final def map[B](f: A => B): MapTo[B]                       = Mapped(this, f)
-    final def flatMap[B](f: A => Foreach[B]): MapTo[B]          = FlatMapped(this, f)
-    final def flatten[B](implicit ev: A <:< Input[B]): MapTo[B] = flatMap(x => x)
-    final def collect[B](pf: A ?=> B): MapTo[B]                 = Collected(this, pf)
-    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]         = Joined(this, that.m.castTo[View[A1]])
+    final def map[B](f: A => B): MapTo[B]                         = Mapped(this, f)
+    final def flatMap[B](f: A => Foreach[B]): MapTo[B]            = FlatMapped(this, f)
+    final def flatten[B](implicit ev: A <:< Foreach[B]): MapTo[B] = FlatMapped(this, ev) // flatMap((x: A) => ev(x))
+    final def collect[B](pf: A ?=> B): MapTo[B]                   = Collected(this, pf)
+    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]           = Joined(this, that.m.castTo[View[A1]])
 
     final def withFilter(p: Predicate[A]): MapTo[A] = Filtered(this, p)
     final def filter(p: Predicate[A]): MapTo[A]     = Filtered(this, p)
@@ -75,8 +73,8 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     final def sized(size: Size): MapTo[A]           = Sized(this, size)
     final def reverse: MapTo[A]                     = Reversed(this)
 
-    final def native(implicit pcb: Builds[A, Repr]): Repr      = force[Repr]
-    final def force[That](implicit pcb: Builds[A, That]): That = pcb build this
+    final def native(implicit z: Builds[A, Repr]): Repr      = force[Repr]
+    final def force[That](implicit z: Builds[A, That]): That = z build this
 
     override def toString = viewChain reverseMap (_.description) mkString " "
   }
@@ -95,7 +93,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     }
   }
 
-  sealed abstract class AtomicView extends api.AtomicView[A] with View[A] with CountCalls {
+  sealed abstract class AtomicView extends api.View.Atomic[A] with View[A] with CountCalls {
     val tc: Walkable[Repr]
     def foreachSlice(range: IndexRange)(f: A => Unit): Unit
 
@@ -106,7 +104,7 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     def viewChain: List[api.View[_]] = this :: Nil
   }
 
-  sealed abstract class CompositeView[+A](val description: String, val sizeEffect: SizeInfo => SizeInfo) extends api.CompositeView[A] with CompositeViewImpl[A] {
+  sealed abstract class CompositeView[+A](val description: String, val sizeEffect: SizeInfo => SizeInfo) extends api.View.Composite[A] with CompositeViewImpl[A] {
     def isAtomic = false
   }
 

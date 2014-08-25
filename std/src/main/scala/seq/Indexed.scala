@@ -1,43 +1,36 @@
 package psp
+package std
 package core
 
-import psp.std._, Index.zero
+// import psp.std._,
+import Index.zero
 import impl._
 
-trait Indexed[+A] extends Any with Foreach[A] {
-  def isDefinedAt(index: Index): Boolean
-  def elemAt(index: Index): A
-}
-
-trait Direct[+A] extends Any with Indexed[A] with HasPreciseSize
-trait DirectLeaf[A] extends Any with Direct[A] with Invariant[A] { def contains(x: A): Boolean }
+trait Direct[+A] extends Any with Indexed[A] with psp.std.Direct[A]
+trait DirectLeaf[A] extends Any with Direct[A] with psp.std.DirectLeaf[A]
+trait Indexed[+A] extends Any with psp.std.Indexed[A]
 
 final class PureIndexed[+A](size: Size, indexFn: Index => A) extends IndexedImpl[A](size) {
   def elemAt(index: Index): A = indexFn(index)
 }
 
-object Indexed {
-  implicit final class IndexedExtensionOps[A](val xs: Indexed[A]) extends AnyVal {
-    def apply(index: Index): A = xs elemAt index
+// object Indexed {
+//   implicit final class IndexedExtensionOps[A](val xs: Indexed[A]) extends AnyVal {
+//     def apply(index: Index): A = xs elemAt index
 
-    def zip[B](that: Indexed[B]): Indexed[(A, B)]                                                   = zipWith(that)(_ -> _)
-    def zipWith[A1, B](that: Indexed[A1])(f: (A, A1) => B): Indexed[B]                              = new ZippedIndexed2(xs, that, f)
-    def zipWith[A1, A2, B](that1: Indexed[A1], that2: Indexed[A2])(f: (A, A1, A2) => B): Indexed[B] = new ZippedIndexed3(xs, that1, that2, f)
-  }
-}
+//     def zip[B](that: Indexed[B]): Indexed[(A, B)]                                                   = zipWith(that)(_ -> _)
+//     def zipWith[A1, B](that: Indexed[A1])(f: (A, A1) => B): Indexed[B]                              = new ZippedIndexed2(xs, that, f)
+//     def zipWith[A1, A2, B](that1: Indexed[A1], that2: Indexed[A2])(f: (A, A1, A2) => B): Indexed[B] = new ZippedIndexed3(xs, that1, that2, f)
+//   }
+// }
 
 object Direct {
-  implicit def newBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) =>
-    xs match {
-      case xs: Direct[A] => xs
-      case _             => Direct.elems(xs.toSeq: _*)
-    }
-  )
-
-  implicit final class IndexedOperations[A](val xs: Direct[A]) extends AnyVal {
-    def ++(ys: Direct[A]): Direct[A] = join(xs, ys)
-  }
-
+  // implicit def newBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) =>
+  //   xs match {
+  //     case xs: Direct[A] => xs
+  //     case _             => Direct.elems(xs.toSeq: _*)
+  //   }
+  // )
   object Empty extends IndexedImpl[Nothing](SizeInfo.Zero) with HasStaticSize[Nat._0] {
     def elemAt(index: Index): Nothing = failEmpty(pp"$this($index)")
     override def toString = "<empty>"
