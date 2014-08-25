@@ -4,36 +4,31 @@ package std
 import SizeInfo._
 
 object AtomicView {
-  def linear[Repr](repr: Repr)(implicit tc: SequentialAccess[Repr]): LinearView[Repr, tc.type] = new Env[Repr, tc.type](repr) linearView tc
   def indexed[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): IndexedView[Repr, tc.type]   = new Env[Repr, tc.type](repr) indexedView tc
   def unknown[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): AtomicView[Repr, tc.type]     = new Env[Repr, tc.type](repr) unknownView tc
 }
 
-class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
-  type A = A0
-  type CC[X] = CC0[X]
+class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
+  type A     = AIn
+  type CC[X] = M[X]
 
   implicit def showView[A] : Show[View[A]] = Show[View[A]](_.viewChain reverseMap (_.description) mkString " ")
 
-  def linearView(tc: SequentialAccessType[A, Repr, CC]): LinearView = new LinearView(tc)
   def indexedView(tc: DirectAccessType[A, Repr, CC]): IndexedView   = new IndexedView(tc)
   def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView    = new UnknownView(tc)
 
-  final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView with LinearViewImpls {
+  final class UnknownView(val tc: ForeachableType[A, Repr, CC]) extends AtomicView {
     def description = ""
     def sizeInfo    = unknownSize
-    @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
-  }
-
-  final class LinearView(val tc: SequentialAccessType[A, Repr, CC]) extends AtomicView with Linear[A] with LinearViewImpls {
-    type Tail = std.LinearView[Repr, tc.type]
-
-    def description = ""
-    def isEmpty     = tc isEmpty repr
-    def head: A     = recordCall(tc head repr)
-    def tail: Tail  = tc wrap (tc tail repr)
-    def sizeInfo    = if (isEmpty) Empty else NonEmpty
-
+    final def foreachSlice(range: IndexRange)(f: tc.A => Unit): Unit = {
+      var i = Index.zero
+      (tc foreach repr) { x =>
+        recordCall(x)
+        if (range contains i) f(x)
+        i = i.next
+        if (i >= range.end) return
+      }
+    }
     @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   }
 
@@ -51,44 +46,27 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     type MapTo[+X] = View[X]
     def isAtomic: Boolean
 
-    final def map[B](f: A => B): MapTo[B]                         = Mapped(this, f)
+    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]           = Joined(this, that.m.castTo[View[A1]])
+    final def collect[B](pf: A ?=> B): MapTo[B]                   = Collected(this, pf)
+    final def drop(n: Int): MapTo[A]                              = Dropped(this, Size(n))
+    final def dropRight(n: Int): MapTo[A]                         = DroppedR(this, Size(n))
+    final def dropWhile(p: Predicate[A]): MapTo[A]                = DropWhile(this, p)
+    final def filter(p: Predicate[A]): MapTo[A]                   = Filtered(this, p)
+    final def filterNot(p: Predicate[A]): MapTo[A]                = Filtered(this, (x: A) => !p(x))
     final def flatMap[B](f: A => Foreach[B]): MapTo[B]            = FlatMapped(this, f)
     final def flatten[B](implicit ev: A <:< Foreach[B]): MapTo[B] = FlatMapped(this, ev)
-    final def collect[B](pf: A ?=> B): MapTo[B]                   = Collected(this, pf)
-    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]           = Joined(this, that.m.castTo[View[A1]])
-
-    final def withFilter(p: Predicate[A]): MapTo[A] = Filtered(this, p)
-    final def filter(p: Predicate[A]): MapTo[A]     = Filtered(this, p)
-    final def filterNot(p: Predicate[A]): MapTo[A]  = Filtered(this, (x: A) => !p(x))
-    final def drop(n: Int): MapTo[A]                = Dropped(this, Size(n))
-    final def take(n: Int): MapTo[A]                = Taken(this, Size(n))
-    final def takeWhile(p: Predicate[A]): MapTo[A]  = TakenWhile(this, p)
-    final def dropWhile(p: Predicate[A]): MapTo[A]  = DropWhile(this, p)
-    final def dropRight(n: Int): MapTo[A]           = DroppedR(this, Size(n))
-    final def takeRight(n: Int): MapTo[A]           = TakenR(this, Size(n))
-    final def slice(range: IndexRange): MapTo[A]    = Sliced(this, range)
-    final def labeled(label: String): MapTo[A]      = LabeledView(this, label)
-    final def sized(size: Size): MapTo[A]           = Sized(this, size)
-    final def reverse: MapTo[A]                     = Reversed(this)
-
-    final def native(implicit z: Builds[A, Repr]): Repr      = force[Repr]
-    final def force[That](implicit z: Builds[A, That]): That = z build this
+    final def labeled(label: String): MapTo[A]                    = LabeledView(this, label)
+    final def map[B](f: A => B): MapTo[B]                         = Mapped(this, f)
+    final def sized(size: Size): MapTo[A]                         = Sized(this, size)
+    final def slice(range: IndexRange): MapTo[A]                  = Sliced(this, range)
+    final def take(n: Int): MapTo[A]                              = Taken(this, Size(n))
+    final def takeRight(n: Int): MapTo[A]                         = TakenR(this, Size(n))
+    final def takeWhile(p: Predicate[A]): MapTo[A]                = TakenWhile(this, p)
+    final def withFilter(p: Predicate[A]): MapTo[A]               = Filtered(this, p)
+    final def native(implicit z: Builds[A, Repr]): Repr           = force[Repr]
+    final def force[That](implicit z: Builds[A, That]): That      = z build this
 
     override def toString = viewChain reverseMap (_.description) mkString " "
-  }
-
-  trait LinearViewImpls {
-    self: AtomicView =>
-
-    final def foreachSlice(range: IndexRange)(f: tc.A => Unit): Unit = {
-      var i = Index.zero
-      (tc foreach repr) { x =>
-        recordCall(x)
-        if (range contains i) f(x)
-        i = i.next
-        if (i >= range.end) return
-      }
-    }
   }
 
   sealed abstract class AtomicView extends api.View.Atomic[A] with View[A] with CountCalls {
@@ -102,54 +80,17 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
     def viewChain: List[api.View[_]] = this :: Nil
   }
 
-  sealed abstract class CompositeView[+A](val description: String, val sizeEffect: SizeInfo => SizeInfo) extends api.View.Composite[A] with CompositeViewImpl[A] {
-    def isAtomic = false
-  }
-
-  final case class LabeledView[+A   ](prev: api.View[A], label: String)      extends CompositeView[A](label,            x => x)
-  final case class Sized      [+A   ](prev: api.View[A], size: Size)         extends CompositeView[A](pp"sized $size",  _ => size)
-  final case class Joined     [+A   ](prev: api.View[A], ys: api.View[A])    extends CompositeView[A](pp"++ $ys",       _ + ys.sizeInfo)
-  final case class Filtered   [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"filter $p",    _.atMost)
-  final case class Sliced     [+A   ](prev: api.View[A], range: IndexRange)  extends CompositeView[A](pp"slice $range", _ slice range)
-  final case class Dropped    [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"drop $n",      _ - n)
-  final case class DroppedR   [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"dropR $n",     _ - n)
-  final case class Taken      [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"take $n",      _ min n)
-  final case class TakenR     [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"takeR $n",     _ min n)
-  final case class TakenWhile [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"takeW $p",     _.atMost)
-  final case class DropWhile  [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"dropW $p",     _.atMost)
-  final case class Reversed   [+A   ](prev: api.View[A])                     extends CompositeView[A]("reverse",        x => x)
-  final case class Mapped     [ A, B](prev: api.View[A], f: A => B)          extends CompositeView[B](pp"map $f",       x => x)
-  final case class FlatMapped [ A, B](prev: api.View[A], f: A => Foreach[B]) extends CompositeView[B](pp"flatMap $f",   x => if (x.isZero) x else Unknown)
-  final case class Collected  [ A, B](prev: api.View[A], pf: A ?=> B)        extends CompositeView[B](pp"collect $pf",  _.atMost)
-
-  object FlattenIndexedSlice {
-    def unapply[A](xs: api.View[A]): Option[(api.View[A], IndexRange)] = xs match {
-      case xs: IndexedView       => Some(xs -> xs.size.toIndexRange)
-      case LabeledView(xs, _)    => unapply(xs)
-      case Sized(xs, Size(n))    => Some(xs -> indexRange(0, n))
-      case Mapped(xs, f)         => unapply(xs) map { case (xs, range) => (xs map f, range) }
-      case DroppedR(xs, Size(n)) => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
-      case TakenR(xs, Size(n))   => unapply(xs) map { case (xs, range) => (xs, range takeRight n) }
-      case Dropped(xs, Size(n))  => unapply(xs) map { case (xs, range) => (xs, range drop n) }
-      case Taken(xs, Size(n))    => unapply(xs) map { case (xs, range) => (xs, range take n) }
-      case Sliced(xs, indices)   => unapply(xs) map { case (xs, range) => (xs, range slice indices) }
-      case _                     => xs.sizeInfo.precisely map (size => xs -> indexRange(0, size))
-    }
-  }
-
-
-  sealed trait CompositeViewImpl[+A] extends View[A] {
+  sealed abstract class CompositeView[+A](val description: String, val sizeEffect: SizeInfo => SizeInfo) extends api.View.Composite[A] with View[A] {
     def prev: api.View[_]
-    def viewChain: List[api.View[_]] = this :: prev.viewChain
-    def sizeEffect: SizeInfo => SizeInfo
 
-    def sizeInfo: SizeInfo     = sizeEffect(prev.sizeInfo)
+    def isAtomic  = false
+    def viewChain = this :: prev.viewChain
+    def sizeInfo  = sizeEffect(prev.sizeInfo)
 
     final def foreach(f: A => Unit): Unit = {
       if (sizeInfo.isZero) return
 
       def loop[B](xs: api.View[B])(f: B => Unit): Unit = xs match {
-
         case LabeledView(xs, _)              => loop[B](xs)(f)
         case Sized(xs, size)                 => loop[B](xs)(f)
         // wartremover informs me the loop type argument is inferred as Any!
@@ -163,7 +104,6 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
         case DropWhile(xs, p: Predicate[B])  => foreachDropWhile(xs, f, p)
         case Collected(xs, pf)               => loop(xs)(x => if (pf isDefinedAt x) f(pf(x)))
         case FlattenIndexedSlice(xs, range)  => foreachSlice(xs, f, range)
-        case Reversed(xs)                    => ???
         case Joined(xs, ys)                  => loop(xs)(f) ; loop(ys)(f)
         case DroppedR(xs, Size(n))           => foreachDropRight(xs, f, Size(n))
         case TakenR(xs, Size(n))             => foreachTakeRight(xs, f, Size(n))
@@ -175,7 +115,6 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
       }
       loop(this)(f)
     }
-
     private def foreachSlice[A](xs: api.View[A], f: A => Unit, range: IndexRange): Unit = {
       var i = Index.zero
       def isDone = range.end <= i
@@ -186,7 +125,6 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
           if (isDone) return
         }
       }
-
       xs match {
         case xs: AtomicView   => (xs foreachSlice range)(f)
         case m: Mapped[a, _]  => foreachSlice[a](m.prev, m.f andThen f, range)
@@ -220,10 +158,39 @@ class ViewEnvironment[A0, Repr, CC0[X]](val repr: Repr) {
         }
       }
     }
-
     def calls = this match {
       case Joined(xs, ys) => xs.calls + ys.calls
       case _              => prev.calls
+    }
+  }
+
+  final case class LabeledView[+A   ](prev: api.View[A], label: String)      extends CompositeView[A](label,            x => x)
+  final case class Sized      [+A   ](prev: api.View[A], size: Size)         extends CompositeView[A](pp"sized $size",  _ => size)
+  final case class Joined     [+A   ](prev: api.View[A], ys: api.View[A])    extends CompositeView[A](pp"++ $ys",       _ + ys.sizeInfo)
+  final case class Filtered   [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"filter $p",    _.atMost)
+  final case class Sliced     [+A   ](prev: api.View[A], range: IndexRange)  extends CompositeView[A](pp"slice $range", _ slice range)
+  final case class Dropped    [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"drop $n",      _ - n)
+  final case class DroppedR   [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"dropR $n",     _ - n)
+  final case class Taken      [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"take $n",      _ min n)
+  final case class TakenR     [+A   ](prev: api.View[A], n: Size)            extends CompositeView[A](pp"takeR $n",     _ min n)
+  final case class TakenWhile [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"takeW $p",     _.atMost)
+  final case class DropWhile  [ A   ](prev: api.View[A], p: Predicate[A])    extends CompositeView[A](pp"dropW $p",     _.atMost)
+  final case class Mapped     [ A, B](prev: api.View[A], f: A => B)          extends CompositeView[B](pp"map $f",       x => x)
+  final case class FlatMapped [ A, B](prev: api.View[A], f: A => Foreach[B]) extends CompositeView[B](pp"flatMap $f",   x => if (x.isZero) x else Unknown)
+  final case class Collected  [ A, B](prev: api.View[A], pf: A ?=> B)        extends CompositeView[B](pp"collect $pf",  _.atMost)
+
+  object FlattenIndexedSlice {
+    def unapply[A](xs: api.View[A]): Option[(api.View[A], IndexRange)] = xs match {
+      case xs: IndexedView       => Some(xs -> xs.size.toIndexRange)
+      case LabeledView(xs, _)    => unapply(xs)
+      case Sized(xs, Size(n))    => Some(xs -> indexRange(0, n))
+      case Mapped(xs, f)         => unapply(xs) map { case (xs, range) => (xs map f, range) }
+      case DroppedR(xs, Size(n)) => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
+      case TakenR(xs, Size(n))   => unapply(xs) map { case (xs, range) => (xs, range takeRight n) }
+      case Dropped(xs, Size(n))  => unapply(xs) map { case (xs, range) => (xs, range drop n) }
+      case Taken(xs, Size(n))    => unapply(xs) map { case (xs, range) => (xs, range take n) }
+      case Sliced(xs, indices)   => unapply(xs) map { case (xs, range) => (xs, range slice indices) }
+      case _                     => xs.sizeInfo.precisely map (size => xs -> indexRange(0, size))
     }
   }
 }

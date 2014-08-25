@@ -9,7 +9,7 @@ class Collections extends Bundle {
 
   val xs = immutable.BitSet(1, 2, 3)
 
-  implicit object StringIsCharSequence extends Does.DirectAccessImpl[Char, String, Direct] {
+  implicit object StringIsCharSequence extends DirectAccess.Impl[Char, String, Direct] {
     def length(repr: String): Size               = Size(repr.length)
     def elemAt(repr: String)(index: Index): Char = repr charAt index.value
   }

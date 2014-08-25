@@ -17,7 +17,7 @@ import scala.collection.{ mutable, immutable }
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends Implicits with ImplicitRemoval with Aliases with ArrowAssocHigh with PackageMethods with CollectionPackageLevel {
+trait PackageLevel extends Implicits with ImplicitRemoval with Aliases with ArrowAssocHigh with PackageMethods {
   val EOL          = sys.props.getOrElse("line.separator", "\n")
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
@@ -32,6 +32,24 @@ trait PackageLevel extends Implicits with ImplicitRemoval with Aliases with Arro
   final val MinInt  = Int.MinValue
   final val MaxLong = Long.MaxValue
   final val MinLong = Long.MinValue
+
+  // With type aliases like these which include a type selection,
+  // sometimes substitution fails and you get messages like
+  // "found: Int, required: tc.A." It is bug, bug, bug city.
+  // It can be worked a little bit by expanding the type
+  // manually at the call sites where the bug hits (it's SI-8223).
+  type AtomicView[Repr, W <: Walkable[Repr]]  = Env[Repr, W]#AtomicView
+  type IndexedView[Repr, W <: Walkable[Repr]] = Env[Repr, W]#IndexedView
+  type Env[Repr, W <: Walkable[Repr]]         = ViewEnvironment[W#A, Repr, W#CC]
+
+  type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
+    type A = A0
+    type CC[B] = CC0[B]
+  }
+  type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] {
+    type A = A0
+    type CC[B] = CC0[B]
+  }
 }
 
 /** Aliases for types I've had to import over and over and over again.

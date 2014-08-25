@@ -23,7 +23,6 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   def foreach(f: A => Unit): Unit                         = xs foreach f
   def labeled(label: String): MapTo[A]                    = this
   def map[B](f: A => B): MapTo[B]                         = xs map f
-  def reverse: MapTo[A]                                   = xs.reverse
   def sizeInfo: SizeInfo                                  = xs maybe { case xs: IndexedSeq[_] => SizeInfo(xs.size) } or unknownSize
   def sized(size: Size): MapTo[A]                         = this
   def slice(range: IndexRange): MapTo[A]                  = xs.slice(range.startInt, range.endInt)

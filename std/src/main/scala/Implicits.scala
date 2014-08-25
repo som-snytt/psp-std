@@ -7,39 +7,11 @@ trait CollectionLow {
   // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
   implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): Env[Repr, tc.type]#AtomicView = tc wrap repr
 }
-trait CollectionMid extends CollectionLow {
-  implicit def raiseSequentialAccessView[Repr](repr: Repr)(implicit tc: SequentialAccess[Repr]): Env[Repr, tc.type]#LinearView = tc wrap repr
-}
-trait CollectionHigh extends CollectionMid {
+trait CollectionHigh extends CollectionLow {
   implicit def raiseIndexedView[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): Env[Repr, tc.type]#IndexedView = tc wrap repr
 }
-trait CollectionPackageLevel extends CollectionHigh {
-  // With type aliases like these which include a type selection,
-  // sometimes substitution fails and you get messages like
-  // "found: Int, required: tc.A." It is bug, bug, bug city.
-  // It can be worked a little bit by expanding the type
-  // manually at the call sites where the bug hits (it's SI-8223).
-  type AtomicView[Repr, W <: WalkableTypes]  = Env[Repr, W]#AtomicView
-  type IndexedView[Repr, W <: WalkableTypes] = Env[Repr, W]#IndexedView
-  type LinearView[Repr, W <: WalkableTypes]  = Env[Repr, W]#LinearView
 
-  type Env[Repr, W <: WalkableTypes] = ViewEnvironment[W#A, Repr, W#CC]
-
-  type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
-    type A = A0
-    type CC[B] = CC0[B]
-  }
-  type SequentialAccessType[A0, Repr, CC0[X]] = SequentialAccess[Repr] {
-    type A = A0
-    type CC[B] = CC0[B]
-  }
-  type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] {
-    type A = A0
-    type CC[B] = CC0[B]
-  }
-}
-
-trait LowPriorityPspStd {
+trait LowPriorityPspStd extends CollectionHigh {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
@@ -58,9 +30,6 @@ trait Implicits extends LowPriorityPspStd {
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
   @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
 
-  // Extension methods for non-collection types.
-
-  // Extensions for psp-view.DoesForeach
   implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A] = new ForeachOperations(xs)
   implicit def implicitHasForeach[R: Has.Foreach](xs: R)                   = new ForeachOperations(Foreach(?[Has.Foreach[R]] hasForeach xs))
 

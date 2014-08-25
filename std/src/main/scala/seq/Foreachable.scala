@@ -1,52 +1,41 @@
 package psp
 package std
 
-trait WalkableTypes {
-  type A
+sealed trait Walkable[-Repr] {
   type CC[X]
-}
-
-sealed trait Walkable[-Repr] extends WalkableTypes {
+  type A
   def foreach(repr: Repr)(f: A => Unit): Unit
 }
 trait Foreachable[-Repr] extends Walkable[Repr] {
   def sizeInfo(repr: Repr): SizeInfo = unknownSize
-
   def wrap[R <: Repr](repr: R): AtomicView[R, this.type] = AtomicView.unknown(repr)(this)
-}
-trait SequentialAccess[Repr] extends Walkable[Repr] {
-  def head(repr: Repr): A
-  def tail(repr: Repr): Repr
-  def isEmpty(repr: Repr): Boolean
-
-  def wrap(repr: Repr): LinearView[Repr, this.type] = AtomicView.linear(repr)(this)
 }
 trait DirectAccess[-Repr] extends Walkable[Repr] {
   def length(repr: Repr): Size
   def elemAt(repr: Repr)(index: Index): A
-
   def wrap[R <: Repr](repr: R): IndexedView[R, this.type] = AtomicView.indexed(repr)(this)
 }
 
 object Foreachable {
-  trait Impl[A0, Repr, CC0[X]] extends Foreachable[Repr] {
-    type CC[X] = CC0[X]
-    type A     = A0
-  }
-  final class ForeachIs[A] extends Impl[A, Foreach[A], Foreach] {
+  final class ForeachIs[AIn] extends Foreachable[Foreach[AIn]] {
+    type CC[X] = Foreach[X]
+    type A = AIn
     def foreach(repr: Foreach[A])(f: A => Unit): Unit = repr foreach f
   }
-  final class TraversableIs[CC[X] <: Traversable[X], A] extends Impl[A, CC[A], CC] {
+  final class TraversableIs[M[X] <: Traversable[X], AIn] extends Foreachable[M[AIn]] {
+    type CC[X] = M[X]
+    type A = AIn
     def foreach(repr: CC[A])(f: A => Unit): Unit = repr foreach f
   }
   implicit def foreachIs[A] : ForeachIs[A]                                      = new ForeachIs[A]
   implicit def traversableIs[CC[X] <: Traversable[X], A] : TraversableIs[CC, A] = new TraversableIs[CC, A]
 }
+
 object DirectAccess {
-  trait Impl[A0, Repr, CC0[X]] extends DirectAccess[Repr] {
+  trait Impl[AIn, Repr, M[X]] extends DirectAccess[Repr] {
     @inline final def foreach(repr: Repr)(f: A => Unit): Unit = length(repr) foreachIndex (i => f(elemAt(repr)(i)))
-    type CC[X] = CC0[X]
-    type A     = A0
+    type CC[X] = M[X]
+    type A     = AIn
   }
   final class ArrayIs[A: ClassTag] extends Impl[A, Array[A], Direct] {
     def length(repr: Array[A]): Size            = Size(repr.length)
@@ -56,9 +45,9 @@ object DirectAccess {
     def length(repr: CC[A]): Size            = Size(repr.length)
     def elemAt(repr: CC[A])(index: Index): A = repr(index)
   }
-  final class PspIndexedIs[A0] extends Impl[A0, Direct[A0], Direct] {
-    def length(repr: Direct[A0]): Size             = repr.size
-    def elemAt(repr: Direct[A0])(index: Index): A0 = repr elemAt index
+  final class PspIndexedIs[AIn] extends Impl[AIn, Direct[AIn], Direct] {
+    def length(repr: Direct[A]): Size            = repr.size
+    def elemAt(repr: Direct[A])(index: Index): A = repr elemAt index
   }
 
   implicit def pspIndexedIs[A] : PspIndexedIs[A]                                                          = new PspIndexedIs[A]
@@ -96,7 +85,6 @@ object Is {
   trait IndexContainer[M[X], A]  extends Any with Is.Container[M, A] with Is.Index[M[A]]
   trait LinearContainer[M[X], A] extends Any with Is.Container[M, A] with Is.Linear[M[A]]
   trait ForeachView[M[X], A]     extends Any with Has.Foreach[M[A]]  with Has.View[M[A]] with Has.SizeInfo[M[A]]
-
   trait Iterable[-R]             extends Any with Has.Foreach[R]     with Has.SizeInfo[R]
   trait Seq[-R]                  extends Any with Has.Foreach[R]
   trait Set[-R]                  extends Any with Has.Foreach[R]     with Has.Contains[R]
@@ -105,24 +93,4 @@ object Is {
   trait Linear[R]                extends Any with Is.Seq[R]          with Has.Head[R]      with Has.Tail[R] with Has.IsEmpty[R]
 
   abstract class Array[A] extends IndexContainer[Array, A]
-}
-
-object Does {
-  trait DirectAccessImpl[A0, Repr, CC0[X]] extends DirectAccess[Repr] {
-    @inline final def foreach(repr: Repr)(f: A => Unit): Unit = length(repr) foreachIndex (i => f(elemAt(repr)(i)))
-    type CC[X] = CC0[X]
-    type A     = A0
-  }
-  final class ArrayIsDirectAccess[A: ClassTag] extends DirectAccessImpl[A, Array[A], Direct] {
-    def length(repr: Array[A]): Size            = Size(repr.length)
-    def elemAt(repr: Array[A])(index: Index): A = repr(index.value)
-  }
-  final class IndexedSeqIsDirectAccess[CC[X] <: IndexedSeq[X], A] extends DirectAccessImpl[A, CC[A], CC] {
-    def length(repr: CC[A]): Size            = Size(repr.length)
-    def elemAt(repr: CC[A])(index: Index): A = repr(index)
-  }
-  final class PspIndexedIsDirectAccess[A0] extends DirectAccessImpl[A0, Direct[A0], Direct] {
-    def length(repr: Direct[A0]): Size             = repr.size
-    def elemAt(repr: Direct[A0])(index: Index): A0 = repr elemAt index
-  }
 }
