@@ -40,6 +40,10 @@ object TClass {
     def isZero(implicit alg: BooleanAlgebra[A]): Boolean = alg.zero ref_== lhs
     def isOne(implicit alg: BooleanAlgebra[A]): Boolean  = alg.one ref_== lhs
   }
+  final class EqOps[A](private val lhs: A) extends AnyVal {
+    def ===(rhs: A)(implicit eq: Eq[A]): Boolean = eq.equiv(lhs, rhs)
+    def !==(rhs: A)(implicit eq: Eq[A]): Boolean = !eq.equiv(lhs, rhs)
+  }
   final class ShowDirectOps(private val x: ShowDirect) extends AnyVal {
     /** Java-style String addition without abandoning type safety.
      */
@@ -152,9 +156,6 @@ object Ops {
       case x: ShowDirect => x.to_s
       case _             => "" + x
     }
-    // Dribbling implicit parameters onto extension methods to preserve AnyVal-extension methods.
-    def ===(that: A)(implicit eq: Eq[A]): Boolean = eq.equiv(x, that)
-    def !==(that: A)(implicit eq: Eq[A]): Boolean = !eq.equiv(x, that)
   }
 
   final class OptionOps[A](private val x: Option[A]) extends AnyVal {
@@ -263,7 +264,6 @@ object Ops {
       xs.foreach(x => result = f(x, result))
       result
     }
-
     private def stringed(sep: String)(f: A => String): String =
       foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
 

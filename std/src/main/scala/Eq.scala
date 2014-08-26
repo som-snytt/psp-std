@@ -3,7 +3,6 @@ package std
 
 /** The classic type class for encoding value equivalence.
  */
-
 trait Eq[A] extends Any {
   def equiv(x: A, y: A): Boolean
 }
@@ -38,7 +37,7 @@ object Eq {
   implicit val booleanEq = Eq[Boolean](_ == _)
   implicit val unitEq    = Eq[Unit]((x, y) => true)
 
-  implicit def mapEq[CC[X, Y] <: Map[X, Y], K: Eq, V: Eq] : Eq[CC[K, V]] = Eq[CC[K, V]]((xs, ys) => xs.keys.toSet === ys.keys.toSet && xs.keys.forall(k => xs(k) === ys(k)))
+  implicit def mapEq[CC[X, Y] <: Map[X, Y], K: Eq, V: Eq] : Eq[CC[K, V]] = Eq[CC[K, V]]((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
   implicit def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]]             = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
   implicit def seqEq[CC[X] <: Seq[X], A: Eq] : Eq[CC[A]]                 = Eq[CC[A]]((xs, ys) => (xs corresponds ys)(_ === _))
   implicit def arrayEq[A: Eq] : Eq[Array[A]]                             = Eq[Array[A]](_.toSeq == _.toSeq)

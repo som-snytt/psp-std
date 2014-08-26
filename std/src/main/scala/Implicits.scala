@@ -30,12 +30,12 @@ trait Implicits extends LowPriorityPspStd {
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
   @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
 
-
   // Typeclass requiring extension methods. There is something very depraved going on here,
   // see if you can tell what it is.
   implicit def tclassShowDirectOps[A: Show](x: A): TClass.ShowDirectOps        = new TClass.ShowDirectOps(x.to_s)
   implicit def tclassOrderOps[A: Order](x: A): TClass.OrderOps[A]              = new TClass.OrderOps[A](x)
   implicit def tclassAlgebraOps[A: BooleanAlgebra](x: A): TClass.AlgebraOps[A] = new TClass.AlgebraOps[A](x)
+  implicit def tclassEqOps[A: Eq](x: A): TClass.EqOps[A]                       = new TClass.EqOps[A](x)
   implicit def tclassHasForeach[R: Has.Foreach](xs: R)                         = opsForeach(Foreach(?[Has.Foreach[R]] hasForeach xs))
 
   // Direct-acting extension methods. These are extension methods installed directly onto the
