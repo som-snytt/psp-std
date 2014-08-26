@@ -13,7 +13,7 @@ object Build extends sbt.Build with Versioning {
 
   def imports = """
     import scala.collection.{ mutable, immutable }
-    import psp.api._, psp.std._, ansi._
+    import psp.std._, api._, ansi._
     implicit final class ReplForeachOps[A](val target: Foreach[A]) {
       def !> : Unit = println(target mkString EOL)
       def  >(implicit shows: Show[A]): Unit = println(target join EOL)
@@ -49,7 +49,7 @@ object Build extends sbt.Build with Versioning {
                               resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                            organization :=  pspOrg,
                            scalaVersion :=  "2.11.2",
-                                version :=  "0.2.0-M2",
+                                version :=  "0.3.0-M1",
                             logBuffered :=  false,
                           scalacOptions ++= (Seq("-Ywarn-unused-import", "-Ywarn-unused", "-Ywarn-dead-code", "-language:_") ++ opts),
                            javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),

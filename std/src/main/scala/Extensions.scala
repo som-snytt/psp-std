@@ -295,15 +295,10 @@ object Ops {
   }
 }
 
-final class PartialFunctionOps[T, R](private val pf: T ?=> R) extends AnyVal {
-  def labeled(label: String): T ?=> R     = new LabeledPartialFunction(pf, label)
-  def contraMap[T1](f: T1 => T): T1 ?=> R = { case x if pf isDefinedAt f(x) => pf(f(x)) }
-  def mapValues[R1](f: R => R1): T ?=> R1 = { case x if pf isDefinedAt x => f(pf(x)) }
-}
-final class LabeledFunction[-T, +R](f: T => R, val label: String) extends (T => R) with Labeled {
+final class LabeledFunction[-T, +R](f: T => R, val label: String) extends (T => R) with api.Labeled {
   def apply(x: T): R = f(x)
 }
-final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label: String) extends PartialFunction[T, R] with Labeled {
+final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label: String) extends PartialFunction[T, R] with api.Labeled {
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R    = pf(x)
 }

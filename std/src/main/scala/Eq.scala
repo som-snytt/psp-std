@@ -45,6 +45,14 @@ object Eq {
   final class EqClass[A](private val f: (A, A) => Boolean) extends AnyVal with Eq[A] {
     def equiv(x: A, y: A): Boolean = f(x, y)
   }
+  final case class Wrap[A: HashEq](val value: A) {
+    override def hashCode = ?[HashEq[A]] hash value
+    override def equals(x: Any): Boolean = x match {
+      case Wrap(that) => value === that.asInstanceOf[A]
+      case _          => false
+    }
+    override def toString = pp"$value"
+  }
 }
 
 class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = ord on f   }

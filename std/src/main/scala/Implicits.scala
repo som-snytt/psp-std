@@ -17,7 +17,6 @@ trait LowPriorityPspStd extends CollectionHigh {
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
 
-
   // Implicit conversions between type classes.
   implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A]                      = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
   implicit def canBuildToBuilds[Elem, To](implicit z: CanBuild[Elem, To]): Builds[Elem, To] = Builds(z() ++= _.toTraversable result)
@@ -28,6 +27,7 @@ trait Implicits extends LowPriorityPspStd {
   implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
   implicit def showableToShown[A: Show](x: A): Shown = new Shown(show[A] show x)
+  implicit def showLabeled = Show[api.Labeled](_.label)
 
   // We buried Predef's {un,}augmentString in favor of these.
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)

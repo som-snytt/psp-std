@@ -61,6 +61,7 @@ trait Aliases {
   type CanBuild[-Elem, +To]          = scala.collection.generic.CanBuildFrom[_, Elem, To]
   type ClassTag[A]                   = scala.reflect.ClassTag[A]
   type Codec                         = scala.io.Codec
+  type GTOnce[+A]                    = scala.collection.GenTraversableOnce[A]
   type GenTraversableLike[+A, +Repr] = scala.collection.GenTraversableLike[A, Repr]
   type GenTraversableOnce[+A]        = scala.collection.GenTraversableOnce[A]
   type IndexedSeq[+A]                = scala.collection.immutable.IndexedSeq[A]
@@ -71,7 +72,6 @@ trait Aliases {
   type Try[+A]                       = scala.util.Try[A]
   type VectorBuilder[A]              = scala.collection.mutable.Builder[A, Vector[A]]
   type WrappedArray[A]               = scala.collection.mutable.WrappedArray[A]
-  type GTOnce[+A]                    = scala.collection.GenTraversableOnce[A]
 
   // common annotations
   type switch  = scala.annotation.switch
@@ -132,7 +132,14 @@ trait Aliases {
 }
 
 trait PackageMethods {
-  def ?[A](implicit value: A): A                         = value // aka implicitly
+  def show[A: Show] : Show[A]        = ?
+  def readInto[A] : Read.ReadInto[A] = Read.into[A]
+
+  def eqBy[A] : EqBy[A]       = new EqBy[A]
+  def orderBy[A] : OrderBy[A] = new OrderBy[A]
+  def showBy[A] : ShowBy[A]   = new ShowBy[A]
+
+  def ?[A](implicit value: A): A                         = value
   def Try[A](body: => A): Try[A]                         = scala.util.Try[A](body)
   def andFalse(x: Unit): Boolean                         = false
   def andTrue(x: Unit): Boolean                          = true
@@ -141,8 +148,6 @@ trait PackageMethods {
   def contextLoader(): ClassLoader                       = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
   def decodeName(s: String): String                      = scala.reflect.NameTransformer decode s
   def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
-  def show[A: Show] : Show[A]                            = implicitly
-  def eqBy[A]                                            = new EqBy[A]
   def fail(msg: String): Nothing                         = throw new RuntimeException(msg)
   def failEmpty(operation: String): Nothing              = throw new NoSuchElementException(s"$operation on empty collection")
   def fromUTF8(xs: Array[Byte]): String                  = new String(scala.io.Codec fromUTF8 xs)
@@ -159,14 +164,11 @@ trait PackageMethods {
   def nullLoader(): ClassLoader                          = NullClassLoader
   def nullStream(): InputStream                          = NullInputStream
   def offset(x: Int): Offset                             = Offset(x)
-  def orderBy[A]                                         = new OrderBy[A]
   def printResult[A](msg: String)(result: A): A          = try result finally log(s"$msg: $result")
-  def readInto[A] : Read.ReadInto[A]                     = Read.into[A]
   def resource(name: String): Array[Byte]                = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
   def resourceString(name: String): String               = fromUTF8(resource(name))
-  def showBy[A]                                          = new ShowBy[A]
   def timed[A](body: => A): A                            = nanoTime |> (start => try body finally log("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
-  def unknownSize                                        = SizeInfo.Unknown
+  def unknownSize: SizeInfo                              = SizeInfo.Unknown
   def uri(x: String): URI                                = java.net.URI create x
   def url(x: String): URL                                = uri(x).toURL
 

@@ -27,7 +27,6 @@ object Read {
   def unapply[A](s: String)(implicit reads: Read[A]): Option[A] = Try(reads read s).toOption
   def into[A] = new ReadInto[A]
 
-
   final class ReadInto[A]() {
     def apply(s: String)(implicit reads: Read[A]): A           = reads read s
     def unapply(s: String)(implicit reads: Read[A]): Option[A] = opt(s)

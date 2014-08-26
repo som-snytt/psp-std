@@ -31,7 +31,7 @@ object InvariantLinear {
 object PspList {
   implicit def newBuilder[A] : Builds[A, PspList[A]] = Builds(_.foldr(empty[A])(_ :: _).reverse)
 
-  def empty[A] = nil.castTo[PspList[A]]
+  def empty[A]                                = nil.castTo[PspList[A]]
   def fill[A](n: Int)(body: => A): PspList[A] = if (n <= 0) nil() else body :: fill(n - 1)(body)
   def apply[A](xs: A*): PspList[A]            = xs.foldRight(nil[A]())(_ :: _)
 
