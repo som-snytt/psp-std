@@ -20,30 +20,20 @@ package scratch
 import sbt._, Keys._
 
 object ScratchProject extends sbt.Build {
-  def pspArtifact(id: String) = "org.improving" %% s"psp-$id" % pspVersion
-  def pspVersion              = "0.2.0-M2"
-  def pspView                 = pspArtifact("view") // pspView depends on pspStd
-  def pspStd                  = pspArtifact("std")  // pspStd only depends on scala-librar
-
-  def common = Seq(
-                   resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
-                scalaVersion :=  "2.11.2",
-               scalacOptions ++= Seq("-language:_"),
-  initialCommands in console :=  "import psp.std._",
-         libraryDependencies +=  pspStd
-  )
-  lazy val scratch = (
-    project in file(".")
-      settings (common: _*)
-      settings (name := "scratch-project")
+  lazy val scratch = project in file(".") settings (
+                          name :=  "scratch-project",
+                     resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
+                  scalaVersion :=  "2.11.2",
+                 scalacOptions ++= Seq("-language:_"),
+    initialCommands in console :=  "import psp.std._",
+           libraryDependencies +=  "org.improving" %% "psp-std" % "0.3.0-M1"
   )
 }
 ```
 
 Or if a self-contained project isn't your bag:
 ```
-libraryDependencies += "org.improving" %% s"psp-std" % "0.2.0-M2"
-libraryDependencies += "org.improving" %% s"psp-view" % "0.2.0-M2"
+libraryDependencies += "org.improving" %% s"psp-std" % "0.3.0-M1"
 ```
 
 Then ```sbt console``` and you can look around.
