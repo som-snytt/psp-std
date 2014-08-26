@@ -16,8 +16,11 @@ trait LowPriorityPspStd extends CollectionHigh {
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
-  // Temporary compat with scala's Ordering.
-  implicit def orderOrdering[A](implicit ord: Order[A]): Ordering[A] = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
+
+
+  // Implicit conversions between type classes.
+  implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A]                      = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
+  implicit def canBuildToBuilds[Elem, To](implicit z: CanBuild[Elem, To]): Builds[Elem, To] = Builds(z() ++= _.toTraversable result)
 }
 
 trait Implicits extends LowPriorityPspStd {

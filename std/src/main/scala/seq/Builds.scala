@@ -1,10 +1,13 @@
 package psp
 package std
 
-trait Builds[-Elem, +To] {
+trait Builds[-Elem, +To] extends Any {
   def build(xs: Foreach[Elem]): To
 }
 object Builds {
-  implicit def wrap[Elem, To](implicit z: CanBuild[Elem, To]): Builds[Elem, To] = apply(z() ++= _.toTraversable result)
-  def apply[Elem, To](f: Foreach[Elem] => To): Builds[Elem, To]                 = new Builds[Elem, To] { def build(xs: Foreach[Elem]): To = f(xs) }
+  def apply[Elem, To](f: Foreach[Elem] => To): BuildsClass[Elem, To] = new BuildsClass(f)
+
+  final class BuildsClass[Elem, To](private val f: Foreach[Elem] => To) extends AnyVal with Builds[Elem, To] {
+    def build(xs: Foreach[Elem]): To = f(xs)
+  }
 }

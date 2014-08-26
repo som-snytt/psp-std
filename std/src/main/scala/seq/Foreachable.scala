@@ -49,13 +49,13 @@ object DirectAccess {
     def length(repr: CC[A]): Size            = Size(repr.length)
     def elemAt(repr: CC[A])(index: Index): A = repr(index)
   }
-  final class PspIndexedIs[AIn] extends Impl[AIn, Direct[AIn], Direct] {
+  final class IndexedIs[AIn] extends Impl[AIn, Direct[AIn], Direct] {
     def length(repr: Direct[A]): Size            = repr.size
     def elemAt(repr: Direct[A])(index: Index): A = repr elemAt index
   }
 
   implicit def stringIs: StringIs.type                                                                    = StringIs
-  implicit def pspIndexedIs[A] : PspIndexedIs[A]                                                          = new PspIndexedIs[A]
+  implicit def indexedIs[A] : IndexedIs[A]                                                                = new IndexedIs[A]
   implicit def arrayIs[A: ClassTag] : ArrayIs[A]                                                          = new ArrayIs[A]
   implicit def indexedSeqIs[CC[X] <: IndexedSeq[X], A](implicit z: Builds[A, CC[A]]): IndexedSeqIs[CC, A] = new IndexedSeqIs[CC, A]
 }
