@@ -87,17 +87,11 @@ class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
     def sizeInfo  = sizeEffect(prev.sizeInfo)
 
     final def foreach(f: A => Unit): Unit = {
-      if (sizeInfo.isZero) return
-
       def loop[B](xs: api.View[B])(f: B => Unit): Unit = xs match {
         case LabeledView(xs, _)              => loop[B](xs)(f)
         case Sized(xs, size)                 => loop[B](xs)(f)
-        // wartremover informs me the loop type argument is inferred as Any!
-        // To the extent that scala is sound, it is by accident.
-        // case Mapped(xs, g)                   => loop(xs)(g andThen f)
-        // case FlatMapped(xs, g)               => loop(xs)(x => g(x) foreach f)
-        case m: Mapped[a, _]                 => loop[a](m.prev)(m.f andThen f)
-        case m: FlatMapped[a, _]             => loop[a](m.prev)(x => m.f(x) foreach f)
+        case Mapped(xs, g)                   => loop(xs)(g andThen f)
+        case FlatMapped(xs, g)               => loop(xs)(x => g(x) foreach f)
         case Filtered(xs, p: Predicate[B])   => loop(xs)(x => if (p(x)) f(x))
         case TakenWhile(xs, p: Predicate[B]) => foreachTakeWhile(xs, f, p)
         case DropWhile(xs, p: Predicate[B])  => foreachDropWhile(xs, f, p)
@@ -112,8 +106,11 @@ class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
         case xs: api.View[_]                 => xs foreach f
         case xs                              => sys.error(pp"Unexpected view class ${xs.shortClass}")
       }
-      loop(this)(f)
+
+      if (!sizeInfo.isZero)
+        loop(this)(f)
     }
+
     private def foreachSlice[A](xs: api.View[A], f: A => Unit, range: IndexRange): Unit = {
       var i = Index.zero
       def isDone = range.end <= i
