@@ -7,7 +7,7 @@ Background
 ----------
 
 The scala standard library is lacking. This library attempts to fill some of the gaps and play defense against its hostility to correctness where possible.
-See [psp-view](view/README.md) for some details.
+See [views](views.md) for some details.
 
 Usage
 -----
