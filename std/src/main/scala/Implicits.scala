@@ -30,14 +30,13 @@ trait Implicits extends LowPriorityPspStd {
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
   @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
 
-  implicit def implicitForeachOps[A](xs: Foreach[A]): ForeachOperations[A] = new ForeachOperations(xs)
-  implicit def implicitHasForeach[R: Has.Foreach](xs: R)                   = new ForeachOperations(Foreach(?[Has.Foreach[R]] hasForeach xs))
 
   // Typeclass requiring extension methods. There is something very depraved going on here,
   // see if you can tell what it is.
   implicit def tclassShowDirectOps[A: Show](x: A): TClass.ShowDirectOps        = new TClass.ShowDirectOps(x.to_s)
   implicit def tclassOrderOps[A: Order](x: A): TClass.OrderOps[A]              = new TClass.OrderOps[A](x)
   implicit def tclassAlgebraOps[A: BooleanAlgebra](x: A): TClass.AlgebraOps[A] = new TClass.AlgebraOps[A](x)
+  implicit def tclassHasForeach[R: Has.Foreach](xs: R)                         = opsForeach(Foreach(?[Has.Foreach[R]] hasForeach xs))
 
   // Direct-acting extension methods. These are extension methods installed directly onto the
   // type of interest, as opposed to involving a typeclass.
@@ -45,6 +44,7 @@ trait Implicits extends LowPriorityPspStd {
   implicit def opsArray[A](xs: Array[A]): Ops.ArrayOps[A]                             = new Ops.ArrayOps[A](xs)
   implicit def opsBooleanAlgebra[A](alg: BooleanAlgebra[A]): Ops.BooleanAlgebraOps[A] = new Ops.BooleanAlgebraOps[A](alg)
   implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]                                       = new Ops.EqOps[A](x)
+  implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                       = new Ops.ForeachOps(xs)
   implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)
   implicit def opsGTOnce[CC[X] <: GTOnce[X], A](xs: CC[A]): Ops.GTOnce[CC, A]         = new Ops.GTOnce[CC, A](xs)
   implicit def opsInputStream(x: InputStream): Ops.InputStreamOps                     = new Ops.InputStreamOps(x)
@@ -57,7 +57,7 @@ trait Implicits extends LowPriorityPspStd {
   implicit def opsOrder[A](x: Order[A]): Ops.OrderOps[A]                              = new Ops.OrderOps[A](x)
   implicit def opsSeq1[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.Seq1[CC, A]             = new Ops.Seq1[CC, A](xs)
   implicit def opsSeq2[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.Seq2[CC, A]             = new Ops.Seq2[CC, A](xs)
-  implicit def opsSeq[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.Seq[CC, A]               = new Ops.Seq[CC, A](xs)
+  implicit def opsSeqOps[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.SeqOps[CC, A]         = new Ops.SeqOps[CC, A](xs)
   implicit def opsShow[A](x: Show[A]): Ops.ShowOps[A]                                 = new Ops.ShowOps[A](x)
   implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): Ops.SortedMap[K, V]        = new Ops.SortedMap[K, V](xs)
   implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                         = new Ops.TryOps[A](x)

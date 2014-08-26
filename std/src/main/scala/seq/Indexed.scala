@@ -9,15 +9,15 @@ trait DirectLeaf[A] extends Any with Direct[A] with Invariant[A] { def contains(
 object Direct {
   implicit def newBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) => xs maybe { case xs: Direct[A] => xs } or Direct.elems(xs.toSeq: _*))
 
-  abstract class IndexedImpl[+A](val size: Size) extends Direct[A] with HasPreciseSize {
+  abstract class Impl[+A](val size: Size) extends Direct[A] with HasPreciseSize {
     def sizeInfo = size
     @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
     override def toString = Foreach.stringify(this)(Show.native[A])
   }
-  final class Pure[+A](size: Size, indexFn: Index => A) extends IndexedImpl[A](size) {
+  final class Pure[+A](size: Size, indexFn: Index => A) extends Impl[A](size) {
     def elemAt(index: Index): A = indexFn(index)
   }
-  object Empty extends IndexedImpl[Nothing](SizeInfo.Zero) with HasStaticSize[Nat._0] {
+  object Empty extends Impl[Nothing](SizeInfo.Zero) with HasStaticSize[Nat._0] {
     def elemAt(index: Index): Nothing = failEmpty(pp"$this($index)")
     override def toString = "<empty>"
   }
@@ -48,7 +48,7 @@ object IntRange {
   def to(start: Int, last: Int): IntRange   = if (last < start) until(start, start) else new IntRange(start, last, isInclusive = true)
 }
 
-final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends Direct.IndexedImpl[Int](Size(last - start + 1)) with DirectLeaf[Int] {
+final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends Direct.Impl[Int](Size(last - start + 1)) with DirectLeaf[Int] {
   def contains(x: Int): Boolean = start <= x && x <= last
   def isEmpty               = last < start
   def end                   = last + 1
