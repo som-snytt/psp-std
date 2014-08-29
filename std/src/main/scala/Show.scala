@@ -2,7 +2,7 @@ package psp
 package std
 
 object Show {
-  def apply[A](f: A => String): Show[A] = new api.ShowClass(f)
+  def apply[A](f: A => String): Show[A] = new internal.ShowClass(f)
   def native[A](): Show[A]              = ToString.castTo[Show[A]]
 
   /** This of course is not implicit as that would defeat the purpose of the endeavor.
