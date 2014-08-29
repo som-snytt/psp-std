@@ -26,14 +26,14 @@ object ScratchProject extends sbt.Build {
                   scalaVersion :=  "2.11.2",
                  scalacOptions ++= Seq("-language:_"),
     initialCommands in console :=  "import psp.std._",
-           libraryDependencies +=  "org.improving" %% "psp-std" % "0.3.0-M1"
+           libraryDependencies +=  "org.improving" %% "psp-std" % "0.3.0-M4"
   )
 }
 ```
 
 Or if a self-contained project isn't your bag:
 ```
-libraryDependencies += "org.improving" %% s"psp-std" % "0.3.0-M1"
+libraryDependencies += "org.improving" %% s"psp-std" % "0.3.0-M4"
 ```
 
 Then ```sbt console``` and you can look around.
@@ -45,4 +45,4 @@ res0: Boolean = true
 Requirements
 ------------
 
-scala 2.11.x, java 6+ at this moment. java 7+ is a near-inevitability.
+scala 2.11.x, java 7+.
