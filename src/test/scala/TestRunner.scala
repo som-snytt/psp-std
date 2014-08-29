@@ -13,12 +13,13 @@ object TestRunner {
   /** How to check for function equivalence? In the absence of mathematical breakthroughs,
    *  recursively throw scalacheck at it again, verifying arbitrary inputs have the same result.
    */
-  implicit def Fun[A : Arbitrary : Eq] = Eq[Predicate[A]]((f, g) => Test.check(forAll((x: A) => f(x) === g(x)))(identity).passed)
+  implicit def Fun[A : Arbitrary : Eq] : Eq[Predicate[A]] =
+    Eq[Predicate[A]]((f, g) => Test.check(forAll((x: A) => f(x) === g(x)))(identity).passed)
 
   def main(args: Array[String]): Unit = {
     val bundles = Seq[Bundle](
       new AlgebraPoliceman[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
-      new AlgebraPoliceman[Predicate[Int]]("Int => Boolean"),
+      new AlgebraPoliceman[Predicate[Int]]("Int => Boolean")(?, ?, Fun[Int]),
       new AlgebraPoliceman[Set[Int]]("Set[Int]") { override def join = "||" ; override def meet = "&&" },
       new ValuesSpec,
       new SizeInfoSpec,

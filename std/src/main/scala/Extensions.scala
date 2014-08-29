@@ -73,13 +73,13 @@ object Ops {
   }
 
   // Have to each go into their own class because the apply methods have the same erasure.
-  final class Seq1[CC[X] <: sc.Seq[X], A](private val xs: CC[A]) extends AnyVal {
+  final class Seq1[A](private val xs: sc.Seq[A]) extends AnyVal {
     def apply(nth: Nth): A = if (nth.isUndefined) sys.error(s"apply($nth)") else xs(nth.intIndex)
   }
-  final class Seq2[CC[X] <: sc.Seq[X], A](private val xs: CC[A]) extends AnyVal {
+  final class Seq2[A](private val xs: sc.Seq[A]) extends AnyVal {
     def apply(index: Index): A = if (index.isUndefined) sys.error(s"apply($index)") else xs(index.value)
   }
-  final class SeqOps[CC[X] <: sc.Seq[X], A](private val xs: CC[A]) extends AnyVal with SeqLikeOps[A] {
+  final class SeqOps[A](private val xs: sc.Seq[A]) extends AnyVal with SeqLikeOps[A] {
     def length                                   = xs.length
     def index(elem: A): Index                    = Index(xs indexOf elem)
     def lastIndex(elem: A): Index                = Index(xs lastIndexOf elem)
@@ -262,6 +262,7 @@ object Ops {
     def join(sep: String)(implicit shows: Show[A]): String = stringed(sep)(_.to_s)
     def joinLines(implicit shows: Show[A]): String         = join(EOL)
     def joinComma(implicit shows: Show[A]): String         = join(", ")
+    def joinSpace(implicit shows: Show[A]): String         = join(" ")
     def mkString(sep: String): String                      = stringed(sep)(_.try_s)
     def find(p: Predicate[A]): Option[A]                   = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
     def forall(p: Predicate[A]): Boolean                   = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)

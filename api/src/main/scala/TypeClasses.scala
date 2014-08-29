@@ -4,14 +4,14 @@ package std
 package api {
   /** The classic type class for encoding value equivalence.
    */
-  trait Eq[A] extends Any { def equiv(x: A, y: A): Boolean }
+  trait Eq[-A] extends Any { def equiv(x: A, y: A): Boolean }
 
   /** The Eq type class fused with a method to provide the
    *  corresponding hashCodes. I've never had a desire to provide
    *  hash codes independently of equals logic so there's no
    *  separate Hash typeclass.
    */
-  trait HashEq[A] extends Any with Eq[A] { def hash(x: A): Int }
+  trait HashEq[-A] extends Any with Eq[A] { def hash(x: A): Int }
 
   /** The classic type class for turning string representations into typed values.
    */
@@ -19,7 +19,7 @@ package api {
 
   /** The classic type class for encoding string representations.
    */
-  trait Show[A] extends Any { def show(x: A): String }
+  trait Show[-A] extends Any { def show(x: A): String }
 
   /** Contravariance vs. implicits, the endless battle.
    *  We return a java three-value enum from compare in preference
@@ -57,19 +57,19 @@ package internal {
    *  due to value class limitations, but that leaves them eligible to drive
    *  implicit conversions to these classes.
    */
-  final class EqClass[A](val __psp_f: (A, A) => Boolean) extends AnyVal with Eq[A] {
+  final class EqClass[-A](val __psp_f: (A, A) => Boolean) extends AnyVal with Eq[A] {
     def equiv(x: A, y: A): Boolean = __psp_f(x, y)
   }
-  final class OrderClass[A](val __psp_f: (A, A) => Cmp) extends AnyVal with Order[A] {
+  final class OrderClass[-A](val __psp_f: (A, A) => Cmp) extends AnyVal with Order[A] {
     def compare(x: A, y: A): Cmp = __psp_f(x, y)
   }
-  final class ShowClass[A](val __psp_f: A => String) extends AnyVal with Show[A] {
+  final class ShowClass[-A](val __psp_f: A => String) extends AnyVal with Show[A] {
     def show(x: A): String = __psp_f(x)
   }
   final class ReadClass[A](val __psp_f: String => A) extends AnyVal with Read[A] {
     def read(x: String): A = __psp_f(x)
   }
-  final class HashEqClass[A](cmp: (A, A) => Boolean, h: A => Int) extends HashEq[A] {
+  final class HashEqClass[-A](cmp: (A, A) => Boolean, h: A => Int) extends HashEq[A] {
     def equiv(x: A, y: A) = cmp(x, y)
     def hash(x: A)        = h(x)
   }

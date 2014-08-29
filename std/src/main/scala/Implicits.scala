@@ -6,7 +6,7 @@ import scala.{ collection => sc }
 abstract class PackageImplicits extends ImplicitRemoval
     with StandardImplicits4
     with ArrowAssoc2
-    with ShowImplicits2
+    with ShowImplicits
     with ReadImplicits
     with OrderImplicits
     with EqImplicits
@@ -89,6 +89,7 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def opsArray[A](xs: Array[A]): Ops.ArrayOps[A]                             = new Ops.ArrayOps[A](xs)
   implicit def opsBooleanAlgebra[A](alg: BooleanAlgebra[A]): Ops.BooleanAlgebraOps[A] = new Ops.BooleanAlgebraOps[A](alg)
   implicit def opsCmp(x: Cmp): Ops.CmpOps                                             = new Ops.CmpOps(x)
+  implicit def opsCollection[A](x: jAbstractCollection[A]): Ops.jCollectionOps[A]     = new Ops.jCollectionOps(x)
   implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]                                       = new Ops.EqOps[A](x)
   implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                       = new Ops.ForeachOps(xs)
   implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)
@@ -96,75 +97,73 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def opsInputStream(x: InputStream): Ops.InputStreamOps                     = new Ops.InputStreamOps(x)
   implicit def opsInt(x: Int): Ops.IntOps                                             = new Ops.IntOps(x)
   implicit def opsIterator[A](it: jIterator[A]): Ops.IteratorOps[A]                   = new Ops.IteratorOps(it)
-  implicit def opsCollection[A](x: jAbstractCollection[A]): Ops.jCollectionOps[A]     = new Ops.jCollectionOps(x)
   implicit def opsLong(x: Long): Ops.LongOps                                          = new Ops.LongOps(x)
   implicit def opsMap[K, V](xs: sc.Map[K, V]): Ops.Map[K, V]                          = new Ops.Map[K, V](xs)
   implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]                           = new Ops.OptionOps[A](x)
   implicit def opsOrder[A](x: Order[A]): Ops.OrderOps[A]                              = new Ops.OrderOps[A](x)
-  implicit def opsSeq1[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.Seq1[CC, A]             = new Ops.Seq1[CC, A](xs)
-  implicit def opsSeq2[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.Seq2[CC, A]             = new Ops.Seq2[CC, A](xs)
-  implicit def opsSeqOps[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.SeqOps[CC, A]         = new Ops.SeqOps[CC, A](xs)
+  implicit def opsSeq1[A](xs: sc.Seq[A]): Ops.Seq1[A]                                 = new Ops.Seq1[A](xs)
+  implicit def opsSeq2[A](xs: sc.Seq[A]): Ops.Seq2[A]                                 = new Ops.Seq2[A](xs)
+  implicit def opsSeqOps[A](xs: sc.Seq[A]): Ops.SeqOps[A]                             = new Ops.SeqOps[A](xs)
   implicit def opsShow[A](x: Show[A]): Ops.ShowOps[A]                                 = new Ops.ShowOps[A](x)
   implicit def opsSizeInfo(x: SizeInfo): Ops.SizeInfoOps                              = new Ops.SizeInfoOps(x)
   implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): Ops.SortedMap[K, V]        = new Ops.SortedMap[K, V](xs)
   implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                         = new Ops.TryOps[A](x)
 }
 
-trait ShowImplicits1 {
-  implicit def intShow     = Show.native[Int]()
-  implicit def longShow    = Show.native[Long]()
-  implicit def doubleShow  = Show.native[Double]()
-  implicit def booleanShow = Show.native[Boolean]()
-  implicit def charShow    = Show.native[Char]()
-}
-trait ShowImplicits2 extends ShowImplicits1 {
+/** An incomplete selection of show compositors.
+ *  Not printing the way scala does.
+ */
+trait ShowImplicits {
   def inBrackets[A: Show](xs: A*): String = Seq("[", xs.toSeq.joinComma, "]") join ""
 
-  /** An incomplete selection of show compositors.
-   *  Not printing the way scala does.
-   */
-  implicit def stringShow: Show[String]                        = Show(x => x)
-  implicit def optShow[A: Show] : Show[Option[A]]              = Show(_.fold("-")(x => show"$x"))
-  implicit def seqShow[CC[X] <: Seq[X], A: Show] : Show[CC[A]] = Show(xs => inBrackets(xs: _*))
-  implicit def arrayShow[A: Show] : Show[Array[A]]             = Show(xs => inBrackets(xs: _*))
-  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)]      = Show { case (x, y) => show"$x -> $y" }
-  implicit def showDirect[A <: ShowDirect] : Show[A]           = Show.native[A]()
-  implicit def numberShow[A <: ScalaNumber] : Show[A]          = Show.native[A]() // BigInt, BigDecimal
-  implicit def sizeShow                                        = showBy[api.Size](_.value.to_s)
+  implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
+  implicit def booleanShow: Show[Boolean]                 = Show.native()
+  implicit def charShow: Show[Char]                       = Show.native()
+  implicit def doubleShow: Show[Double]                   = Show.native()
+  implicit def indexShow: Show[api.Index]                 = showBy(_.value.to_s)
+  implicit def intShow: Show[Int]                         = Show.native()
+  implicit def longShow: Show[Long]                       = Show.native()
+  implicit def numberShow: Show[ScalaNumber]              = Show.native()
+  implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(_.to_s))
+  implicit def pspListShow[A: Show] : Show[PspList[A]]    = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
+  implicit def seqShow[A: Show] : Show[Seq[A]]            = Show(xs => inBrackets(xs: _*))
+  implicit def showDirect: Show[ShowDirect]               = Show(_.to_s)
+  implicit def sizeShow: Show[api.Size]                   = showBy(_.value.to_s)
+  implicit def stringShow: Show[String]                   = Show(x => x)
+  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
+  implicit def viewShow[A] : Show[api.View[A]]            = Show(_.viewChain reverseMap (_.description) joinSpace)
 
-  implicit def viewShow[A] = Show[api.View[A]](_.viewChain reverseMap (_.description) mkString " ")
-  implicit def pspListShow[A: Show] = Show[PspList[A]](xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
-  implicit def sizeInfoShow[A <: SizeInfo]: Show[A] = Show[A] {
+  implicit def sizeInfoShow: Show[SizeInfo] = Show[SizeInfo] {
     case Bounded(lo, Infinite) => show"[$lo, <inf>)"
     case Bounded(lo, hi)       => show"[$lo, $hi]"
-    case Precise(size)         => s"$size"
+    case Precise(size)         => show"$size"
     case Infinite              => "<inf>"
   }
-
 }
+
 trait ReadImplicits {
-  implicit val bigIntRead = Read[BigInt](s => BigInt(s))
-  implicit val bigDecRead = Read[BigDecimal](s => BigDecimal(s))
-  implicit val stringRead = Read[String](s => s)
-  implicit val floatRead  = Read[Float](_.toFloat)
-  implicit val doubleRead = Read[Double](_.toDouble)
-  implicit val longRead   = Read[Long](_.toLong)
-  implicit val intRead    = Read[Int](_.toInt)
+  implicit val bigDecRead: Read[BigDecimal] = Read(s => BigDecimal(s))
+  implicit val bigIntRead: Read[BigInt]     = Read(s => BigInt(s))
+  implicit val doubleRead: Read[Double]     = Read(_.toDouble)
+  implicit val floatRead: Read[Float]       = Read(_.toFloat)
+  implicit val intRead: Read[Int]           = Read(_.toInt)
+  implicit val longRead: Read[Long]         = Read(_.toLong)
+  implicit val stringRead: Read[String]     = Read(s => s)
 }
 
 trait OrderImplicits {
-  implicit val intOrder     = Order[Int](_ - _ cmp)
-  implicit val longOrder    = Order[Long](_ - _ cmp)
-  implicit val charOrder    = Order[Char](_ - _ cmp)
-  implicit val byteOrder    = Order[Byte](_ - _ cmp)
-  implicit val shortOrder   = Order[Short](_ - _ cmp)
-  implicit val booleanOrder = Order[Boolean](_ compare _ cmp)
-  implicit val stringOrder  = Order[String](_ compareTo _ cmp)
+  implicit val booleanOrder: Order[Boolean] = Order[Boolean](_ compare _ cmp)
+  implicit val byteOrder: Order[Byte]       = Order[Byte](_ - _ cmp)
+  implicit val charOrder: Order[Char]       = Order[Char](_ - _ cmp)
+  implicit val intOrder: Order[Int]         = Order[Int](_ - _ cmp)
+  implicit val longOrder: Order[Long]       = Order[Long](_ - _ cmp)
+  implicit val shortOrder: Order[Short]     = Order[Short](_ - _ cmp)
+  implicit val stringOrder: Order[String]   = Order[String](_ compareTo _ cmp)
 
-  implicit def indexOrder = orderBy[api.Index](_.value)
-  implicit def sizeOrder  = orderBy[api.Size](_.value)
-  implicit def tuple2Order[A: Order, B: Order]           = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
-  implicit def tuple3Order[A: Order, B: Order, C: Order] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
+  implicit def indexOrder: Order[api.Index]                                 = orderBy[api.Index](_.value)
+  implicit def sizeOrder: Order[api.Size]                                   = orderBy[api.Size](_.value)
+  implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
+  implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
 
   // no, infinity doesn't really equal infinity, but it can for our
   // purposes as long as <inf> - <inf> is ill-defined.
@@ -196,11 +195,12 @@ trait OrderImplicits {
 }
 
 trait EqImplicits {
-  implicit def sizeInfoEq: Eq[SizeInfo] = Eq[SizeInfo](_ == _)
-  implicit def mapEq[CC[X, Y] <: Map[X, Y], K: Eq, V: Eq] : Eq[CC[K, V]] = Eq[CC[K, V]]((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
-  /*implicit*/ def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]]             = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
-  implicit def seqEq[CC[X] <: Seq[X], A: Eq] : Eq[CC[A]]                 = Eq[CC[A]]((xs, ys) => (xs corresponds ys)(_ === _))
-  implicit def arrayEq[A: Eq] : Eq[Array[A]]                             = Eq[Array[A]](_.toSeq == _.toSeq)
+  def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]] = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
+
+  implicit def sizeInfoEq: Eq[SizeInfo]            = Eq(_ == _)
+  implicit def mapEq[K: Eq, V: Eq] : Eq[Map[K, V]] = Eq((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
+  implicit def seqEq[A: Eq] : Eq[Seq[A]]           = Eq((xs, ys) => (xs corresponds ys)(_ === _))
+  implicit def arrayEq[A: Eq] : Eq[Array[A]]       = Eq(_.toSeq == _.toSeq)
 }
 
 trait ArrowAssoc1 {

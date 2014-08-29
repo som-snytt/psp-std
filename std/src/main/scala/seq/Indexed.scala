@@ -14,7 +14,7 @@ object Direct {
     def elemAt(index: api.Index): A = indexFn(index)
   }
   object Empty extends DirectLeaf[Nothing](SizeInfo.Zero) with HasStaticSize[Nat._0] {
-    def elemAt(index: api.Index): Nothing = failEmpty(pp"$this($index)")
+    def elemAt(index: api.Index): Nothing = failEmpty(pp"empty($index)")
     override def toString = "<empty>"
   }
 

@@ -41,12 +41,13 @@ trait PackageAliases {
     type CC[B] = CC0[B]
   }
 
-  type Show[A]    = api.Show[A]
-  type ShowDirect = api.ShowDirect
-  type Read[A]    = api.Read[A]
-  type Eq[A]      = api.Eq[A]
-  type HashEq[A]  = api.HashEq[A]
+  type Show[-A]   = api.Show[A]
+  type Eq[-A]     = api.Eq[A]
+  type HashEq[-A] = api.HashEq[A]
   type Order[-A]  = api.Order[A]
+
+  type Read[A]    = api.Read[A]
+  type ShowDirect = api.ShowDirect
   type Cmp        = psp.std.api.Cmp
 
   type Invariant[A] = api.Invariant[A]
