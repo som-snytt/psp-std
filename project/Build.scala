@@ -52,7 +52,7 @@ object Build extends sbt.Build with Versioning {
                               resolvers  +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                            organization  :=  pspOrg,
                            scalaVersion  :=  "2.11.2",
-                                version  :=  "0.3.0-M2",
+                                version  :=  "0.3.0-M3",
                             logBuffered  :=  false,
                           scalacOptions ++=  opts ++ Seq("-Ywarn-dead-code", "-language:_"),
                           scalacOptions <++= ifBinary("2.11")("-Ywarn-unused" :: "-Ywarn-unused-import" :: Nil, Nil),
