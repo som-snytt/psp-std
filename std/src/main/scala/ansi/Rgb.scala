@@ -19,7 +19,7 @@ final class RGB private (val bits: Int) extends AnyVal {
 }
 
 final class RgbMap(val keys: Vector[ColorName], val lookup: ColorName => RGB, val palette: Vector[RGB]) {
-  def grouped = (keys groupBy nearestIndex).values.toVector sortBy (x => (x.length, x.head.name.length)) map (_.to_s)
+  def grouped = (keys groupBy nearestIndex).values.toVector sortOrder (x => (x.length, x.head.name.length)) map (_.to_s)
 
   def get(key: ColorName): Option[Index]  = Try(nearestIndex(key)).toOption
   def namesOf(rgb: RGB): Seq[ColorName]   = keys filter (k => nearest(rgb) == nearest(lookup(k)))
@@ -48,7 +48,7 @@ object RgbMap {
 
   def ShowRgbMap2: Show[RgbMap] = Show[RgbMap] { x =>
     import x._
-    val toShow = keys sortBy nearestIndex mapToMapPairs { k =>
+    val toShow = keys sortOrder nearestIndex mapToMapPairs { k =>
       val v1       = lookup(k)
       val v2       = nearest(v1)
       val distance = "%.3f" format (v1 distanceTo v2)

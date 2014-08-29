@@ -10,7 +10,7 @@ package std
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-trait PackageLevel extends api.PackageLevel with PackageImplicits with PackageAliases with PackageMethods {
+abstract class PackageLevel extends PackageImplicits with api.PackageLevel with PackageAliases with PackageMethods {
   /** It's like "" + x, except, you know, for kids.
    */
   val `""`         = Shown("")
@@ -44,13 +44,19 @@ trait PackageAliases {
   type Show[A]    = api.Show[A]
   type ShowDirect = api.ShowDirect
   type Read[A]    = api.Read[A]
+  type Eq[A]      = api.Eq[A]
+  type HashEq[A]  = api.HashEq[A]
+  type Order[-A]  = api.Order[A]
+  type Cmp        = psp.std.api.Cmp
+
+  val Eq          = api.Eq
 }
 
 trait PackageMethods {
   self: PackageLevel =>
 
   def show[A: Show] : Show[A]        = ?
-  def readInto[A] : Read.ReadInto[A] = Read.into[A]
+  // def readInto[A] : Read.ReadInto[A] = Read.into[A]
 
   def eqBy[A] : EqBy[A]       = new EqBy[A]
   def orderBy[A] : OrderBy[A] = new OrderBy[A]

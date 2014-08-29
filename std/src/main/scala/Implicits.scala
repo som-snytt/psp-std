@@ -3,7 +3,13 @@ package std
 
 import scala.{ collection => sc }
 
-trait PackageImplicits extends ImplicitRemoval with StandardImplicits4 with ArrowAssoc2 with ShowImplicits2
+abstract class PackageImplicits extends ImplicitRemoval
+    with StandardImplicits4
+    with ArrowAssoc2
+    with ShowImplicits2
+    with ReadImplicits
+    with OrderImplicits
+    with EqImplicits
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
  *  This list is subject to renegotiation.
@@ -22,7 +28,7 @@ trait ImplicitRemoval {
 }
 
 trait StandardImplicits1 {
-  implicit def arrayBuilder[A: ClassTag] : Builds[A, Array[A]] = Builds(xs =>
+  implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]] = Builds(xs =>
     xs.sizeInfo match {
       case Precise(Size(n)) =>
         val result = new Array[A](n)
@@ -45,8 +51,6 @@ trait StandardImplicits3 extends StandardImplicits2 {
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
-  // Implicit conversions between type classes.
-  implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A] = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
 }
 
 trait StandardImplicits4 extends StandardImplicits3 {
@@ -66,6 +70,7 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def tclassOrderOps[A: Order](x: A): TClass.OrderOps[A]              = new TClass.OrderOps[A](x)
   implicit def tclassAlgebraOps[A: BooleanAlgebra](x: A): TClass.AlgebraOps[A] = new TClass.AlgebraOps[A](x)
   implicit def tclassEqOps[A: Eq](x: A): TClass.EqOps[A]                       = new TClass.EqOps[A](x)
+  implicit def tclassEqOps[A: HashEq](x: A): TClass.HashEqOps[A]               = new TClass.HashEqOps[A](x)
   implicit def tclassHasForeach[R: Has.Foreach](xs: R)                         = opsForeach(Foreach(?[Has.Foreach[R]] hasForeach xs))
 
   // Direct-acting extension methods. These are extension methods installed directly onto the
@@ -73,6 +78,7 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def opsAny[A](x: A): Ops.AnyOps[A]                                         = new Ops.AnyOps[A](x)
   implicit def opsArray[A](xs: Array[A]): Ops.ArrayOps[A]                             = new Ops.ArrayOps[A](xs)
   implicit def opsBooleanAlgebra[A](alg: BooleanAlgebra[A]): Ops.BooleanAlgebraOps[A] = new Ops.BooleanAlgebraOps[A](alg)
+  implicit def opsCmp(x: Cmp): Ops.CmpOps                                             = new Ops.CmpOps(x)
   implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]                                       = new Ops.EqOps[A](x)
   implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                       = new Ops.ForeachOps(xs)
   implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)
@@ -122,6 +128,26 @@ trait ReadImplicits {
   implicit val doubleRead = Read[Double](_.toDouble)
   implicit val longRead   = Read[Long](_.toLong)
   implicit val intRead    = Read[Int](_.toInt)
+}
+
+trait OrderImplicits {
+  implicit val intOrder     = Order[Int](_ - _ cmp)
+  implicit val longOrder    = Order[Long](_ - _ cmp)
+  implicit val charOrder    = Order[Char](_ - _ cmp)
+  implicit val byteOrder    = Order[Byte](_ - _ cmp)
+  implicit val shortOrder   = Order[Short](_ - _ cmp)
+  implicit val booleanOrder = Order[Boolean](_ compare _ cmp)
+  implicit val stringOrder  = Order[String](_ compareTo _ cmp)
+
+  implicit def tuple2Order[A: Order, B: Order]           = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
+  implicit def tuple3Order[A: Order, B: Order, C: Order] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
+}
+
+trait EqImplicits {
+  implicit def mapEq[CC[X, Y] <: Map[X, Y], K: Eq, V: Eq] : Eq[CC[K, V]] = Eq[CC[K, V]]((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
+  /*implicit*/ def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]]             = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
+  implicit def seqEq[CC[X] <: Seq[X], A: Eq] : Eq[CC[A]]                 = Eq[CC[A]]((xs, ys) => (xs corresponds ys)(_ === _))
+  implicit def arrayEq[A: Eq] : Eq[Array[A]]                             = Eq[Array[A]](_.toSeq == _.toSeq)
 }
 
 trait ArrowAssoc1 {

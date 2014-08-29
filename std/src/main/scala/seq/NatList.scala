@@ -17,8 +17,7 @@ sealed trait NatList[N <: Nat, A] extends Foreach[A] with HasStaticSize[N] {
   def unsafeHead: A
   def unsafeTail: NatList[N#Prev, A]
 
-  private type AsTail[A] = NatList[N#Succ#Prev, A]
-  private def asTail[A]  = this.castTo[AsTail[A]]
+  private def asTail[A] = this.castTo[NatList[N#Succ#Prev, A]]
 
   def ::[A1 >: A](hd: A1) = new NatList.::(hd, asTail[A1])
 

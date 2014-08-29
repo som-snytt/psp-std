@@ -2,7 +2,7 @@ package psp
 package std
 
 object Show {
-  def apply[A](f: A => String): Show[A] = new ShowClass(f)
+  def apply[A](f: A => String): Show[A] = new api.ShowClass(f)
   def native[A](): Show[A]              = ToString.castTo[Show[A]]
 
   /** This of course is not implicit as that would defeat the purpose of the endeavor.
@@ -10,10 +10,6 @@ object Show {
   val ToString: Show[Any] = apply[Any] {
     case x: ShowDirect => x.to_s
     case x             => "" + x
-  }
-
-  private class ShowClass[A](private val f: A => String) extends AnyVal with Show[A] {
-    def show(x: A): String = f(x)
   }
 }
 

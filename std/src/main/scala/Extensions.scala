@@ -4,10 +4,10 @@ package std
 import java.{ lang => jl }
 import scala.{ collection => sc }
 import Trilean._
+import psp.std.api.Cmp._
 
 object TClass {
   final class OrderOps[A](private val lhs: A) extends AnyVal {
-    import Order.Cmp, Order.Cmp._
     def compare(rhs: A)(implicit ord: Order[A]): Cmp = ord.compare(lhs, rhs)
     def < (rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) == LT
     def <=(rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) != GT
@@ -18,19 +18,19 @@ object TClass {
   }
   final class PartialOrderOps[A](private val lhs: A) extends AnyVal {
     import PartialOrder._
-    private def evaluate(rhs: A)(trues: Cmp*)(undefs: Cmp*)(implicit ord: PartialOrder[A]): Trilean = {
+    private def evaluate(rhs: A)(trues: PCmp*)(undefs: PCmp*)(implicit ord: PartialOrder[A]): Trilean = {
       val res = partialCompare(rhs)
       if (trues contains res) True
       else if (undefs contains res) Undefined
       else False
     }
-    def partialCompare(rhs: A)(implicit ord: PartialOrder[A]): Cmp = ord.partialCompare(lhs, rhs)
-    def < (rhs: A)(implicit ord: PartialOrder[A]): Trilean         = evaluate(rhs)(LT)(NA, LE)
-    def <=(rhs: A)(implicit ord: PartialOrder[A]): Trilean         = evaluate(rhs)(LT, LE, EQ)(NA)
-    def >=(rhs: A)(implicit ord: PartialOrder[A]): Trilean         = evaluate(rhs)(GT, GE, EQ)(NA)
-    def >(rhs: A)(implicit ord: PartialOrder[A]): Trilean          = evaluate(rhs)(GT)(NA, GE)
-    def min(rhs: A)(implicit ord: PartialOrder[A]): Option[A]      = partialCompare(rhs) match { case LT | LE => Some(lhs) ; case GT | GE => Some(rhs) ; case _ => None }
-    def max(rhs: A)(implicit ord: PartialOrder[A]): Option[A]      = partialCompare(rhs) match { case LT | LE => Some(rhs) ; case GT | GE => Some(lhs) ; case _ => None }
+    def partialCompare(rhs: A)(implicit ord: PartialOrder[A]): PCmp = ord.partialCompare(lhs, rhs)
+    def < (rhs: A)(implicit ord: PartialOrder[A]): Trilean          = evaluate(rhs)(LT)(NA, LE)
+    def <=(rhs: A)(implicit ord: PartialOrder[A]): Trilean          = evaluate(rhs)(LT, LE, EQ)(NA)
+    def >=(rhs: A)(implicit ord: PartialOrder[A]): Trilean          = evaluate(rhs)(GT, GE, EQ)(NA)
+    def >(rhs: A)(implicit ord: PartialOrder[A]): Trilean           = evaluate(rhs)(GT)(NA, GE)
+    def min(rhs: A)(implicit ord: PartialOrder[A]): Option[A]       = partialCompare(rhs) match { case LT | LE => Some(lhs) ; case GT | GE => Some(rhs) ; case _ => None }
+    def max(rhs: A)(implicit ord: PartialOrder[A]): Option[A]       = partialCompare(rhs) match { case LT | LE => Some(rhs) ; case GT | GE => Some(lhs) ; case _ => None }
   }
   final class AlgebraOps[A](private val lhs: A) extends AnyVal {
     def implies(rhs: A)(implicit alg: BooleanAlgebra[A]) = !lhs || rhs
@@ -44,6 +44,9 @@ object TClass {
     def ===(rhs: A)(implicit eq: Eq[A]): Boolean = eq.equiv(lhs, rhs)
     def !==(rhs: A)(implicit eq: Eq[A]): Boolean = !eq.equiv(lhs, rhs)
   }
+  final class HashEqOps[A](private val lhs: A) extends AnyVal {
+    def hash(implicit eq: HashEq[A]): Int = eq hash lhs
+  }
   final class ShowDirectOps(private val x: ShowDirect) extends AnyVal {
     /** Java-style String addition without abandoning type safety.
      */
@@ -54,6 +57,20 @@ object TClass {
 
 object Ops {
   final val InputStreamBufferSize = 8192
+
+  final class CmpOps(private val cmp: Cmp) extends AnyVal {
+    import psp.std.api.Cmp._
+    def flip: Cmp = cmp match {
+      case LT => GT
+      case GT => LT
+      case EQ => EQ
+    }
+    def intValue: Int = cmp match {
+      case LT => -1
+      case EQ => 0
+      case GT => 1
+    }
+  }
 
   // Have to each go into their own class because the apply methods have the same erasure.
   final class Seq1[CC[X] <: sc.Seq[X], A](private val xs: CC[A]) extends AnyVal {
@@ -74,24 +91,25 @@ object Ops {
     def apply(range: IndexRange): Vector[A] = indexRange intersect range map (i => xs(i.value))
   }
   final class Map[K, V](private val map: sc.Map[K, V]) extends AnyVal {
-    def sortedKeys(implicit ord: Ordering[K])                     = map.keys.toSeq.sorted
-    def orderByKey(implicit ord: Ordering[K]): OrderedMap[K, V]   = orderedMap(sortedKeys, map.toMap)
-    def orderByValue(implicit ord: Ordering[V]): OrderedMap[K, V] = orderedMap(sortedKeys(ord on map), map.toMap)
+    def sortedKeys(implicit ord: Order[K])                     = map.keys.toSeq.sorted(ord.toOrdering)
+    def orderByKey(implicit ord: Order[K]): OrderedMap[K, V]   = orderedMap(sortedKeys, map.toMap)
+    def orderByValue(implicit ord: Order[V]): OrderedMap[K, V] = orderedMap(sortedKeys(ord on map), map.toMap)
   }
   final class SortedMap[K, V](private val map: sc.SortedMap[K, V]) extends AnyVal {
-    private def ord = map.ordering
+    private def ord: Order[K] = Order fromOrdering map.ordering
     def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
   }
   final class GTOnce[CC[X] <: sc.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal with FoldableOps[A] {
     def foldl[B](zero: B)(f: (B, A) => B): B                               = xs.foldLeft(zero)(f)
     def findOr(p: A => Boolean, alt: => A): A                              = (xs find p) | alt
-    def sortDistinct(implicit ord: Ordering[A]): Vector[A]                 = distinct.sorted
+    def sortOrder[B: Order](f: A => B): Vector[A]                          = xs.toVector sorted (?[Order[B]] on f toOrdering)
+    def sortDistinct(implicit ord: Order[A]): Vector[A]                    = distinct.sorted(ord.toOrdering)
     def mapZip[B, C](ys: GenTraversableOnce[B])(f: (A, B) => C): Vector[C] = for ((x, y) <- xs.toVector zip ys.toVector) yield f(x, y)
     def mapFrom[B](f: A => B): OrderedMap[B, A]                            = orderedMap(xs.toVector map (x => (f(x), x)): _*)
     def mapOnto[B](f: A => B): OrderedMap[A, B]                            = orderedMap(xs.toVector map (x => (x, f(x))): _*)
     def mapToAndOnto[B, C](k: A => B, v: A => C): OrderedMap[B, C]         = xs.toVector |> (xs => orderedMap(xs map (x => k(x) -> v(x)): _*))
     def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]              = xs.toVector |> (xs => orderedMap(xs map f: _*))
-    def sorted(implicit ord: Ordering[A]): Vector[A]                       = xs.toVector.sorted
+    def sorted(implicit ord: Order[A]): Vector[A]                          = xs.toVector.sorted(ord.toOrdering)
     def distinct: Vector[A]                                                = xs.toVector.distinct
     def unsortedFrequencyMap: Map[A, Int]                                  = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
     def ascendingFrequency: OrderedMap[A, Int]                             = unsortedFrequencyMap |> (_.orderByValue)
@@ -105,11 +123,13 @@ object Ops {
     def lastIndexAtWhich(p: A => Boolean): Index = indexRange findReverse (i => p(xs(i.value)))
     def hasElem(elem: A): Boolean                = indexRange exists (i => xs(i.value) == elem)
 
-    def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs slice (indexRange intersect range) force
+    def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs.slice(indexRange intersect range).force
     def toSeq: ISeq[A] = immutableSeq(xs: _*)
   }
 
   final class OrderOps[A](private val ord: Order[A]) extends AnyVal {
+    def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
+    def toOrdering: Ordering[A]    = new Ordering[A] { def compare(x: A, y: A): Int = ord.compare(x, y).intValue }
     def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
   }
   final class ShowOps[A](private val shows: Show[A]) extends AnyVal {
@@ -144,7 +164,7 @@ object Ops {
   final class IntOps(private val self: Int) extends AnyVal {
     private type This = Int
 
-    def cmp: Order.Cmp        = Order.Cmp(self)
+    def cmp: Cmp              = Order difference self
     def abs: This             = math.abs(self)
     def max(that: This): This = math.max(self, that)
     def min(that: This): This = math.min(self, that)
@@ -158,11 +178,12 @@ object Ops {
   final class LongOps(private val self: Long) extends AnyVal {
     private type This = Long
 
-    def cmp: Order.Cmp        = Order.Cmp(self)
-    def abs: This             = math.abs(self)
-    def max(that: This): This = math.max(self, that)
-    def min(that: This): This = math.min(self, that)
-    def signum: This          = math.signum(self)
+    def compared(that: Long): Cmp = Order difference (self - that)
+    def cmp: Cmp                  = Order difference self
+    def abs: This                 = math.abs(self)
+    def max(that: This): This     = math.max(self, that)
+    def min(that: This): This     = math.min(self, that)
+    def signum: This              = math.signum(self)
 
     def toUnsignedInt: UInt = UInt(self)
     def binary: String      = jl.Long.toBinaryString(self)

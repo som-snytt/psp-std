@@ -10,45 +10,15 @@ import java.nio.file.Paths
 
 trait PackageLevel extends PackageAliases with PackageMethods with PackageImplicits
 
-/** The classic type class for encoding value equivalence.
+/** Mostly for mixing a usable toString method into functions.
  */
-trait Eq[A] extends Any {
-  def equiv(x: A, y: A): Boolean
-}
-
-/** The Eq type class fused with a method to provide the
- *  corresponding hashCodes. I've never had a desire to provide
- *  hashcodes independently of equals logic so there's no
- *  separate Hash typeclass.
- */
-trait HashEq[A] extends Any with Eq[A] {
-  def hash(x: A): Int
-}
-
-trait Labeled {
-  def label: String
-  override def toString = label
-}
-
-/** The classic type class for turning string representations into typed values.
- */
-trait Read[A] extends Any {
-  def read(s: String): A
-}
-
-/** The classic type class for encoding string representations.
- */
-trait Show[A] extends Any {
-  def show(x: A): String
-}
+trait Labeled { def label: String ; override def toString = label }
 
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
  *  using a synthetic toString, e.g. of case classes.
  */
-trait ShowDirect extends Any {
-  def to_s: String
-}
+trait ShowDirect extends Any { def to_s: String }
 
 trait PackageImplicits extends Any {
   implicit def apiOpsAny[A](x: A): Ops.AnyOps[A] = new Ops.AnyOps[A](x)

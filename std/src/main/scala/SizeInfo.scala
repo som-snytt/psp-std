@@ -49,7 +49,7 @@ object SizeInfo {
   // no, infinity doesn't really equal infinity, but it can for our
   // purposes as long as <inf> - <inf> is ill-defined.
   implicit object SizeInfoPartialOrder extends PartialOrder[SizeInfo] {
-    def partialCompare(lhs: SizeInfo, rhs: SizeInfo): PartialOrder.Cmp = (lhs, rhs) match {
+    def partialCompare(lhs: SizeInfo, rhs: SizeInfo): PCmp = (lhs, rhs) match {
       case (Infinite, Infinite)                     => EQ
       case (Precise(_), Infinite)                   => LT
       case (Infinite, Precise(_))                   => GT
