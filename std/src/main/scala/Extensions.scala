@@ -339,6 +339,64 @@ object Ops {
   final class ArrowAssocRef[A](private val self: A) extends AnyVal {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
   }
+
+  final class SizeInfoOps(val lhs: SizeInfo) extends AnyVal {
+    import PartialOrder._, SizeInfo._
+
+    def isZero    = lhs == Precise(Zero)
+    def isFinite  = lhs.hiBound != Infinite
+    def isPrecise = lhs match { case _: Precise => true ; case _ => false }
+
+    def atMost: SizeInfo  = bounded(Zero, lhs)
+    def atLeast: SizeInfo = bounded(lhs, Infinite)
+    def hiBound: Atomic = lhs match {
+      case Bounded(_, hi) => hi
+      case x: Atomic      => x
+    }
+
+    def slice(range: IndexRange): SizeInfo = (lhs - range.start.toSize) min range.size
+
+    def precisely: Option[Int] = lhs match { case Precise(Size(n)) => Some(n) ; case _ => None }
+    def preciseOr(alt: => Int): Int = precisely getOrElse alt
+    def preciseIntSize: Int = preciseOr(sys error s"precise size unavailable: $lhs")
+
+    def * (rhs: Size): SizeInfo = lhs match {
+      case Precise(n)               => precise(n.value * rhs.value)
+      case Bounded(lo, Precise(hi)) => bounded(Size(lo.value * rhs.value), precise(hi.value * rhs.value))
+      case Bounded(lo, _)           => if (rhs.isZero) Unknown else Bounded(lo * rhs.value, Infinite)
+      case Infinite                 => if (rhs.isZero) Unknown else Infinite
+    }
+
+    def + (rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
+      case (Infinite, _) | (_, Infinite)            => Infinite
+      case (Precise(l), Precise(r))                 => Precise(Size(l.value + r.value))
+      case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(Size(l1.value + l2.value), h1 + h2)
+    }
+    def - (rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
+      case (Infinite, Finite(_, _))         => Infinite
+      case (Finite(_, _), Infinite)         => Empty
+      case (Finite(l1, h1), Finite(l2, h2)) => bounded(l1 - h2, Precise(h1 - l2))
+      case (Bounded(l1, h1), Precise(n))    => bounded(l1 - n, h1 - Precise(n))
+      case _                                => Unknown
+    }
+    def min(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
+      case LT | LE | EQ => lhs
+      case GT | GE      => rhs
+      case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 min l2, h1 min h2))
+    }
+    def max(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
+      case LT | LE | EQ => rhs
+      case GT | GE      => lhs
+      case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 max l2, h1 max h2))
+    }
+
+    private def onBounds[T](rhs: SizeInfo)(f: (Size, Atomic, Size, Atomic) => T): T = {
+      val GenBounded(l1, h1) = lhs
+      val GenBounded(l2, h2) = rhs
+
+      f(l1, h1, l2, h2)
+    }
+  }
 }
 
 final class LabeledFunction[-T, +R](f: T => R, val label: String) extends (T => R) with api.Labeled {

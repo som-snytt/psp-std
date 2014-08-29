@@ -49,7 +49,20 @@ trait PackageAliases {
   type Order[-A]  = api.Order[A]
   type Cmp        = psp.std.api.Cmp
 
-  val Eq          = api.Eq
+  type Invariant[A] = api.Invariant[A]
+  type Foreach[+A]  = api.Foreach[A]
+  type Indexed[+A]  = api.Indexed[A]
+  type Direct[+A]   = api.Direct[A]
+  type Linear[+A]   = api.Linear[A]
+  type SizeInfo     = api.SizeInfo
+  type Precise      = api.Precise
+  type Bounded      = api.Bounded
+  type Atomic       = api.Atomic
+
+  val Infinite = api.Infinite
+  val Precise  = api.Precise
+  val Bounded  = api.Bounded
+  val Eq       = api.Eq
 }
 
 trait PackageMethods {
@@ -61,6 +74,22 @@ trait PackageMethods {
   def eqBy[A] : EqBy[A]       = new EqBy[A]
   def orderBy[A] : OrderBy[A] = new OrderBy[A]
   def showBy[A] : ShowBy[A]   = new ShowBy[A]
+
+  def precise(n: Int): Precise = Precise(Size(n))
+  def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
+    case hi: Atomic     => bounded(lo, hi)
+    case Bounded(_, hi) => bounded(lo, hi)
+  }
+  def bounded(lo: SizeInfo, hi: SizeInfo): SizeInfo = lo match {
+    case Precise(lo)    => bounded(lo, hi)
+    case Bounded(lo, _) => bounded(lo, hi)
+    case Infinite       => Infinite
+  }
+  def bounded(lo: Size, hi: Atomic): SizeInfo = hi match {
+    case Precise(n) if n < lo  => SizeInfo.Empty
+    case Precise(n) if n == lo => hi
+    case _                     => Bounded(lo, hi)
+  }
 
   def ?[A](implicit value: A): A                         = value
   def contextLoader(): ClassLoader                       = noNull(Thread.currentThread.getContextClassLoader, nullLoader)

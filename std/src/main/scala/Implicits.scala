@@ -28,6 +28,16 @@ trait ImplicitRemoval {
 }
 
 trait StandardImplicits1 {
+  implicit def sizeToSizeInfo(s: Size): SizeInfo    = s.toInfo
+  implicit def apiSizeToSize(s: api.Size): Size     = Size(s.value)
+  implicit def apiIndexToIndex(x: api.Index): Index = Index(x.value)
+
+  implicit def implicitListBuilder[A] : Builds[A, PspList[A]] =
+    Builds(_.foldr(PspList.empty[A])(_ :: _).reverse)
+
+  implicit def implicitDirectBuilder[A] : Builds[A, Direct[A]] =
+    Builds((xs: Foreach[A]) => xs maybe { case xs: Direct[A] => xs } or Direct.elems(xs.toSeq: _*))
+
   implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]] = Builds(xs =>
     xs.sizeInfo match {
       case Precise(Size(n)) =>
@@ -95,6 +105,7 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def opsSeq2[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.Seq2[CC, A]             = new Ops.Seq2[CC, A](xs)
   implicit def opsSeqOps[CC[X] <: sc.Seq[X], A](xs: CC[A]): Ops.SeqOps[CC, A]         = new Ops.SeqOps[CC, A](xs)
   implicit def opsShow[A](x: Show[A]): Ops.ShowOps[A]                                 = new Ops.ShowOps[A](x)
+  implicit def opsSizeInfo(x: SizeInfo): Ops.SizeInfoOps                              = new Ops.SizeInfoOps(x)
   implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): Ops.SortedMap[K, V]        = new Ops.SortedMap[K, V](xs)
   implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                         = new Ops.TryOps[A](x)
 }
@@ -119,6 +130,17 @@ trait ShowImplicits2 extends ShowImplicits1 {
   implicit def tupleShow[A: Show, B: Show] : Show[(A, B)]      = Show { case (x, y) => show"$x -> $y" }
   implicit def showDirect[A <: ShowDirect] : Show[A]           = Show.native[A]()
   implicit def numberShow[A <: ScalaNumber] : Show[A]          = Show.native[A]() // BigInt, BigDecimal
+  implicit def sizeShow                                        = showBy[api.Size](_.value.to_s)
+
+  implicit def viewShow[A] = Show[api.View[A]](_.viewChain reverseMap (_.description) mkString " ")
+  implicit def pspListShow[A: Show] = Show[PspList[A]](xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
+  implicit def sizeInfoShow[A <: SizeInfo]: Show[A] = Show[A] {
+    case Bounded(lo, Infinite) => show"[$lo, <inf>)"
+    case Bounded(lo, hi)       => show"[$lo, $hi]"
+    case Precise(size)         => s"$size"
+    case Infinite              => "<inf>"
+  }
+
 }
 trait ReadImplicits {
   implicit val bigIntRead = Read[BigInt](s => BigInt(s))
@@ -139,11 +161,42 @@ trait OrderImplicits {
   implicit val booleanOrder = Order[Boolean](_ compare _ cmp)
   implicit val stringOrder  = Order[String](_ compareTo _ cmp)
 
+  implicit def indexOrder = orderBy[api.Index](_.value)
+  implicit def sizeOrder  = orderBy[api.Size](_.value)
   implicit def tuple2Order[A: Order, B: Order]           = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
   implicit def tuple3Order[A: Order, B: Order, C: Order] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
+
+  // no, infinity doesn't really equal infinity, but it can for our
+  // purposes as long as <inf> - <inf> is ill-defined.
+  implicit object sizeInfoPartialOrder extends PartialOrder[SizeInfo] {
+    import PartialOrder._
+    import SizeInfo.GenBounded
+
+    def partialCompare(lhs: SizeInfo, rhs: SizeInfo): PCmp = (lhs, rhs) match {
+      case (Infinite, Infinite)                     => EQ
+      case (Precise(_), Infinite)                   => LT
+      case (Infinite, Precise(_))                   => GT
+      case (Precise(x), Precise(y))                 => if (x < y) LT else if (y < x) GT else EQ
+      case (Infinite, Bounded(_, Infinite))         => GE
+      case (Infinite, _)                            => GT
+      case (Bounded(_, Infinite), Infinite)         => LE
+      case (_, Infinite)                            => LT
+      case (GenBounded(l1, h1), GenBounded(l2, h2)) =>
+        def lo1 = Precise(l1)
+        def lo2 = Precise(l2)
+
+        ( if (h1 < lo2 isTrue) LT
+          else if (h1 <= lo2 isTrue) LE
+          else if (h2 < lo1 isTrue) GT
+          else if (h2 <= lo1 isTrue) GE
+          else NA
+        )
+    }
+  }
 }
 
 trait EqImplicits {
+  implicit def sizeInfoEq: Eq[SizeInfo] = Eq[SizeInfo](_ == _)
   implicit def mapEq[CC[X, Y] <: Map[X, Y], K: Eq, V: Eq] : Eq[CC[K, V]] = Eq[CC[K, V]]((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
   /*implicit*/ def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]]             = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
   implicit def seqEq[CC[X] <: Seq[X], A: Eq] : Eq[CC[A]]                 = Eq[CC[A]]((xs, ys) => (xs corresponds ys)(_ === _))

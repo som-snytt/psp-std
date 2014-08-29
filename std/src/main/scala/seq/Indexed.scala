@@ -1,36 +1,32 @@
 package psp
 package std
 
-trait Invariant[A] extends Any
-trait Indexed[+A] extends Any with Foreach[A] { def elemAt(index: Index): A }
-trait Direct[+A] extends Any with Indexed[A] with HasPreciseSize
-trait DirectLeaf[A] extends Any with Direct[A] with Invariant[A] { def contains(x: A): Boolean }
+import api._
+
+abstract class DirectLeaf[+A](val size: api.Size) extends Direct[A] with api.HasPreciseSize {
+  def sizeInfo = Precise(Size(size.value))
+  @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
+  override def toString = Foreach.stringify(this)(Show.native[A])
+}
 
 object Direct {
-  implicit def newBuilder[A] : Builds[A, Direct[A]] = Builds((xs: Foreach[A]) => xs maybe { case xs: Direct[A] => xs } or Direct.elems(xs.toSeq: _*))
-
-  abstract class Impl[+A](val size: Size) extends Direct[A] with HasPreciseSize {
-    def sizeInfo = size
-    @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
-    override def toString = Foreach.stringify(this)(Show.native[A])
+  final class Pure[+A](size: api.Size, indexFn: api.Index => A) extends DirectLeaf[A](size) {
+    def elemAt(index: api.Index): A = indexFn(index)
   }
-  final class Pure[+A](size: Size, indexFn: Index => A) extends Impl[A](size) {
-    def elemAt(index: Index): A = indexFn(index)
-  }
-  object Empty extends Impl[Nothing](SizeInfo.Zero) with HasStaticSize[Nat._0] {
-    def elemAt(index: Index): Nothing = failEmpty(pp"$this($index)")
+  object Empty extends DirectLeaf[Nothing](SizeInfo.Zero) with HasStaticSize[Nat._0] {
+    def elemAt(index: api.Index): Nothing = failEmpty(pp"$this($index)")
     override def toString = "<empty>"
   }
 
   def join[A](xs: Direct[A], ys: Direct[A]): Direct[A] = pure(
-    xs.size + ys.size,
+    (xs.size: Size) + ys.size,
     index => if (xs.size containsIndex index) xs elemAt index else ys elemAt index - xs.size.value
   )
 
   /** Immutability (particularly of Arrays) is on the honor system. */
   def pureArray[A](xs: Array[A]): Direct[A]                               = pure(Size(xs.length), xs apply _.value)
   def pure[Repr](xs: Repr)(implicit tc: DirectAccess[Repr]): Direct[tc.A] = pure(tc length xs, index => (tc elemAt xs)(index))
-  def pure[A](size: Size, indexFn: Index => A): Direct[A]                 = new Pure(size, indexFn)
+  def pure[A](size: Size, indexFn: api.Index => A): Direct[A]             = new Pure(size, indexFn)
 
   def fill[A](times: Int)(body: => A): Direct[A] = {
     val buf = Vector.newBuilder[A]
@@ -48,10 +44,10 @@ object IntRange {
   def to(start: Int, last: Int): IntRange   = if (last < start) until(start, start) else new IntRange(start, last, isInclusive = true)
 }
 
-final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends Direct.Impl[Int](Size(last - start + 1)) with DirectLeaf[Int] {
+final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends DirectLeaf[Int](Size(last - start + 1)) {
   def contains(x: Int): Boolean = start <= x && x <= last
-  def isEmpty               = last < start
-  def end                   = last + 1
-  def elemAt(i: Index): Int = start + i.value
-  override def toString     = if (isInclusive) s"$start to $last" else s"$start until $end"
+  def isEmpty                   = last < start
+  def end                       = last + 1
+  def elemAt(i: api.Index): Int = start + i.value
+  override def toString         = if (isInclusive) s"$start to $last" else s"$start until $end"
 }

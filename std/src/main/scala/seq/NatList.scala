@@ -12,7 +12,7 @@ trait LowPriorityNatList {
   }
 }
 
-sealed trait NatList[N <: Nat, A] extends Foreach[A] with HasStaticSize[N] {
+sealed trait NatList[N <: Nat, A] extends Foreach[A] with api.HasStaticSize[N] {
   def isEmpty: Boolean
   def unsafeHead: A
   def unsafeTail: NatList[N#Prev, A]

@@ -17,7 +17,7 @@ trait View[+A] extends Any with Foreach[A] {
   def flatMap[B](f: A => Foreach[B]): MapTo[B]
   def labeled(label: String): MapTo[A]
   def map[B](f: A => B): MapTo[B]
-  def sized(size: Size): MapTo[A]
+  def sized(size: api.Size): MapTo[A]
   def slice(range: IndexRange): MapTo[A]
   def take(n: Int): MapTo[A]
   def takeRight(n: Int): MapTo[A]

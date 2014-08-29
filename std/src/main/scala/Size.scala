@@ -5,7 +5,7 @@ import Size._
 
 class OverflowException extends RuntimeException
 
-final class Size private (val value: Int) extends AnyVal {
+final class Size private (val value: Int) extends AnyVal with api.Size {
   def + (n: Size): Size     = if (isUndefined) undefined else (value + n.value) |> (sum => if (sum < value) undefined else Size(sum))
   def - (n: Size): Size     = if (isUndefined) undefined else Size(value - n.value)
   def * (n: Int): Size      = if (isUndefined) undefined else Size(value * n)
@@ -27,7 +27,7 @@ final class Size private (val value: Int) extends AnyVal {
   def toInfo: SizeInfo         = if (isUndefined) SizeInfo.Unknown else Precise(this)
 
   @inline def foreachIndex(f: Index => Unit): Unit = toIndexRange foreach f
-  def containsIndex(index: Index): Boolean         = !index.isUndefined && index <= lastIndex
+  def containsIndex(index: api.Index): Boolean     = !index.isUndefined && index <= lastIndex
 
   def lastIndex: Index = if (value <= 0) Index.undefined else Index(value - 1)
 
@@ -36,9 +36,6 @@ final class Size private (val value: Int) extends AnyVal {
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
-  implicit def SizeShow =  showBy[Size](_.value.to_s) // Show[Size](_.value.to_s)
-  implicit def SizeOrder = orderBy[Size](_.value)
-  implicit def sizeToSizeInfo(s: Size): SizeInfo = s.toInfo
   def undefined = new Size(-1)
 
   final val NoSize = undefined

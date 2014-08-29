@@ -1,10 +1,7 @@
 package psp
 package std
 
-import SizeInfo._
 import scala.collection.immutable
-
-trait Foreach[+A] extends Any with HasSizeInfo { def foreach(f: A => Unit): Unit }
 
 object Foreach {
   def Empty = Direct.Empty
@@ -27,7 +24,7 @@ object Foreach {
     override def toString = pp"unfold from $zero"
   }
 
-  final case class Times[A](size: Size, elem: A) extends Foreach[A] with HasPreciseSize {
+  final case class Times[A](size: Size, elem: A) extends Foreach[A] with api.HasPreciseSize {
     def sizeInfo = Precise(size)
     @inline def foreach(f: A => Unit): Unit = IntRange.until(0, size.value) foreach (_ => f(elem))
     override def toString = pp"$elem x$size"

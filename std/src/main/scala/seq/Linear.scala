@@ -3,42 +3,25 @@ package std
 
 import SizeInfo._
 
-trait Linear[+A] extends Any with Foreach[A] {
-  type Tail <: Linear[A]
-  def isEmpty: Boolean
-  def head: A
-  def tail: Tail
-}
-trait InvariantLinear[A] extends Any with Linear[A] with Invariant[A]
-
-trait LinearImpl[+A] extends Any with Linear[A] {
+trait LinearLeaf[A] extends Any with Linear[A] {
   def sizeInfo = if (isEmpty) Empty else NonEmpty
   @inline final def foreach(f: A => Unit): Unit = {
     @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
     loop(this)
   }
-}
-
-object InvariantLinear {
-  implicit final class InvariantLinearOps[A](val xs: InvariantLinear[A]) extends AnyVal {
-    def contains(x: A): Boolean = {
-      @tailrec def loop(xs: Linear[A]): Boolean = !xs.isEmpty && (x == xs.head || loop(xs.tail))
-      loop(xs)
-    }
+  def contains(x: A): Boolean = {
+    @tailrec def loop(xs: Linear[A]): Boolean = !xs.isEmpty && (x == xs.head || loop(xs.tail))
+    loop(this)
   }
 }
 
 object PspList {
-  implicit def newBuilder[A] : Builds[A, PspList[A]] = Builds(_.foldr(empty[A])(_ :: _).reverse)
-
   def empty[A]                                = nil.castTo[PspList[A]]
   def fill[A](n: Int)(body: => A): PspList[A] = if (n <= 0) nil() else body :: fill(n - 1)(body)
   def apply[A](xs: A*): PspList[A]            = xs.foldRight(nil[A]())(_ :: _)
-
-  implicit def ShowPspList[A: Show] = Show[PspList[A]](xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
 }
 
-sealed trait PspList[A] extends LinearImpl[A] with InvariantLinear[A] {
+sealed trait PspList[A] extends LinearLeaf[A] {
   type Tail                    = PspList[A]
   def reverse: PspList[A]      = reverser(this, nil())
   def take(n: Int): PspList[A] = taker(this, nil(), n)
@@ -68,14 +51,14 @@ final case class ::[A](head: A, tail: PspList[A]) extends PspList[A] {
 }
 
 
-final class PspStream[A](headFn: => A, tailFn: => InvariantLinear[A]) extends LinearImpl[A] with InvariantLinear[A] {
-  type Tail = InvariantLinear[A]
+final class PspStream[A](headFn: => A, tailFn: => LinearLeaf[A]) extends LinearLeaf[A] {
+  type Tail = LinearLeaf[A]
   def isEmpty = false
   lazy val head = headFn
   lazy val tail = tailFn
 }
 
 object PspStream {
-  def empty[A]                                                           = nil.castTo[InvariantLinear[A]]
-  def cons[A](headFn: => A, tailFn: => InvariantLinear[A]): PspStream[A] = new PspStream[A](headFn, tailFn)
+  def empty[A]                                                      = nil.castTo[LinearLeaf[A]]
+  def cons[A](headFn: => A, tailFn: => LinearLeaf[A]): PspStream[A] = new PspStream[A](headFn, tailFn)
 }

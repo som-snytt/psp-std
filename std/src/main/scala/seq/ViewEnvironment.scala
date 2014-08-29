@@ -12,8 +12,6 @@ class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
   type A     = AIn
   type CC[X] = M[X]
 
-  implicit def showView[A] : Show[View[A]] = Show[View[A]](_.viewChain reverseMap (_.description) mkString " ")
-
   def indexedView(tc: DirectAccessType[A, Repr, CC]): IndexedView   = new IndexedView(tc)
   def unknownView(tc: ForeachableType[A, Repr, CC]): UnknownView    = new UnknownView(tc)
 
@@ -32,10 +30,10 @@ class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
     @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   }
 
-  final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with DirectLeaf[A] {
-    def size: Size                                          = tc length repr
+  final class IndexedView(val tc: DirectAccessType[A, Repr, CC]) extends AtomicView with Direct[A] with api.HasPreciseSize {
+    def size: api.Size                                      = tc length repr
     def sizeInfo: Precise                                   = Precise(size)
-    def elemAt(index: Index): A                             = recordCall(tc.elemAt(repr)(index))
+    def elemAt(index: api.Index): A                         = recordCall(tc.elemAt(repr)(index))
     def contains(x: A): Boolean                             = this exists (_ == x)
     def foreach(f: A => Unit): Unit                         = foreachSlice(size.toIndexRange)(f)
     def foreachSlice(range: IndexRange)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
@@ -56,7 +54,7 @@ class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
     final def flatMap[B](f: A => Foreach[B]): MapTo[B]  = FlatMapped(this, f)
     final def labeled(label: String): MapTo[A]          = LabeledView(this, label)
     final def map[B](f: A => B): MapTo[B]               = Mapped(this, f)
-    final def sized(size: Size): MapTo[A]               = Sized(this, size)
+    final def sized(size: api.Size): MapTo[A]           = Sized(this, size)
     final def slice(range: IndexRange): MapTo[A]        = Sliced(this, range)
     final def take(n: Int): MapTo[A]                    = Taken(this, Size(n))
     final def takeRight(n: Int): MapTo[A]               = TakenR(this, Size(n))

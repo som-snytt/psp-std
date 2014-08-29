@@ -1,7 +1,7 @@
 package psp
 package std
 
-sealed trait Nat {
+sealed trait Nat extends api.Nat {
   type This <: Nat
   type Prev <: Nat { type Succ <: This }
   type Succ <: Nat { type Prev <: This }
