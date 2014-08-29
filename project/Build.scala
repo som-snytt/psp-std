@@ -11,6 +11,9 @@ object Build extends sbt.Build with Versioning {
   // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
   def opts = if (sys.props contains "debug") Seq("-Ylog:all") else Nil
 
+  def ifBinary[A](version: String)(thenp: => A, elsep: => A): TaskOf[A] =
+    scalaBinaryVersion map { case `version` => thenp ; case _ => elsep }
+
   def imports = """
     import scala.collection.{ mutable, immutable }
     import psp.std._, api._, ansi._
@@ -40,24 +43,25 @@ object Build extends sbt.Build with Versioning {
 
   import Sxr._
   def fullSxrSettings: SettingSeq = Sxr.settings ++ Seq(
-      libraryDependencies +=  "org.improving" %% "sxr" % "1.0.0" % SxrConfig.name,
+      libraryDependencies +=  "org.improving" %% "sxr" % "1.0.1" % SxrConfig.name,
            sources in sxr <<= deepTasks(sources in Compile),
      sxrSourceDirectories <<= deep(sourceDirectories in Compile).map(_.flatten), // to properly relativize the source paths
      fullClasspath in sxr <<= deepTasks(externalDependencyClasspath in Compile)
   )
   def common = bintraySettings ++ mimaDefaultSettings ++ Seq[Setting[_]](
-                              resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
-                           organization :=  pspOrg,
-                           scalaVersion :=  "2.11.2",
-                                version :=  "0.3.0-M1",
-                            logBuffered :=  false,
-                          scalacOptions ++= (Seq("-Ywarn-unused-import", "-Ywarn-unused", "-Ywarn-dead-code", "-language:_") ++ opts),
-                           javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
-                               licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-                publishArtifact in Test :=  false,
-              parallelExecution in Test :=  false,
-                           fork in Test :=  true,
-    scalacOptions in console in Compile :=  Seq("-language:_")
+                              resolvers  +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
+                           organization  :=  pspOrg,
+                           scalaVersion  :=  "2.11.2",
+                                version  :=  "0.3.0-M2",
+                            logBuffered  :=  false,
+                          scalacOptions ++=  opts ++ Seq("-Ywarn-dead-code", "-language:_"),
+                          scalacOptions <++= ifBinary("2.11")("-Ywarn-unused" :: "-Ywarn-unused-import" :: Nil, Nil),
+                           javacOptions ++=  Seq("-nowarn", "-XDignore.symbol.file"),
+                               licenses  :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+                publishArtifact in Test  :=  false,
+              parallelExecution in Test  :=  false,
+                           fork in Test  :=  true,
+    scalacOptions in console in Compile  :=  Seq("-language:_")
   )
 
   def subprojects = List(api, std, macros)
@@ -73,6 +77,8 @@ object Build extends sbt.Build with Versioning {
   private def mimaRun(state: State, module: ModuleID): Unit =
     state.put(previousArtifact in std, Some(module)) runTask (reportBinaryIssues in std)
 
+  def runTestTask = run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
+
   /** What is accomplished by this structure?
    *
    *   - std does not depend on scala-reflect
@@ -82,9 +88,10 @@ object Build extends sbt.Build with Versioning {
    *
    *  It's harder to get all those at once than you may think.
    */
-  lazy val root = project in file(".") dependsOn (api, std, macros) aggregate (api, std, macros) settings (common: _*) settings (
+  lazy val root = project in file(".") dependsOn (api, std, macros) aggregate (api, std, macros) also common also sourceDirSettings settings (
                                    name :=  "psp-std-root",
                             description :=  "psp's project which exists to please sbt",
+                     crossScalaVersions :=  List("2.10.4", "2.11.2"),
                             shellPrompt :=  (s => "%s#%s> ".format(name.value, (Project extract s).currentRef.project)),
              initialCommands in console :=  imports,
                    aggregate in publish :=  false,
@@ -97,7 +104,7 @@ object Build extends sbt.Build with Versioning {
                     testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
                     libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
                       mainClass in Test :=  Some("psp.tests.TestRunner"),
-                                   test <<= run in Test toTask "" dependsOn (Keys.`package` in Compile) dependsOn (clean in Test)
+                                   test :=  runTestTask.value
   )
 
   implicit class ProjectOps(val p: Project) {
@@ -118,20 +125,29 @@ object Build extends sbt.Build with Versioning {
     initialCommands in console ~= (_ + "\nimport spire.algebra._, spire.math._, spire.implicits._, com.google.common.collect._")
   )
 
-  lazy val std = project.sxr dependsOn api also common settings (
-            name := "psp-std",
-     description := "psp's non-standard standard library"
+  def sourceDirsFor(version: String)(ifp: Seq[File], thenp: Seq[File]): Seq[File] = if (version == "2.11") ifp else thenp
+  def sourceDirSettings = Seq(
+    unmanagedSourceDirectories in Compile := sourceDirsFor(scalaBinaryVersion.value)((unmanagedSourceDirectories in Compile).value, Nil),
+       unmanagedSourceDirectories in Test := sourceDirsFor(scalaBinaryVersion.value)((unmanagedSourceDirectories in Test).value, Seq(baseDirectory.value / "src/test/scala210"))
   )
 
-  lazy val macros = project dependsOn (api, std) also common settings (
+  lazy val std = project.sxr dependsOn api also common also sourceDirSettings settings (
+                    name := "psp-std",
+             description := "psp's non-standard standard library",
+      crossScalaVersions := List("2.11.2")
+  )
+
+  lazy val macros = project dependsOn (api, std) also common also sourceDirSettings settings (
                    name := "psp-std-macros",
             description := "macros for psp's non-standard standard library",
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+     crossScalaVersions := List("2.11.2")
   )
 
   lazy val api = project.sxr also common settings (
-            name :=  "psp-api",
-     description :=  "api for psp's non-standard standard library"
+                   name := "psp-api",
+            description := "api for psp's non-standard standard library",
+     crossScalaVersions := List("2.10.4", "2.11.2")
   )
 }
 
@@ -153,10 +169,11 @@ trait Versioning {
   // TODO - Distinguish between milestones and releases.
   def runPublish[A](key: TaskKey[A]) = Def.task[Unit] {
     val state = Keys.state.value
-    def isPublishKey               = key eq publish
-    def versionString              = state(version) + ( if (isPublishKey) "" else localSuffix )
-    def publishProject(p: Project) = state.put(version in p, versionString) runTask (key in Compile in p)
-    def finish()                   = subprojects foreach publishProject
+    def isPublishKey  = key eq publish
+    def versionString = state(version) + ( if (isPublishKey) "" else localSuffix )
+    def finish()      = subprojects foreach (p => state(crossScalaVersions in p) foreach (cross => publishProject(p, cross)))
+
+    def publishProject(p: Project, cross: String) = state.set(version in p := versionString, scalaVersion in p := cross) runTask (key in Compile in p)
 
     // TODO - Require the git tag to exist (not for milestones) or create it.
     if (!isPublishKey)

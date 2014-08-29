@@ -53,6 +53,8 @@ object TClass {
 }
 
 object Ops {
+  final val InputStreamBufferSize = 8192
+
   // Have to each go into their own class because the apply methods have the same erasure.
   final class Seq1[CC[X] <: sc.Seq[X], A](private val xs: CC[A]) extends AnyVal {
     def apply(nth: Nth): A = if (nth.isUndefined) sys.error(s"apply($nth)") else xs(nth.intIndex)
@@ -80,7 +82,8 @@ object Ops {
     private def ord = map.ordering
     def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
   }
-  final class GTOnce[CC[X] <: sc.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal {
+  final class GTOnce[CC[X] <: sc.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal with FoldableOps[A, CC] {
+    def foldl[B](zero: B)(f: (B, A) => B): B                               = xs.foldLeft(zero)(f)
     def findOr(p: A => Boolean, alt: => A): A                              = (xs find p) | alt
     def sortDistinct(implicit ord: Ordering[A]): Vector[A]                 = distinct.sorted
     def mapZip[B, C](ys: GenTraversableOnce[B])(f: (A, B) => C): Vector[C] = for ((x, y) <- xs.toVector zip ys.toVector) yield f(x, y)
@@ -135,27 +138,8 @@ object Ops {
   }
 
   final class AnyOps[A](private val x: A) extends AnyVal {
-    // The famed forward pipe.
-    @inline def |>[B](f: A => B): B = f(x)
-
-    // "Maybe we can enforce good programming practice with annoyingly long method names."
-    def castTo[U] : U         = x.asInstanceOf[U]
-    def toRef: AnyRef         = castTo[AnyRef]
-    @inline def doto(f: A => Unit): A = try x finally f(x)
-    @inline def also(body: Unit): A   = x
-
-    // Calling eq on Anys.
-    def ref_==(y: Any): Boolean = x.toRef eq y.toRef
-
     // Short decoded class name.
     def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
-
-    def maybe[B](pf: A ?=> B): Option[B] = pf lift x
-    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else (x: A1).to_s
-    def any_s: String = x match {
-      case x: ShowDirect => x.to_s
-      case _             => "" + x
-    }
   }
 
   final class OptionOps[A](private val x: Option[A]) extends AnyVal {
@@ -250,7 +234,22 @@ object Ops {
     def toScalaIterator: sIterator[A] = new ScalaIterator(xs.iterator)
   }
 
-  final class ForeachOps[A](private val xs: Foreach[A]) extends AnyVal {
+  trait FoldableOps[A, CC[X]] extends Any {
+    def foldl[B](zero: B)(f: (B, A) => B): B
+
+    private def stringed(sep: String)(f: A => String): String =
+      foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
+
+    def join(sep: String)(implicit shows: Show[A]): String = stringed(sep)(_.to_s)
+    def joinLines(implicit shows: Show[A]): String         = join(EOL)
+    def joinComma(implicit shows: Show[A]): String         = join(", ")
+    def mkString(sep: String): String                      = stringed(sep)(_.try_s)
+    def find(p: Predicate[A]): Option[A]                   = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
+    def forall(p: Predicate[A]): Boolean                   = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
+    def exists(p: Predicate[A]): Boolean                   = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
+  }
+
+  final class ForeachOps[A](private val xs: Foreach[A]) extends AnyVal with FoldableOps[A, Foreach] {
     def sum(implicit num: Numeric[A]): A     = foldl(num.zero)(num.plus)
     def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
 
@@ -264,17 +263,6 @@ object Ops {
       xs.foreach(x => result = f(x, result))
       result
     }
-    private def stringed(sep: String)(f: A => String): String =
-      foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
-
-    def joinLines(implicit shows: Show[A]): String         = join(EOL)
-    def joinComma(implicit shows: Show[A]): String         = join(", ")
-    def join(sep: String)(implicit shows: Show[A]): String = stringed(sep)(_.to_s)
-    def mkString(sep: String): String                      = stringed(sep)(_.try_s)
-
-    def find(p: Predicate[A]): Option[A] = { xs.foreach(x => if (p(x)) return Some(x)) ; None }
-    def forall(p: Predicate[A]): Boolean = { xs.foreach(x => if (!p(x)) return false) ; true }
-    def exists(p: Predicate[A]): Boolean = { xs.foreach(x => if (p(x)) return true) ; false }
 
     def toArray(implicit z: ClassTag[A]): Array[A]    = to[Array]
     def toVector: Vector[A]                           = to[Vector]
@@ -292,6 +280,27 @@ object Ops {
 
     def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build xs
     def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build xs
+  }
+
+  /** Hand specialized on the left, @specialized on the right, value classes for tuple creation.
+   */
+  final class ArrowAssocInt(private val self: Int) extends AnyVal {
+    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Int, B] = Tuple2(self, y)
+  }
+  final class ArrowAssocLong(private val self: Long) extends AnyVal {
+    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Long, B] = Tuple2(self, y)
+  }
+  final class ArrowAssocDouble(private val self: Double) extends AnyVal {
+    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Double, B] = Tuple2(self, y)
+  }
+  final class ArrowAssocChar(private val self: Char) extends AnyVal {
+    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Char, B] = Tuple2(self, y)
+  }
+  final class ArrowAssocBoolean(private val self: Boolean) extends AnyVal {
+    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Boolean, B] = Tuple2(self, y)
+  }
+  final class ArrowAssocRef[A](private val self: A) extends AnyVal {
+    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
   }
 }
 

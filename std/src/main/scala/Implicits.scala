@@ -3,15 +3,33 @@ package std
 
 import scala.{ collection => sc }
 
-trait CollectionLow {
+trait PackageImplicits extends ImplicitRemoval with StandardImplicits4 with ArrowAssoc2 with ShowImplicits2
+
+/** Various lame global-scope implicits, made to disappear with our friend null.
+ *  This list is subject to renegotiation.
+ */
+trait ImplicitRemoval {
+  val any2stringadd, fallbackStringCanBuildFrom                                                           = null
+  val tuple2ToZippedOps, tuple3ToZippedOps                                                                = null
+  val wrapString, unwrapString, augmentString, unaugmentString                                            = null
+  val StringAdd, ArrowAssoc, Boolean2boolean, Byte2byte, Character2char                                   = null
+  val Double2double, Float2float, Integer2int, Long2long, Short2short                                     = null
+  val genericWrapArray, wrapBooleanArray, wrapByteArray, wrapCharArray, wrapDoubleArray, wrapFloatArray   = null
+  val wrapIntArray, wrapLongArray, wrapRefArray, wrapShortArray, wrapUnitArray                            = null
+  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
+  // val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
+  // val genericArrayOps                                                                                     = null
+}
+
+trait StandardImplicits1 {
   // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
   implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): Env[Repr, tc.type]#AtomicView = tc wrap repr
 }
-trait CollectionHigh extends CollectionLow {
+trait StandardImplicits2 extends StandardImplicits1 {
   implicit def raiseIndexedView[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): Env[Repr, tc.type]#IndexedView = tc wrap repr
 }
 
-trait LowPriorityPspStd extends CollectionHigh {
+trait StandardImplicits3 extends StandardImplicits2 {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
@@ -22,7 +40,7 @@ trait LowPriorityPspStd extends CollectionHigh {
   implicit def canBuildToBuilds[Elem, To](implicit z: CanBuild[Elem, To]): Builds[Elem, To] = Builds(z() ++= _.toTraversable result)
 }
 
-trait Implicits extends LowPriorityPspStd {
+trait StandardImplicits4 extends StandardImplicits3 {
   // The typesafe non-toString-using show"..." interpolator.
   implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
@@ -66,18 +84,44 @@ trait Implicits extends LowPriorityPspStd {
   implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                         = new Ops.TryOps[A](x)
 }
 
-/** Various lame global-scope implicits, made to disappear with our friend null.
- *  This list is subject to renegotiation.
- */
-trait ImplicitRemoval {
-  val any2stringadd, fallbackStringCanBuildFrom                                                           = null
-  val tuple2ToZippedOps, tuple3ToZippedOps                                                                = null
-  val wrapString, unwrapString, augmentString, unaugmentString                                            = null
-  val StringAdd, ArrowAssoc, Boolean2boolean, Byte2byte, Character2char                                   = null
-  val Double2double, Float2float, Integer2int, Long2long, Short2short                                     = null
-  val genericWrapArray, wrapBooleanArray, wrapByteArray, wrapCharArray, wrapDoubleArray, wrapFloatArray   = null
-  val wrapIntArray, wrapLongArray, wrapRefArray, wrapShortArray, wrapUnitArray                            = null
-  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
-  // val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
-  // val genericArrayOps                                                                                     = null
+trait ShowImplicits1 {
+  implicit def intShow     = Show.native[Int]()
+  implicit def longShow    = Show.native[Long]()
+  implicit def doubleShow  = Show.native[Double]()
+  implicit def booleanShow = Show.native[Boolean]()
+  implicit def charShow    = Show.native[Char]()
+}
+trait ShowImplicits2 extends ShowImplicits1 {
+  def inBrackets[A: Show](xs: A*): String = Seq("[", xs.toSeq.joinComma, "]") join ""
+
+  /** An incomplete selection of show compositors.
+   *  Not printing the way scala does.
+   */
+  implicit def stringShow: Show[String]                        = Show(x => x)
+  implicit def optShow[A: Show] : Show[Option[A]]              = Show(_.fold("-")(x => show"$x"))
+  implicit def seqShow[CC[X] <: Seq[X], A: Show] : Show[CC[A]] = Show(xs => inBrackets(xs: _*))
+  implicit def arrayShow[A: Show] : Show[Array[A]]             = Show(xs => inBrackets(xs: _*))
+  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)]      = Show { case (x, y) => show"$x -> $y" }
+  implicit def showDirect[A <: ShowDirect] : Show[A]           = Show.native[A]()
+  implicit def numberShow[A <: ScalaNumber] : Show[A]          = Show.native[A]() // BigInt, BigDecimal
+}
+trait ReadImplicits {
+  implicit val bigIntRead = Read[BigInt](s => BigInt(s))
+  implicit val bigDecRead = Read[BigDecimal](s => BigDecimal(s))
+  implicit val stringRead = Read[String](s => s)
+  implicit val floatRead  = Read[Float](_.toFloat)
+  implicit val doubleRead = Read[Double](_.toDouble)
+  implicit val longRead   = Read[Long](_.toLong)
+  implicit val intRead    = Read[Int](_.toInt)
+}
+
+trait ArrowAssoc1 {
+  @inline final implicit def arrowAssocRef[A](x: A): Ops.ArrowAssocRef[A] = new Ops.ArrowAssocRef(x)
+}
+trait ArrowAssoc2 extends ArrowAssoc1 {
+  @inline final implicit def arrowAssocInt(x: Int): Ops.ArrowAssocInt             = new Ops.ArrowAssocInt(x)
+  @inline final implicit def arrowAssocLong(x: Long): Ops.ArrowAssocLong          = new Ops.ArrowAssocLong(x)
+  @inline final implicit def arrowAssocDouble(x: Double): Ops.ArrowAssocDouble    = new Ops.ArrowAssocDouble(x)
+  @inline final implicit def arrowAssocChar(x: Char): Ops.ArrowAssocChar          = new Ops.ArrowAssocChar(x)
+  @inline final implicit def arrowAssocBoolean(x: Boolean): Ops.ArrowAssocBoolean = new Ops.ArrowAssocBoolean(x)
 }
