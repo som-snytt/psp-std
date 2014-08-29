@@ -38,8 +38,8 @@ final class PspStringOps(private val xs: String) extends AnyVal with Ops.SeqLike
 
   def index(elem: Char): Index                    = Index(xs indexOf elem)
   def lastIndex(elem: Char): Index                = Index(xs lastIndexOf elem)
-  def indexAtWhich(p: Char => Boolean): Index     = Index(chars indexWhere p)
-  def lastIndexAtWhich(p: Char => Boolean): Index = Index(chars lastIndexWhere p)
+  def indexAtWhich(p: Char => Boolean): Index     = chars indexAtWhich p
+  def lastIndexAtWhich(p: Char => Boolean): Index = chars lastIndexAtWhich p
   def hasElem(elem: Char): Boolean                = chars contains elem
 
   def apply(index: Index): Char        = xs charAt index.value

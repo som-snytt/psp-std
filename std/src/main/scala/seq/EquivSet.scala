@@ -5,6 +5,7 @@ import scala.collection.immutable
 
 object EquivSet {
   implicit def equivSetEq[A: HashEq] = Eq[EquivSet[A]]((xs, ys) => (xs.size == ys.size) && (xs forall ys))
+  implicit def newBuilder[A: HashEq] : Builds[A, EquivSet[A]] = Builds(xs => new EquivSet[A](xs))
 
   def universal[A](xs: Foreach[A]): EquivSet[A]           = apply[A](xs)(HashEq.universal[A])
   def reference[A <: AnyRef](xs: Foreach[A]): EquivSet[A] = apply[A](xs)(HashEq.reference[A])

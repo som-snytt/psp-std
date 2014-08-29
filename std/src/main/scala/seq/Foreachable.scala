@@ -10,10 +10,11 @@ trait Foreachable[-Repr] extends Walkable[Repr] {
   def sizeInfo(repr: Repr): SizeInfo = unknownSize
   def wrap[R <: Repr](repr: R): AtomicView[R, this.type] = AtomicView.unknown(repr)(this)
 }
-trait DirectAccess[-Repr] extends Walkable[Repr] {
+trait DirectAccess[-Repr] extends Foreachable[Repr] {
   def length(repr: Repr): Size
   def elemAt(repr: Repr)(index: Index): A
-  def wrap[R <: Repr](repr: R): IndexedView[R, this.type] = AtomicView.indexed(repr)(this)
+  override def sizeInfo(repr: Repr): SizeInfo = Precise(length(repr))
+  override def wrap[R <: Repr](repr: R): IndexedView[R, this.type] = AtomicView.indexed(repr)(this)
 }
 
 object Foreachable {
@@ -22,13 +23,27 @@ object Foreachable {
     type A = AIn
     def foreach(repr: Foreach[A])(f: A => Unit): Unit = repr foreach f
   }
-  final class TraversableIs[M[X] <: Traversable[X], AIn] extends Foreachable[M[AIn]] {
-    type CC[X] = M[X]
+  final class TraversableIs[AIn] extends Foreachable[Traversable[AIn]] {
+    type CC[X] = Traversable[X]
     type A = AIn
     def foreach(repr: CC[A])(f: A => Unit): Unit = repr foreach f
   }
-  implicit def foreachIs[A] : ForeachIs[A]                                      = new ForeachIs[A]
-  implicit def traversableIs[CC[X] <: Traversable[X], A] : TraversableIs[CC, A] = new TraversableIs[CC, A]
+  final class ArrayIs[AIn] extends Foreachable[Array[AIn]] {
+    type CC[X] = Array[A]
+    type A = AIn
+    def foreach(repr: CC[A])(f: A => Unit): Unit = {
+      val len = repr.length
+      var i = 0
+      while (i < len) {
+        f(repr(i))
+        i += 1
+      }
+    }
+  }
+
+  implicit def foreachIs[A] : ForeachIs[A]         = new ForeachIs[A]
+  implicit def traversableIs[A] : TraversableIs[A] = new TraversableIs[A]
+  implicit def arrayIs[A] : ArrayIs[A]             = new ArrayIs[A]
 }
 
 object DirectAccess {
@@ -41,11 +56,11 @@ object DirectAccess {
     def length(repr: String): Size               = Size(repr.length)
     def elemAt(repr: String)(index: Index): Char = repr charAt index.value
   }
-  final class ArrayIs[A: ClassTag] extends Impl[A, Array[A], Direct] {
+  final class ArrayIs[A] extends Impl[A, Array[A], Direct] {
     def length(repr: Array[A]): Size            = Size(repr.length)
     def elemAt(repr: Array[A])(index: Index): A = repr(index.value)
   }
-  final class IndexedSeqIs[CC[X] <: IndexedSeq[X], A] extends Impl[A, CC[A], CC] {
+  final class ScalaIndexedIs[A] extends Impl[A, IndexedSeq[A], IndexedSeq] {
     def length(repr: CC[A]): Size            = Size(repr.length)
     def elemAt(repr: CC[A])(index: Index): A = repr(index)
   }
@@ -54,10 +69,10 @@ object DirectAccess {
     def elemAt(repr: Direct[A])(index: Index): A = repr elemAt index
   }
 
-  implicit def stringIs: StringIs.type                                                                    = StringIs
-  implicit def indexedIs[A] : IndexedIs[A]                                                                = new IndexedIs[A]
-  implicit def arrayIs[A: ClassTag] : ArrayIs[A]                                                          = new ArrayIs[A]
-  implicit def indexedSeqIs[CC[X] <: IndexedSeq[X], A](implicit z: Builds[A, CC[A]]): IndexedSeqIs[CC, A] = new IndexedSeqIs[CC, A]
+  implicit def stringIs: StringIs.type               = StringIs
+  implicit def indexedIs[A] : IndexedIs[A]           = new IndexedIs[A]
+  implicit def arrayIs[A] : ArrayIs[A]               = new ArrayIs[A]
+  implicit def scalaIndexedIs[A] : ScalaIndexedIs[A] = new ScalaIndexedIs[A]
 }
 
 object Has {

@@ -11,7 +11,7 @@ package std
 object Read {
   def apply[A](f: String => A): Read[A]                         = ReadClass(f)
   def unapply[A](s: String)(implicit reads: Read[A]): Option[A] = Try(reads read s).toOption
-  def into[A] = new ReadInto[A]
+  def into[A] : ReadInto[A]                                     = new ReadInto[A]
 
   final class ReadInto[A]() {
     def apply(s: String)(implicit reads: Read[A]): A           = reads read s

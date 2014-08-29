@@ -46,24 +46,25 @@ class ViewEnvironment[AIn, Repr, M[X]](val repr: Repr) {
     type MapTo[+X] = View[X]
     def isAtomic: Boolean
 
-    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]           = Joined(this, that.m.castTo[View[A1]])
-    final def collect[B](pf: A ?=> B): MapTo[B]                   = Collected(this, pf)
-    final def drop(n: Int): MapTo[A]                              = Dropped(this, Size(n))
-    final def dropRight(n: Int): MapTo[A]                         = DroppedR(this, Size(n))
-    final def dropWhile(p: Predicate[A]): MapTo[A]                = DropWhile(this, p)
-    final def filter(p: Predicate[A]): MapTo[A]                   = Filtered(this, p)
-    final def filterNot(p: Predicate[A]): MapTo[A]                = Filtered(this, (x: A) => !p(x))
-    final def flatMap[B](f: A => Foreach[B]): MapTo[B]            = FlatMapped(this, f)
-    final def labeled(label: String): MapTo[A]                    = LabeledView(this, label)
-    final def map[B](f: A => B): MapTo[B]                         = Mapped(this, f)
-    final def sized(size: Size): MapTo[A]                         = Sized(this, size)
-    final def slice(range: IndexRange): MapTo[A]                  = Sliced(this, range)
-    final def take(n: Int): MapTo[A]                              = Taken(this, Size(n))
-    final def takeRight(n: Int): MapTo[A]                         = TakenR(this, Size(n))
-    final def takeWhile(p: Predicate[A]): MapTo[A]                = TakenWhile(this, p)
-    final def withFilter(p: Predicate[A]): MapTo[A]               = Filtered(this, p)
-    final def native(implicit z: Builds[A, Repr]): Repr           = force[Repr]
-    final def force[That](implicit z: Builds[A, That]): That      = z build this
+    final def ++[A1 >: A](that: Foreach[A1]): MapTo[A1] = Joined(this, that.m.castTo[View[A1]])
+    final def collect[B](pf: A ?=> B): MapTo[B]         = Collected(this, pf)
+    final def drop(n: Int): MapTo[A]                    = Dropped(this, Size(n))
+    final def dropRight(n: Int): MapTo[A]               = DroppedR(this, Size(n))
+    final def dropWhile(p: Predicate[A]): MapTo[A]      = DropWhile(this, p)
+    final def filter(p: Predicate[A]): MapTo[A]         = Filtered(this, p)
+    final def filterNot(p: Predicate[A]): MapTo[A]      = Filtered(this, (x: A) => !p(x))
+    final def flatMap[B](f: A => Foreach[B]): MapTo[B]  = FlatMapped(this, f)
+    final def labeled(label: String): MapTo[A]          = LabeledView(this, label)
+    final def map[B](f: A => B): MapTo[B]               = Mapped(this, f)
+    final def sized(size: Size): MapTo[A]               = Sized(this, size)
+    final def slice(range: IndexRange): MapTo[A]        = Sliced(this, range)
+    final def take(n: Int): MapTo[A]                    = Taken(this, Size(n))
+    final def takeRight(n: Int): MapTo[A]               = TakenR(this, Size(n))
+    final def takeWhile(p: Predicate[A]): MapTo[A]      = TakenWhile(this, p)
+    final def withFilter(p: Predicate[A]): MapTo[A]     = Filtered(this, p)
+
+    final def force[That](implicit z: Builds[A, That]): That = z build this
+    final def native(implicit z: Builds[A, Repr]): Repr      = force[Repr]
 
     override def toString = viewChain reverseMap (_.description) mkString " "
   }

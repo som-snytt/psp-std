@@ -50,6 +50,7 @@ final class IndexRange private (private val bits: Long) extends AnyVal {
   def map[A](f: Index => A): Vector[A]           = mapInt(i => f(Index(i)))
   def find(p: Index => Boolean): Index           = findInt(i => p(Index(i))).fold(NoIndex)(Index)
   def findReverse(p: Index => Boolean): Index    = findIntReverse(i => p(Index(i))).fold(NoIndex)(Index)
+  def exists(p: Index => Boolean): Boolean       = find(p).isDefined
 
   def intersect(that: IndexRange): IndexRange = IndexRange.until(start max that.start, end min that.end)
   def contains(i: Index): Boolean             = !i.isUndefined && (start <= i && i < end)

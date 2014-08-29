@@ -17,11 +17,22 @@ trait ImplicitRemoval {
   val genericWrapArray, wrapBooleanArray, wrapByteArray, wrapCharArray, wrapDoubleArray, wrapFloatArray   = null
   val wrapIntArray, wrapLongArray, wrapRefArray, wrapShortArray, wrapUnitArray                            = null
   val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
-  // val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
-  // val genericArrayOps                                                                                     = null
+  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
+  val genericArrayOps                                                                                     = null
 }
 
 trait StandardImplicits1 {
+  implicit def arrayBuilder[A: ClassTag] : Builds[A, Array[A]] = Builds(xs =>
+    xs.sizeInfo match {
+      case Precise(Size(n)) =>
+        val result = new Array[A](n)
+        var i = 0
+        xs foreach (x => try result(i) = x finally i += 1)
+        result
+      case _ => Array.newBuilder[A] ++= xs.trav result
+    }
+  )
+
   // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
   implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): Env[Repr, tc.type]#AtomicView = tc wrap repr
 }
@@ -34,10 +45,8 @@ trait StandardImplicits3 extends StandardImplicits2 {
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
-
   // Implicit conversions between type classes.
-  implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A]                      = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
-  implicit def canBuildToBuilds[Elem, To](implicit z: CanBuild[Elem, To]): Builds[Elem, To] = Builds(z() ++= _.toTraversable result)
+  implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A] = Ordering fromLessThan ((x, y) => ord.compare(x, y).intValue < 0)
 }
 
 trait StandardImplicits4 extends StandardImplicits3 {

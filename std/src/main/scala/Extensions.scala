@@ -82,7 +82,7 @@ object Ops {
     private def ord = map.ordering
     def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
   }
-  final class GTOnce[CC[X] <: sc.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal with FoldableOps[A, CC] {
+  final class GTOnce[CC[X] <: sc.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal with FoldableOps[A] {
     def foldl[B](zero: B)(f: (B, A) => B): B                               = xs.foldLeft(zero)(f)
     def findOr(p: A => Boolean, alt: => A): A                              = (xs find p) | alt
     def sortDistinct(implicit ord: Ordering[A]): Vector[A]                 = distinct.sorted
@@ -97,34 +97,16 @@ object Ops {
     def ascendingFrequency: OrderedMap[A, Int]                             = unsortedFrequencyMap |> (_.orderByValue)
     def descendingFrequency: OrderedMap[A, Int]                            = ascendingFrequency.reverse
   }
-
-  /** We could avoid this duplication with some of scala's incredibly high-cost
-   *  (in performance and complexity tax) machinery. I'll take the duplication at this point.
-   */
-  trait SeqLikeOps[A] extends Any {
-    // An added benefit of these methods is a huge increase in type safety
-    // because the sequence is treated as invariant due to an idiosyncrasy of
-    // scala's type inference.
-    def length: Int
-    def index(elem: A): Index
-    def lastIndex(elem: A): Index
-    def indexAtWhich(p: A => Boolean): Index
-    def lastIndexAtWhich(p: A => Boolean): Index
-    def hasElem(elem: A): Boolean
-
-    def hasIndex(index: Index): Boolean = indexRange contains index
-    def indexRange: IndexRange          = IndexRange zeroUntil exclusiveEnd
-    def exclusiveEnd: Index             = Index(length)
-  }
   final class ArrayOps[A](private val xs: Array[A]) extends AnyVal with SeqLikeOps[A] {
     def length                                   = xs.length
-    def index(elem: A): Index                    = Index(xs indexOf elem)
-    def lastIndex(elem: A): Index                = Index(xs lastIndexOf elem)
-    def indexAtWhich(p: A => Boolean): Index     = Index(xs indexWhere p)
-    def lastIndexAtWhich(p: A => Boolean): Index = Index(xs lastIndexWhere p)
-    def hasElem(elem: A): Boolean                = xs contains elem
+    def index(elem: A): Index                    = indexRange find (i => xs(i.value) == elem)
+    def lastIndex(elem: A): Index                = indexRange findReverse (i => xs(i.value) == elem)
+    def indexAtWhich(p: A => Boolean): Index     = indexRange find (i => p(xs(i.value)))
+    def lastIndexAtWhich(p: A => Boolean): Index = indexRange findReverse (i => p(xs(i.value)))
+    def hasElem(elem: A): Boolean                = indexRange exists (i => xs(i.value) == elem)
 
-    def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = (indexRange intersect range) |> (r => xs.slice(r.startInt, r.endInt))
+    def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs slice (indexRange intersect range) force
+    def toSeq: ISeq[A] = immutableSeq(xs: _*)
   }
 
   final class OrderOps[A](private val ord: Order[A]) extends AnyVal {
@@ -210,7 +192,7 @@ object Ops {
             val read = in.read(arr, 0, InputStreamBufferSize)
             if (read >= 0) {
               offset += read
-              buf ++= (arr take read)
+              buf ++= (arr take read).toSeq
               loop()
             }
           }
@@ -234,7 +216,23 @@ object Ops {
     def toScalaIterator: sIterator[A] = new ScalaIterator(xs.iterator)
   }
 
-  trait FoldableOps[A, CC[X]] extends Any {
+  trait SeqLikeOps[A] extends Any {
+    // An added benefit of these methods is a huge increase in type safety
+    // because the sequence is treated as invariant due to an idiosyncrasy of
+    // scala's type inference.
+    def length: Int
+    def index(elem: A): Index
+    def lastIndex(elem: A): Index
+    def indexAtWhich(p: A => Boolean): Index
+    def lastIndexAtWhich(p: A => Boolean): Index
+    def hasElem(elem: A): Boolean
+
+    def hasIndex(index: Index): Boolean = indexRange contains index
+    def indexRange: IndexRange          = IndexRange zeroUntil exclusiveEnd
+    def exclusiveEnd: Index             = Index(length)
+  }
+
+  trait FoldableOps[A] extends Any {
     def foldl[B](zero: B)(f: (B, A) => B): B
 
     private def stringed(sep: String)(f: A => String): String =
@@ -249,7 +247,42 @@ object Ops {
     def exists(p: Predicate[A]): Boolean                   = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
   }
 
-  final class ForeachOps[A](private val xs: Foreach[A]) extends AnyVal with FoldableOps[A, Foreach] {
+  trait ConversionOps[A] extends Any {
+    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]
+    private def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
+
+    def toSet(implicit z: HashEq[A]): EquivSet[A]  = to[EquivSet]
+    def toIndexed: Direct[A]                       = to[Direct]
+    def toPspList: PspList[A]                      = to[PspList]
+    def toArray(implicit z: ClassTag[A]): Array[A] = toScala[Array]
+
+    def toIterable: Iterable[A]       = toScala[Iterable]
+    def toList: List[A]               = toScala[List]
+    def toScalaSet: Set[A]            = toScala[Set]
+    def toSeq: ISeq[A]                = toScala[ISeq]
+    def toStream: Stream[A]           = toScala[Stream]
+    def toTraversable: Traversable[A] = toScala[Traversable]
+    def toVector: Vector[A]           = toScala[Vector]
+
+    def trav: Traversable[A]       = toTraversable
+    def scalaIterator: Iterator[A] = toIterable.iterator
+  }
+
+  final class IndexedSeqOps[A](private val xs: Direct[A]) extends AnyVal with FoldableOps[A] with ConversionOps[A] {
+    def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build xs
+    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build xs
+
+    def foldl[B](zero: B)(f: (B, A) => B): B = {
+      var result = zero
+      xs.foreach(x => result = f(result, x))
+      result
+    }
+  }
+
+  final class ForeachOps[A](private val xs: Foreach[A]) extends AnyVal with FoldableOps[A] with ConversionOps[A] {
+    def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build xs
+    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build xs
+
     def sum(implicit num: Numeric[A]): A     = foldl(num.zero)(num.plus)
     def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
 
@@ -263,23 +296,6 @@ object Ops {
       xs.foreach(x => result = f(x, result))
       result
     }
-
-    def toArray(implicit z: ClassTag[A]): Array[A]    = to[Array]
-    def toVector: Vector[A]                           = to[Vector]
-    def toList: List[A]                               = to[List]
-    def toSeq: Seq[A]                                 = to[Seq]
-    def toSet(implicit equiv: HashEq[A]): EquivSet[A] = EquivSet[A](xs)
-    def toScalaSet: Set[A]                            = to[Set]
-    def toStream: Stream[A]                           = to[Stream]
-    def toIterable: Iterable[A]                       = to[Iterable]
-    def toTraversable: Traversable[A]                 = new Foreach.ToScala[A](xs)
-    def trav: Traversable[A]                          = toTraversable
-    def scalaIterator: Iterator[A]                    = toIterable.iterator
-    def toIndexed: Direct[A]                          = to[Direct]
-    def toPspList: PspList[A]                         = to[PspList]
-
-    def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build xs
-    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build xs
   }
 
   /** Hand specialized on the left, @specialized on the right, value classes for tuple creation.

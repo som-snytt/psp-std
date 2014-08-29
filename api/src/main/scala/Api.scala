@@ -10,33 +10,21 @@ import java.nio.file.Paths
 
 trait PackageLevel extends PackageAliases with PackageMethods with PackageImplicits
 
-object Ops {
-  // Can't make the parameter private until 2.11.
-  final class AnyOps[A](val __psp_x: A) extends AnyVal {
-    private def x = __psp_x
-    private implicit def liftAny[B](x: B): AnyOps[B] = new AnyOps[B](x)
-
-    // "Maybe we can enforce good programming practice with annoyingly long method names."
-    def castTo[U] : U = x.asInstanceOf[U]
-    def toRef: AnyRef = castTo[AnyRef]
-
-    // The famed forward pipe.
-    @inline def |>[B](f: A => B): B   = f(x)
-    @inline def doto(f: A => Unit): A = try x finally f(x)
-    @inline def also(body: Unit): A   = x
-
-    // Calling eq on Anys.
-    def ref_==(y: Any): Boolean = x.toRef eq y.toRef
-    def id_## : Int             = System identityHashCode x
-
-    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift x
-    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else shows show x
-    def any_s: String = x match {
-      case x: ShowDirect => x.to_s
-      case _             => "" + x
-    }
-  }
+/** The classic type class for encoding value equivalence.
+ */
+trait Eq[A] extends Any {
+  def equiv(x: A, y: A): Boolean
 }
+
+/** The Eq type class fused with a method to provide the
+ *  corresponding hashCodes. I've never had a desire to provide
+ *  hashcodes independently of equals logic so there's no
+ *  separate Hash typeclass.
+ */
+trait HashEq[A] extends Any with Eq[A] {
+  def hash(x: A): Int
+}
+
 trait Labeled {
   def label: String
   override def toString = label
@@ -145,6 +133,7 @@ trait PackageAliases extends Any {
   type ?=>[-A, +B]   = PartialFunction[A, B]
   type Predicate[-A] = A => Boolean
   type Suspended[+A] = (A => Unit) => Unit
+  type ISeq[+A]      = scala.collection.immutable.Seq[A]
 }
 
 trait PackageMethods {
@@ -187,4 +176,32 @@ trait PackageMethods {
   def listBuilder[A](xs: A*)            = List.newBuilder[A] ++= xs
   def arrayBuilder[A: ClassTag](xs: A*) = Array.newBuilder[A] ++= xs
   def vectorBuilder[A](xs: A*)          = Vector.newBuilder[A] ++= xs
+}
+
+object Ops {
+  // Can't make the parameter private until 2.11.
+  final class AnyOps[A](val __psp_x: A) extends AnyVal {
+    private def x = __psp_x
+    private implicit def liftAny[B](x: B): AnyOps[B] = new AnyOps[B](x)
+
+    // "Maybe we can enforce good programming practice with annoyingly long method names."
+    def castTo[U] : U = x.asInstanceOf[U]
+    def toRef: AnyRef = castTo[AnyRef]
+
+    // The famed forward pipe.
+    @inline def |>[B](f: A => B): B   = f(x)
+    @inline def doto(f: A => Unit): A = try x finally f(x)
+    @inline def also(body: Unit): A   = x
+
+    // Calling eq on Anys.
+    def ref_==(y: Any): Boolean = x.toRef eq y.toRef
+    def id_## : Int             = System identityHashCode x
+
+    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift x
+    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else shows show x
+    def any_s: String = x match {
+      case x: ShowDirect => x.to_s
+      case _             => "" + x
+    }
+  }
 }
