@@ -7,6 +7,7 @@ package api
  */
 import scala.collection.{ mutable, immutable }
 import java.nio.file.Paths
+import scala.sys.process.Process
 
 trait PackageLevel extends PackageAliases with PackageMethods with PackageImplicits
 
@@ -132,6 +133,18 @@ trait PackageMethods {
   def url(x: String): URL                       = uri(x).toURL
   def dateTime(): String                        = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
 
+  def javaHome: File               = new File(scala.util.Properties.javaHome)
+  def classpathSeparator           = java.io.File.pathSeparator
+  def execute(args: String*): Unit = Process(args.toSeq).run
+
+  def openInApp(app: String, file: File): Unit = execute("open", "-a", app, file.getAbsolutePath)
+  def openSafari(file: File): Unit             = openInApp("Safari", file)
+  def openChrome(file: File): Unit             = openInApp("Google Chrome", file)
+
+  def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
+  def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
+  def convertSeq[A, B](xs: Seq[A])(implicit conversion: A => B): Seq[B]       = xs map conversion
+
   // Mostly obviating the need for those mutable/immutable identifiers.
   def mutableSeq[A](xs: A*): mutable.Seq[A]                 = mutable.Seq(xs: _*)
   def mutableSet[A](xs: A*): mutable.Set[A]                 = mutable.Set(xs: _*)
@@ -144,6 +157,17 @@ trait PackageMethods {
   def listBuilder[A](xs: A*)            = List.newBuilder[A] ++= xs
   def arrayBuilder[A: ClassTag](xs: A*) = Array.newBuilder[A] ++= xs
   def vectorBuilder[A](xs: A*)          = Vector.newBuilder[A] ++= xs
+
+  // String arrangements.
+  def tabular[A](rows: Seq[A], join: Seq[String] => String)(columns: (A => String)*): String = {
+    val cols   = columns.toVector
+    val widths = cols map (f => rows map f map (_.length) max)
+    def one(width: Int, value: String): String = (
+      if (width == 0 || value == "") ""
+      else ("%-" + width + "s") format value
+    )
+    rows map (row => join((widths, cols map (_ apply row)).zipped map one)) mkString "\n"
+  }
 }
 
 object Ops {
@@ -155,6 +179,7 @@ object Ops {
     // "Maybe we can enforce good programming practice with annoyingly long method names."
     def castTo[U] : U = x.asInstanceOf[U]
     def toRef: AnyRef = castTo[AnyRef]
+    def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(x, args map (_.toRef): _*).castTo[B]
 
     // The famed forward pipe.
     @inline def |>[B](f: A => B): B   = f(x)
