@@ -99,21 +99,21 @@ object Ops {
     private def ord: Order[K] = Order fromOrdering map.ordering
     def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
   }
-  final class GTOnce[CC[X] <: sc.GenTraversableOnce[X], A](private val xs: CC[A]) extends AnyVal with FoldableOps[A] {
-    def foldl[B](zero: B)(f: (B, A) => B): B                               = xs.foldLeft(zero)(f)
-    def findOr(p: A => Boolean, alt: => A): A                              = (xs find p) | alt
-    def sortOrder[B: Order](f: A => B): Vector[A]                          = xs.toVector sorted (?[Order[B]] on f toOrdering)
-    def sortDistinct(implicit ord: Order[A]): Vector[A]                    = distinct.sorted(ord.toOrdering)
-    def mapZip[B, C](ys: GenTraversableOnce[B])(f: (A, B) => C): Vector[C] = for ((x, y) <- xs.toVector zip ys.toVector) yield f(x, y)
-    def mapFrom[B](f: A => B): OrderedMap[B, A]                            = orderedMap(xs.toVector map (x => (f(x), x)): _*)
-    def mapOnto[B](f: A => B): OrderedMap[A, B]                            = orderedMap(xs.toVector map (x => (x, f(x))): _*)
-    def mapToAndOnto[B, C](k: A => B, v: A => C): OrderedMap[B, C]         = xs.toVector |> (xs => orderedMap(xs map (x => k(x) -> v(x)): _*))
-    def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]              = xs.toVector |> (xs => orderedMap(xs map f: _*))
-    def sorted(implicit ord: Order[A]): Vector[A]                          = xs.toVector.sorted(ord.toOrdering)
-    def distinct: Vector[A]                                                = xs.toVector.distinct
-    def unsortedFrequencyMap: Map[A, Int]                                  = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
-    def ascendingFrequency: OrderedMap[A, Int]                             = unsortedFrequencyMap |> (_.orderByValue)
-    def descendingFrequency: OrderedMap[A, Int]                            = ascendingFrequency.reverse
+  final class GTOnceOps[A](private val xs: GTOnce[A]) extends AnyVal with FoldableOps[A] {
+    def foldl[B](zero: B)(f: (B, A) => B): B                       = xs.foldLeft(zero)(f)
+    def findOr(p: A => Boolean, alt: => A): A                      = (xs find p) | alt
+    def sortOrder[B: Order](f: A => B): Vector[A]                  = xs.toVector sorted (?[Order[B]] on f toOrdering)
+    def sortDistinct(implicit ord: Order[A]): Vector[A]            = distinct.sorted(ord.toOrdering)
+    def mapZip[B, C](ys: GTOnce[B])(f: (A, B) => C): Vector[C]     = for ((x, y) <- xs.toVector zip ys.toVector) yield f(x, y)
+    def mapFrom[B](f: A => B): OrderedMap[B, A]                    = orderedMap(xs.toVector map (x => (f(x), x)): _*)
+    def mapOnto[B](f: A => B): OrderedMap[A, B]                    = orderedMap(xs.toVector map (x => (x, f(x))): _*)
+    def mapToAndOnto[B, C](k: A => B, v: A => C): OrderedMap[B, C] = xs.toVector |> (xs => orderedMap(xs map (x => k(x) -> v(x)): _*))
+    def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]      = xs.toVector |> (xs => orderedMap(xs map f: _*))
+    def sorted(implicit ord: Order[A]): Vector[A]                  = xs.toVector.sorted(ord.toOrdering)
+    def distinct: Vector[A]                                        = xs.toVector.distinct
+    def unsortedFrequencyMap: Map[A, Int]                          = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
+    def ascendingFrequency: OrderedMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
+    def descendingFrequency: OrderedMap[A, Int]                    = ascendingFrequency.reverse
   }
   final class ArrayOps[A](private val xs: Array[A]) extends AnyVal with SeqLikeOps[A] {
     def length                                   = xs.length
@@ -317,6 +317,10 @@ object Ops {
       var result = zero
       xs.foreach(x => result = f(x, result))
       result
+    }
+    def toDirect: Direct[A] = xs match {
+      case xs: Direct[_] => xs
+      case _             => Direct elems (toSeq: _*)
     }
   }
 

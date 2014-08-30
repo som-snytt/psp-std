@@ -32,22 +32,9 @@ trait StandardImplicits1 {
   implicit def apiSizeToSize(s: api.Size): Size     = Size(s.value)
   implicit def apiIndexToIndex(x: api.Index): Index = Index(x.value)
 
-  implicit def implicitListBuilder[A] : Builds[A, PspList[A]] =
-    Builds(_.foldr(PspList.empty[A])(_ :: _).reverse)
-
-  implicit def implicitDirectBuilder[A] : Builds[A, Direct[A]] =
-    Builds((xs: Foreach[A]) => xs maybe { case xs: Direct[A] => xs } or Direct.elems(xs.toSeq: _*))
-
-  implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]] = Builds(xs =>
-    xs.sizeInfo match {
-      case Precise(Size(n)) =>
-        val result = new Array[A](n)
-        var i = 0
-        xs foreach (x => try result(i) = x finally i += 1)
-        result
-      case _ => Array.newBuilder[A] ++= xs.trav result
-    }
-  )
+  implicit def implicitListBuilder[A] : Builds[A, PspList[A]]          = Builds(_.foldr(PspList.empty[A])(_ :: _).reverse)
+  implicit def implicitDirectBuilder[A] : Builds[A, Direct[A]]         = Builds(_.toDirect)
+  implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]] = Builds(Array.newBuilder[A] ++= _.trav result)
 
   // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
   implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): Env[Repr, tc.type]#AtomicView = tc wrap repr
@@ -93,7 +80,7 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]                                       = new Ops.EqOps[A](x)
   implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                       = new Ops.ForeachOps(xs)
   implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)
-  implicit def opsGTOnce[CC[X] <: GTOnce[X], A](xs: CC[A]): Ops.GTOnce[CC, A]         = new Ops.GTOnce[CC, A](xs)
+  implicit def opsGTOnce[A](xs: GTOnce[A]): Ops.GTOnceOps[A]                          = new Ops.GTOnceOps[A](xs)
   implicit def opsInputStream(x: InputStream): Ops.InputStreamOps                     = new Ops.InputStreamOps(x)
   implicit def opsInt(x: Int): Ops.IntOps                                             = new Ops.IntOps(x)
   implicit def opsIterator[A](it: jIterator[A]): Ops.IteratorOps[A]                   = new Ops.IteratorOps(it)
@@ -181,15 +168,15 @@ trait OrderImplicits {
       case (Bounded(_, Infinite), Infinite)         => LE
       case (_, Infinite)                            => LT
       case (GenBounded(l1, h1), GenBounded(l2, h2)) =>
-        def lo1 = Precise(l1)
-        def lo2 = Precise(l2)
+      def lo1 = Precise(l1)
+      def lo2 = Precise(l2)
 
-        ( if (h1 < lo2 isTrue) LT
-          else if (h1 <= lo2 isTrue) LE
-          else if (h2 < lo1 isTrue) GT
-          else if (h2 <= lo1 isTrue) GE
-          else NA
-        )
+      ( if (h1 < lo2 isTrue) LT
+        else if (h1 <= lo2 isTrue) LE
+        else if (h2 < lo1 isTrue) GT
+        else if (h2 <= lo1 isTrue) GE
+        else NA
+      )
     }
   }
 }

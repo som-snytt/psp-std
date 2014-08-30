@@ -54,12 +54,12 @@ object Foreach {
   def const[A](elem: A): Constant[A]            = new Constant(elem)
   def times[A](times: Int, elem: A): Foreach[A] = Times(Size(times), elem)
 
-  def unfold[A](start: A)(next: A => A): Unfold[A]          = Unfold[A](start)(next)
-  def traversable[A](xs: GenTraversableOnce[A]): Foreach[A] = new FromScala[A](xs.toTraversable.seq)
-  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]   = new JoinForeach(xs, ys)
-  def empty[A] : Foreach[A]                                 = Empty
-  def elems[A](xs: A*): Foreach[A]                          = Direct.elems(xs: _*)
-  def apply[A](mf: Suspended[A]): Foreach[A]                = new PureForeach[A](mf, unknownSize)
+  def unfold[A](start: A)(next: A => A): Unfold[A]        = Unfold[A](start)(next)
+  def traversable[A](xs: GTOnce[A]): Foreach[A]           = new FromScala[A](xs.toTraversable.seq)
+  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A] = new JoinForeach(xs, ys)
+  def empty[A] : Foreach[A]                               = Empty
+  def elems[A](xs: A*): Foreach[A]                        = Direct.elems(xs: _*)
+  def apply[A](mf: Suspended[A]): Foreach[A]              = new PureForeach[A](mf, unknownSize)
 
   def stringify[A: Show](xs: Foreach[A], max: Int = 3): String = {
     def prefix = xs.shortClass

@@ -29,22 +29,20 @@ trait PackageImplicits extends Any {
  */
 trait PackageAliases extends Any {
   // common scala
-  type ArrayBuffer[A]                = scala.collection.mutable.ArrayBuffer[A]
-  type Builder[-Elem, +To]           = scala.collection.mutable.Builder[Elem, To]
-  type CanBuild[-Elem, +To]          = scala.collection.generic.CanBuildFrom[_, Elem, To]
-  type ClassTag[A]                   = scala.reflect.ClassTag[A]
-  type Codec                         = scala.io.Codec
-  type GTOnce[+A]                    = scala.collection.GenTraversableOnce[A]
-  type GenTraversableLike[+A, +Repr] = scala.collection.GenTraversableLike[A, Repr]
-  type GenTraversableOnce[+A]        = scala.collection.GenTraversableOnce[A]
-  type IndexedSeq[+A]                = scala.collection.immutable.IndexedSeq[A]
-  type LinearSeq[+A]                 = scala.collection.immutable.LinearSeq[A]
-  type ListBuffer[A]                 = scala.collection.mutable.ListBuffer[A]
-  type ScalaNumber                   = scala.math.ScalaNumber
-  type TraversableLike[+A, CC[+X]]   = scala.collection.TraversableLike[A, CC[A]]
-  type Try[+A]                       = scala.util.Try[A]
-  type VectorBuilder[A]              = scala.collection.mutable.Builder[A, Vector[A]]
-  type WrappedArray[A]               = scala.collection.mutable.WrappedArray[A]
+  type ArrayBuffer[A]              = scala.collection.mutable.ArrayBuffer[A]
+  type Builder[-Elem, +To]         = scala.collection.mutable.Builder[Elem, To]
+  type CanBuild[-Elem, +To]        = scala.collection.generic.CanBuildFrom[_, Elem, To]
+  type ClassTag[A]                 = scala.reflect.ClassTag[A]
+  type Codec                       = scala.io.Codec
+  type GTOnce[+A]                  = scala.collection.GenTraversableOnce[A]
+  type IndexedSeq[+A]              = scala.collection.immutable.IndexedSeq[A]
+  type LinearSeq[+A]               = scala.collection.immutable.LinearSeq[A]
+  type ListBuffer[A]               = scala.collection.mutable.ListBuffer[A]
+  type ScalaNumber                 = scala.math.ScalaNumber
+  type TraversableLike[+A, CC[+X]] = scala.collection.TraversableLike[A, CC[A]]
+  type Try[+A]                     = scala.util.Try[A]
+  type VectorBuilder[A]            = scala.collection.mutable.Builder[A, Vector[A]]
+  type WrappedArray[A]             = scala.collection.mutable.WrappedArray[A]
 
   // common annotations
   type switch  = scala.annotation.switch
