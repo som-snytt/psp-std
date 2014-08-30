@@ -168,12 +168,12 @@ trait Versioning {
 
   // TODO - Distinguish between milestones and releases.
   def runPublish[A](key: TaskKey[A]) = Def.task[Unit] {
-    val state = Keys.state.value
-    def isPublishKey  = key eq publish
-    def versionString = state(version) + ( if (isPublishKey) "" else localSuffix )
-    def finish()      = subprojects foreach (p => state(crossScalaVersions in p) foreach (cross => publishProject(p, cross)))
+    val state        = Keys.state.value
+    val isPublishKey = key eq publish
+    val suffix       = if (isPublishKey) "" else localSuffix
 
-    def publishProject(p: Project, cross: String) = state.set(version in p := versionString, scalaVersion in p := cross) runTask (key in Compile in p)
+    def finish()                                  = subprojects foreach (p => state(crossScalaVersions in p) foreach (cross => publishProject(p, cross)))
+    def publishProject(p: Project, cross: String) = state.set(version in p := state(version) + suffix, scalaVersion in p := cross) runTask (key in Compile in p)
 
     // TODO - Require the git tag to exist (not for milestones) or create it.
     if (!isPublishKey)
