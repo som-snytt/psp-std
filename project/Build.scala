@@ -52,7 +52,7 @@ object Build extends sbt.Build with Versioning {
                               resolvers  +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                            organization  :=  pspOrg,
                            scalaVersion  :=  "2.11.2",
-                                version  :=  "0.3.0-M5",
+                                version  :=  "0.3.0-M6",
                             logBuffered  :=  false,
                           scalacOptions ++=  opts ++ Seq("-Ywarn-dead-code", "-language:_"),
                           scalacOptions <++= ifBinary("2.11")("-Ywarn-unused" :: "-Ywarn-unused-import" :: Nil, Nil),
@@ -69,7 +69,7 @@ object Build extends sbt.Build with Versioning {
   /** mima command optionally takes a baseline version, e.g. sbt 'mima 0.1.0-M1'
    */
   def mimaCommand = stateCommand {
-    case (s, Nil)            => mimaRun(s, stdArtifact("0.3.0-M4"))
+    case (s, Nil)            => mimaRun(s, stdArtifact("0.3.0-M5"))
     case (s, version :: Nil) => mimaRun(s, stdArtifact(version))
     case (s, _)              => s.fail
   }
