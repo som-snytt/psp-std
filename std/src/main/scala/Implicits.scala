@@ -19,9 +19,6 @@ abstract class PackageImplicits extends ImplicitRemoval
       with ReadImplicits
       with OrderImplicits
       with EqImplicits {
-
-  self: api.PackageLevel =>
-
 }
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
@@ -151,8 +148,6 @@ trait OrderImplicits {
 }
 
 trait ShowImplicits extends api.ShowImplicits {
-  self: api.PackageLevel =>
-
   implicit def viewShow[A] : Show[api.View[A]]         = Show(_.viewChain reverseMap (_.description) joinSpace)
   implicit def pspListShow[A: Show] : Show[PspList[A]] = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
 }

@@ -29,7 +29,7 @@ trait ShowDirect extends Any { def to_s: String }
  *  Included in std.PackageLevel.
  */
 trait ShowImplicits {
-  self: PackageLevel =>
+  import internal._
 
   def inBrackets[A: Show](xs: A*): String = xs.map(_.to_s).mkString("[", ", ", "]")
 
@@ -62,16 +62,14 @@ trait PackageImplicits0 extends Any {
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): Ops.TryShown = new Ops.TryShown(shows show x)
 }
 trait PackageImplicits extends Any with PackageImplicits0 {
-  self: PackageLevel =>
-
   implicit def opsApiAny[A](x: A): Ops.AnyOps[A] = new Ops.AnyOps[A](x)
 
   // The typesafe non-toString-using show"..." interpolator.
   implicit def opsApiShowInterpolator(sc: StringContext): Ops.ShowInterpolator = new Ops.ShowInterpolator(sc)
 
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): Ops.Shown = Ops.Shown(?[Show[A]] show x)
-  implicit def showLabeled: Show[Labeled]                     = Show[Labeled](_.label)
+  implicit def showableToShown[A: Show](x: A): Ops.Shown = Ops.Shown(internal.?[Show[A]] show x)
+  implicit def showLabeled: Show[Labeled]                = Show[Labeled](_.label)
 
   // Ops on base type classes.
   implicit def opsApiEq[A](x: Eq[A]): Ops.EqOps[A]          = new Ops.EqOps[A](x)
@@ -170,7 +168,7 @@ trait PackageValues {
 }
 
 trait PackageMethods extends Any {
-  self: PackageLevel =>
+  import internal._
 
   def eqBy[A]    = new Ops.EqBy[A]
   def orderBy[A] = new Ops.OrderBy[A]
@@ -231,12 +229,15 @@ trait PackageMethods extends Any {
   }
 }
 
+/** This sort of arrangement tends to send scala into a
+ *  NoSuchMethod tizzy if internal is a package object, but we seem
+ *  to get away with it as a regular object. It breaks down with cyclic
+ *  reference errors if we import it at the top level so it is imported
+ *  strategically where necessary.
+ */
+private[api] object internal extends PackageLevel
+
 object Ops {
-  /** This sort of arrangement tends to send scala into a
-   *  NoSuchMethod tizzy if internal is a package object, but we seem
-   *  to get away with it as a regular object.
-   */
-  private object internal extends PackageLevel
   import internal._
 
   /** Working around 2.10 value class bug. */
