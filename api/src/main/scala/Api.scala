@@ -59,24 +59,24 @@ trait ShowImplicits {
 
 trait PackageImplicits0 extends Any {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): internal.TryShown = new internal.TryShown(shows show x)
+  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): Ops.TryShown = new Ops.TryShown(shows show x)
 }
 trait PackageImplicits extends Any with PackageImplicits0 {
   self: PackageLevel =>
 
-  implicit def opsApiAny[A](x: A): Ops.AnyOps[A]                               = new Ops.AnyOps[A](x)
+  implicit def opsApiAny[A](x: A): Ops.AnyOps[A] = new Ops.AnyOps[A](x)
 
   // The typesafe non-toString-using show"..." interpolator.
   implicit def opsApiShowInterpolator(sc: StringContext): Ops.ShowInterpolator = new Ops.ShowInterpolator(sc)
 
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): internal.Shown = internal.Shown(?[Show[A]] show x)
+  implicit def showableToShown[A: Show](x: A): Ops.Shown = Ops.Shown(?[Show[A]] show x)
   implicit def showLabeled: Show[Labeled]                     = Show[Labeled](_.label)
 
   // Ops on base type classes.
-  implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]          = new Ops.EqOps[A](x)
-  implicit def opsOrder[A](x: Order[A]): Ops.OrderOps[A] = new Ops.OrderOps[A](x)
-  implicit def opsShow[A](x: Show[A]): Ops.ShowOps[A]    = new Ops.ShowOps[A](x)
+  implicit def opsApiEq[A](x: Eq[A]): Ops.EqOps[A]          = new Ops.EqOps[A](x)
+  implicit def opsApiOrder[A](x: Order[A]): Ops.OrderOps[A] = new Ops.OrderOps[A](x)
+  implicit def opsApiShow[A](x: Show[A]): Ops.ShowOps[A]    = new Ops.ShowOps[A](x)
 }
 
 /** Aliases for types I've had to import over and over and over again.
@@ -172,9 +172,9 @@ trait PackageValues {
 trait PackageMethods extends Any {
   self: PackageLevel =>
 
-  def eqBy[A]    = new internal.EqBy[A]
-  def orderBy[A] = new internal.OrderBy[A]
-  def showBy[A]  = new internal.ShowBy[A]
+  def eqBy[A]    = new Ops.EqBy[A]
+  def orderBy[A] = new Ops.OrderBy[A]
+  def showBy[A]  = new Ops.ShowBy[A]
 
   def ?[A](implicit value: A): A                = value
   def Try[A](body: => A): Try[A]                = scala.util.Try[A](body)
@@ -232,11 +232,17 @@ trait PackageMethods extends Any {
 }
 
 object Ops {
+  /** This sort of arrangement tends to send scala into a
+   *  NoSuchMethod tizzy if internal is a package object, but we seem
+   *  to get away with it as a regular object.
+   */
+  private object internal extends PackageLevel
+  import internal._
+
   /** Working around 2.10 value class bug. */
   private def newOrdering[A](f: (A, A) => Cmp): Ordering[A] =
     new Ordering[A] { def compare(x: A, y: A): Int = f(x, y).intValue }
 
-  import internal._
   // Can't make the parameter private until 2.11.
   final class AnyOps[A](val __psp_x: A) extends AnyVal {
     // "Maybe we can enforce good programming practice with annoyingly long method names."
@@ -262,7 +268,7 @@ object Ops {
   }
   final class OrderOps[A](val __psp_ord: Order[A]) extends AnyVal {
     def reverse: Order[A]          = Order[A]((x, y) => __psp_ord.compare(x, y).flip)
-    def toOrdering: Ordering[A]    = newOrdering[A](__psp_ord.compare) // new Ordering[A] { def compare(x: A, y: A): Int = __psp_ord.compare(x, y).intValue }
+    def toOrdering: Ordering[A]    = newOrdering[A](__psp_ord.compare)
     def on[B](f: B => A): Order[B] = Order[B]((x, y) => __psp_ord.compare(f(x), f(y)))
   }
   final class ShowOps[A](val __psp_shows: Show[A]) extends AnyVal {
@@ -285,4 +291,39 @@ object Ops {
     def + (that: ShowDirect): ShowDirect = Shown(__psp_x.to_s + that.to_s)
     def + [A: Show](that: A): ShowDirect = Shown(__psp_x.to_s + implicitly[Show[A]].show(that))
   }
+
+  /** The funny parameter names are because they can't be made private in 2.10
+   *  due to value class limitations, but that leaves them eligible to drive
+   *  implicit conversions to these classes.
+   */
+  final class EqClass[-A](val __psp_f: (A, A) => Boolean) extends AnyVal with Eq[A] {
+    def equiv(x: A, y: A): Boolean = __psp_f(x, y)
+  }
+  final class OrderClass[-A](val __psp_f: (A, A) => Cmp) extends AnyVal with Order[A] {
+    def compare(x: A, y: A): Cmp = __psp_f(x, y)
+  }
+  final class ShowClass[-A](val __psp_f: A => String) extends  AnyVal with Show[A] {
+    def show(x: A): String = __psp_f(x)
+  }
+  final class ReadClass[A](val __psp_f: String => A) extends AnyVal with Read[A] {
+    def read(x: String): A = __psp_f(x)
+  }
+  final class HashEqClass[-A](cmp: (A, A) => Boolean, h: A => Int) extends HashEq[A] {
+    def equiv(x: A, y: A) = cmp(x, y)
+    def hash(x: A)        = h(x)
+  }
+
+  /** Used to achieve type-safety in the show interpolator.
+   *  It's the String resulting from passing a value through its Show instance.
+   */
+  final case class Shown(to_s: String) extends AnyVal with ShowDirect {
+    override def toString = to_s
+  }
+  final case class TryShown(to_s: String) extends AnyVal with ShowDirect {
+    override def toString = to_s
+  }
+
+  final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = ord on f   }
+  final class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = equiv on f }
+  final class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = show on f  }
 }

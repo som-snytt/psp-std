@@ -31,11 +31,11 @@ package api {
   object HashEq {
     // This converts Eq[A] to HashEq[A] assuming the built-in hashCode suffices.
     implicit def assumeHashCode[A](implicit eqs: Eq[A]): HashEq[A] = HashEq[A](eqs.equiv, _.##)
-    def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): HashEq[A] = new internal.HashEqClass[A](cmp, hashFn)
+    def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): HashEq[A] = new Ops.HashEqClass[A](cmp, hashFn)
   }
 
   object Eq {
-    def apply[A](f: (A, A) => Boolean): internal.EqClass[A] = new internal.EqClass[A](f)
+    def apply[A](f: (A, A) => Boolean): Ops.EqClass[A] = new Ops.EqClass[A](f)
 
     implicit val booleanEq: Eq[Boolean] = Eq[Boolean](_ == _)
     implicit val byteEq: Eq[Byte]       = Eq[Byte](_ == _)
@@ -50,11 +50,11 @@ package api {
   }
 
   object Read {
-    def apply[A](f: String => A): Read[A] = new internal.ReadClass[A](f)
+    def apply[A](f: String => A): Read[A] = new Ops.ReadClass[A](f)
   }
   object Show {
-    def apply[A](f: A => String): Show[A] = new internal.ShowClass[A](f)
-    def native[A](): Show[A]              = ToString.asInstanceOf[Show[A]]
+    def apply[A](f: A => String): Show[A] = new Ops.ShowClass[A](f)
+    def native[A](): Show[A]              = ToString
 
     /** This of course is not implicit as that would defeat the purpose of the endeavor.
      */
@@ -64,49 +64,6 @@ package api {
     }
   }
   object Order {
-    def apply[A](f: (A, A) => Cmp): Order[A] = new internal.OrderClass[A](f)
+    def apply[A](f: (A, A) => Cmp): Order[A] = new Ops.OrderClass[A](f)
   }
-}
-
-package object internal extends api.PackageLevel
-
-package internal {
-  import api._
-
-  /** The funny parameter names are because they can't be made private in 2.10
-   *  due to value class limitations, but that leaves them eligible to drive
-   *  implicit conversions to these classes.
-   */
-  final class EqClass[-A](val __psp_f: (A, A) => Boolean) extends /* AnyVal with */ Eq[A] {
-    // Even in 2.11 this breaks down as a value class.
-    // Exception: java.lang.NoSuchMethodError: psp.std.internal.EqClass$.equiv$extension(Lscala/Function2;Ljava/lang/Object;Ljava/lang/Object;)Z
-    def equiv(x: A, y: A): Boolean = __psp_f(x, y)
-  }
-  final class OrderClass[-A](val __psp_f: (A, A) => Cmp) extends /* AnyVal with */ Order[A] {
-    def compare(x: A, y: A): Cmp = __psp_f(x, y)
-  }
-  final class ShowClass[-A](val __psp_f: A => String) extends  /* AnyVal with */ Show[A] {
-    def show(x: A): String = __psp_f(x)
-  }
-  final class ReadClass[A](val __psp_f: String => A) extends /* AnyVal with */ Read[A] {
-    def read(x: String): A = __psp_f(x)
-  }
-  final class HashEqClass[-A](cmp: (A, A) => Boolean, h: A => Int) extends HashEq[A] {
-    def equiv(x: A, y: A) = cmp(x, y)
-    def hash(x: A)        = h(x)
-  }
-
-  /** Used to achieve type-safety in the show interpolator.
-   *  It's the String resulting from passing a value through its Show instance.
-   */
-  final case class Shown(to_s: String) extends /* AnyVal with */ ShowDirect {
-    override def toString = to_s
-  }
-  final case class TryShown(to_s: String) extends /* AnyVal with */ ShowDirect {
-    override def toString = to_s
-  }
-
-  final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = ord on f   }
-  final class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = equiv on f }
-  final class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = show on f  }
 }

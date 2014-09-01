@@ -9,7 +9,7 @@ package std
  *  That's what into[A] is for, to obtain the type up front.
  */
 object Read {
-  def apply[A](f: String => A): Read[A]                         = new internal.ReadClass(f)
+  def apply[A](f: String => A): Read[A]                         = api.Read[A](f)
   def unapply[A](s: String)(implicit reads: Read[A]): Option[A] = Try(reads read s).toOption
   def into[A] : ReadInto[A]                                     = new ReadInto[A]
 

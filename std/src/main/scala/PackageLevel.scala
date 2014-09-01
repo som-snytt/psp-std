@@ -1,19 +1,9 @@
 package psp
 package std
 
-/** Yes I know all about implicit classes.
- *  There's no way to write an implicit value class which doesn't hardcode
- *  its location into an object. Separating the implicit conversion from
- *  the class allows clients to build their own package object.
- *
- *  This is all a consequence of scala offering no means for managing namespaces,
- *  so namespace management has become hopelessly entangled with unrelated concerns
- *  like inheritance, specificity, method dispatch, and so forth.
+/** The big bundle of everything which goes into the standard package object.
  */
 abstract class PackageLevel extends PackageImplicits with api.PackageLevel with PackageAliases with PackageMethods {
-  /** It's like "" + x, except, you know, for kids.
-   */
-  val `""`         = internal.Shown("")
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
   val NumericRange = scala.collection.immutable.NumericRange
@@ -45,10 +35,9 @@ trait PackageAliases {
   type Eq[-A]     = api.Eq[A]
   type HashEq[-A] = api.HashEq[A]
   type Order[-A]  = api.Order[A]
-
   type Read[A]    = api.Read[A]
   type ShowDirect = api.ShowDirect
-  type Cmp        = psp.std.api.Cmp
+  type Cmp        = api.Cmp
 
   type Invariant[A] = api.Invariant[A]
   type Foreach[+A]  = api.Foreach[A]

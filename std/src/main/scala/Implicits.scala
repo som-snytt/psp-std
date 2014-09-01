@@ -3,6 +3,15 @@ package std
 
 import scala.{ collection => sc }
 
+/** Yes I know all about implicit classes.
+ *  There's no way to write an implicit value class which doesn't hardcode
+ *  its location into an object. Separating the implicit conversion from
+ *  the class allows clients to build their own package object.
+ *
+ *  This is all a consequence of scala offering no means for managing namespaces,
+ *  so namespace management has become hopelessly entangled with unrelated concerns
+ *  like inheritance, specificity, method dispatch, and so forth.
+ */
 abstract class PackageImplicits extends ImplicitRemoval
       with StandardImplicits4
       with ArrowAssoc2
