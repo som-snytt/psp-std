@@ -9,6 +9,8 @@ import scala.collection.{ mutable, immutable }
 import java.nio.file.Paths
 import scala.sys.process.Process
 
+trait PackageLevelPlusCompat extends PackageLevel with ScalaCompat
+
 trait PackageLevel extends PackageAliases with PackageMethods with PackageImplicits
 
 /** Mostly for mixing a usable toString method into functions.

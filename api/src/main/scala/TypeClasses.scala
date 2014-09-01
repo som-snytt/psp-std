@@ -48,6 +48,16 @@ package api {
     implicit val stringEq: Eq[String]   = Eq[String](_ == _)
     implicit val unitEq: Eq[Unit]       = Eq[Unit]((x, y) => true)
   }
+
+  object Read {
+    def apply[A](f: String => A): Read[A] = new internal.ReadClass[A](f)
+  }
+  object Show {
+    def apply[A](f: A => String): Show[A] = new internal.ShowClass[A](f)
+  }
+  object Order {
+    def apply[A](f: (A, A) => Cmp): Order[A] = new internal.OrderClass[A](f)
+  }
 }
 
 package internal {

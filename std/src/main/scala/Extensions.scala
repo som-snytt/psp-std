@@ -58,20 +58,6 @@ object TClass {
 object Ops {
   final val InputStreamBufferSize = 8192
 
-  final class CmpOps(private val cmp: Cmp) extends AnyVal {
-    import psp.std.api.Cmp._
-    def flip: Cmp = cmp match {
-      case LT => GT
-      case GT => LT
-      case EQ => EQ
-    }
-    def intValue: Int = cmp match {
-      case LT => -1
-      case EQ => 0
-      case GT => 1
-    }
-  }
-
   // Have to each go into their own class because the apply methods have the same erasure.
   final class Seq1[A](private val xs: sc.Seq[A]) extends AnyVal {
     def apply(nth: Nth): A = if (nth.isUndefined) sys.error(s"apply($nth)") else xs(nth.intIndex)
