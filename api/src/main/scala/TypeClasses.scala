@@ -77,16 +77,18 @@ package internal {
    *  due to value class limitations, but that leaves them eligible to drive
    *  implicit conversions to these classes.
    */
-  final class EqClass[-A](val __psp_f: (A, A) => Boolean) extends AnyVal with Eq[A] {
+  final class EqClass[-A](val __psp_f: (A, A) => Boolean) extends /* AnyVal with */ Eq[A] {
+    // Even in 2.11 this breaks down as a value class.
+    // Exception: java.lang.NoSuchMethodError: psp.std.internal.EqClass$.equiv$extension(Lscala/Function2;Ljava/lang/Object;Ljava/lang/Object;)Z
     def equiv(x: A, y: A): Boolean = __psp_f(x, y)
   }
-  final class OrderClass[-A](val __psp_f: (A, A) => Cmp) extends AnyVal with Order[A] {
+  final class OrderClass[-A](val __psp_f: (A, A) => Cmp) extends /* AnyVal with */ Order[A] {
     def compare(x: A, y: A): Cmp = __psp_f(x, y)
   }
-  final class ShowClass[-A](val __psp_f: A => String) extends AnyVal with Show[A] {
+  final class ShowClass[-A](val __psp_f: A => String) extends  /* AnyVal with */ Show[A] {
     def show(x: A): String = __psp_f(x)
   }
-  final class ReadClass[A](val __psp_f: String => A) extends AnyVal with Read[A] {
+  final class ReadClass[A](val __psp_f: String => A) extends /* AnyVal with */ Read[A] {
     def read(x: String): A = __psp_f(x)
   }
   final class HashEqClass[-A](cmp: (A, A) => Boolean, h: A => Int) extends HashEq[A] {
@@ -97,10 +99,10 @@ package internal {
   /** Used to achieve type-safety in the show interpolator.
    *  It's the String resulting from passing a value through its Show instance.
    */
-  final case class Shown(to_s: String) extends AnyVal with ShowDirect {
+  final case class Shown(to_s: String) extends /* AnyVal with */ ShowDirect {
     override def toString = to_s
   }
-  final case class TryShown(to_s: String) extends AnyVal with ShowDirect {
+  final case class TryShown(to_s: String) extends /* AnyVal with */ ShowDirect {
     override def toString = to_s
   }
 
