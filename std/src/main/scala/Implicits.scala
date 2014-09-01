@@ -44,19 +44,11 @@ trait StandardImplicits2 extends StandardImplicits1 {
 }
 
 trait StandardImplicits3 extends StandardImplicits2 {
-  // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  // implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
 }
 
 trait StandardImplicits4 extends StandardImplicits3 {
-  // The typesafe non-toString-using show"..." interpolator.
-  // implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
-  // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  // implicit def showableToShown[A: Show](x: A): Shown = new Shown(show[A] show x)
-  // implicit def showLabeled = Show[api.Labeled](_.label)
-
   // We buried Predef's {un,}augmentString in favor of these.
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
   @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString

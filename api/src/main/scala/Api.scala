@@ -31,6 +31,8 @@ trait PackageImplicits extends Any with PackageImplicits0 {
   self: PackageLevel =>
 
   implicit def opsApiAny[A](x: A): Ops.AnyOps[A]                               = new Ops.AnyOps[A](x)
+
+  // The typesafe non-toString-using show"..." interpolator.
   implicit def opsApiShowInterpolator(sc: StringContext): Ops.ShowInterpolator = new Ops.ShowInterpolator(sc)
 
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
