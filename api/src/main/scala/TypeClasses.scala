@@ -54,6 +54,14 @@ package api {
   }
   object Show {
     def apply[A](f: A => String): Show[A] = new internal.ShowClass[A](f)
+    def native[A](): Show[A]              = ToString.asInstanceOf[Show[A]]
+
+    /** This of course is not implicit as that would defeat the purpose of the endeavor.
+     */
+    private val ToString: Show[Any] = apply[Any] {
+      case x: ShowDirect => x.to_s
+      case x             => "" + x
+    }
   }
   object Order {
     def apply[A](f: (A, A) => Cmp): Order[A] = new internal.OrderClass[A](f)
@@ -82,5 +90,15 @@ package internal {
   final class HashEqClass[-A](cmp: (A, A) => Boolean, h: A => Int) extends HashEq[A] {
     def equiv(x: A, y: A) = cmp(x, y)
     def hash(x: A)        = h(x)
+  }
+
+  /** Used to achieve type-safety in the show interpolator.
+   *  It's the String resulting from passing a value through its Show instance.
+   */
+  final case class Shown(to_s: String) extends AnyVal with ShowDirect {
+    override def toString = to_s
+  }
+  final case class TryShown(to_s: String) extends AnyVal with ShowDirect {
+    override def toString = to_s
   }
 }

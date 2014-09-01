@@ -11,11 +11,11 @@ import scala.sys.process.Process
 
 trait PackageLevelPlusCompat extends PackageLevel with ScalaCompat
 
-trait PackageLevel extends PackageAliases with PackageMethods with PackageImplicits
+trait PackageLevel extends PackageValues with PackageAliases with PackageMethods with PackageImplicits
 
 /** Mostly for mixing a usable toString method into functions.
  */
-trait Labeled { def label: String ; override def toString = label }
+trait Labeled extends Any { def label: String ; override def toString = label }
 
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
@@ -23,8 +23,19 @@ trait Labeled { def label: String ; override def toString = label }
  */
 trait ShowDirect extends Any { def to_s: String }
 
-trait PackageImplicits extends Any {
-  implicit def apiOpsAny[A](x: A): Ops.AnyOps[A] = new Ops.AnyOps[A](x)
+trait PackageImplicits0 extends Any {
+  // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
+  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): internal.TryShown = new internal.TryShown(shows show x)
+}
+trait PackageImplicits extends Any with PackageImplicits0 {
+  self: PackageLevel =>
+
+  implicit def opsApiAny[A](x: A): Ops.AnyOps[A]                               = new Ops.AnyOps[A](x)
+  implicit def opsApiShowInterpolator(sc: StringContext): Ops.ShowInterpolator = new Ops.ShowInterpolator(sc)
+
+  // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
+  implicit def showableToShown[A: Show](x: A): internal.Shown = internal.Shown(?[Show[A]] show x)
+  implicit def showLabeled: Show[Labeled]                     = Show[Labeled](_.label)
 }
 
 /** Aliases for types I've had to import over and over and over again.
@@ -107,9 +118,7 @@ trait PackageAliases extends Any {
   type ISeq[+A]      = scala.collection.immutable.Seq[A]
 }
 
-trait PackageMethods {
-  self: PackageAliases =>
-
+trait PackageValues {
   val EOL      = sys.props.getOrElse("line.separator", "\n")
   val ClassTag = scala.reflect.ClassTag
 
@@ -117,12 +126,18 @@ trait PackageMethods {
   final val MinInt  = Int.MinValue
   final val MaxLong = Long.MaxValue
   final val MinLong = Long.MinValue
+}
 
+trait PackageMethods extends Any {
+  self: PackageLevel =>
+
+  def ?[A](implicit value: A): A                = value
   def Try[A](body: => A): Try[A]                = scala.util.Try[A](body)
   def andFalse(x: Unit): Boolean                = false
   def andTrue(x: Unit): Boolean                 = true
   def asExpected[A](body: Any): A               = body.asInstanceOf[A]
   def classTag[T: ClassTag] : ClassTag[T]       = implicitly[ClassTag[T]]
+  def dateTime(): String                        = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
   def fail(msg: String): Nothing                = throw new RuntimeException(msg)
   def file(s: String): jFile                    = new jFile(s)
   def fromUTF8(xs: Array[Byte]): String         = new String(scala.io.Codec fromUTF8 xs)
@@ -133,7 +148,6 @@ trait PackageMethods {
   def printResult[A](msg: String)(result: A): A = try result finally println(s"$msg: $result")
   def uri(x: String): URI                       = java.net.URI create x
   def url(x: String): URL                       = uri(x).toURL
-  def dateTime(): String                        = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
 
   def javaHome: File               = new File(scala.util.Properties.javaHome)
   def classpathSeparator           = java.io.File.pathSeparator
@@ -173,6 +187,7 @@ trait PackageMethods {
 }
 
 object Ops {
+  import internal._
   // Can't make the parameter private until 2.11.
   final class AnyOps[A](val __psp_x: A) extends AnyVal {
     private def x = __psp_x
@@ -198,5 +213,19 @@ object Ops {
       case x: ShowDirect => x.to_s
       case _             => "" + x
     }
+  }
+  final class ShowInterpolator(val __psp_sc: StringContext) extends AnyVal {
+    /** The type of args forces all the interpolation variables to
+     *  be of a type which is implicitly convertible to Shown, which
+     *  means they have a Show[A] in scope.
+     */
+    def show(args: Shown*): String  = StringContext(__psp_sc.parts: _*).raw(args: _*)
+    def pp(args: TryShown*): String = StringContext(__psp_sc.parts: _*).raw(args: _*)
+  }
+  final class ShowDirectOps(val __psp_x: ShowDirect) extends AnyVal {
+    /** Java-style String addition without abandoning type safety.
+     */
+    def + (that: ShowDirect): ShowDirect = Shown(__psp_x.to_s + that.to_s)
+    def + [A: Show](that: A): ShowDirect = Shown(__psp_x.to_s + implicitly[Show[A]].show(that))
   }
 }

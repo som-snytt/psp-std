@@ -45,17 +45,17 @@ trait StandardImplicits2 extends StandardImplicits1 {
 
 trait StandardImplicits3 extends StandardImplicits2 {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
+  // implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
 }
 
 trait StandardImplicits4 extends StandardImplicits3 {
   // The typesafe non-toString-using show"..." interpolator.
-  implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
+  // implicit def showStringContextOps(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): Shown = new Shown(show[A] show x)
-  implicit def showLabeled = Show[api.Labeled](_.label)
+  // implicit def showableToShown[A: Show](x: A): Shown = new Shown(show[A] show x)
+  // implicit def showLabeled = Show[api.Labeled](_.label)
 
   // We buried Predef's {un,}augmentString in favor of these.
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
@@ -63,7 +63,6 @@ trait StandardImplicits4 extends StandardImplicits3 {
 
   // Typeclass requiring extension methods. There is something very depraved going on here,
   // see if you can tell what it is.
-  implicit def tclassShowDirectOps[A: Show](x: A): TClass.ShowDirectOps        = new TClass.ShowDirectOps(x.to_s)
   implicit def tclassOrderOps[A: Order](x: A): TClass.OrderOps[A]              = new TClass.OrderOps[A](x)
   implicit def tclassAlgebraOps[A: BooleanAlgebra](x: A): TClass.AlgebraOps[A] = new TClass.AlgebraOps[A](x)
   implicit def tclassEqOps[A: Eq](x: A): TClass.EqOps[A]                       = new TClass.EqOps[A](x)

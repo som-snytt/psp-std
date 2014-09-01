@@ -6,12 +6,12 @@ package api
  *  but with some risk of creating ambiguity or masking errors.
  *  These aren't included by default.
  */
-trait ScalaCompat extends LowPriorityScalaCompat {
+trait ScalaCompat extends Any with LowPriorityScalaCompat {
   implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A] =
     new Ordering[A] { def compare(x: A, y: A): Int = ord.compare(x, y).intValue }
 }
 
-trait LowPriorityScalaCompat {
+trait LowPriorityScalaCompat extends Any {
   implicit def showToOrdering[A](implicit show: Show[A]): Ordering[A] =
     new Ordering[A] { def compare(x: A, y: A): Int = (show show x) compare (show show y) }
 }

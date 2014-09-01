@@ -47,12 +47,6 @@ object TClass {
   final class HashEqOps[A](private val lhs: A) extends AnyVal {
     def hash(implicit eq: HashEq[A]): Int = eq hash lhs
   }
-  final class ShowDirectOps(private val x: ShowDirect) extends AnyVal {
-    /** Java-style String addition without abandoning type safety.
-     */
-    def + (that: ShowDirect): ShowDirect = Shown(show"$x$that")
-    def + [A: Show](that: A): ShowDirect = Shown(show"$x$that")
-  }
 }
 
 object Ops {

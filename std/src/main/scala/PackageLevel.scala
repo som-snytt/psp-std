@@ -13,7 +13,7 @@ package std
 abstract class PackageLevel extends PackageImplicits with api.PackageLevel with PackageAliases with PackageMethods {
   /** It's like "" + x, except, you know, for kids.
    */
-  val `""`         = Shown("")
+  val `""`         = internal.Shown("")
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
   val NumericRange = scala.collection.immutable.NumericRange
@@ -64,6 +64,7 @@ trait PackageAliases {
   val Precise  = api.Precise
   val Bounded  = api.Bounded
   val Eq       = api.Eq
+  val Show     = api.Show
 }
 
 trait PackageMethods {
@@ -92,7 +93,6 @@ trait PackageMethods {
     case _                     => Bounded(lo, hi)
   }
 
-  def ?[A](implicit value: A): A                         = value
   def contextLoader(): ClassLoader                       = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
   def decodeName(s: String): String                      = scala.reflect.NameTransformer decode s
   def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
