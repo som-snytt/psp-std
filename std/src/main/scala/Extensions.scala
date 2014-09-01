@@ -106,19 +106,6 @@ object Ops {
     def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs.slice(indexRange intersect range).force
     def toSeq: ISeq[A] = immutableSeq(xs: _*)
   }
-
-  final class OrderOps[A](private val ord: Order[A]) extends AnyVal {
-    def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
-    def toOrdering: Ordering[A]    = new Ordering[A] { def compare(x: A, y: A): Int = ord.compare(x, y).intValue }
-    def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
-  }
-  final class ShowOps[A](private val shows: Show[A]) extends AnyVal {
-    def on[B](f: B => A): Show[B] = Show[B](x => shows show f(x))
-  }
-  final class EqOps[A](private val eqs: Eq[A]) extends AnyVal {
-    def on[B](f: B => A): Eq[B] = Eq[B]((x, y) => eqs.equiv(f(x), f(y)))
-  }
-
   final class AnyOps[A](private val x: A) extends AnyVal {
     // Short decoded class name.
     def shortClass: String = decodeName(x.getClass.getName split "[.]" last)

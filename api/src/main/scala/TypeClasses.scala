@@ -68,6 +68,8 @@ package api {
   }
 }
 
+package object internal extends api.PackageLevel
+
 package internal {
   import api._
 
@@ -101,4 +103,8 @@ package internal {
   final case class TryShown(to_s: String) extends AnyVal with ShowDirect {
     override def toString = to_s
   }
+
+  final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = ord on f   }
+  final class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = equiv on f }
+  final class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = show on f  }
 }

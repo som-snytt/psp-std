@@ -23,6 +23,40 @@ trait Labeled extends Any { def label: String ; override def toString = label }
  */
 trait ShowDirect extends Any { def to_s: String }
 
+/** An incomplete selection of show compositors.
+ *  Not printing the way scala does.
+ *  Not included in api.PackageLevel, but available in psp-api.
+ *  Included in std.PackageLevel.
+ */
+trait ShowImplicits {
+  self: PackageLevel =>
+
+  def inBrackets[A: Show](xs: A*): String = xs.map(_.to_s).mkString("[", ", ", "]")
+
+  implicit def booleanShow: Show[Boolean]    = Show.native()
+  implicit def charShow: Show[Char]          = Show.native()
+  implicit def doubleShow: Show[Double]      = Show.native()
+  implicit def indexShow: Show[api.Index]    = showBy(_.value.to_s)
+  implicit def intShow: Show[Int]            = Show.native()
+  implicit def longShow: Show[Long]          = Show.native()
+  implicit def numberShow: Show[ScalaNumber] = Show.native()
+  implicit def showDirect: Show[ShowDirect]  = Show(_.to_s)
+  implicit def sizeShow: Show[api.Size]      = showBy(_.value.to_s)
+  implicit def stringShow: Show[String]      = Show(x => x)
+
+  implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
+  implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(_.to_s))
+  implicit def seqShow[A: Show] : Show[Seq[A]]            = Show(xs => inBrackets(xs: _*))
+  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
+
+  implicit def sizeInfoShow: Show[SizeInfo] = Show[SizeInfo] {
+    case Bounded(lo, Infinite) => show"[$lo, <inf>)"
+    case Bounded(lo, hi)       => show"[$lo, $hi]"
+    case Precise(size)         => show"$size"
+    case Infinite              => "<inf>"
+  }
+}
+
 trait PackageImplicits0 extends Any {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): internal.TryShown = new internal.TryShown(shows show x)
@@ -38,6 +72,11 @@ trait PackageImplicits extends Any with PackageImplicits0 {
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
   implicit def showableToShown[A: Show](x: A): internal.Shown = internal.Shown(?[Show[A]] show x)
   implicit def showLabeled: Show[Labeled]                     = Show[Labeled](_.label)
+
+  // Ops on base type classes.
+  implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]          = new Ops.EqOps[A](x)
+  implicit def opsOrder[A](x: Order[A]): Ops.OrderOps[A] = new Ops.OrderOps[A](x)
+  implicit def opsShow[A](x: Show[A]): Ops.ShowOps[A]    = new Ops.ShowOps[A](x)
 }
 
 /** Aliases for types I've had to import over and over and over again.
@@ -133,6 +172,10 @@ trait PackageValues {
 trait PackageMethods extends Any {
   self: PackageLevel =>
 
+  def eqBy[A]    = new internal.EqBy[A]
+  def orderBy[A] = new internal.OrderBy[A]
+  def showBy[A]  = new internal.ShowBy[A]
+
   def ?[A](implicit value: A): A                = value
   def Try[A](body: => A): Try[A]                = scala.util.Try[A](body)
   def andFalse(x: Unit): Boolean                = false
@@ -189,32 +232,44 @@ trait PackageMethods extends Any {
 }
 
 object Ops {
+  /** Working around 2.10 value class bug. */
+  private def newOrdering[A](f: (A, A) => Cmp): Ordering[A] =
+    new Ordering[A] { def compare(x: A, y: A): Int = f(x, y).intValue }
+
   import internal._
   // Can't make the parameter private until 2.11.
   final class AnyOps[A](val __psp_x: A) extends AnyVal {
-    private def x = __psp_x
-    private implicit def liftAny[B](x: B): AnyOps[B] = new AnyOps[B](x)
-
     // "Maybe we can enforce good programming practice with annoyingly long method names."
-    def castTo[U] : U = x.asInstanceOf[U]
+    def castTo[U] : U = __psp_x.asInstanceOf[U]
     def toRef: AnyRef = castTo[AnyRef]
-    def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(x, args map (_.toRef): _*).castTo[B]
+    def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(__psp_x, args map (_.toRef): _*).castTo[B]
 
     // The famed forward pipe.
-    @inline def |>[B](f: A => B): B   = f(x)
-    @inline def doto(f: A => Unit): A = try x finally f(x)
-    @inline def also(body: Unit): A   = x
+    @inline def |>[B](f: A => B): B   = f(__psp_x)
+    @inline def doto(f: A => Unit): A = try __psp_x finally f(__psp_x)
+    @inline def also(body: Unit): A   = __psp_x
 
     // Calling eq on Anys.
-    def ref_==(y: Any): Boolean = x.toRef eq y.toRef
-    def id_## : Int             = System identityHashCode x
+    def ref_==(y: Any): Boolean = toRef eq y.toRef
+    def id_## : Int             = System identityHashCode __psp_x
 
-    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift x
-    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else shows show x
-    def any_s: String = x match {
+    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift __psp_x
+    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else shows show __psp_x
+    def any_s: String = __psp_x match {
       case x: ShowDirect => x.to_s
-      case _             => "" + x
+      case _             => "" + __psp_x
     }
+  }
+  final class OrderOps[A](val __psp_ord: Order[A]) extends AnyVal {
+    def reverse: Order[A]          = Order[A]((x, y) => __psp_ord.compare(x, y).flip)
+    def toOrdering: Ordering[A]    = newOrdering[A](__psp_ord.compare) // new Ordering[A] { def compare(x: A, y: A): Int = __psp_ord.compare(x, y).intValue }
+    def on[B](f: B => A): Order[B] = Order[B]((x, y) => __psp_ord.compare(f(x), f(y)))
+  }
+  final class ShowOps[A](val __psp_shows: Show[A]) extends AnyVal {
+    def on[B](f: B => A): Show[B] = Show[B](x => __psp_shows show f(x))
+  }
+  final class EqOps[A](val __psp_eqs: Eq[A]) extends AnyVal {
+    def on[B](f: B => A): Eq[B] = Eq[B]((x, y) => __psp_eqs.equiv(f(x), f(y)))
   }
   final class ShowInterpolator(val __psp_sc: StringContext) extends AnyVal {
     /** The type of args forces all the interpolation variables to

@@ -4,12 +4,16 @@ package std
 import scala.{ collection => sc }
 
 abstract class PackageImplicits extends ImplicitRemoval
-    with StandardImplicits4
-    with ArrowAssoc2
-    with ShowImplicits
-    with ReadImplicits
-    with OrderImplicits
-    with EqImplicits
+      with StandardImplicits4
+      with ArrowAssoc2
+      with ShowImplicits
+      with ReadImplicits
+      with OrderImplicits
+      with EqImplicits {
+
+  self: api.PackageLevel =>
+
+}
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
  *  This list is subject to renegotiation.
@@ -67,7 +71,6 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def opsArray[A](xs: Array[A]): Ops.ArrayOps[A]                             = new Ops.ArrayOps[A](xs)
   implicit def opsBooleanAlgebra[A](alg: BooleanAlgebra[A]): Ops.BooleanAlgebraOps[A] = new Ops.BooleanAlgebraOps[A](alg)
   implicit def opsCollection[A](x: jAbstractCollection[A]): Ops.jCollectionOps[A]     = new Ops.jCollectionOps(x)
-  implicit def opsEq[A](x: Eq[A]): Ops.EqOps[A]                                       = new Ops.EqOps[A](x)
   implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                       = new Ops.ForeachOps(xs)
   implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)
   implicit def opsGTOnce[A](xs: GTOnce[A]): Ops.GTOnceOps[A]                          = new Ops.GTOnceOps[A](xs)
@@ -77,45 +80,12 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def opsLong(x: Long): Ops.LongOps                                          = new Ops.LongOps(x)
   implicit def opsMap[K, V](xs: sc.Map[K, V]): Ops.Map[K, V]                          = new Ops.Map[K, V](xs)
   implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]                           = new Ops.OptionOps[A](x)
-  implicit def opsOrder[A](x: Order[A]): Ops.OrderOps[A]                              = new Ops.OrderOps[A](x)
   implicit def opsSeq1[A](xs: sc.Seq[A]): Ops.Seq1[A]                                 = new Ops.Seq1[A](xs)
   implicit def opsSeq2[A](xs: sc.Seq[A]): Ops.Seq2[A]                                 = new Ops.Seq2[A](xs)
   implicit def opsSeqOps[A](xs: sc.Seq[A]): Ops.SeqOps[A]                             = new Ops.SeqOps[A](xs)
-  implicit def opsShow[A](x: Show[A]): Ops.ShowOps[A]                                 = new Ops.ShowOps[A](x)
   implicit def opsSizeInfo(x: SizeInfo): Ops.SizeInfoOps                              = new Ops.SizeInfoOps(x)
   implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): Ops.SortedMap[K, V]        = new Ops.SortedMap[K, V](xs)
   implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                         = new Ops.TryOps[A](x)
-}
-
-/** An incomplete selection of show compositors.
- *  Not printing the way scala does.
- */
-trait ShowImplicits {
-  def inBrackets[A: Show](xs: A*): String = Seq("[", xs.toSeq.joinComma, "]") join ""
-
-  implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
-  implicit def booleanShow: Show[Boolean]                 = Show.native()
-  implicit def charShow: Show[Char]                       = Show.native()
-  implicit def doubleShow: Show[Double]                   = Show.native()
-  implicit def indexShow: Show[api.Index]                 = showBy(_.value.to_s)
-  implicit def intShow: Show[Int]                         = Show.native()
-  implicit def longShow: Show[Long]                       = Show.native()
-  implicit def numberShow: Show[ScalaNumber]              = Show.native()
-  implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(_.to_s))
-  implicit def pspListShow[A: Show] : Show[PspList[A]]    = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
-  implicit def seqShow[A: Show] : Show[Seq[A]]            = Show(xs => inBrackets(xs: _*))
-  implicit def showDirect: Show[ShowDirect]               = Show(_.to_s)
-  implicit def sizeShow: Show[api.Size]                   = showBy(_.value.to_s)
-  implicit def stringShow: Show[String]                   = Show(x => x)
-  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
-  implicit def viewShow[A] : Show[api.View[A]]            = Show(_.viewChain reverseMap (_.description) joinSpace)
-
-  implicit def sizeInfoShow: Show[SizeInfo] = Show[SizeInfo] {
-    case Bounded(lo, Infinite) => show"[$lo, <inf>)"
-    case Bounded(lo, hi)       => show"[$lo, $hi]"
-    case Precise(size)         => show"$size"
-    case Infinite              => "<inf>"
-  }
 }
 
 trait ReadImplicits {
@@ -169,6 +139,13 @@ trait OrderImplicits {
       )
     }
   }
+}
+
+trait ShowImplicits extends api.ShowImplicits {
+  self: api.PackageLevel =>
+
+  implicit def viewShow[A] : Show[api.View[A]]         = Show(_.viewChain reverseMap (_.description) joinSpace)
+  implicit def pspListShow[A: Show] : Show[PspList[A]] = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
 }
 
 trait EqImplicits {

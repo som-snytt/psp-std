@@ -73,10 +73,6 @@ trait PackageMethods {
   def show[A: Show] : Show[A]        = ?
   // def readInto[A] : Read.ReadInto[A] = Read.into[A]
 
-  def eqBy[A] : EqBy[A]       = new EqBy[A]
-  def orderBy[A] : OrderBy[A] = new OrderBy[A]
-  def showBy[A] : ShowBy[A]   = new ShowBy[A]
-
   def precise(n: Int): Precise = Precise(Size(n))
   def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
     case hi: Atomic     => bounded(lo, hi)
