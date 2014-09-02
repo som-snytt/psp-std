@@ -53,7 +53,7 @@ object Build extends sbt.Build with Versioning with ConsoleOnly with TestOnly {
        unmanagedSourceDirectories in Test  +=  (sourceDirectory in Test).value / s"scala${scalaBinaryVersion.value}"
   )
 
-  def subprojects = List(api, std, macros)
+  def subprojects = List(api, std)
 
   /** mima command optionally takes a baseline version, e.g. sbt 'mima 0.1.0-M1'
    */
@@ -66,16 +66,7 @@ object Build extends sbt.Build with Versioning with ConsoleOnly with TestOnly {
   private def mimaRun(state: State, module: ModuleID): Unit =
     state.put(previousArtifact in std, Some(module)) runTask (reportBinaryIssues in std)
 
-  /** What is accomplished by this structure?
-   *
-   *   - std does not depend on scala-reflect
-   *   - the macro project can make use of psp.std
-   *   - when testing psp.std, we have access to psp.macros
-   *   - after touching a testfile, the macro runs and the tests run, but the entire project isn't rebuilt
-   *
-   *  It's harder to get all those at once than you may think.
-   */
-  lazy val root = project in file(".") aggregate (api, std, macros) also common settings (
+  lazy val root = project.root aggregate (api, std) settings (
                            name :=  "psp-std-root",
                     description :=  "psp's project which exists to please sbt",
              crossScalaVersions :=  List("2.10.4", "2.11.2"),
@@ -86,29 +77,25 @@ object Build extends sbt.Build with Versioning with ConsoleOnly with TestOnly {
                         publish <<= runPublish(publish),
                    publishLocal <<= runPublish(publishLocal),
                        commands +=  Command.args("mima", "<version>")(mimaCommand),
-                        console <<= console in Compile in consoleOnly,
-                           test <<= test in testOnly
+                        console :=  (console in Compile in consoleOnly).value,
+                           test :=  (test in testOnly).value
   )
 
   implicit class ProjectOps(val p: Project) {
+    def root: Project                 = p in file(".") also common
+    def sub: Project                  = p also common
+    def support: Project              = p also common
     def sxr: Project                  = p configs SxrConfig settings (fullSxrSettings: _*)
     def also(ss: SettingSeq): Project = p settings (ss: _*)
   }
 
-  lazy val std = project.sxr dependsOn api also common settings (
+  lazy val std = project.sub.sxr dependsOn api settings (
                     name := "psp-std",
              description := "psp's non-standard standard library",
       crossScalaVersions := List("2.11.2")
   )
 
-  lazy val macros = project dependsOn (api, std) also common settings (
-                   name := "psp-std-macros",
-            description := "macros for psp's non-standard standard library",
-    libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-     crossScalaVersions := List("2.11.2")
-  )
-
-  lazy val api = project.sxr also common settings (
+  lazy val api = project.sub.sxr settings (
                    name := "psp-api",
             description := "api for psp's non-standard standard library",
      crossScalaVersions := List("2.10.4", "2.11.2")
@@ -157,15 +144,18 @@ trait Versioning {
 trait TestOnly {
   self: Build.type =>
 
-  def runTestTask = run in Test toTask "" dependsOn (Keys.`package` in Compile)
+  def testDependencies = Def setting Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"
+  )
 
-  lazy val testOnly = project dependsOn (std, macros) also common settings (
-                   name :=  "psp-test",
-            description :=  "test encapsulation",
-    testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
-    libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
-      mainClass in Test :=  Some("psp.tests.TestRunner"),
-                   test :=  runTestTask.value
+  lazy val testOnly = project.support dependsOn std settings (
+                   name  :=  "psp-test",
+            description  :=  "test encapsulation",
+    testOptions in Test  +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
+    libraryDependencies <++= testDependencies,
+      mainClass in Test  :=  Some("psp.tests.TestRunner"),
+                   test  :=  (run in Test toTask "").value
   )
 }
 
@@ -186,17 +176,19 @@ trait ConsoleOnly {
     import spire.algebra._, spire.math._, spire.implicits._, com.google.common.collect._
   """
 
+  def consoleDependencies = Def setting Seq(
+    "org.scala-lang"            % "scala-compiler" % scalaVersion.value,
+    "org.spire-math"           %% "spire"          %      "0.8.2",
+    "com.chuusai"              %% "shapeless"      %      "2.0.0",
+    "com.google.guava"          % "guava"          %       "17.0",
+    "net.sourceforge.findbugs"  % "jsr305"         %       "1.3.7"
+  )
+
   // A console project which pulls in misc additional dependencies currently being explored.
-  lazy val consoleOnly = project also common dependsOn (std, macros, api) settings (
-                    name := "psp-console",
-             description := "console encapsulation",
-     libraryDependencies ++= Seq(
-        "org.scala-lang"            % "scala-compiler" % scalaVersion.value,
-        "org.spire-math"           %% "spire"          %      "0.8.2",
-        "com.chuusai"              %% "shapeless"      %      "2.0.0",
-        "com.google.guava"          % "guava"          %       "17.0",
-        "net.sourceforge.findbugs"  % "jsr305"         %       "1.3.7"
-    ),
-    initialCommands in console := consoleCode
+  lazy val consoleOnly = project.support dependsOn (std, api) settings (
+                          name  :=  "psp-console",
+                   description  :=  "console encapsulation",
+           libraryDependencies <++= consoleDependencies,
+    initialCommands in console  :=  consoleCode
   )
 }
