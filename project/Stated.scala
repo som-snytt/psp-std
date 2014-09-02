@@ -13,7 +13,8 @@ final class Stated(val state: State) {
   import extracted._
 
   def currentRef     = extracted.currentRef
-  def thisRef        = extracted get thisProjectRef
+  def thisRef        = apply(thisProjectRef)
+  def thisProject    = apply(Keys.thisProject)
   def currentProject = currentRef.project
   def settings       = structure.settings
   def relation       = Project.relation(structure, true)
@@ -22,10 +23,14 @@ final class Stated(val state: State) {
   def projectScope   = Load projectScope currentRef
   def remaining      = state.remainingCommands
 
-  // def taskConfig = EvaluateTask.extractedTaskConfig(extracted, structure, state)
-  // def evalTask[A](key: ScopedKey[Task[A]]) = EvaluateTask(structure, key, state, currentRef)
+  // private[this] methods extracted from Extracted
+  def inCurrent[T](key: SettingKey[T]): Scope     = if (key.scope.project == This) key.scope.copy(project = Select(currentRef)) else key.scope
+  def resolve[T](key: ScopedKey[T]): ScopedKey[T] = Project.mapScope(Scope.resolveScope(GlobalScope, currentRef.build, rootProject))(key.scopedKey)
 
-  def apply[A](key: SettingKey[A]): A          = extracted get key
+  def apply[A](key: SettingKey[A]): A                       = applyScoped[A](inCurrent(key), key.key)
+  def applyScoped[A](key: ScopedKey[A]): A                  = applyScoped[A](key.scope, key.key)
+  def applyScoped[A](scope: Scope, key: AttributeKey[A]): A = structure.data.get(scope, key) getOrElse sys.error(s"Undefined: $key in $scope")
+
   def getOpt[A](key: SettingKey[A]): Option[A] = extracted getOpt key
   def runTask[A](key: TaskKey[A])              = extracted.runTask(key, state)
 

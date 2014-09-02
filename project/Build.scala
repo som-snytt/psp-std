@@ -41,15 +41,17 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
                   parallelExecution in Test :=  false,
                                fork in Test :=  true,
                                  crossPaths :=  true,
+                                    publish <<= publish dependsOn safePublish(p),
       unmanagedSourceDirectories in Compile +=  (sourceDirectory in Compile).value / s"scala${scalaBinaryVersion.value}",
          unmanagedSourceDirectories in Test +=  (sourceDirectory in Test).value / s"scala${scalaBinaryVersion.value}"
     )
+
     def root: Project = p in file(".") also common settings (
                  name :=  "psp-std-root",
           description :=  "psp's project which exists to please sbt",
       publishArtifact :=  false,
+              publish :=  (),
              commands +=  Command.args("mima", "<version>")(mimaCommand),
-              publish <<= publish dependsOn prePublish,
               console <<= console in Compile in consoleOnly,
                  test <<= test in testOnly
     )
@@ -65,7 +67,7 @@ trait PublishOnly {
 
   import scala.sys.process._
 
-  lazy val baseVersion  = "0.3.0-M9"
+  lazy val baseVersion  = "0.3.1-M1"
   lazy val localVersion = baseVersion + localSuffix
 
   // It's a pretty hideous version string, but it should guarantee we never overwrite
@@ -78,13 +80,11 @@ trait PublishOnly {
   def repoDiff: String = ("git diff" #| "md5").!! take 10 // not using at present - hopefully "dirty" is enough
   def localSuffix      = "-%s-%s%s".format(dateTime, repoSha, if (isRepoClean) "" else "-dirty")
 
-  def prePublish = Def.task[Boolean] {
+  def safePublish(p: Project): TaskOf[Unit] = Def task {
     if (!isRepoClean)
-      andFalse(state.value err "Can't publish with a dirty repository.")
+      try println(s"Can't publish with a dirty repository.") finally sys exit 1
     else if (!hasReleaseProp)
-      andFalse(state.value err s"As a safeguard, publishing release artifacts requires -D$releaseProp.")
-    else
-      true
+      try println(s"As a safeguard, publishing release artifacts requires -D$releaseProp.") finally sys exit 1
   }
 }
 

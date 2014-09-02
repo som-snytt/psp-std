@@ -16,7 +16,6 @@ Suggested contents for ```project/Build.scala```. You'll also want [sbt](https:/
 
 ```scala
 package scratch
-
 import sbt._, Keys._
 
 object ScratchProject extends sbt.Build {
@@ -24,16 +23,15 @@ object ScratchProject extends sbt.Build {
                           name :=  "scratch-project",
                      resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                   scalaVersion :=  "2.11.2",
-                 scalacOptions ++= Seq("-language:_"),
     initialCommands in console :=  "import psp.std._",
-           libraryDependencies +=  "org.improving" %% "psp-std" % "0.3.0-M4"
+           libraryDependencies +=  "org.improving" %% "psp-std" % "0.3.1-M1"
   )
 }
 ```
 
 Or if a self-contained project isn't your bag:
 ```
-libraryDependencies += "org.improving" %% s"psp-std" % "0.3.0-M4"
+libraryDependencies += "org.improving" %% s"psp-std" % "0.3.1-M1"
 ```
 
 Then ```sbt console``` and you can look around.
@@ -45,4 +43,4 @@ res0: Boolean = true
 Requirements
 ------------
 
-scala 2.11.x, java 7+.
+scala 2.10+, java 7+.
