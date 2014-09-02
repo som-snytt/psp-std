@@ -7,25 +7,12 @@ import com.typesafe.tools.mima.plugin.MimaKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import psp.meta._
 
-object Build extends sbt.Build with Versioning {
+object Build extends sbt.Build with Versioning with ConsoleOnly {
   // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
   def opts = if (sys.props contains "debug") Seq("-Ylog:all") else Nil
 
   def ifBinary[A](version: String)(thenp: => A, elsep: => A): TaskOf[A] =
     scalaBinaryVersion map { case `version` => thenp ; case _ => elsep }
-
-  def imports = """
-    import scala.collection.{ mutable, immutable }
-    import psp.std._, ansi._
-    implicit final class ReplForeachOps[A](val target: Foreach[A]) {
-      def !> : Unit = println(target mkString EOL)
-      def  >(implicit shows: Show[A]): Unit = println(target.joinLines)
-    }
-    implicit final class ReplOps[A](val target: A) {
-      def !> : Unit = println(target)
-      def >(implicit shows: Show[A]): Unit = println(target.to_s)
-    }
-  """
 
   def inAllProjects[T](projects: => Seq[ProjectReference], key: SettingKey[T]): Project.Initialize[Seq[T]] = Def settingDyn {
     val lb = loadedBuild.value
@@ -89,41 +76,27 @@ object Build extends sbt.Build with Versioning {
    *  It's harder to get all those at once than you may think.
    */
   lazy val root = project in file(".") dependsOn (api, std, macros) aggregate (api, std, macros) also common also sourceDirSettings settings (
-                                   name :=  "psp-std-root",
-                            description :=  "psp's project which exists to please sbt",
-                     crossScalaVersions :=  List("2.10.4", "2.11.2"),
-                            shellPrompt :=  (s => "%s#%s> ".format(name.value, (Project extract s).currentRef.project)),
-             initialCommands in console :=  imports,
-                   aggregate in publish :=  false,
-              aggregate in publishLocal :=  false,
-                        publishArtifact :=  false,
-                                publish <<= runPublish(publish),
-                           publishLocal <<= runPublish(publishLocal),
-                               commands +=  Command.args("mima", "<version>")(mimaCommand),
-                               commands +=  Command.command("ccon")(s => s set (libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value) runTask (console in Compile) _1),
-                    testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
-                    libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
-                      mainClass in Test :=  Some("psp.tests.TestRunner"),
-                                   test :=  runTestTask.value
+                             name :=  "psp-std-root",
+                      description :=  "psp's project which exists to please sbt",
+               crossScalaVersions :=  List("2.10.4", "2.11.2"),
+                      shellPrompt :=  (s => "%s#%s> ".format(name.value, (Project extract s).currentRef.project)),
+             aggregate in publish :=  false,
+        aggregate in publishLocal :=  false,
+                  publishArtifact :=  false,
+                          publish <<= runPublish(publish),
+                     publishLocal <<= runPublish(publishLocal),
+                         commands +=  Command.args("mima", "<version>")(mimaCommand),
+                          console <<= console in Compile in consoleOnly,
+              testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
+              libraryDependencies +=  "org.scalacheck" %% "scalacheck" % "1.11.5" % "test",
+                mainClass in Test :=  Some("psp.tests.TestRunner"),
+                             test :=  runTestTask.value
   )
 
   implicit class ProjectOps(val p: Project) {
     def sxr: Project                  = p configs SxrConfig settings (fullSxrSettings: _*)
     def also(ss: SettingSeq): Project = p settings (ss: _*)
   }
-
-  // A project with misc dependencies currently being explored.
-  lazy val depends = project also common settings (
-                          name := "psp-deps",
-                   description := "code with bonus dependecies",
-           libraryDependencies ++= Seq(
-              "org.spire-math"           %% "spire"     % "0.8.2",
-              "com.chuusai"              %% "shapeless" % "2.0.0",
-              "com.google.guava"          % "guava"     % "17.0",
-              "net.sourceforge.findbugs"  % "jsr305"    % "1.3.7"
-          ),
-    initialCommands in console ~= (_ + "\nimport spire.algebra._, spire.math._, spire.implicits._, com.google.common.collect._")
-  )
 
   def sourceDirsFor(version: String)(ifp: Seq[File], thenp: Seq[File]): Seq[File] = if (version == "2.11") ifp else thenp
   def sourceDirSettings = Seq(
@@ -188,4 +161,36 @@ trait Versioning {
 
   // Mima won't resolve the %% cross version.
   def stdArtifact(version: String): ModuleID = pspOrg % "psp-std_2.11" % version
+}
+
+trait ConsoleOnly {
+  self: Build.type =>
+
+  def consoleCode = """
+    import scala.collection.{ mutable, immutable }
+    import psp.std._, ansi._
+    implicit final class ReplForeachOps[A](val target: Foreach[A]) {
+      def !> : Unit = println(target mkString EOL)
+      def  >(implicit shows: Show[A]): Unit = println(target.joinLines)
+    }
+    implicit final class ReplOps[A](val target: A) {
+      def !> : Unit = println(target)
+      def >(implicit shows: Show[A]): Unit = println(target.to_s)
+    }
+    import spire.algebra._, spire.math._, spire.implicits._, com.google.common.collect._
+  """
+
+  // A console project which pulls in misc additional dependencies currently being explored.
+  lazy val consoleOnly = project also common dependsOn (std, macros, api) settings (
+                    name := "psp-console",
+             description := "console encapsulation",
+     libraryDependencies ++= Seq(
+        "org.scala-lang"            % "scala-compiler" % scalaVersion.value,
+        "org.spire-math"           %% "spire"          %      "0.8.2",
+        "com.chuusai"              %% "shapeless"      %      "2.0.0",
+        "com.google.guava"          % "guava"          %       "17.0",
+        "net.sourceforge.findbugs"  % "jsr305"         %       "1.3.7"
+    ),
+    initialCommands in console := consoleCode
+  )
 }
