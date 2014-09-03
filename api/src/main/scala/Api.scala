@@ -62,7 +62,9 @@ trait PackageImplicits0 extends Any {
   implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): Ops.TryShown = new Ops.TryShown(shows show x)
 }
 trait PackageImplicits extends Any with PackageImplicits0 {
-  implicit def opsApiAny[A](x: A): Ops.AnyOps[A] = new Ops.AnyOps[A](x)
+  implicit def opsApiAny[A](x: A): Ops.AnyOps[A]              = new Ops.AnyOps[A](x)
+  implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]   = new Ops.OptionOps[A](x)
+  implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A] = new Ops.TryOps[A](x)
 
   // The typesafe non-toString-using show"..." interpolator.
   implicit def opsApiShowInterpolator(sc: StringContext): Ops.ShowInterpolator = new Ops.ShowInterpolator(sc)
@@ -277,6 +279,25 @@ object Ops {
   }
   final class EqOps[A](val __psp_eqs: Eq[A]) extends AnyVal {
     def on[B](f: B => A): Eq[B] = Eq[B]((x, y) => __psp_eqs.equiv(f(x), f(y)))
+  }
+  final class OptionOps[A](val __psp_x: Option[A]) extends AnyVal {
+    def or(alt: => A): A         = __psp_x getOrElse alt
+    def | (alt: => A): A         = __psp_x getOrElse alt
+    def ||(alt: => A): Option[A] = __psp_x orElse Some(alt)
+  }
+  final class TryOps[A](val __psp_x: Try[A]) extends AnyVal {
+    def | (expr: => A): A = __psp_x match {
+      case scala.util.Failure(_) => expr
+      case scala.util.Success(x) => x
+    }
+    def ||(expr: => A): Try[A] = __psp_x match {
+      case x @ scala.util.Success(_) => x
+      case scala.util.Failure(_)     => Try(expr)
+    }
+    def fold[B](f: A => B, g: Throwable => B): B = __psp_x match {
+      case scala.util.Success(x) => f(x)
+      case scala.util.Failure(t) => g(t)
+    }
   }
   final class ShowInterpolator(val __psp_sc: StringContext) extends AnyVal {
     /** The type of args forces all the interpolation variables to

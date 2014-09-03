@@ -67,7 +67,7 @@ trait PublishOnly {
 
   import scala.sys.process._
 
-  lazy val baseVersion  = "0.3.1-M1"
+  lazy val baseVersion  = "0.3.1-M2"
   lazy val localVersion = baseVersion + localSuffix
 
   // It's a pretty hideous version string, but it should guarantee we never overwrite

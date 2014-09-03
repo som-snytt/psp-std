@@ -110,24 +110,6 @@ object Ops {
     // Short decoded class name.
     def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
   }
-
-  final class OptionOps[A](private val x: Option[A]) extends AnyVal {
-    def or(alt: => A): A         = x getOrElse alt
-    def | (alt: => A): A         = x getOrElse alt
-    def ||(alt: => A): Option[A] = x orElse Some(alt)
-  }
-
-  final class TryOps[A](private val x: Try[A]) extends AnyVal {
-    def | (expr: => A): A = x.toOption getOrElse expr
-    def ||(expr: => A): Try[A] = x match {
-      case scala.util.Failure(_) => Try(expr)
-      case _                     => x
-    }
-    def fold[B](f: A => B, g: Throwable => B): B = x match {
-      case scala.util.Success(x) => f(x)
-      case scala.util.Failure(t) => g(t)
-    }
-  }
   final class IntOps(private val self: Int) extends AnyVal {
     private type This = Int
 
