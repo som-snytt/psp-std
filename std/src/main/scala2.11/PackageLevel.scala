@@ -3,7 +3,7 @@ package std
 
 /** The big bundle of everything which goes into the standard package object.
  */
-abstract class PackageLevel extends PackageImplicits with api.PackageLevel with PackageAliases with PackageMethods {
+abstract class PackageLevel extends PackageImplicits with api.PackageLevel with api.PackageIO with PackageAliases with PackageMethods {
   val NoIndex      = Index.undefined
   val NoNth        = Nth.undefined
   val NumericRange = scala.collection.immutable.NumericRange

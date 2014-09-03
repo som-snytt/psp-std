@@ -11,6 +11,8 @@ import scala.sys.process.Process
 
 trait PackageLevelPlusCompat extends PackageLevel with ScalaCompat
 
+/** Leaves out scala compat and IO.
+ */
 trait PackageLevel extends PackageValues with PackageAliases with PackageMethods with PackageImplicits
 
 /** Mostly for mixing a usable toString method into functions.
@@ -169,6 +171,17 @@ trait PackageValues {
   final val MinLong = Long.MinValue
 }
 
+/** These conflict with sbt and defeat our ambition of being
+ *  able to import sbt._ and psp.libsbt._ without a bunch of
+ *  pointless conflicts. Thanks scala.
+ */
+trait PackageIO {
+  def file(s: String): java.io.File       = new java.io.File(s)
+  def path(s: String): java.nio.file.Path = Paths get s
+  def uri(x: String): java.net.URI        = java.net.URI create x
+  def url(x: String): java.net.URL        = uri(x).toURL
+}
+
 trait PackageMethods extends Any {
   import internal._
 
@@ -184,15 +197,11 @@ trait PackageMethods extends Any {
   def classTag[T: ClassTag] : ClassTag[T]       = implicitly[ClassTag[T]]
   def dateTime(): String                        = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
   def fail(msg: String): Nothing                = throw new RuntimeException(msg)
-  def file(s: String): jFile                    = new jFile(s)
   def fromUTF8(xs: Array[Byte]): String         = new String(scala.io.Codec fromUTF8 xs)
   def javaClassOf[T: ClassTag] : Class[T]       = classTag[T].runtimeClass.asInstanceOf[Class[T]]
   def nanoTime: Long                            = System.nanoTime
   def nullAs[A] : A                             = null.asInstanceOf[A]
-  def path(s: String): Path                     = Paths get s
   def printResult[A](msg: String)(result: A): A = try result finally println(s"$msg: $result")
-  def uri(x: String): URI                       = java.net.URI create x
-  def url(x: String): URL                       = uri(x).toURL
 
   def javaHome: File               = new File(scala.util.Properties.javaHome)
   def classpathSeparator           = java.io.File.pathSeparator
