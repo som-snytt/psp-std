@@ -2,10 +2,10 @@ package psp
 package build
 
 import sbt._, Keys._
+import psp.const._
 import bintray.Plugin.bintraySettings
 import com.typesafe.tools.mima.plugin.MimaKeys._
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-import psp.meta._
 
 object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
   // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
@@ -18,7 +18,10 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
     }
     xs1 ++ xs2 ++ xs3
   }
+
   def subprojects = List(api, std)
+  private def localSuffix = "-" + dateTime
+  private lazy val stableVersion = "0.3.1-M4" + ( if (hasReleaseProp) "" else localSuffix )
 
   implicit class ProjectOps(val p: Project) {
     def buildWith(vs: String*)        = p settings (crossScalaVersions := vs.toSeq)
@@ -29,7 +32,7 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
                                   resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                                scalaVersion :=  "2.11.2",
                          crossScalaVersions :=  Seq("2.10.4", "2.11.2"),
-                                    version :=  ( if (hasReleaseProp) baseVersion else localVersion ),
+                                    version :=  stableVersion,
                                organization :=  pspOrg,
                                 logBuffered :=  false,
                                 shellPrompt :=  (s => "%s#%s> ".format(name.value, s.currentProject)),
@@ -47,13 +50,14 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
     )
 
     def root: Project = p in file(".") also common settings (
-                 name :=  "psp-std-root",
-          description :=  "psp's project which exists to please sbt",
-      publishArtifact :=  false,
-              publish :=  (),
-             commands +=  Command.args("mima", "<version>")(mimaCommand),
-              console <<= console in Compile in consoleOnly,
-                 test <<= test in testOnly
+                            name :=  "psp-std-root",
+                     description :=  "psp's project which exists to please sbt",
+           packageBin in Compile :=  file(""),
+      publishArtifact in Compile :=  false,
+                         publish :=  (),
+                        commands +=  Command.args("mima", "<version>")(mimaCommand),
+                         console <<= console in Compile in consoleOnly,
+                            test <<= test in testOnly
     )
   }
 
@@ -67,24 +71,14 @@ trait PublishOnly {
 
   import scala.sys.process._
 
-  lazy val baseVersion  = "0.3.1-M2"
-  lazy val localVersion = baseVersion + localSuffix
-
-  // It's a pretty hideous version string, but it should guarantee we never overwrite
-  // artifacts and that dependency managers will see the local version numbers as increasing.
-  def pspOrg           = "org.improving"
-  def releaseProp      = "psp.release"
-  def hasReleaseProp   = sys.props contains releaseProp
-  def isRepoClean      = "git diff --quiet --exit-code HEAD".! == 0
-  def repoSha: String  = "git rev-parse HEAD".!! take 10
-  def repoDiff: String = ("git diff" #| "md5").!! take 10 // not using at present - hopefully "dirty" is enough
-  def localSuffix      = "-%s-%s%s".format(dateTime, repoSha, if (isRepoClean) "" else "-dirty")
+  def isRepoClean    = Process("git diff --quiet --exit-code HEAD").! == 0
+  def hasReleaseProp = sys.props contains pspReleaseProp
 
   def safePublish(p: Project): TaskOf[Unit] = Def task {
     if (!isRepoClean)
       try println(s"Can't publish with a dirty repository.") finally sys exit 1
     else if (!hasReleaseProp)
-      try println(s"As a safeguard, publishing release artifacts requires -D$releaseProp.") finally sys exit 1
+      try println(s"As a safeguard, publishing release artifacts requires -D$pspReleaseProp.") finally sys exit 1
   }
 }
 
@@ -94,7 +88,7 @@ trait TestOnly {
   /** mima command optionally takes a baseline version, e.g. sbt 'mima 0.1.0-M1'
    */
   def mimaCommand = stateCommand {
-    case (s, Nil)            => mimaRun(s, stdArtifact("0.3.0-M8"))
+    case (s, Nil)            => mimaRun(s, stdArtifact("0.3.1-M1"))
     case (s, version :: Nil) => mimaRun(s, stdArtifact(version))
     case (s, _)              => s.fail
   }
