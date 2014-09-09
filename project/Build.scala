@@ -1,11 +1,8 @@
 package psp
 package build
 
-import sbt._, Keys._
+import sbt._, Keys._, psp.libsbt._
 import psp.const._
-import bintray.Plugin.bintraySettings
-import com.typesafe.tools.mima.plugin.MimaKeys._
-import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 
 object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
   // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
@@ -21,47 +18,43 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
 
   def subprojects = List(api, std)
   private def localSuffix = "-" + dateTime
-  private lazy val stableVersion = "0.3.1-M4" + ( if (hasReleaseProp) "" else localSuffix )
+  private lazy val stableVersion = "0.3.1-M9" + ( if (hasReleaseProp) "" else localSuffix )
+
+  private def commonSettings(p: Project) = Seq[Setting[_]](
+                                resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
+                             scalaVersion :=  "2.11.2",
+                       crossScalaVersions :=  Seq("2.10.4", "2.11.2"),
+                                  version :=  stableVersion,
+                             organization :=  pspOrg,
+                              logBuffered :=  false,
+                              shellPrompt :=  (s => "%s#%s> ".format(name.value, s.currentRef.project)),
+                            scalacOptions ++= versionScalacOptions(scalaBinaryVersion.value),
+                             javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
+                                 licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+                       logLevel in update :=  Level.Warn,
+                  publishArtifact in Test :=  false,
+                parallelExecution in Test :=  false,
+                             fork in Test :=  true,
+                               crossPaths :=  true,
+                                  publish <<= publish dependsOn safePublish(p),
+    unmanagedSourceDirectories in Compile +=  (sourceDirectory in Compile).value / s"scala${scalaBinaryVersion.value}",
+       unmanagedSourceDirectories in Test +=  (sourceDirectory in Test).value / s"scala${scalaBinaryVersion.value}"
+  )
 
   implicit class ProjectOps(val p: Project) {
-    def buildWith(vs: String*)        = p settings (crossScalaVersions := vs.toSeq)
-    def sub(text: String): Project    = p also (bintraySettings ++ mimaDefaultSettings ++ common) settings (name := "psp-" + p.id, description := text)
-    def support: Project              = p also common settings (publishArtifact := false)
-    def also(ss: SettingSeq): Project = p settings (ss: _*)
-    def common = Seq[Setting[_]](
-                                  resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
-                               scalaVersion :=  "2.11.2",
-                         crossScalaVersions :=  Seq("2.10.4", "2.11.2"),
-                                    version :=  stableVersion,
-                               organization :=  pspOrg,
-                                logBuffered :=  false,
-                                shellPrompt :=  (s => "%s#%s> ".format(name.value, s.currentProject)),
-                              scalacOptions ++= versionScalacOptions(scalaBinaryVersion.value),
-                               javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
-                                   licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-                         logLevel in update :=  Level.Warn,
-                    publishArtifact in Test :=  false,
-                  parallelExecution in Test :=  false,
-                               fork in Test :=  true,
-                                 crossPaths :=  true,
-                                    publish <<= publish dependsOn safePublish(p),
-      unmanagedSourceDirectories in Compile +=  (sourceDirectory in Compile).value / s"scala${scalaBinaryVersion.value}",
-         unmanagedSourceDirectories in Test +=  (sourceDirectory in Test).value / s"scala${scalaBinaryVersion.value}"
-    )
-
-    def root: Project = p in file(".") also common settings (
-                            name :=  "psp-std-root",
-                     description :=  "psp's project which exists to please sbt",
-           packageBin in Compile :=  file(""),
-      publishArtifact in Compile :=  false,
-                         publish :=  (),
-                        commands +=  Command.args("mima", "<version>")(mimaCommand),
-                         console <<= console in Compile in consoleOnly,
-                            test <<= test in testOnly
-    )
+    def common: Project                  = p also commonSettings(p)
+    def buildWith(vs: String*)           = p settings (crossScalaVersions := vs.toSeq)
+    def sub(text: String): Project       = p.common also (bintraySettings ++ mimaDefaultSettings) settings (name := "psp-" + p.id, description := text)
+    def support: Project                 = p.common settings (publishArtifact := false)
   }
 
-  lazy val root = project.root aggregate (api, std)
+  lazy val root = project.root.common aggregate (api, std) settings (
+           name :=  "psp-std-root",
+    description :=  "psp's project which exists to please sbt",
+       commands +=  Command.args("mima", "<version>")(mimaCommand),
+        console <<= console in Compile in consoleOnly,
+           test <<= test in testOnly
+  )
   lazy val api  = project.sub("api for psp's non-standard standard library")
   lazy val std  = project.sub("psp's non-standard standard library") dependsOn api settings (publishArtifact := scalaBinaryVersion.value == "2.11")
 }
@@ -94,7 +87,7 @@ trait TestOnly {
   }
 
   private def mimaRun(state: State, module: ModuleID): Unit =
-    state.put(previousArtifact in std, Some(module)) runTask (reportBinaryIssues in std)
+    state.set(previousArtifact in std := Some(module)) runTask (MimaKeys.reportBinaryIssues in std)
 
   // Mima won't resolve the %% cross version.
   def stdArtifact(version: String): ModuleID = pspOrg % "psp-std_2.11" % version
