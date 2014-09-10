@@ -16,6 +16,13 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
   def is211               = Def setting (scalaBinaryVersion.value == "2.11")
   def versionedSourceName = Def setting ("scala" + scalaBinaryVersion.value)
 
+  // XXX temp
+  def incrementVersion(v: String): String = {
+    val num = (v.reverse takeWhile (_.isDigit)).reverse
+    (v dropRight num.length) + (num.toInt + 1).toString
+  }
+
+
   def subprojects = List(api, std)
   private def localSuffix = "-" + dateTime
   private lazy val stableVersion = sys.props get "release.version" match {

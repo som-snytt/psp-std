@@ -145,7 +145,10 @@ trait PackageAliases extends Any {
   type jManifest              = java.util.jar.Manifest
   type jMap[K, V]             = java.util.Map[K, V]
   type jMethod                = java.lang.reflect.Method
+  type jProperties            = java.util.Properties
+  type jReader                = java.io.Reader
   type jSet[A]                = java.util.Set[A]
+  type jWriter                = java.io.Writer
 
   // scala types which I won't let win.
   type sIterator[+A] = scala.collection.Iterator[A]
