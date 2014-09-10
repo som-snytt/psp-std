@@ -1,9 +1,3 @@
-import psp.meta._
+resolvers += Resolver.url("paulp/sbt-plugins", url("https://dl.bintray.com/paulp/sbt-plugins/"))(Resolver.ivyStylePatterns)
 
-scalacOptions in Compile += "-language:_"
-
-unmanagedSourceDirectories in Compile += baseDirectory.value / "../api/src/main"
-
-unmanagedSourceDirectories in Compile += baseDirectory.value / "project/src/main"
-
-libraryDependencies ++= pluginIDs map (_.sbtPlugin)
+addSbtPlugin("org.improving" % "psp-libsbt" % "0.3.1-M10")
