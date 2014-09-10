@@ -18,10 +18,9 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
 
   def subprojects = List(api, std)
   private def localSuffix = "-" + dateTime
-  private lazy val stableVersion = "0.3.1-M9" + ( if (hasReleaseProp) "" else localSuffix )
+  private lazy val stableVersion = "0.3.1-M10" + ( if (hasReleaseProp) "" else localSuffix )
 
   private def commonSettings(p: Project) = Seq[Setting[_]](
-                                resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                              scalaVersion :=  "2.11.2",
                        crossScalaVersions :=  Seq("2.10.4", "2.11.2"),
                                   version :=  stableVersion,
