@@ -4,11 +4,6 @@ package build
 import sbt._, Keys._, psp.libsbt._
 
 object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
-  def pspResolvers = Seq(
-    Resolver.url("paulp/sbt-plugins", url("https://dl.bintray.com/paulp/sbt-plugins"))(Resolver.ivyStylePatterns),
-    "std/paulp/maven" at "https://dl.bintray.com/paulp/maven"
-  )
-
   // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
   def versionScalacOptions(binaryVersion: String): Seq[String] = {
     val xs1 = if (sys.props contains "debug") Seq("-Ylog:all") else Nil
@@ -25,7 +20,6 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
   private lazy val stableVersion = "0.3.1-M10" + ( if (hasReleaseProp) "" else localSuffix )
 
   private def commonSettings(p: Project) = Seq[Setting[_]](
-                                resolvers ++= pspResolvers,
                              scalaVersion :=  "2.11.2",
                        crossScalaVersions :=  Seq("2.10.4", "2.11.2"),
                                   version :=  stableVersion,
