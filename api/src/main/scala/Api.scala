@@ -8,12 +8,9 @@ package api
 import scala.collection.{ mutable, immutable }
 import java.nio.file.Paths
 import scala.sys.process.Process
-import scala.sys.process.ProcessBuilder
 
 trait PackageLevelPlusCompat extends PackageLevel with ScalaCompat
 
-/** Leaves out scala compat and IO.
- */
 trait PackageLevel extends PackageValues with PackageAliases with PackageMethods with PackageImplicits
 
 /** Mostly for mixing a usable toString method into functions.
@@ -117,6 +114,7 @@ trait PackageAliases extends Any {
   type DataInput              = java.io.DataInput
   type DataInputStream        = java.io.DataInputStream
   type DataOutputStream       = java.io.DataOutputStream
+  type File                   = java.io.File
   type FileInputStream        = java.io.FileInputStream
   type FileOutputStream       = java.io.FileOutputStream
   type IOException            = java.io.IOException
@@ -127,6 +125,9 @@ trait PackageAliases extends Any {
   type ObjectInputStream      = java.io.ObjectInputStream
   type ObjectOutputStream     = java.io.ObjectOutputStream
   type OutputStream           = java.io.OutputStream
+  type Path                   = java.nio.file.Path
+  type URI                    = java.net.URI
+  type URL                    = java.net.URL
   type URLClassLoader         = java.net.URLClassLoader
 
   // java types for which the battle rages on.
@@ -168,33 +169,6 @@ trait PackageValues {
   final val MinLong = Long.MinValue
 }
 
-/** These conflict with sbt and defeat our ambition of being
- *  able to import sbt._ and psp.libsbt._ without a bunch of
- *  pointless conflicts. Thanks scala.
- */
-trait JavaIO {
-  type File = java.io.File
-  type Path = java.nio.file.Path
-  type URI  = java.net.URI
-  type URL  = java.net.URL
-
-  def file(s: String): File = new File(s)
-  def path(s: String): Path = Paths get s
-  def uri(x: String): URI   = java.net.URI create x
-  def url(x: String): URL   = uri(x).toURL
-
-  def javaHome: File                           = file(scala.util.Properties.javaHome)
-  def classpathSeparator: String               = java.io.File.pathSeparator
-  def openInApp(app: String, file: File): Unit = execute("open", "-a", app, file.getAbsolutePath)
-  def openSafari(file: File): Unit             = openInApp("Safari", file)
-  def openChrome(file: File): Unit             = openInApp("Google Chrome", file)
-
-  def newProcess(line: String): ProcessBuilder      = Process(line)
-  def newProcess(args: Seq[String]): ProcessBuilder = Process(args)
-  def executeLine(line: String): Int                = Process(line).!
-  def execute(args: String*): Int                   = Process(args.toSeq).!
-}
-
 trait PackageMethods extends Any {
   import internal._
 
@@ -210,11 +184,23 @@ trait PackageMethods extends Any {
   def classTag[T: ClassTag] : ClassTag[T]       = implicitly[ClassTag[T]]
   def dateTime(): String                        = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
   def fail(msg: String): Nothing                = throw new RuntimeException(msg)
+  def file(s: String): jFile                    = new jFile(s)
   def fromUTF8(xs: Array[Byte]): String         = new String(scala.io.Codec fromUTF8 xs)
   def javaClassOf[T: ClassTag] : Class[T]       = classTag[T].runtimeClass.asInstanceOf[Class[T]]
   def nanoTime: Long                            = System.nanoTime
   def nullAs[A] : A                             = null.asInstanceOf[A]
+  def path(s: String): Path                     = Paths get s
   def printResult[A](msg: String)(result: A): A = try result finally println(s"$msg: $result")
+  def uri(x: String): URI                       = java.net.URI create x
+  def url(x: String): URL                       = uri(x).toURL
+
+  def javaHome: File               = new File(scala.util.Properties.javaHome)
+  def classpathSeparator           = java.io.File.pathSeparator
+  def execute(args: String*): Unit = Process(args.toSeq).run
+
+  def openInApp(app: String, file: File): Unit = execute("open", "-a", app, file.getAbsolutePath)
+  def openSafari(file: File): Unit             = openInApp("Safari", file)
+  def openChrome(file: File): Unit             = openInApp("Google Chrome", file)
 
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
   def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
