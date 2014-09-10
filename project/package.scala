@@ -1,7 +1,6 @@
 package psp
 
 import sbt._, Keys._
-import sbt.complete.Parser
 
 package object build extends psp.std.api.PackageLevel {
   def stateCommand(f: (State, List[String]) => Unit): (State, Seq[String]) => State =

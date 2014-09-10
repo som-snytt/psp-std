@@ -2,7 +2,6 @@ package psp
 package build
 
 import sbt._, Keys._, psp.libsbt._
-import psp.const._
 
 object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
   def pspResolvers = Seq(
