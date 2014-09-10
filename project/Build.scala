@@ -5,38 +5,41 @@ import sbt._, Keys._, psp.libsbt._
 
 object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
   // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
-  def versionScalacOptions(binaryVersion: String): Seq[String] = {
+  def versionedScalacOptions = Def setting {
     val xs1 = if (sys.props contains "debug") Seq("-Ylog:all") else Nil
-    val xs2 = Seq("-Ywarn-dead-code", "-language:_")
-    val xs3 = binaryVersion match {
-      case "2.10" => Nil
-      case "2.11" => Seq("-Ywarn-unused", "-Ywarn-unused-import")
-    }
-    xs1 ++ xs2 ++ xs3
+    val xs2 = if (is211.value) Seq("-Ywarn-unused", "-Ywarn-unused-import") else Nil
+
+    Seq("-Ywarn-dead-code", "-language:_") ++ xs1 ++ xs2
   }
+
+  def isDebug             = sys.props contains "debug"
+  def is211               = Def setting (scalaBinaryVersion.value == "2.11")
+  def versionedSourceName = Def setting ("scala" + scalaBinaryVersion.value)
 
   def subprojects = List(api, std)
   private def localSuffix = "-" + dateTime
-  private lazy val stableVersion = "0.3.1-M10" + ( if (hasReleaseProp) "" else localSuffix )
-
+  private lazy val stableVersion = sys.props get "release.version" match {
+    case Some(v) => v
+    case _       => incrementVersion(pspApiRelease) + ( if (hasReleaseProp) "" else localSuffix )
+  }
   private def commonSettings(p: Project) = Seq[Setting[_]](
-                             scalaVersion :=  "2.11.2",
-                       crossScalaVersions :=  Seq("2.10.4", "2.11.2"),
+                             scalaVersion :=  scalaVersionLatest,
+                       crossScalaVersions :=  scalaVersionsCross,
                                   version :=  stableVersion,
                              organization :=  pspOrg,
                               logBuffered :=  false,
                               shellPrompt :=  (s => "%s#%s> ".format(name.value, s.currentRef.project)),
-                            scalacOptions ++= versionScalacOptions(scalaBinaryVersion.value),
+                            scalacOptions ++= versionedScalacOptions.value,
                              javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
-                                 licenses :=  Seq("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
+                                 licenses :=  pspLicenses,
                        logLevel in update :=  Level.Warn,
                   publishArtifact in Test :=  false,
                 parallelExecution in Test :=  false,
                              fork in Test :=  true,
                                crossPaths :=  true,
                                   publish <<= publish dependsOn safePublish(p),
-    unmanagedSourceDirectories in Compile +=  (sourceDirectory in Compile).value / s"scala${scalaBinaryVersion.value}",
-       unmanagedSourceDirectories in Test +=  (sourceDirectory in Test).value / s"scala${scalaBinaryVersion.value}"
+    unmanagedSourceDirectories in Compile +=  (sourceDirectory in Compile).value / versionedSourceName.value,
+       unmanagedSourceDirectories in Test +=  (sourceDirectory in Test).value / versionedSourceName.value
   )
 
   implicit class ProjectOps(val p: Project) {
@@ -54,7 +57,7 @@ object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
            test <<= test in testOnly
   )
   lazy val api  = project.sub("api for psp's non-standard standard library")
-  lazy val std  = project.sub("psp's non-standard standard library") dependsOn api settings (publishArtifact := scalaBinaryVersion.value == "2.11")
+  lazy val std  = project.sub("psp's non-standard standard library") dependsOn api settings (publishArtifact := is211.value)
 }
 
 trait PublishOnly {
@@ -84,24 +87,22 @@ trait TestOnly {
     case (s, _)              => s.fail
   }
 
+  def stateCommand(f: (State, List[String]) => Unit): (State, Seq[String]) => State =
+    (state, args) => state doto (s => f(s, args.toList))
+
   private def mimaRun(state: State, module: ModuleID): Unit =
     state.set(previousArtifact in std := Some(module)) runTask (MimaKeys.reportBinaryIssues in std)
 
   // Mima won't resolve the %% cross version.
   def stdArtifact(version: String): ModuleID = pspOrg % "psp-std_2.11" % version
 
-  def testDependencies = Def setting Seq(
-    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"
-  )
-
   lazy val testOnly = project.support dependsOn (api, std) settings (
-                   name  :=  "psp-test",
-            description  :=  "test encapsulation",
-    testOptions in Test  +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
-    libraryDependencies <++= testDependencies,
-      mainClass in Test  :=  Some("psp.tests.TestRunner"),
-                   test  :=  (run in Test toTask "").value
+                   name :=  "psp-test",
+            description :=  "test encapsulation",
+    testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
+    libraryDependencies ++= Seq(Deps.scalaReflect.value, Deps.scalacheck),
+      mainClass in Test :=  Some("psp.tests.TestRunner"),
+                   test :=  (run in Test toTask "").value
   )
 }
 

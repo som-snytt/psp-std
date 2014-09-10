@@ -3,4 +3,4 @@ resolvers ++= Seq(
   "paulp/maven" at "https://dl.bintray.com/paulp/maven"
 )
 
-addSbtPlugin("org.improving" % "psp-libsbt" % "0.3.1-M11")
+addSbtPlugin("org.improving" % "psp-libsbt" % "0.3.1-M12")
