@@ -11,7 +11,7 @@ object Build extends sbt.Build with LibSbt {
 
   def is211 = Def setting (scalaBinaryVersion.value == "2.11")
 
-  private def commonSettings = normalProjectSettings ++ Seq(
+  private def commonSettings = standardSettings ++ Seq(
                 version :=  publishVersion,
            scalaVersion :=  scalaVersionLatest,
      crossScalaVersions :=  scalaVersionsCross,
