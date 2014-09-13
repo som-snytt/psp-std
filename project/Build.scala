@@ -2,116 +2,108 @@ package psp
 package build
 
 import sbt._, Keys._, psp.libsbt._
+import bintray.Plugin._
 
-object Build extends sbt.Build with PublishOnly with ConsoleOnly with TestOnly {
-  // scala.reflect.runtime.currentMirror.staticPackage("psp.core")
-  def versionedScalacOptions = Def setting {
-    val xs1 = if (sys.props contains "debug") Seq("-Ylog:all") else Nil
-    val xs2 = if (is211.value) Seq("-Ywarn-unused", "-Ywarn-unused-import") else Nil
+// with LibSbtStub
+object Build extends sbt.Build with ConsoleOnly with LibSbt {
+  // def subprojects = List(api, std)
 
-    Seq("-Ywarn-dead-code", "-language:_") ++ xs1 ++ xs2
-  }
+  def is211 = Def setting (scalaBinaryVersion.value == "2.11")
+  def versionedSource(config: Configuration) = Def setting (
+    (sourceDirectory in config).value / "scala_%s".format(scalaBinaryVersion.value)
+  )
+  def versionedSourceSettings = List(Test, Compile) map (c => (unmanagedSourceDirectories in c) += versionedSource(c).value)
 
-  def isDebug             = sys.props contains "debug"
-  def is211               = Def setting (scalaBinaryVersion.value == "2.11")
-  def versionedSourceName = Def setting ("scala" + scalaBinaryVersion.value)
-
-  // XXX temp
-  def incrementVersion(v: String): String = {
-    val num = (v.reverse takeWhile (_.isDigit)).reverse
-    (v dropRight num.length) + (num.toInt + 1).toString
-  }
-
-
-  def subprojects = List(api, std)
-  private def localSuffix = "-" + dateTime
-  private lazy val stableVersion = sys.props get "release.version" match {
-    case Some(v) => v
-    case _       => incrementVersion(pspApiRelease) + ( if (hasReleaseProp) "" else localSuffix )
-  }
-  private def commonSettings(p: Project) = Seq[Setting[_]](
-                             scalaVersion :=  scalaVersionLatest,
-                       crossScalaVersions :=  scalaVersionsCross,
-                                  version :=  stableVersion,
-                             organization :=  pspOrg,
-                              logBuffered :=  false,
-                              shellPrompt :=  (s => "%s#%s> ".format(name.value, s.currentRef.project)),
-                            scalacOptions ++= versionedScalacOptions.value,
-                             javacOptions ++= Seq("-nowarn", "-XDignore.symbol.file"),
-                                 licenses :=  pspLicenses,
-                       logLevel in update :=  Level.Warn,
-                  publishArtifact in Test :=  false,
-                parallelExecution in Test :=  false,
-                             fork in Test :=  true,
-                               crossPaths :=  true,
-                                  publish <<= publish dependsOn safePublish(p),
-    unmanagedSourceDirectories in Compile +=  (sourceDirectory in Compile).value / versionedSourceName.value,
-       unmanagedSourceDirectories in Test +=  (sourceDirectory in Test).value / versionedSourceName.value
+  private def commonSettings(p: Project) = versionedSourceSettings ++ Seq[Setting[_]](
+                                    version :=  "0.4.0-M0", //publishVersion,
+                               scalaVersion :=  scalaVersionLatest,
+                         crossScalaVersions :=  scalaVersionsCross,
+                                   licenses :=  pspLicenses,
+                               organization :=  pspOrg,
+                              // scalacOptions ++= scalacOptionsFor(scalaBinaryVersion.value),
+                          publishMavenStyle :=  true,
+                    javacOptions in Compile ++= Seq("-nowarn", "-XDignore.symbol.file"),
+                   scalacOptions in Compile ++= Seq("-language:_"),
+                         logLevel in update :=  Level.Warn,
+                    publishArtifact in Test :=  false,
+   publishArtifact in (Compile, packageDoc) :=  false,
+   publishArtifact in (Compile, packageSrc) :=  false
   )
 
   implicit class ProjectOps(val p: Project) {
-    def common: Project                  = p also commonSettings(p)
-    def buildWith(vs: String*)           = p settings (crossScalaVersions := vs.toSeq)
-    def sub(text: String): Project       = p.common also (bintraySettings ++ mimaDefaultSettings) settings (name := "psp-" + p.id, description := text)
-    def support: Project                 = p.common settings (publishArtifact := false)
+    def common: Project            = p settings (commonSettings(p): _*)
+    def sub(text: String): Project = p.common settings (bintraySettings: _*) settings (name := "psp-" + p.id, description := text)
+    def support: Project           = p.common settings (publishArtifact := false)
   }
 
-  lazy val root = project.root.common aggregate (api, std) settings (
+  lazy val root = project.common in file(".") aggregate (api, std) settings (
            name :=  "psp-std-root",
     description :=  "psp's project which exists to please sbt",
-       commands +=  Command.args("mima", "<version>")(mimaCommand),
         console <<= console in Compile in consoleOnly,
            test <<= test in testOnly
   )
   lazy val api  = project.sub("api for psp's non-standard standard library")
   lazy val std  = project.sub("psp's non-standard standard library") dependsOn api settings (publishArtifact := is211.value)
-}
-
-trait PublishOnly {
-  self: Build.type =>
-
-  import scala.sys.process._
-
-  def isRepoClean    = Process("git diff --quiet --exit-code HEAD").! == 0
-  def hasReleaseProp = sys.props contains pspReleaseProp
-
-  def safePublish(p: Project): TaskOf[Unit] = Def task {
-    if (!isRepoClean)
-      try println(s"Can't publish with a dirty repository.") finally sys exit 1
-    else if (!hasReleaseProp)
-      try println(s"As a safeguard, publishing release artifacts requires -D$pspReleaseProp.") finally sys exit 1
-  }
-}
-
-trait TestOnly {
-  self: Build.type =>
-
-  /** mima command optionally takes a baseline version, e.g. sbt 'mima 0.1.0-M1'
-   */
-  def mimaCommand = stateCommand {
-    case (s, Nil)            => mimaRun(s, stdArtifact("0.3.1-M1"))
-    case (s, version :: Nil) => mimaRun(s, stdArtifact(version))
-    case (s, _)              => s.fail
-  }
-
-  def stateCommand(f: (State, List[String]) => Unit): (State, Seq[String]) => State =
-    (state, args) => state doto (s => f(s, args.toList))
-
-  private def mimaRun(state: State, module: ModuleID): Unit =
-    state.set(previousArtifact in std := Some(module)) runTask (MimaKeys.reportBinaryIssues in std)
-
-  // Mima won't resolve the %% cross version.
-  def stdArtifact(version: String): ModuleID = pspOrg % "psp-std_2.11" % version
 
   lazy val testOnly = project.support dependsOn (api, std) settings (
-                   name :=  "psp-test",
-            description :=  "test encapsulation",
-    testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
-    libraryDependencies ++= Seq(Deps.scalaReflect.value, Deps.scalacheck),
-      mainClass in Test :=  Some("psp.tests.TestRunner"),
-                   test :=  (run in Test toTask "").value
+                         name :=  "psp-test",
+                  description :=  "test encapsulation",
+          testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
+    parallelExecution in Test :=  false,
+                 fork in Test :=  true,
+                  logBuffered :=  false,
+          libraryDependencies ++= Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value, "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"),
+            mainClass in Test :=  Some("psp.tests.TestRunner"),
+                         test :=  (run in Test toTask "").value
   )
 }
+
+// trait PublishOnly {
+//   self: Build.type =>
+
+//   import scala.sys.process._
+
+//   def isRepoClean    = Process("git diff --quiet --exit-code HEAD").! == 0
+//   def hasReleaseProp = sys.props contains pspReleaseProp
+
+//   def safePublish(p: Project): TaskOf[Unit] = Def task {
+//     if (!isRepoClean)
+//       try println(s"Can't publish with a dirty repository.") finally sys exit 1
+//     else if (!hasReleaseProp)
+//       try println(s"As a safeguard, publishing release artifacts requires -D$pspReleaseProp.") finally sys exit 1
+//   }
+// }
+// commands +=  Command.args("mima", "<version>")(mimaCommand),
+
+// trait TestOnly {
+//   self: Build.type =>
+
+//   // /** mima command optionally takes a baseline version, e.g. sbt 'mima 0.1.0-M1'
+//   //  */
+//   // def mimaCommand = stateCommand {
+//   //   case (s, Nil)            => mimaRun(s, stdArtifact("0.3.1-M1"))
+//   //   case (s, version :: Nil) => mimaRun(s, stdArtifact(version))
+//   //   case (s, _)              => s.fail
+//   // }
+
+//   // private def mimaRun(state: State, module: ModuleID): Unit =
+//   //   state.set(previousArtifact in std := Some(module)) runTask (MimaKeys.reportBinaryIssues in std)
+
+//   // def stateCommand(f: (State, List[String]) => Unit): (State, Seq[String]) => State =
+//   //   (state, args) => try state finally f(state, args.toList)
+
+//   // Mima won't resolve the %% cross version.
+//   // def stdArtifact(version: String): ModuleID = pspOrg % "psp-std_2.11" % version
+
+//   lazy val testOnly = project.support dependsOn (api, std) settings (
+//                    name :=  "psp-test",
+//             description :=  "test encapsulation",
+//     testOptions in Test +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
+//     libraryDependencies ++= Seq(scalaReflect(scalaVersion.value), scalacheck),
+//       mainClass in Test :=  Some("psp.tests.TestRunner"),
+//                    test :=  (run in Test toTask "").value
+//   )
+// }
 
 trait ConsoleOnly {
   self: Build.type =>

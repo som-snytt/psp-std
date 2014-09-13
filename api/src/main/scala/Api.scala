@@ -26,6 +26,8 @@ trait Labeled extends Any { def label: String ; override def toString = label }
  */
 trait ShowDirect extends Any { def to_s: String }
 
+trait ShowDirectNow extends Any with ShowDirect { final override def toString = to_s }
+
 /** An incomplete selection of show compositors.
  *  Not printing the way scala does.
  *  Not included in api.PackageLevel, but available in psp-api.
@@ -212,6 +214,7 @@ trait PackageMethods extends Any {
   def asExpected[A](body: Any): A               = body.asInstanceOf[A]
   def classTag[T: ClassTag] : ClassTag[T]       = implicitly[ClassTag[T]]
   def dateTime(): String                        = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
+  def defaultCharset                            = java.nio.charset.Charset.defaultCharset
   def fail(msg: String): Nothing                = throw new RuntimeException(msg)
   def fromUTF8(xs: Array[Byte]): String         = new String(scala.io.Codec fromUTF8 xs)
   def javaClassOf[T: ClassTag] : Class[T]       = classTag[T].runtimeClass.asInstanceOf[Class[T]]
