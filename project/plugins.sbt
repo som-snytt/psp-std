@@ -1,5 +1,3 @@
-addSbtPlugin("org.improving" % "psp-libsbt" % "0.3.1-M12")
+addSbtPlugin("org.improving" % "psp-libsbt" % sys.props.getOrElse("libsbt.version", "0.4.1-M9"))
 
-// lazy val libsbt = RootProject(file("/r/psp/libsbt"))
-
-// lazy val root = project in file(".") dependsOn libsbt
+// addSbtPlugin("me.lessis" % "bintray-sbt" % "0.1.2")

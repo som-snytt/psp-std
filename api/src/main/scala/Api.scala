@@ -274,9 +274,9 @@ object Ops {
     def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(__psp_x, args map (_.toRef): _*).castTo[B]
 
     // The famed forward pipe.
-    @inline def |>[B](f: A => B): B   = f(__psp_x)
-    @inline def doto(f: A => Unit): A = try __psp_x finally f(__psp_x)
-    @inline def also(body: Unit): A   = __psp_x
+    @inline def |>[B](f: A => B): B       = f(__psp_x)
+    @inline def doto(f: A => Unit): A     = try __psp_x finally f(__psp_x)
+    @inline def sideEffect(body: Unit): A = __psp_x
 
     // Calling eq on Anys.
     def ref_==(y: Any): Boolean = toRef eq y.toRef

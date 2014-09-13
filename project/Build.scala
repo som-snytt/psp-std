@@ -1,42 +1,33 @@
 package psp
 package build
 
-import sbt._, Keys._, psp.libsbt._
-import bintray.Plugin._
+import sbt._, Keys._
+import psp.libsbt._
+// import bintray.Plugin._
 
-// with LibSbtStub
-object Build extends sbt.Build with ConsoleOnly with LibSbt {
-  // def subprojects = List(api, std)
+object Build extends sbt.Build with LibSbt {
+  // lazy val props = new SbtBuildProps()
+  // import props._
 
   def is211 = Def setting (scalaBinaryVersion.value == "2.11")
-  def versionedSource(config: Configuration) = Def setting (
-    (sourceDirectory in config).value / "scala_%s".format(scalaBinaryVersion.value)
-  )
-  def versionedSourceSettings = List(Test, Compile) map (c => (unmanagedSourceDirectories in c) += versionedSource(c).value)
 
-  private def commonSettings(p: Project) = versionedSourceSettings ++ Seq[Setting[_]](
-                                    version :=  "0.4.0-M0", //publishVersion,
-                               scalaVersion :=  scalaVersionLatest,
-                         crossScalaVersions :=  scalaVersionsCross,
-                                   licenses :=  pspLicenses,
-                               organization :=  pspOrg,
-                              // scalacOptions ++= scalacOptionsFor(scalaBinaryVersion.value),
-                          publishMavenStyle :=  true,
-                    javacOptions in Compile ++= Seq("-nowarn", "-XDignore.symbol.file"),
-                   scalacOptions in Compile ++= Seq("-language:_"),
-                         logLevel in update :=  Level.Warn,
-                    publishArtifact in Test :=  false,
-   publishArtifact in (Compile, packageDoc) :=  false,
-   publishArtifact in (Compile, packageSrc) :=  false
+  private def commonSettings = normalProjectSettings ++ Seq(
+                version :=  publishVersion,
+           scalaVersion :=  scalaVersionLatest,
+     crossScalaVersions :=  scalaVersionsCross,
+               licenses :=  pspLicenses,
+           organization :=  pspOrg,
+          scalacOptions ++= scalacOptionsFor(scalaBinaryVersion.value),
+      publishMavenStyle :=  true
   )
 
   implicit class ProjectOps(val p: Project) {
-    def common: Project            = p settings (commonSettings(p): _*)
-    def sub(text: String): Project = p.common settings (bintraySettings: _*) settings (name := "psp-" + p.id, description := text)
-    def support: Project           = p.common settings (publishArtifact := false)
+    def common: Project            = p settings (commonSettings: _*)
+    def sub(text: String): Project = p.common settings (name := "psp-" + p.id, description := text)
+    def support: Project           = p.common.noArtifacts
   }
 
-  lazy val root = project.common in file(".") aggregate (api, std) settings (
+  lazy val root = project.root.common aggregate (api, std) settings (
            name :=  "psp-std-root",
     description :=  "psp's project which exists to please sbt",
         console <<= console in Compile in consoleOnly,
@@ -55,6 +46,37 @@ object Build extends sbt.Build with ConsoleOnly with LibSbt {
           libraryDependencies ++= Seq("org.scala-lang" % "scala-reflect" % scalaVersion.value, "org.scalacheck" %% "scalacheck" % "1.11.5" % "test"),
             mainClass in Test :=  Some("psp.tests.TestRunner"),
                          test :=  (run in Test toTask "").value
+  )
+
+  def consoleCode = """
+    import scala.collection.{ mutable, immutable }
+    import psp.std._, ansi._
+    implicit final class ReplForeachOps[A](val target: Foreach[A]) {
+      def !> : Unit = println(target mkString EOL)
+      def  >(implicit shows: Show[A]): Unit = println(target.joinLines)
+    }
+    implicit final class ReplOps[A](val target: A) {
+      def !> : Unit = println(target)
+      def >(implicit shows: Show[A]): Unit = println(target.to_s)
+    }
+    import spire.algebra._, spire.math._, com.google.common.collect._
+  """
+
+  def consoleDependencies = Def setting Seq(
+    "org.scala-lang"            % "scala-compiler" % scalaVersion.value,
+    "org.spire-math"           %% "spire"          %      "0.8.2",
+    "com.chuusai"              %% "shapeless"      %      "2.0.0",
+    "com.google.guava"          % "guava"          %       "17.0",
+    "net.sourceforge.findbugs"  % "jsr305"         %       "1.3.7"
+  )
+
+  // A console project which pulls in misc additional dependencies currently being explored.
+  lazy val consoleOnly = project.support dependsOn (std, api) settings (
+                                   name  :=  "psp-console",
+                            description  :=  "console encapsulation",
+                    libraryDependencies <++= consoleDependencies,
+    scalacOptions in console in Compile  :=  Seq("-language:_"),  // turning off all the noisy warnings
+             initialCommands in console  :=  consoleCode
   )
 }
 
@@ -105,37 +127,6 @@ object Build extends sbt.Build with ConsoleOnly with LibSbt {
 //   )
 // }
 
-trait ConsoleOnly {
-  self: Build.type =>
-
-  def consoleCode = """
-    import scala.collection.{ mutable, immutable }
-    import psp.std._, ansi._
-    implicit final class ReplForeachOps[A](val target: Foreach[A]) {
-      def !> : Unit = println(target mkString EOL)
-      def  >(implicit shows: Show[A]): Unit = println(target.joinLines)
-    }
-    implicit final class ReplOps[A](val target: A) {
-      def !> : Unit = println(target)
-      def >(implicit shows: Show[A]): Unit = println(target.to_s)
-    }
-    import spire.algebra._, spire.math._, com.google.common.collect._
-  """
-
-  def consoleDependencies = Def setting Seq(
-    "org.scala-lang"            % "scala-compiler" % scalaVersion.value,
-    "org.spire-math"           %% "spire"          %      "0.8.2",
-    "com.chuusai"              %% "shapeless"      %      "2.0.0",
-    "com.google.guava"          % "guava"          %       "17.0",
-    "net.sourceforge.findbugs"  % "jsr305"         %       "1.3.7"
-  )
-
-  // A console project which pulls in misc additional dependencies currently being explored.
-  lazy val consoleOnly = project.support dependsOn (std, api) settings (
-                                   name  :=  "psp-console",
-                            description  :=  "console encapsulation",
-                    libraryDependencies <++= consoleDependencies,
-    scalacOptions in console in Compile  :=  Seq("-language:_"),  // turning off all the noisy warnings
-             initialCommands in console  :=  consoleCode
-  )
-}
+// trait ConsoleOnly {
+//   self: Build.type =>
+// }
