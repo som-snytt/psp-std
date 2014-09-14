@@ -2,19 +2,22 @@ package psp
 package build
 
 import sbt._, Keys._, psp.libsbt._
+import bintray.Plugin._, bintray.Keys._
 
 object Build extends sbt.Build with LibSbt {
   def is211: SettingOf[Boolean]        = scalaBinaryVersion mapValue (_ == "2.11")
   def rootResourceDir: SettingOf[File] = resourceDirectory in Compile in LocalRootProject
 
-  private def commonSettings = standardSettings ++ Seq(
-                version :=  publishVersion,
-           scalaVersion :=  scalaVersionLatest,
-     crossScalaVersions :=  scalaVersionsCross,
-               licenses :=  pspLicenses,
-           organization :=  pspOrg,
-          scalacOptions ++= scalacOptionsFor(scalaBinaryVersion.value),
-      publishMavenStyle :=  true
+  private def commonSettings = bintraySettings ++ standardSettings ++ Seq(
+    bintrayOrganization in bintray :=  None,
+             repository in bintray :=  "maven",
+                           version :=  publishVersion,
+                      scalaVersion :=  scalaVersionLatest,
+                crossScalaVersions :=  scalaVersionsCross,
+                          licenses :=  pspLicenses,
+                      organization :=  pspOrg,
+                     scalacOptions ++= scalacOptionsFor(scalaBinaryVersion.value),
+                 publishMavenStyle :=  true
   )
   private def setup(p: Project, text: String): Project = p also commonSettings ++ Seq(
            name := "psp-" + p.id,
