@@ -353,10 +353,10 @@ object Ops {
   }
 }
 
-final class LabeledFunction[-T, +R](f: T => R, val label: String) extends (T => R) with api.Labeled {
+final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R) with api.ShowDirectNow {
   def apply(x: T): R = f(x)
 }
-final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val label: String) extends PartialFunction[T, R] with api.Labeled {
+final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val to_s: String) extends PartialFunction[T, R] with api.ShowDirectNow {
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R    = pf(x)
 }

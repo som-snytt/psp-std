@@ -16,17 +16,25 @@ trait PackageLevelPlusCompat extends PackageLevel with ScalaCompat
  */
 trait PackageLevel extends PackageValues with PackageAliases with PackageMethods with PackageImplicits
 
-/** Mostly for mixing a usable toString method into functions.
- */
-trait Labeled extends Any { def label: String ; override def toString = label }
-
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
  *  using a synthetic toString, e.g. of case classes.
  */
-trait ShowDirect extends Any { def to_s: String }
+trait ShowDirect extends Any {
+  // Playing string defense against any2stringadd with a member method.
+  def +(that: Shown): Shown = Shown(to_s + that.to_s)
+  def to_s: String
+}
 
-trait ShowDirectNow extends Any with ShowDirect { final override def toString = to_s }
+trait ShowDirectNow extends Any with ShowDirect {
+  final override def toString = to_s
+}
+
+/** Used to achieve type-safety in the show interpolator.
+ *  It's the String resulting from passing a value through its Show instance.
+ */
+final case class Shown(to_s: String) extends AnyVal with ShowDirectNow
+final case class TryShown(to_s: String) extends AnyVal with ShowDirectNow
 
 /** An incomplete selection of show compositors.
  *  Not printing the way scala does.
@@ -64,7 +72,7 @@ trait ShowImplicits {
 
 trait PackageImplicits0 extends Any {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): Ops.TryShown = new Ops.TryShown(shows show x)
+  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
 }
 trait PackageImplicits extends Any with PackageImplicits0 {
   implicit def opsApiAny[A](x: A): Ops.AnyOps[A]              = new Ops.AnyOps[A](x)
@@ -75,8 +83,7 @@ trait PackageImplicits extends Any with PackageImplicits0 {
   implicit def opsApiShowInterpolator(sc: StringContext): Ops.ShowInterpolator = new Ops.ShowInterpolator(sc)
 
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): Ops.Shown = Ops.Shown(internal.?[Show[A]] show x)
-  implicit def showLabeled: Show[Labeled]                = Show[Labeled](_.label)
+  implicit def showableToShown[A: Show](x: A): Shown = Shown(implicitly[Show[A]] show x)
 
   // Ops on base type classes.
   implicit def opsApiEq[A](x: Eq[A]): Ops.EqOps[A]          = new Ops.EqOps[A](x)
@@ -325,6 +332,7 @@ object Ops {
      *  means they have a Show[A] in scope.
      */
     def show(args: Shown*): String  = StringContext(__psp_sc.parts: _*).raw(args: _*)
+    def shown(args: Shown*): Shown  = Shown(show(args: _*))
     def pp(args: TryShown*): String = StringContext(__psp_sc.parts: _*).raw(args: _*)
   }
   final class ShowDirectOps(val __psp_x: ShowDirect) extends AnyVal {
@@ -353,16 +361,6 @@ object Ops {
   final class HashEqClass[-A](cmp: (A, A) => Boolean, h: A => Int) extends HashEq[A] {
     def equiv(x: A, y: A) = cmp(x, y)
     def hash(x: A)        = h(x)
-  }
-
-  /** Used to achieve type-safety in the show interpolator.
-   *  It's the String resulting from passing a value through its Show instance.
-   */
-  final case class Shown(to_s: String) extends AnyVal with ShowDirect {
-    override def toString = to_s
-  }
-  final case class TryShown(to_s: String) extends AnyVal with ShowDirect {
-    override def toString = to_s
   }
 
   final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = ord on f   }
