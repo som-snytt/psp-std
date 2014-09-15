@@ -2,6 +2,7 @@ package psp
 package std
 
 import scala.{ collection => sc }
+import api.Regex
 
 /** Yes I know all about implicit classes.
  *  There's no way to write an implicit value class which doesn't hardcode
@@ -100,6 +101,8 @@ trait ReadImplicits {
   implicit val intRead: Read[Int]           = Read(_.toInt)
   implicit val longRead: Read[Long]         = Read(_.toLong)
   implicit val stringRead: Read[String]     = Read(s => s)
+  implicit val uriRead: Read[URI]           = Read(uri)
+  implicit val regexRead: Read[Regex]       = Read(Regex)
 }
 
 trait OrderImplicits {

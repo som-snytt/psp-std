@@ -19,16 +19,10 @@ trait PackageLevel extends PackageValues with PackageAliases with PackageMethods
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
  *  using a synthetic toString, e.g. of case classes.
+ *  ShowDirectNow performs that override.
  */
-trait ShowDirect extends Any {
-  // Playing string defense against any2stringadd with a member method.
-  def +(that: Shown): Shown = Shown(to_s + that.to_s)
-  def to_s: String
-}
-
-trait ShowDirectNow extends Any with ShowDirect {
-  final override def toString = to_s
-}
+trait ShowDirect extends Any { def to_s: String }
+trait ShowDirectNow extends Any with ShowDirect { final override def toString = to_s }
 
 /** Used to achieve type-safety in the show interpolator.
  *  It's the String resulting from passing a value through its Show instance.
@@ -228,6 +222,7 @@ trait PackageMethods extends Any {
   def nanoTime: Long                            = System.nanoTime
   def nullAs[A] : A                             = null.asInstanceOf[A]
   def printResult[A](msg: String)(result: A): A = try result finally println(s"$msg: $result")
+  def regex(re: String): Regex                  = Regex(re)
 
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
   def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
@@ -339,7 +334,7 @@ object Ops {
     /** Java-style String addition without abandoning type safety.
      */
     def + (that: ShowDirect): ShowDirect = Shown(__psp_x.to_s + that.to_s)
-    def + [A: Show](that: A): ShowDirect = Shown(__psp_x.to_s + implicitly[Show[A]].show(that))
+    def + [A: Show](that: A): ShowDirect = this + (that: ShowDirect)
   }
 
   /** The funny parameter names are because they can't be made private in 2.10
