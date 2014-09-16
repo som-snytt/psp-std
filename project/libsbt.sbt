@@ -1,4 +1,4 @@
-def libsbtVersion = sys.props.getOrElse("libsbt.version", "0.4.3")
+def libsbtVersion = sys.props.getOrElse("libsbt.version", "0.4.4")
 
 def libsbtRef = addSbtPlugin("org.improving" % "psp-libsbt" % libsbtVersion)
 
@@ -7,4 +7,9 @@ def add(p: Project) = sys.props get "libsbt.path" match {
   case _       => println(s"Using libsbt $libsbtVersion") ; p settings (libsbtRef: _*)
 }
 
-lazy val root = add(project in file("."))
+lazy val root = add(project in file(".")) settings (
+  resolvers ++= Seq(
+    Resolver.url("paulp/sbt-plugins", url("https://dl.bintray.com/paulp/sbt-plugins"))(Resolver.ivyStylePatterns),
+    "paulp/maven" at "https://dl.bintray.com/paulp/maven"
+  )
+)
