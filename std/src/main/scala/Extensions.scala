@@ -3,36 +3,33 @@ package std
 
 import java.{ lang => jl }
 import scala.{ collection => sc }
-import Trilean._
-import psp.std.api.Cmp._
+import psp.std.api.{ PCmp, Cmp }
 
 object TClass {
-  final class OrderOps[A](private val lhs: A) extends AnyVal {
-    def compare(rhs: A)(implicit ord: Order[A]): Cmp = ord.compare(lhs, rhs)
+  final class OrderOps[A](val __order_lhs: A) extends AnyVal {
+    import Cmp._
+    def compare(rhs: A)(implicit ord: Order[A]): Cmp = ord.compare(__order_lhs, rhs)
+
     def < (rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) == LT
     def <=(rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) != GT
+    def > (rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) == GT
     def >=(rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) != LT
-    def >(rhs: A)(implicit ord: Order[A]): Boolean   = compare(rhs) == GT
-    def min(rhs: A)(implicit ord: Order[A]): A       = if (compare(rhs) == LT) lhs else rhs
-    def max(rhs: A)(implicit ord: Order[A]): A       = if (compare(rhs) == GT) lhs else rhs
+    def min(rhs: A)(implicit ord: Order[A]): A       = if (this < rhs) __order_lhs else rhs
+    def max(rhs: A)(implicit ord: Order[A]): A       = if (this > rhs) __order_lhs else rhs
   }
-  final class PartialOrderOps[A](private val lhs: A) extends AnyVal {
-    import PartialOrder._
-    private def evaluate(rhs: A)(trues: PCmp*)(undefs: PCmp*)(implicit ord: PartialOrder[A]): Trilean = {
-      val res = partialCompare(rhs)
-      if (trues contains res) True
-      else if (undefs contains res) Undefined
-      else False
-    }
-    def partialCompare(rhs: A)(implicit ord: PartialOrder[A]): PCmp = ord.partialCompare(lhs, rhs)
-    def < (rhs: A)(implicit ord: PartialOrder[A]): Trilean          = evaluate(rhs)(LT)(NA, LE)
-    def <=(rhs: A)(implicit ord: PartialOrder[A]): Trilean          = evaluate(rhs)(LT, LE, EQ)(NA)
-    def >=(rhs: A)(implicit ord: PartialOrder[A]): Trilean          = evaluate(rhs)(GT, GE, EQ)(NA)
-    def >(rhs: A)(implicit ord: PartialOrder[A]): Trilean           = evaluate(rhs)(GT)(NA, GE)
-    def min(rhs: A)(implicit ord: PartialOrder[A]): Option[A]       = partialCompare(rhs) match { case LT | LE => Some(lhs) ; case GT | GE => Some(rhs) ; case _ => None }
-    def max(rhs: A)(implicit ord: PartialOrder[A]): Option[A]       = partialCompare(rhs) match { case LT | LE => Some(rhs) ; case GT | GE => Some(lhs) ; case _ => None }
+  final class PartialOrderOps[A](val __porder_lhs: A) extends AnyVal {
+    def partialCompare(rhs: A)(implicit ord: PartialOrder[A]): PCmp    = ord.partialCompare(__porder_lhs, rhs)
+    def tryCompare(rhs: A)(implicit ord: PartialOrder[A]): Option[Cmp] = ord.tryCompare(__porder_lhs, rhs)
+
+    def p_< (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.LT
+    def p_<=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ != Cmp.GT)
+    def p_> (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.GT
+    def p_>=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ != Cmp.LT)
+
+    def pmin(rhs: A)(implicit ord: PartialOrder[A]): Option[A] = tryCompare(rhs) map { case Cmp.GT => rhs ; case _ => __porder_lhs }
+    def pmax(rhs: A)(implicit ord: PartialOrder[A]): Option[A] = tryCompare(rhs) map { case Cmp.LT => rhs ; case _ => __porder_lhs }
   }
-  final class AlgebraOps[A](private val lhs: A) extends AnyVal {
+  final class AlgebraOps[A](val lhs: A) extends AnyVal {
     def implies(rhs: A)(implicit alg: BooleanAlgebra[A]) = !lhs || rhs
     def && (rhs: A)(implicit alg: BooleanAlgebra[A]): A  = if (isOne) rhs else if (rhs.isOne) lhs else if (lhs.isZero || rhs.isZero) alg.zero else alg.and(lhs, rhs)
     def || (rhs: A)(implicit alg: BooleanAlgebra[A]): A  = if (isZero) rhs else if (rhs.isZero) lhs else if (lhs.isOne || rhs.isOne) alg.one else alg.or(lhs, rhs)
@@ -40,11 +37,11 @@ object TClass {
     def isZero(implicit alg: BooleanAlgebra[A]): Boolean = alg.zero ref_== lhs
     def isOne(implicit alg: BooleanAlgebra[A]): Boolean  = alg.one ref_== lhs
   }
-  final class EqOps[A](private val lhs: A) extends AnyVal {
+  final class EqOps[A](val lhs: A) extends AnyVal {
     def ===(rhs: A)(implicit eq: Eq[A]): Boolean = eq.equiv(lhs, rhs)
     def !==(rhs: A)(implicit eq: Eq[A]): Boolean = !eq.equiv(lhs, rhs)
   }
-  final class HashEqOps[A](private val lhs: A) extends AnyVal {
+  final class HashEqOps[A](val lhs: A) extends AnyVal {
     def hash(implicit eq: HashEq[A]): Int = eq hash lhs
   }
 }
@@ -53,13 +50,13 @@ object Ops {
   final val InputStreamBufferSize = 8192
 
   // Have to each go into their own class because the apply methods have the same erasure.
-  final class Seq1[A](private val xs: sc.Seq[A]) extends AnyVal {
+  final class Seq1[A](val xs: sc.Seq[A]) extends AnyVal {
     def apply(nth: Nth): A = if (nth.isUndefined) sys.error(s"apply($nth)") else xs(nth.intIndex)
   }
-  final class Seq2[A](private val xs: sc.Seq[A]) extends AnyVal {
+  final class Seq2[A](val xs: sc.Seq[A]) extends AnyVal {
     def apply(index: Index): A = if (index.isUndefined) sys.error(s"apply($index)") else xs(index.value)
   }
-  final class SeqOps[A](private val xs: sc.Seq[A]) extends AnyVal with SeqLikeOps[A] {
+  final class SeqOps[A](val xs: sc.Seq[A]) extends AnyVal with SeqLikeOps[A] {
     def length                                   = xs.length
     def index(elem: A): Index                    = Index(xs indexOf elem)
     def lastIndex(elem: A): Index                = Index(xs lastIndexOf elem)
@@ -70,16 +67,16 @@ object Ops {
     // Ignores indices which don't exist in the target sequence.
     def apply(range: IndexRange): Vector[A] = indexRange intersect range map (i => xs(i.value))
   }
-  final class Map[K, V](private val map: sc.Map[K, V]) extends AnyVal {
+  final class Map[K, V](val map: sc.Map[K, V]) extends AnyVal {
     def sortedKeys(implicit ord: Order[K])                     = map.keys.toSeq.sorted(ord.toOrdering)
     def orderByKey(implicit ord: Order[K]): OrderedMap[K, V]   = orderedMap(sortedKeys, map.toMap)
     def orderByValue(implicit ord: Order[V]): OrderedMap[K, V] = orderedMap(sortedKeys(ord on map), map.toMap)
   }
-  final class SortedMap[K, V](private val map: sc.SortedMap[K, V]) extends AnyVal {
+  final class SortedMap[K, V](val map: sc.SortedMap[K, V]) extends AnyVal {
     private def ord: Order[K] = Order fromOrdering map.ordering
     def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
   }
-  final class GTOnceOps[A](private val xs: GTOnce[A]) extends AnyVal with FoldableOps[A] {
+  final class GTOnceOps[A](val xs: GTOnce[A]) extends AnyVal with FoldableOps[A] {
     def foldl[B](zero: B)(f: (B, A) => B): B                       = xs.foldLeft(zero)(f)
     def findOr(p: A => Boolean, alt: => A): A                      = (xs find p) | alt
     def sortOrder[B: Order](f: A => B): Vector[A]                  = xs.toVector sorted (?[Order[B]] on f toOrdering)
@@ -95,7 +92,7 @@ object Ops {
     def ascendingFrequency: OrderedMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
     def descendingFrequency: OrderedMap[A, Int]                    = ascendingFrequency.reverse
   }
-  final class ArrayOps[A](private val xs: Array[A]) extends AnyVal with SeqLikeOps[A] {
+  final class ArrayOps[A](val xs: Array[A]) extends AnyVal with SeqLikeOps[A] {
     def length                                   = xs.length
     def index(elem: A): Index                    = indexRange find (i => xs(i.value) == elem)
     def lastIndex(elem: A): Index                = indexRange findReverse (i => xs(i.value) == elem)
@@ -103,14 +100,14 @@ object Ops {
     def lastIndexAtWhich(p: A => Boolean): Index = indexRange findReverse (i => p(xs(i.value)))
     def hasElem(elem: A): Boolean                = indexRange exists (i => xs(i.value) == elem)
 
-    def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs.slice(indexRange intersect range).force
+    def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs.m.slice(indexRange intersect range).native
     def toSeq: ISeq[A] = immutableSeq(xs: _*)
   }
-  final class AnyOps[A](private val x: A) extends AnyVal {
+  final class AnyOps[A](val x: A) extends AnyVal {
     // Short decoded class name.
     def shortClass: String = decodeName(x.getClass.getName split "[.]" last)
   }
-  final class IntOps(private val self: Int) extends AnyVal {
+  final class IntOps(val self: Int) extends AnyVal {
     private type This = Int
 
     def cmp: Cmp              = Order difference self
@@ -124,7 +121,7 @@ object Ops {
     def hex: String    = jl.Integer.toHexString(self)
     def octal: String  = jl.Integer.toOctalString(self)
   }
-  final class LongOps(private val self: Long) extends AnyVal {
+  final class LongOps(val self: Long) extends AnyVal {
     private type This = Long
 
     def compared(that: Long): Cmp = Order difference (self - that)
@@ -139,13 +136,13 @@ object Ops {
     def hex: String         = jl.Long.toHexString(self)
     def octal: String       = jl.Long.toOctalString(self)
   }
-  final class BooleanAlgebraOps[A](private val algebra: BooleanAlgebra[A]) extends AnyVal {
+  final class BooleanAlgebraOps[A](val algebra: BooleanAlgebra[A]) extends AnyVal {
     def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new BooleanAlgebra.MappedAlgebra[A, B](algebra, f, g)
   }
-  final class Function1Ops[-T, +R](private val f: T => R) extends AnyVal {
+  final class Function1Ops[-T, +R](val f: T => R) extends AnyVal {
     def labeled(label: String): T => R = new LabeledFunction(f, label)
   }
-  final class InputStreamOps(private val in: InputStream) extends AnyVal {
+  final class InputStreamOps(val in: InputStream) extends AnyVal {
     private def wrap[A] (f: InputStream => A): A = {
       val in = this.buffered()
       try f(in) finally in.close()
@@ -162,7 +159,7 @@ object Ops {
             val read = in.read(arr, 0, InputStreamBufferSize)
             if (read >= 0) {
               offset += read
-              buf ++= (arr take read).toSeq
+              buf ++= (arr.m take read).toSeq
               loop()
             }
           }
@@ -180,7 +177,7 @@ object Ops {
     def toScalaIterator: sIterator[A] = new ScalaIterator(it)
     def toForeach: Foreach[A]         = each(toScalaIterator)
   }
-  final class jCollectionOps[A](private val xs: jAbstractCollection[A]) extends AnyVal {
+  final class jCollectionOps[A](val xs: jAbstractCollection[A]) extends AnyVal {
     def toForeach: Foreach[A]         = each(toTraversable)
     def toTraversable: Traversable[A] = toScalaIterator.toTraversable
     def toScalaIterator: sIterator[A] = new ScalaIterator(xs.iterator)
@@ -206,7 +203,7 @@ object Ops {
     def foldl[B](zero: B)(f: (B, A) => B): B
 
     private def stringed(sep: String)(f: A => String): String =
-      foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
+    foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
 
     def join(sep: String)(implicit shows: Show[A]): String = stringed(sep)(_.to_s)
     def joinLines(implicit shows: Show[A]): String         = join(EOL)
@@ -239,35 +236,35 @@ object Ops {
     def scalaIterator: Iterator[A] = toIterable.iterator
   }
 
-  final class IndexedSeqOps[A](private val xs: Direct[A]) extends AnyVal with FoldableOps[A] with ConversionOps[A] {
-    def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build xs
-    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build xs
+  final class IndexedSeqOps[A](val __psp_xs1: Direct[A]) extends AnyVal with FoldableOps[A] with ConversionOps[A] {
+    def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build __psp_xs1
+    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build __psp_xs1
 
     def foldl[B](zero: B)(f: (B, A) => B): B = {
       var result = zero
-      xs.foreach(x => result = f(result, x))
+      __psp_xs1.foreach(x => result = f(result, x))
       result
     }
   }
 
-  final class ForeachOps[A](private val xs: Foreach[A]) extends AnyVal with FoldableOps[A] with ConversionOps[A] {
-    def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build xs
-    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build xs
+  final class ForeachOps[A](val __psp_xs2: Foreach[A]) extends AnyVal with FoldableOps[A] with ConversionOps[A] {
+    def toRepr[Repr](implicit z: Builds[A, Repr]): Repr = z build __psp_xs2
+    def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]  = z build __psp_xs2
 
     def sum(implicit num: Numeric[A]): A     = foldl(num.zero)(num.plus)
     def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
 
     def foldl[B](zero: B)(f: (B, A) => B): B = {
       var result = zero
-      xs.foreach(x => result = f(result, x))
+      __psp_xs2.foreach(x => result = f(result, x))
       result
     }
     def foldr[B](zero: B)(f: (A, B) => B): B          = {
       var result = zero
-      xs.foreach(x => result = f(x, result))
+      __psp_xs2.foreach(x => result = f(x, result))
       result
     }
-    def toDirect: Direct[A] = xs match {
+    def toDirect: Direct[A] = __psp_xs2 match {
       case xs: Direct[_] => xs
       case _             => Direct elems (toSeq: _*)
     }
@@ -275,27 +272,27 @@ object Ops {
 
   /** Hand specialized on the left, @specialized on the right, value classes for tuple creation.
    */
-  final class ArrowAssocInt(private val self: Int) extends AnyVal {
+   final class ArrowAssocInt(val self: Int) extends AnyVal {
     @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Int, B] = Tuple2(self, y)
   }
-  final class ArrowAssocLong(private val self: Long) extends AnyVal {
+  final class ArrowAssocLong(val self: Long) extends AnyVal {
     @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Long, B] = Tuple2(self, y)
   }
-  final class ArrowAssocDouble(private val self: Double) extends AnyVal {
+  final class ArrowAssocDouble(val self: Double) extends AnyVal {
     @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Double, B] = Tuple2(self, y)
   }
-  final class ArrowAssocChar(private val self: Char) extends AnyVal {
+  final class ArrowAssocChar(val self: Char) extends AnyVal {
     @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Char, B] = Tuple2(self, y)
   }
-  final class ArrowAssocBoolean(private val self: Boolean) extends AnyVal {
+  final class ArrowAssocBoolean(val self: Boolean) extends AnyVal {
     @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Boolean, B] = Tuple2(self, y)
   }
-  final class ArrowAssocRef[A](private val self: A) extends AnyVal {
+  final class ArrowAssocRef[A](val self: A) extends AnyVal {
     @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
   }
 
   final class SizeInfoOps(val lhs: SizeInfo) extends AnyVal {
-    import PartialOrder._, SizeInfo._
+    import SizeInfo._
 
     def isZero    = lhs == Precise(Zero)
     def isFinite  = lhs.hiBound != Infinite
@@ -333,22 +330,18 @@ object Ops {
       case (Bounded(l1, h1), Precise(n))    => bounded(l1 - n, h1 - Precise(n))
       case _                                => Unknown
     }
-    def min(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
-      case LT | LE | EQ => lhs
-      case GT | GE      => rhs
-      case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 min l2, h1 min h2))
-    }
-    def max(rhs: SizeInfo): SizeInfo = lhs partialCompare rhs match {
-      case LT | LE | EQ => rhs
-      case GT | GE      => lhs
-      case _            => onBounds(rhs)((l1, h1, l2, h2) => bounded(l1 max l2, h1 max h2))
-    }
 
-    private def onBounds[T](rhs: SizeInfo)(f: (Size, Atomic, Size, Atomic) => T): T = {
-      val GenBounded(l1, h1) = lhs
-      val GenBounded(l2, h2) = rhs
-
-      f(l1, h1, l2, h2)
+    def min(rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
+      case (Infinite, _)                            => rhs
+      case (_, Infinite)                            => lhs
+      case (Precise(x), Precise(y))                 => if (x <= y) lhs else rhs
+      case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 min l2, h1 min h2)
+    }
+    def max(rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
+      case (Infinite, _)                            => Infinite
+      case (_, Infinite)                            => Infinite
+      case (Precise(x), Precise(y))                 => if (x >= y) lhs else rhs
+      case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 max l2, h1 max h2)
     }
   }
 }

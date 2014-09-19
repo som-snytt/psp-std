@@ -41,7 +41,7 @@ object Foreach {
   final class ToScala[+A](private val xs: Foreach[A]) extends immutable.Traversable[A] {
     def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
-  final class FromScala[+A](private val xs: Traversable[A]) extends AnyVal with Foreach[A] {
+  final class FromScala[+A](val xs: Traversable[A]) extends AnyVal with Foreach[A] {
     def sizeInfo: SizeInfo          = SizeInfo(xs)
     def foreach(f: A => Unit): Unit = xs foreach f
     override def toString           = xs.shortClass + " (wrapped)"
@@ -65,7 +65,7 @@ object Foreach {
     def prefix = xs.shortClass
     def lp = "("
     def rp = ")"
-    def base = pp"""$prefix$lp${xs take max join ", "}"""
+    def base = pp"""$prefix$lp${xs.m take max join ", "}"""
 
     xs.sizeInfo match {
       case Precise(Size(n)) if n <= max => pp"$base$rp"

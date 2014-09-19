@@ -14,7 +14,7 @@ EOM
 }
 
 runTests () {
-  sbt test || exit 1
+  sbt +test || exit 1
   echo "[info] $(date) - finished sbt test"
 }
 

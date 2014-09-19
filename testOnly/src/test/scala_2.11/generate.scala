@@ -4,15 +4,15 @@ package tests
 /** TODO - actually generate the code via an sbt generator.
  */
 object Generator {
-  val tq    = "\"\"\""
+  def tq    = "\"\"\""
   def lhses = List("\"abc\"", "Seq(1, 2, 3)", "scala.collection.mutable.Seq('a', 'b', 'c')", "Array(true, false, true)")
   def ops   = List("index", "indexOf", "contains", "hasElem")
   def rhses = List("59d", "(1: Int)", "('b': Char)", "100000")
 
-  def exprs(ops: String*) = for (lhs <- lhses ; op <- ops; rhs <- rhses) yield s"$lhs $op $rhs"
-  def genScalaLibrary     = exprs("indexOf", "contains").mkString("final val scalaLibraryCode = " + tq + "\n    ", "\n    ", "\n  " + tq)
-  def genPsp              = exprs("index", "hasElem").mkString("final val pspCode = " + tq + "\n    ", "\n    ", "\n  " + tq)
-  def gen = {
+  def exprs(ops: String*)     = for (lhs <- lhses ; op <- ops; rhs <- rhses) yield s"$lhs $op $rhs"
+  def genScalaLibrary: String = exprs("indexOf", "contains").mkString("final val scalaLibraryCode = " + tq + "\n    ", "\n    ", "\n  " + tq)
+  def genPsp: String          = exprs("index", "hasElem").mkString("final val pspCode = " + tq + "\n    ", "\n    ", "\n  " + tq)
+  def gen: Unit = {
     println(genScalaLibrary)
     println(genPsp)
   }

@@ -13,15 +13,6 @@ abstract class PackageLevel extends PackageImplicits with api.PackageLevel with 
 trait PackageAliases {
   self: PackageLevel =>
 
-  // With type aliases like these which include a type selection,
-  // sometimes substitution fails and you get messages like
-  // "found: Int, required: tc.A." It is bug, bug, bug city.
-  // It can be worked a little bit by expanding the type
-  // manually at the call sites where the bug hits (it's SI-8223).
-  type AtomicView[Repr, W <: Walkable[Repr]]  = Env[Repr, W]#AtomicView
-  type IndexedView[Repr, W <: Walkable[Repr]] = Env[Repr, W]#IndexedView
-  type Env[Repr, W <: Walkable[Repr]]         = ViewEnvironment[W#A, Repr, W#CC]
-
   type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
     type A = A0
     type CC[B] = CC0[B]
@@ -31,13 +22,13 @@ trait PackageAliases {
     type CC[B] = CC0[B]
   }
 
-  type Show[-A]   = api.Show[A]
-  type Eq[-A]     = api.Eq[A]
-  type HashEq[-A] = api.HashEq[A]
-  type Order[-A]  = api.Order[A]
-  type Read[A]    = api.Read[A]
-  type ShowDirect = api.ShowDirect
-  type Cmp        = api.Cmp
+  type Show[-A]         = api.Show[A]
+  type Eq[-A]           = api.Eq[A]
+  type HashEq[-A]       = api.HashEq[A]
+  type Order[-A]        = api.Order[A]
+  type PartialOrder[-A] = api.PartialOrder[A]
+  type Read[A]          = api.Read[A]
+  type ShowDirect       = api.ShowDirect
 
   type Invariant[A] = api.Invariant[A]
   type Foreach[+A]  = api.Foreach[A]

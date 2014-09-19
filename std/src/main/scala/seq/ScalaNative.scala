@@ -10,7 +10,7 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
 
   private implicit def lift[B](result: Iterable[B]): MapTo[B] = new ScalaNative(result, counter)
 
-  def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]      = xs ++ that.trav
+  def ++[A1 >: A](that: api.View[A1]): MapTo[A1]     = xs ++ that.trav
   def collect[B](pf: PartialFunction[A,B]): MapTo[B] = xs collect pf
   def description                                    = xs.shortClass
   def drop(n: Int): MapTo[A]                         = xs drop n

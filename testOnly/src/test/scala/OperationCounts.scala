@@ -4,7 +4,8 @@ package tests
 import compat.ScalaNative
 import psp.std._
 
-class OperationCounts extends Bundle {
+class OperationCounts(scalaVersion: String) extends Bundle {
+  def is211 = scalaVersion == "2.11"
   def run(): Boolean = {
     results foreach (r => assert(r.isAgreement, r))
     showResults()
@@ -20,7 +21,21 @@ class OperationCounts extends Bundle {
 
   def max    = 1000
   def numOps = 3
-  def basicOps = List[IntView => IntView](
+  def basicOps = if (is211) basicOps211 else basicOps210
+
+  /** Can't use dropRight and takeRight in 2.10 without the scala library
+   *  implementations going off the rails entirely.
+   */
+  private def basicOps210 = List[IntView => IntView](
+    _ drop 5,
+    _ slice indexRange(7, 41),
+    _ take 13,
+    _ flatMap tupleFlatMap,
+    _ filter isEven,
+    _ map timesThree,
+    _ collect collectDivSix
+  )
+  private def basicOps211 = List[IntView => IntView](
     _ drop 5,
     _ dropRight 11,
     _ slice indexRange(7, 41),
@@ -38,7 +53,7 @@ class OperationCounts extends Bundle {
     IntRange.to(1, max).toPspList.m,
     IntRange.to(1, max).toPspList.m sized Size(max),
     IntRange.to(1, max).m,
-    IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max)
+    IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max).toPspList.m
   )
   def themCollections = List[IntView](
     ScalaNative(scalaIntRange.toList.view),
@@ -89,11 +104,11 @@ class OperationCounts extends Bundle {
       case -1  => "%-15s" format description
       case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
     }
-    def headView    = us.head.toString
-    def isAgreement = allResults.distinct.size == 1
-    def display     = !isAgreement || (usCounts.distinct.size == usCollections.size)
-    def countsString   = allCounts map ("%7s" format _) mkString " "
-    def resultsString  = if (isAgreement) headResult.result else "!!! " + failedString
+    def headView      = us.head.toString
+    def isAgreement   = allResults.distinct.size == 1
+    def display       = !isAgreement || (usCounts.distinct.size == usCollections.size)
+    def countsString  = allCounts map ("%7s" format _) mkString " "
+    def resultsString = if (isAgreement) headResult.result else "!!! " + failedString
     def failedString   = {
       val grouped = all.zipWithIndex groupBy { case (x, i) => x.result }
       val lines = grouped.toList map { case (res, pairs) => "%20s:  %s".format(pairs.map(_._2).mkString(" "), res) }
@@ -110,8 +125,8 @@ class OperationCounts extends Bundle {
   private def showResults() {
     val (show, noshow)    = results partition (_.display)
     val banner: String    = List("Improve", "Linear", "Sized", "Direct", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
-    val underline: String = banner.toCharArray map (ch => if (ch == ' ') ' ' else '-') mkString ""
-    val padding           = show.head.padding
+    val underline: String = banner.toCharArray.m map (ch => if (ch == ' ') ' ' else '-') mkString ""
+    val padding           = if (show.isEmpty) "" else show.head.padding
 
     println(pp"""
       |Basis sequence was 1 to $max
@@ -121,5 +136,10 @@ class OperationCounts extends Bundle {
       |$padding$underline
       |${show mkString EOL}
       |""".stripMargin)
+
+    if (is211 && show.isEmpty) {
+      results foreach println
+      sys error "Something is wrong if we never see a line where each of our view types has a different count"
+    }
   }
 }

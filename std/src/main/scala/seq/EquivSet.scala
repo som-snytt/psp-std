@@ -4,7 +4,7 @@ package std
 import scala.collection.immutable
 
 object EquivSet {
-  implicit def equivSetEq[A: HashEq] = Eq[EquivSet[A]]((xs, ys) => (xs.size == ys.size) && (xs forall ys))
+  implicit def equivSetEq[A: HashEq]                          = Eq[EquivSet[A]]((xs, ys) => (xs.size == ys.size) && (xs forall ys))
   implicit def newBuilder[A: HashEq] : Builds[A, EquivSet[A]] = Builds(xs => new EquivSet[A](xs))
 
   def universal[A](xs: Foreach[A]): EquivSet[A]           = apply[A](xs)(HashEq.universal[A])
@@ -15,7 +15,7 @@ object EquivSet {
 
 final class EquivSet[A : HashEq](basis: Foreach[A]) extends immutable.Set[A] {
   private def hasheq: HashEq[A]   = ?
-  private[this] val wrapSet       = basis map wrap toScalaSet
+  private[this] val wrapSet       = basis.m map wrap toScalaSet
   private def wrap(elem: A): Wrap = new Wrap(elem)
   private class Wrap(val unwrap: A) {
     final override def equals(that: Any): Boolean = that match {
@@ -27,7 +27,7 @@ final class EquivSet[A : HashEq](basis: Foreach[A]) extends immutable.Set[A] {
   }
 
   def byUniversal = EquivSet[A](basis)(HashEq.universal)
-  def byReference = EquivSet[A with AnyRef](basis map (_.castTo[A with AnyRef]))(HashEq.reference)
+  def byReference = EquivSet[A with AnyRef](basis.m map (_.castTo[A with AnyRef]))(HashEq.reference)
   def byShown     = EquivSet[A](basis)(HashEq shown Show.native[A])
 
   def grouped = wrapSet.toList groupBy (x => x) map { case (k, vs) => (k.unwrap, vs map (_.unwrap)) }

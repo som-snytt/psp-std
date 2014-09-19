@@ -5,7 +5,6 @@ import sbt._, Keys._, psp.libsbt._
 import bintray.Plugin._, bintray.Keys._
 
 object Build extends sbt.Build with LibSbt {
-  def is211: SettingOf[Boolean]        = scalaBinaryVersion mapValue (_ == "2.11")
   def rootResourceDir: SettingOf[File] = resourceDirectory in Compile in LocalRootProject
 
   private def commonSettings = bintraySettings ++ standardSettings ++ Seq(
@@ -24,12 +23,13 @@ object Build extends sbt.Build with LibSbt {
     description := text
   )
 
-  lazy val root = setup(project.root, "root aggregator") aggregate (api, std) settings (
-     console <<= console in consoleOnly,
-        test <<= test in testOnly
+  lazy val root = setup(project.root, "root aggregator") aggregate (api, std) dependsOn (api, std) settings (
+         console <<= console in consoleOnly,
+            test <<= test in testOnly,
+    watchSources ++= (sources in Test in testOnly).value
   )
   lazy val api  = setup(project, "api for psp's non-standard standard library")
-  lazy val std  = setup(project, "psp's non-standard standard library") dependsOn api settings (publishArtifact := is211.value)
+  lazy val std  = setup(project, "psp's non-standard standard library") dependsOn api
 
   lazy val testOnly = setup(project.noArtifacts, "test encapsulation") dependsOn (api, std) settings (
           testOptions in Test  +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
@@ -37,9 +37,10 @@ object Build extends sbt.Build with LibSbt {
                  fork in Test  :=  true,
                   logBuffered  :=  false,
           libraryDependencies <++= testDependencies,
-            mainClass in Test  :=  Some("psp.tests.TestRunner"),
+    sourceDirectories in Test  :=  Seq(baseDirectory.value / "src/test/scala", baseDirectory.value / s"src/test/scala_${scalaBinaryVersion.value}"),
                          test  :=  (run in Test toTask "").value
   )
+
   // A console project which pulls in misc additional dependencies currently being explored.
   // Removing all scalac options except the ones listed here, to eliminate all the warnings
   // repl startup code in resources/console.scala

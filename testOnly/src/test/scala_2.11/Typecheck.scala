@@ -4,6 +4,7 @@ package tests
 import psp.std._
 import macros._
 import Generated._
+import api.TryShow
 
 class Typecheck extends Bundle {
   def alpha(s: Char, e: Char): Seq[Char] = NumericRange.inclusive[Char](s, e, 1)
@@ -12,13 +13,13 @@ class Typecheck extends Bundle {
   def atoz     = alpha('a', 'z')
   def alphabet = atoz.mkString
 
-  def expect[A](msg: String, expected: A)(result: A)(implicit eqs: Eq[A], shows: Show[A]) = {
+  def expect[A](msg: String, expected: A)(result: A)(implicit eqs: Eq[A], shows: TryShow[A]) = {
     def s1 = result.to_s
     def s2 = expected.to_s
-    assert(expected === result, show"$msg == $s1 (expected: $s2)")
+    assert(expected === result, pp"$msg == $s1 (expected: $s2)")
   }
 
-  def check[A, B, C : Eq : Show](x: A, y: B, z: C)(f: (A, B) => String)(g: (A, B) => C): Unit = expect(f(x, y), z)(g(x, y))
+  def check[A, B, C : Eq : TryShow](x: A, y: B, z: C)(f: (A, B) => String)(g: (A, B) => C): Unit = expect(f(x, y), z)(g(x, y))
 
   /** We'll say a line which begins with the shown comment is expected to type check.
    *  Will make this more robust. For now this makes it easy to put the expectation of

@@ -4,9 +4,9 @@ package std
 import java.{ lang => jl }
 
 final class UInt private (val bits: Int) extends AnyVal {
-  def compare(that: UInt): Cmp = Order difference longValue - that.longValue
-  def max(that: UInt): UInt    = UInt(math.max(value, that.value))
-  def min(that: UInt): UInt    = UInt(math.min(value, that.value))
+  def compare(that: UInt): api.Cmp = Order difference longValue - that.longValue
+  def max(that: UInt): UInt        = UInt(math.max(value, that.value))
+  def min(that: UInt): UInt        = UInt(math.min(value, that.value))
 
   def binary: String = value.binary
   def hex: String    = value.hex
@@ -28,8 +28,7 @@ object UInt extends (Int => UInt) {
   final val Min = apply(0)
   final val Max = apply(0xFFFFFFFF)
 
-  implicit val UIntEq    = Eq[UInt](_.value == _.value)
-  implicit val UIntShow  = Show[UInt](_.toString)
+  implicit val UIntShow  = Show.native[UInt]
   implicit val UIntOrder = Order[UInt](_.longValue compared _.longValue)
 
   def apply(x: Int): UInt  = new UInt(x)

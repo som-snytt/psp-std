@@ -5,8 +5,7 @@ import psp.std._
 import org.scalacheck._
 import org.scalacheck.Prop.forAll
 
-class AlgebraPoliceman[A : BooleanAlgebra : Arbitrary : Eq](val bundle: String) extends AlgebraLaws[A] with ScalacheckBundle {
-  val algebra = ?[BooleanAlgebra[A]]
+class AlgebraPoliceman[A](val bundle: String)(implicit algebra: BooleanAlgebra[A], arb: Arbitrary[A], equiv: Eq[A]) extends AlgebraLaws[A] with ScalacheckBundle {
   import algebra._
 
   def join = "∨"

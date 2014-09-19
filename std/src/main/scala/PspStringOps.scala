@@ -6,7 +6,7 @@ import java.{ lang => jl }
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll
  *  bury it and reimplement what we want.
  */
-final class PspStringOps(private val xs: String) extends AnyVal with Ops.SeqLikeOps[Char] {
+final class PspStringOps(val xs: String) extends AnyVal with Ops.SeqLikeOps[Char] {
   private def augment = Predef augmentString xs
   private def chars   = xs.toCharArray
 
@@ -40,7 +40,7 @@ final class PspStringOps(private val xs: String) extends AnyVal with Ops.SeqLike
   def lastIndex(elem: Char): Index                = Index(xs lastIndexOf elem)
   def indexAtWhich(p: Char => Boolean): Index     = chars indexAtWhich p
   def lastIndexAtWhich(p: Char => Boolean): Index = chars lastIndexAtWhich p
-  def hasElem(elem: Char): Boolean                = chars contains elem
+  def hasElem(elem: Char): Boolean                = chars.m contains elem
 
   def apply(index: Index): Char        = xs charAt index.value
   def apply(range: IndexRange): String = (indexRange intersect range) |> (r => slice(r.startInt, r.endInt))

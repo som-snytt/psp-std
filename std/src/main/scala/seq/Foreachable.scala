@@ -5,19 +5,41 @@ sealed trait Walkable[-Repr] {
   type CC[X]
   type A
   def foreach(repr: Repr)(f: A => Unit): Unit
+  def sizeInfo(repr: Repr): SizeInfo
+  def wrap[R <: Repr](repr: R): AtomicView[A, R]
 }
 trait Foreachable[-Repr] extends Walkable[Repr] {
-  def sizeInfo(repr: Repr): SizeInfo = unknownSize
-  def wrap[R <: Repr](repr: R): AtomicView[R, this.type] = AtomicView.unknown(repr)(this)
+  def sizeInfo(repr: Repr): SizeInfo             = unknownSize
+  def wrap[R <: Repr](repr: R): AtomicView[A, R] = new UnknownView(repr, this)
 }
 trait DirectAccess[-Repr] extends Foreachable[Repr] {
   def length(repr: Repr): Size
   def elemAt(repr: Repr)(index: Index): A
-  override def sizeInfo(repr: Repr): SizeInfo = Precise(length(repr))
-  override def wrap[R <: Repr](repr: R): IndexedView[R, this.type] = AtomicView.indexed(repr)(this)
+  override def wrap[R <: Repr](repr: R): IndexedView[A, R] = new IndexedView(repr, this)
+  override def sizeInfo(repr: Repr): SizeInfo              = Precise(length(repr))
+}
+
+final class OpsContainer[M](f: () => M) { def m: M = f() }
+
+trait WalkableLow {
+  implicit def atomicForeachIs[A] : ForeachableType[A, Foreach[A], Foreach]             = new Foreachable.ForeachIs[A]
+  implicit def atomicTraversableIs[A] : ForeachableType[A, Traversable[A], Traversable] = new Foreachable.TraversableIs[A]
+  implicit def atomicEquivSetIs[A] : ForeachableType[A, EquivSet[A], EquivSet]          = new Foreachable.EquivSetIs[A]
+}
+trait WalkableHigh extends WalkableLow {
+  implicit def directIndexedIs[A] : DirectAccessType[A, Direct[A], Direct]              = new DirectAccess.IndexedIs[A]
+  implicit def directScalaIndexedIs[A] : DirectAccessType[A, IndexedSeq[A], IndexedSeq] = new DirectAccess.ScalaIndexedIs[A]
+}
+object Walkable extends WalkableHigh {
+
 }
 
 object Foreachable {
+  final class EquivSetIs[AIn] extends Foreachable[EquivSet[AIn]] {
+    type CC[X] = EquivSet[X]
+    type A = AIn
+    def foreach(repr: EquivSet[A])(f: A => Unit): Unit = repr foreach f
+  }
   final class ForeachIs[AIn] extends Foreachable[Foreach[AIn]] {
     type CC[X] = Foreach[X]
     type A = AIn
@@ -40,12 +62,7 @@ object Foreachable {
       }
     }
   }
-
-  implicit def foreachIs[A] : ForeachIs[A]         = new ForeachIs[A]
-  implicit def traversableIs[A] : TraversableIs[A] = new TraversableIs[A]
-  implicit def arrayIs[A] : ArrayIs[A]             = new ArrayIs[A]
 }
-
 object DirectAccess {
   trait Impl[AIn, Repr, M[X]] extends DirectAccess[Repr] {
     @inline final def foreach(repr: Repr)(f: A => Unit): Unit = length(repr) foreachIndex (i => f(elemAt(repr)(i)))
@@ -64,15 +81,10 @@ object DirectAccess {
     def length(repr: CC[A]): Size            = Size(repr.length)
     def elemAt(repr: CC[A])(index: Index): A = repr(index)
   }
-  final class IndexedIs[AIn] extends Impl[AIn, Direct[AIn], Direct] {
+  final class IndexedIs[A] extends Impl[A, Direct[A], Direct] {
     def length(repr: Direct[A]): Size            = repr.size
     def elemAt(repr: Direct[A])(index: Index): A = repr elemAt index
   }
-
-  implicit def stringIs: StringIs.type               = StringIs
-  implicit def indexedIs[A] : IndexedIs[A]           = new IndexedIs[A]
-  implicit def arrayIs[A] : ArrayIs[A]               = new ArrayIs[A]
-  implicit def scalaIndexedIs[A] : ScalaIndexedIs[A] = new ScalaIndexedIs[A]
 }
 
 object Has {

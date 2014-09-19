@@ -13,5 +13,5 @@ trait ScalaCompat extends Any with LowPriorityScalaCompat {
 
 trait LowPriorityScalaCompat extends Any {
   implicit def showToOrdering[A](implicit show: Show[A]): Ordering[A] =
-    new Ordering[A] { def compare(x: A, y: A): Int = (show show x) compare (show show y) }
+    new Ordering[A] { def compare(x: A, y: A): Int = implicitly[Ordering[String]].compare(show show x, show show y) }
 }

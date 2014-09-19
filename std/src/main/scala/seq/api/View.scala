@@ -5,7 +5,7 @@ package api
 trait View[+A] extends Any with Foreach[A] {
   type MapTo[+X] <: View[X]
 
-  def ++[A1 >: A](that: Foreach[A1]): MapTo[A1]
+  def ++[A1 >: A](that: View[A1]): MapTo[A1]
   def calls: Int
   def collect[B](pf: A ?=> B): MapTo[B]
   def description: String
@@ -27,9 +27,7 @@ trait View[+A] extends Any with Foreach[A] {
 }
 
 object View {
-  trait Atomic[+A] extends Any with View[A] {
-    def m: Atomic[A]
-  }
+  trait Atomic[+A] extends Any with View[A]
   trait Composite[+A] extends Any with View[A] {
     def prev: View[_]
   }

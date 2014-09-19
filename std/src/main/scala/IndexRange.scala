@@ -6,7 +6,7 @@ import IndexRange.{ undefined, empty }
 
 /** All IndexRanges are inclusive of start and exclusive of end.
  */
-final class IndexRange private (private val bits: Long) extends AnyVal {
+final class IndexRange private (val bits: Long) extends AnyVal {
   private def lbits: Int = (bits >>> 32).toInt
   private def rbits: Int = bits.toInt
 

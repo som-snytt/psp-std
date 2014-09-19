@@ -14,7 +14,7 @@ import api.Regex
  *  like inheritance, specificity, method dispatch, and so forth.
  */
 abstract class PackageImplicits extends ImplicitRemoval
-      with StandardImplicits4
+      with StandardImplicits2
       with ArrowAssoc2
       with ShowImplicits
       with ReadImplicits
@@ -36,6 +36,9 @@ trait ImplicitRemoval {
   val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
   val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
   val genericArrayOps                                                                                     = null
+
+  // 2.10
+  val any2ArrowAssoc = null
 }
 
 trait StandardImplicits1 {
@@ -43,23 +46,16 @@ trait StandardImplicits1 {
   implicit def apiSizeToSize(s: api.Size): Size     = Size(s.value)
   implicit def apiIndexToIndex(x: api.Index): Index = Index(x.value)
 
-  implicit def implicitListBuilder[A] : Builds[A, PspList[A]]          = Builds(_.foldr(PspList.empty[A])(_ :: _).reverse)
-  implicit def implicitDirectBuilder[A] : Builds[A, Direct[A]]         = Builds(_.toDirect)
-  implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]] = Builds(Array.newBuilder[A] ++= _.trav result)
+  implicit def implicitListBuilder[A] : Builds[A, PspList[A]]                 = Builds(_.foldr(PspList.empty[A])(_ :: _).reverse)
+  implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]]        = Builds(Array.newBuilder[A] ++= _.trav result)
+  implicit def implicitDirectBuilder[A] : Builds[A, Direct[A]]                = Builds(_.toDirect)
+  implicit def walkableOps[Repr, A0](repr: Repr)(implicit tc: Walkable[Repr]) = new OpsContainer(() => tc wrap repr)
 
-  // aka AtomicView[Repr, tc.type] but SI-8223. Similarly for the analogous implicits.
-  implicit def raiseAtomicView[Repr](repr: Repr)(implicit tc: Foreachable[Repr]): Env[Repr, tc.type]#AtomicView = tc wrap repr
-}
-trait StandardImplicits2 extends StandardImplicits1 {
-  implicit def raiseIndexedView[Repr](repr: Repr)(implicit tc: DirectAccess[Repr]): Env[Repr, tc.type]#IndexedView = tc wrap repr
-}
-
-trait StandardImplicits3 extends StandardImplicits2 {
   // Deprioritize PartialOrder vs. Order since they both have comparison methods.
   implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
 }
 
-trait StandardImplicits4 extends StandardImplicits3 {
+trait StandardImplicits2 extends StandardImplicits1 {
   // We buried Predef's {un,}augmentString in favor of these.
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
   @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
@@ -69,7 +65,7 @@ trait StandardImplicits4 extends StandardImplicits3 {
   implicit def tclassOrderOps[A: Order](x: A): TClass.OrderOps[A]              = new TClass.OrderOps[A](x)
   implicit def tclassAlgebraOps[A: BooleanAlgebra](x: A): TClass.AlgebraOps[A] = new TClass.AlgebraOps[A](x)
   implicit def tclassEqOps[A: Eq](x: A): TClass.EqOps[A]                       = new TClass.EqOps[A](x)
-  implicit def tclassEqOps[A: HashEq](x: A): TClass.HashEqOps[A]               = new TClass.HashEqOps[A](x)
+  implicit def tclassHashEqOps[A: HashEq](x: A): TClass.HashEqOps[A]           = new TClass.HashEqOps[A](x)
   implicit def tclassHasForeach[R: Has.Foreach](xs: R)                         = opsForeach(Foreach(?[Has.Foreach[R]] hasForeach xs))
 
   // Direct-acting extension methods. These are extension methods installed directly onto the
@@ -122,28 +118,22 @@ trait OrderImplicits {
   // no, infinity doesn't really equal infinity, but it can for our
   // purposes as long as <inf> - <inf> is ill-defined.
   implicit object sizeInfoPartialOrder extends PartialOrder[SizeInfo] {
-    import PartialOrder._
+    import psp.std.api.PCmp
     import SizeInfo.GenBounded
 
     def partialCompare(lhs: SizeInfo, rhs: SizeInfo): PCmp = (lhs, rhs) match {
-      case (Infinite, Infinite)                     => EQ
-      case (Precise(_), Infinite)                   => LT
-      case (Infinite, Precise(_))                   => GT
-      case (Precise(x), Precise(y))                 => if (x < y) LT else if (y < x) GT else EQ
-      case (Infinite, Bounded(_, Infinite))         => GE
-      case (Infinite, _)                            => GT
-      case (Bounded(_, Infinite), Infinite)         => LE
-      case (_, Infinite)                            => LT
+      case (Infinite, Infinite)                     => PCmp.EQ
+      case (Precise(_), Infinite)                   => PCmp.LT
+      case (Infinite, Precise(_))                   => PCmp.GT
+      case (Precise(x), Precise(y))                 => if (x < y) PCmp.LT else if (y < x) PCmp.GT else PCmp.EQ
+      case (Infinite, Bounded(_, Infinite))         => PCmp.NA
+      case (Infinite, _)                            => PCmp.GT
+      case (Bounded(_, Infinite), Infinite)         => PCmp.NA
+      case (_, Infinite)                            => PCmp.LT
       case (GenBounded(l1, h1), GenBounded(l2, h2)) =>
-      def lo1 = Precise(l1)
-      def lo2 = Precise(l2)
-
-      ( if (h1 < lo2 isTrue) LT
-        else if (h1 <= lo2 isTrue) LE
-        else if (h2 < lo1 isTrue) GT
-        else if (h2 <= lo1 isTrue) GE
-        else NA
-      )
+        def lo1 = Precise(l1)
+        def lo2 = Precise(l2)
+        if (h1 p_< lo2) PCmp.LT else if (h2 p_< lo1) PCmp.GT else PCmp.NA
     }
   }
 }

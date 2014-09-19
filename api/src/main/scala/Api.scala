@@ -36,37 +36,36 @@ final case class TryShown(to_s: String) extends AnyVal with ShowDirectNow
  *  Included in std.PackageLevel.
  */
 trait ShowImplicits {
-  import internal._
+  def inBrackets[A](xs: A*)(implicit shows: Show[A]): String = xs map shows.show mkString ("[", ", ", "]")
 
-  def inBrackets[A: Show](xs: A*): String = xs.map(_.to_s).mkString("[", ", ", "]")
+  implicit def booleanShow: Show[Boolean]               = Show.native()
+  implicit def charShow: Show[Char]                     = Show.native()
+  implicit def doubleShow: Show[Double]                 = Show.native()
+  implicit def intShow: Show[Int]                       = Show.native()
+  implicit def longShow: Show[Long]                     = Show.native()
+  implicit def numberShow: Show[scala.math.ScalaNumber] = Show.native()
+  implicit def showDirect: Show[ShowDirect]             = Show(_.to_s)
+  implicit def stringShow: Show[String]                 = Show(x => x)
 
-  implicit def booleanShow: Show[Boolean]    = Show.native()
-  implicit def charShow: Show[Char]          = Show.native()
-  implicit def doubleShow: Show[Double]      = Show.native()
-  implicit def indexShow: Show[api.Index]    = showBy(_.value.to_s)
-  implicit def intShow: Show[Int]            = Show.native()
-  implicit def longShow: Show[Long]          = Show.native()
-  implicit def numberShow: Show[ScalaNumber] = Show.native()
-  implicit def showDirect: Show[ShowDirect]  = Show(_.to_s)
-  implicit def sizeShow: Show[api.Size]      = showBy(_.value.to_s)
-  implicit def stringShow: Show[String]      = Show(x => x)
+  implicit def indexShow: Show[api.Index]               = new Ops.ShowBy[api.Index] apply (_.value.toString)
+  implicit def sizeShow: Show[api.Size]                 = new Ops.ShowBy[api.Size] apply (_.value.toString)
 
   implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
-  implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(_.to_s))
+  implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(implicitly[Show[A]].show))
   implicit def seqShow[A: Show] : Show[Seq[A]]            = Show(xs => inBrackets(xs: _*))
-  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
+  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => "%s -> %s".format(implicitly[Show[A]] show x, implicitly[Show[B]] show y) }
 
   implicit def sizeInfoShow: Show[SizeInfo] = Show[SizeInfo] {
-    case Bounded(lo, Infinite) => show"[$lo, <inf>)"
-    case Bounded(lo, hi)       => show"[$lo, $hi]"
-    case Precise(size)         => show"$size"
+    case Bounded(lo, Infinite) => "[%s, <inf>)".format(lo.toString)
+    case Bounded(lo, hi)       => "[%s, %s]".format(lo.toString, hi.toString)
+    case Precise(size)         => size.toString
     case Infinite              => "<inf>"
   }
 }
 
 trait PackageImplicits0 extends Any {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  implicit def showableToTryShown[A](x: A)(implicit shows: Show[A] = Show.native[A]): TryShown = new TryShown(shows show x)
+  implicit def showableToTryShown[A](x: A)(implicit shows: TryShow[A]): TryShown = new TryShown(shows show x)
 }
 trait PackageImplicits extends Any with PackageImplicits0 {
   implicit def opsApiAny[A](x: A): Ops.AnyOps[A]              = new Ops.AnyOps[A](x)
@@ -80,9 +79,7 @@ trait PackageImplicits extends Any with PackageImplicits0 {
   implicit def showableToShown[A: Show](x: A): Shown = Shown(implicitly[Show[A]] show x)
 
   // Ops on base type classes.
-  implicit def opsApiEq[A](x: Eq[A]): Ops.EqOps[A]          = new Ops.EqOps[A](x)
   implicit def opsApiOrder[A](x: Order[A]): Ops.OrderOps[A] = new Ops.OrderOps[A](x)
-  implicit def opsApiShow[A](x: Show[A]): Ops.ShowOps[A]    = new Ops.ShowOps[A](x)
 }
 
 /** Aliases for types I've had to import over and over and over again.
@@ -202,27 +199,27 @@ trait JavaIO {
 }
 
 trait PackageMethods extends Any {
-  import internal._
+  import scala.reflect.ClassTag
 
   def eqBy[A]    = new Ops.EqBy[A]
   def orderBy[A] = new Ops.OrderBy[A]
   def showBy[A]  = new Ops.ShowBy[A]
 
-  def ?[A](implicit value: A): A                = value
-  def Try[A](body: => A): Try[A]                = scala.util.Try[A](body)
-  def andFalse(x: Unit): Boolean                = false
-  def andTrue(x: Unit): Boolean                 = true
-  def asExpected[A](body: Any): A               = body.asInstanceOf[A]
-  def classTag[T: ClassTag] : ClassTag[T]       = implicitly[ClassTag[T]]
-  def dateTime(): String                        = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
-  def defaultCharset                            = java.nio.charset.Charset.defaultCharset
-  def fail(msg: String): Nothing                = throw new RuntimeException(msg)
-  def fromUTF8(xs: Array[Byte]): String         = new String(scala.io.Codec fromUTF8 xs)
-  def javaClassOf[T: ClassTag] : Class[T]       = classTag[T].runtimeClass.asInstanceOf[Class[T]]
-  def nanoTime: Long                            = System.nanoTime
-  def nullAs[A] : A                             = null.asInstanceOf[A]
-  def printResult[A](msg: String)(result: A): A = try result finally println(s"$msg: $result")
-  def regex(re: String): Regex                  = Regex(re)
+  def ?[A](implicit value: A): A                        = value
+  def Try[A](body: => A): scala.util.Try[A]             = scala.util.Try[A](body)
+  def andFalse(x: Unit): Boolean                        = false
+  def andTrue(x: Unit): Boolean                         = true
+  def asExpected[A](body: Any): A                       = body.asInstanceOf[A]
+  def classTag[T: ClassTag] : ClassTag[T]               = implicitly[ClassTag[T]]
+  def dateTime(): String                                = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new java.util.Date
+  def defaultCharset                                    = java.nio.charset.Charset.defaultCharset
+  def fail(msg: String): Nothing                        = throw new RuntimeException(msg)
+  def fromUTF8(xs: Array[Byte]): String                 = new String(scala.io.Codec fromUTF8 xs)
+  def javaClassOf[T: scala.reflect.ClassTag] : Class[T] = classTag[T].runtimeClass.asInstanceOf[Class[T]]
+  def nanoTime: Long                                    = System.nanoTime
+  def nullAs[A] : A                                     = null.asInstanceOf[A]
+  def printResult[A](msg: String)(result: A): A         = try result finally println(s"$msg: $result")
+  def regex(re: String): Regex                          = Regex(re)
 
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
   def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
@@ -249,21 +246,11 @@ trait PackageMethods extends Any {
       if (width == 0 || value == "") ""
       else ("%-" + width + "s") format value
     )
-    rows map (row => join((widths, cols map (_ apply row)).zipped map one)) mkString "\n"
+    rows map (row => join(widths zip (cols map (_ apply row)) map { case (w, v) => one(w, v) })) mkString "\n"
   }
 }
 
-/** This sort of arrangement tends to send scala into a
- *  NoSuchMethod tizzy if internal is a package object, but we seem
- *  to get away with it as a regular object. It breaks down with cyclic
- *  reference errors if we import it at the top level so it is imported
- *  strategically where necessary.
- */
-private[api] object internal extends PackageLevel
-
 object Ops {
-  import internal._
-
   /** Working around 2.10 value class bug. */
   private def newOrdering[A](f: (A, A) => Cmp): Ordering[A] =
     new Ordering[A] { def compare(x: A, y: A): Int = f(x, y).intValue }
@@ -273,7 +260,7 @@ object Ops {
     // "Maybe we can enforce good programming practice with annoyingly long method names."
     def castTo[U] : U = __psp_x.asInstanceOf[U]
     def toRef: AnyRef = castTo[AnyRef]
-    def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(__psp_x, args map (_.toRef): _*).castTo[B]
+    def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(__psp_x, args map (_.asInstanceOf[AnyRef]): _*).asInstanceOf[B]
 
     // The famed forward pipe.
     @inline def |>[B](f: A => B): B       = f(__psp_x)
@@ -281,7 +268,7 @@ object Ops {
     @inline def sideEffect(body: Unit): A = __psp_x
 
     // Calling eq on Anys.
-    def ref_==(y: Any): Boolean = toRef eq y.toRef
+    def ref_==(y: Any): Boolean = toRef eq y.asInstanceOf[AnyRef]
     def id_## : Int             = System identityHashCode __psp_x
 
     def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift __psp_x
@@ -296,25 +283,19 @@ object Ops {
     def toOrdering: Ordering[A]    = newOrdering[A](__psp_ord.compare)
     def on[B](f: B => A): Order[B] = Order[B]((x, y) => __psp_ord.compare(f(x), f(y)))
   }
-  final class ShowOps[A](val __psp_shows: Show[A]) extends AnyVal {
-    def on[B](f: B => A): Show[B] = Show[B](x => __psp_shows show f(x))
-  }
-  final class EqOps[A](val __psp_eqs: Eq[A]) extends AnyVal {
-    def on[B](f: B => A): Eq[B] = Eq[B]((x, y) => __psp_eqs.equiv(f(x), f(y)))
-  }
   final class OptionOps[A](val __psp_x: Option[A]) extends AnyVal {
     def or(alt: => A): A         = __psp_x getOrElse alt
     def | (alt: => A): A         = __psp_x getOrElse alt
     def ||(alt: => A): Option[A] = __psp_x orElse Some(alt)
   }
-  final class TryOps[A](val __psp_x: Try[A]) extends AnyVal {
+  final class TryOps[A](val __psp_x: scala.util.Try[A]) extends AnyVal {
     def | (expr: => A): A = __psp_x match {
       case scala.util.Failure(_) => expr
       case scala.util.Success(x) => x
     }
-    def ||(expr: => A): Try[A] = __psp_x match {
+    def ||(expr: => A): scala.util.Try[A] = __psp_x match {
       case x @ scala.util.Success(_) => x
-      case scala.util.Failure(_)     => Try(expr)
+      case scala.util.Failure(_)     => scala.util.Try(expr)
     }
     def fold[B](f: A => B, g: Throwable => B): B = __psp_x match {
       case scala.util.Success(x) => f(x)
@@ -334,7 +315,7 @@ object Ops {
     /** Java-style String addition without abandoning type safety.
      */
     def + (that: ShowDirect): ShowDirect = Shown(__psp_x.to_s + that.to_s)
-    def + [A: Show](that: A): ShowDirect = this + (that: ShowDirect)
+    def + [A: Show](that: A): ShowDirect = Shown(__psp_x.to_s + (implicitly[Show[A]] show that))
   }
 
   /** The funny parameter names are because they can't be made private in 2.10
@@ -358,7 +339,7 @@ object Ops {
     def hash(x: A)        = h(x)
   }
 
-  final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = ord on f   }
-  final class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = equiv on f }
-  final class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = show on f  }
+  final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = Order[A]((x, y) => ord.compare(f(x), f(y))) }
+  final class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = Eq[A]((x, y) => equiv.equiv(f(x), f(y))) }
+  final class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = Show[A](x => show show f(x)) }
 }
