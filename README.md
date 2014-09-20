@@ -24,7 +24,7 @@ object ScratchProject extends sbt.Build {
                      resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                   scalaVersion :=  "2.11.2",
     initialCommands in console :=  "import psp.std._",
-           libraryDependencies +=  "org.improving" %% "psp-std" % "0.4.3"
+           libraryDependencies +=  "org.improving" %% "psp-std" % "0.4.5"
   )
 }
 ```
