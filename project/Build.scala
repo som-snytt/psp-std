@@ -60,6 +60,6 @@ object Build extends sbt.Build with LibSbt {
     "org.spire-math"           %% "spire"          %      "0.8.2",
     "com.chuusai"              %% "shapeless"      %      "2.0.0",
     "com.google.guava"          % "guava"          %       "17.0",
-    "net.sourceforge.findbugs"  % "jsr305"         %       "1.3.7"
+    "com.google.code.findbugs"  % "jsr305"         %       "3.0.0"
   )
 }
