@@ -219,6 +219,7 @@ trait PackageMethods extends Any {
   def nanoTime: Long                                    = System.nanoTime
   def nullAs[A] : A                                     = null.asInstanceOf[A]
   def printResult[A](msg: String)(result: A): A         = try result finally println(s"$msg: $result")
+  def showResult[A: Show](msg: String)(result: A): A    = try result finally println("$msg: ${result.to_s}")
   def regex(re: String): Regex                          = Regex(re)
 
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion

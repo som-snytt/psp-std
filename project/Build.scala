@@ -10,7 +10,7 @@ object Build extends sbt.Build with LibSbt {
   private def commonSettings = bintraySettings ++ standardSettings ++ Seq(
     bintrayOrganization in bintray :=  None,
              repository in bintray :=  "maven",
-                           version :=  publishVersion,
+                           version :=  sbtBuildProps.buildVersion,
                       scalaVersion :=  scalaVersionLatest,
                 crossScalaVersions :=  scalaVersionsCross,
                           licenses :=  pspLicenses,
