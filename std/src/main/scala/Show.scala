@@ -28,7 +28,7 @@ final class ShowDirectOps(val __psp_x: ShowDirect) extends AnyVal {
 /** An incomplete selection of show compositors.
  *  Not printing the way scala does.
  */
-trait ShowImplicits {
+trait ShowImplicits extends LowShowImplicits {
   def inBrackets[A](xs: A*)(implicit shows: Show[A]): String = xs map shows.show mkString ("[", ", ", "]")
 
   implicit def viewShow[A] : Show[View[A]]             = Show(_.viewChain reverseMap (_.description) joinSpace)
@@ -43,8 +43,8 @@ trait ShowImplicits {
   implicit def showDirect: Show[ShowDirect]             = Show(_.to_s)
   implicit def stringShow: Show[String]                 = Show(x => x)
 
-  implicit def indexShow: Show[api.Index]               = new Ops.ShowBy[api.Index] apply (_.value.toString)
-  implicit def sizeShow: Show[api.Size]                 = new Ops.ShowBy[api.Size] apply (_.value.toString)
+  implicit def indexShow: Show[api.Index] = new Ops.ShowBy[api.Index] apply (_.value.toString)
+  implicit def sizeShow: Show[Size]       = new Ops.ShowBy[Size] apply (_.value.toString)
 
   implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
   implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(implicitly[Show[A]].show))
@@ -57,6 +57,11 @@ trait ShowImplicits {
     case Precise(size)         => size.toString
     case Infinite              => "<inf>"
   }
+}
+
+trait LowShowImplicits {
+  // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
+  implicit def showableToTryShown[A](x: A)(implicit shows: TryShow[A]): TryShown = new TryShown(shows show x)
 }
 
 final class ShowInterpolator(val __psp_sc: StringContext) extends AnyVal {
@@ -94,3 +99,26 @@ object TryShow extends LowTryShow {
 
   implicit def hasShow[A](implicit shows: Show[A]): HasShow[A] = new HasShow(shows)
 }
+
+/** For this to have any hope of being smooth, we need the VALUE
+ *  (the type class instance) to be inferred, but the TYPE
+ *  to be given explicitly. Type inference can't do anything sensible
+ *  if the only incoming type is a String.
+ *
+ *  That's what into[A] is for, to obtain the type up front.
+ */
+object Read {
+  def apply[A](f: String => A): Read[A]                         = new Impl[A](f)
+  def unapply[A](s: String)(implicit reads: Read[A]): Option[A] = Try(reads read s).toOption
+  def into[A] : ReadInto[A]                                     = new ReadInto[A]
+
+  final class ReadInto[A]() {
+    def apply(s: String)(implicit reads: Read[A]): A           = reads read s
+    def unapply(s: String)(implicit reads: Read[A]): Option[A] = opt(s)
+    def wrap(s: String)(implicit reads: Read[A]): Try[A]       = Try(reads read s)
+    def opt(s: String)(implicit reads: Read[A]): Option[A]     = wrap(s).toOption
+  }
+
+  final class Impl[A](val f: String => A) extends AnyVal with Read[A] { def read(x: String): A = f(x) }
+}
+

@@ -2,7 +2,7 @@ package psp
 package tests
 
 import org.scalacheck._, Prop._, Gen._
-import psp.std._, api._ // api.{ Size, SizeInfo, Precise, Atomic, Infinite, PCmp }
+import psp.std._, api._
 
 trait PspArb0                 { implicit def arbSize: Arbitrary[Size]         = Arbitrary(genSize)     }
 trait PspArb1 extends PspArb0 { implicit def arbSizeInfo: Arbitrary[SizeInfo] = Arbitrary(genSizeInfo) }

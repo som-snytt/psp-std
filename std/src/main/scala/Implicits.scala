@@ -20,6 +20,27 @@ abstract class PackageImplicits extends ImplicitRemoval
       with ReadImplicits
       with OrderImplicits
       with EqImplicits {
+
+  implicit def opsSizeImpl(x: Size): Size.Impl = Size(x.value)
+
+  // The typesafe non-toString-using show"..." interpolator.
+  implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
+
+  // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
+  implicit def showableToShown[A: Show](x: A): Shown = Shown(implicitly[Show[A]] show x)
+
+  implicit def orderToImpl[A](ord: Order[A]): Order.Impl[A] = new Order.Impl(ord.compare)
+
+  implicit class ArrayViewOps[A](val repr: Array[A]) {
+    def m: IndexedView[A, Array[A]] = new DirectAccess.ArrayIs[A] wrap repr
+  }
+  implicit class StringViewOps[A](val repr: String) {
+    def m: IndexedView[Char, String] = DirectAccess.StringIs wrap repr
+  }
+  implicit class ApiOrderOps[A](val ord: Order[A]) {
+    def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
+    def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
+  }
 }
 
 /** Various lame global-scope implicits, made to disappear with our friend null.
@@ -47,7 +68,7 @@ trait StandardImplicits0 {
 
 trait StandardImplicits1 extends StandardImplicits0 {
   implicit def sizeToSizeInfo(s: Size): SizeInfo    = s.toInfo
-  implicit def apiSizeToSize(s: api.Size): Size     = Size(s.value)
+  implicit def apiSizeToSize(s: Size): Size         = Size(s.value)
   implicit def apiIndexToIndex(x: api.Index): Index = Index(x.value)
 
   implicit def implicitListBuilder[A] : Builds[A, PspList[A]]                 = Builds(_.foldr(PspList.empty[A])(_ :: _).reverse)
@@ -118,14 +139,13 @@ trait OrderImplicits {
   implicit val stringOrder: Order[String]   = Order[String](_ compareTo _ cmp)
 
   implicit def indexOrder: Order[api.Index]                                 = orderBy[api.Index](_.value)
-  implicit def sizeOrder: Order[api.Size]                                   = orderBy[api.Size](_.value)
+  implicit def sizeOrder: Order[Size]                                       = orderBy[Size](_.value)
   implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
   implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
 
   // no, infinity doesn't really equal infinity, but it can for our
   // purposes as long as <inf> - <inf> is ill-defined.
   implicit object sizeInfoPartialOrder extends PartialOrder[SizeInfo] {
-    import psp.std.api.PCmp
     import SizeInfo.GenBounded
 
     def partialCompare(lhs: SizeInfo, rhs: SizeInfo): PCmp = (lhs, rhs) match {

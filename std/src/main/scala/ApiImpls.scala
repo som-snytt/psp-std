@@ -19,7 +19,7 @@ object HashEq {
   final case class Wrap[A: HashEq](value: A) {
     override def hashCode = value.hash
     override def equals(x: Any): Boolean = x match {
-      case Wrap(that) => value === that.asInstanceOf[A]
+      case Wrap(that) => value === that.castTo[A]
       case _          => false
     }
     override def toString = pp"$value"
@@ -42,4 +42,31 @@ object PartialOrderEq {
     def partialCompare(x: A, y: A) = f(x, y)
   }
   def apply[A](f: (A, A) => PCmp): PartialOrderEq[A] = new Impl[A](f)
+}
+
+object Order {
+  import Cmp._
+
+  def apply[A](f: (A, A) => Cmp): Order[A]  = new Impl[A](f)
+  def order[A: Order] : Order[A]            = ?[Order[A]]
+  def fold(xs: Cmp*): Cmp                   = xs.toSeq findOr (_ != EQ, EQ)
+  def difference(diff: Long): Cmp           = if (diff < 0) LT else if (diff > 0) GT else EQ
+  def create[A](ord: Ordering[A]): Order[A] = apply[A]((x, y) => difference(ord.compare(x, y)))
+
+  final class OrderingImpl[A](cmp: (A, A) => Cmp) extends Ordering[A] {
+    def compare(x: A, y: A): Int = cmp(x, y).intValue
+  }
+  final class Impl[-A](val f: (A, A) => Cmp) extends AnyVal with Order[A] {
+    def compare(x: A, y: A): Cmp               = f(x, y)
+    def toScalaOrdering[A1 <: A]: Ordering[A1] = new OrderingImpl[A1](compare)
+  }
+}
+
+object Builds {
+  def apply[Elem, To](f: Foreach[Elem] => To): Impl[Elem, To] = new Impl(f)
+  def wrap[Elem, To](z: CanBuild[Elem, To]): Impl[Elem, To]   = apply[Elem, To](xs => z() ++= new Foreach.ToScala(xs) result)
+
+  final class Impl[Elem, To](val f: Foreach[Elem] => To) extends AnyVal with Builds[Elem, To] {
+    def build(xs: Foreach[Elem]): To = f(xs)
+  }
 }

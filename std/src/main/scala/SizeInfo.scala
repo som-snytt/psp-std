@@ -12,14 +12,14 @@ object SizeInfo {
 
   def apply(n: Int): SizeInfo = Precise(Size(n))
   def apply(x: Any): SizeInfo = x match {
-    case x: api.HasSizeInfo                 => x.sizeInfo
+    case x: HasSizeInfo                     => x.sizeInfo
     case xs: scala.collection.IndexedSeq[_] => Size(xs.size)
     case xs: Traversable[_]                 => if (xs.isEmpty) Zero else NonEmpty
     case _                                  => Unknown
   }
 
   object GenBounded {
-    def unapply(x: SizeInfo): Option[(api.Size, api.Atomic)] = x match {
+    def unapply(x: SizeInfo): Option[(Size, Atomic)] = x match {
       case Bounded(lo, hi) => Some(lo -> hi)
       case Precise(n)      => Some(n -> Precise(n))
       case _               => None
@@ -27,7 +27,7 @@ object SizeInfo {
   }
   // Return (lo, hi) as sizes unless arg is or contains Infinite.
   object Finite {
-    def unapply(x: SizeInfo): Option[(api.Size, api.Size)] = x match {
+    def unapply(x: SizeInfo): Option[(Size, Size)] = x match {
       case Bounded(lo, Precise(hi)) => Some(lo -> hi)
       case Precise(n)               => Some(n -> n)
       case _                        => None

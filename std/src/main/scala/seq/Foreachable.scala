@@ -18,7 +18,7 @@ trait DirectAccess[-Repr] extends Foreachable[Repr] {
   def length(repr: Repr): Size
   def elemAt(repr: Repr)(index: Index): A
   override def wrap[R <: Repr](repr: R): IndexedView[A, R] = new IndexedView(repr, this)
-  override def sizeInfo(repr: Repr): SizeInfo              = api.Precise(length(repr))
+  override def sizeInfo(repr: Repr): SizeInfo              = Precise(length(repr))
 }
 
 final class OpsContainer[M](f: () => M) { def m: M = f() }

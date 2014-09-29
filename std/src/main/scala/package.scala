@@ -6,37 +6,15 @@ import scala.collection.{ generic => scg, mutable => scm, immutable => sci }
 import scala.sys.process.{ Process, ProcessBuilder }
 import psp.std.api._
 
-package std {
-  trait PackageLow {
-    // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-    implicit def showableToTryShown[A](x: A)(implicit shows: TryShow[A]): TryShown = new TryShown(shows show x)
-  }
-}
+package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
+  final case object ConstantTrue extends Predicate[Any] { def apply(x: Any): Boolean = true }
+  final case object ConstantFalse extends Predicate[Any] { def apply(x: Any): Boolean = false }
 
-package object std extends psp.std.PackageImplicits with psp.std.api.PackageAliases with PackageLow {
-  implicit def opsSizeImpl(x: Size): Size.Impl = Size(x.value)
+  implicit def identityAlgebra : BooleanAlgebra[Boolean]          = Algebras.Identity
+  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]] = new Algebras.Predicate[A]
+  implicit def scalaSetAlgebra[A] : BooleanAlgebra[sciSet[A]]     = new Algebras.ScalaSet[A]
 
-  // The typesafe non-toString-using show"..." interpolator.
-  implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
-
-  // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
-  implicit def showableToShown[A: Show](x: A): Shown = Shown(implicitly[Show[A]] show x)
-
-  implicit def orderToImpl[A](ord: Order[A]): Order.Impl[A] = new Order.Impl(ord.compare)
-
-  implicit class ArrayViewOps[A](val repr: Array[A]) {
-    def m: IndexedView[A, Array[A]] = new DirectAccess.ArrayIs[A] wrap repr
-  }
-  implicit class StringViewOps[A](val repr: String) {
-    def m: IndexedView[Char, String] = DirectAccess.StringIs wrap repr
-  }
-  implicit class ApiOrderOps[A](val ord: Order[A]) extends AnyVal {
-    def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
-    def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
-  }
-
-
-  final val PspList              = linear.List
+  final val PspList              = psp.std.linear.List
   final val NoSize: Size         = Size.undefined
   final val NoPath: Path         = path("")
   final val NoFile: jFile        = jFile("")
@@ -68,7 +46,7 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
 
   def fileSeparator      = java.io.File.separator
   def classpathSeparator = java.io.File.pathSeparator
-  def NameTransformer    = scala.reflect.NameTransformer
+  def defaultCharset     = java.nio.charset.Charset.defaultCharset
 
   def now(): FileTime                                       = jnfa.FileTime fromMillis System.currentTimeMillis
   def newTempDir(prefix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempDirectory(prefix, attrs: _*)
@@ -93,14 +71,13 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
   def Try[A](body: => A): scala.util.Try[A]          = scala.util.Try[A](body)
   def andFalse(x: Unit): Boolean                     = false
   def andTrue(x: Unit): Boolean                      = true
-  def asExpected[A](body: Any): A                    = body.asInstanceOf[A]
+  def asExpected[A](body: Any): A                    = body.castTo[A]
   def classTag[T: CTag] : CTag[T]                    = implicitly[CTag[T]]
   def dateTime(): String                             = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new jDate
-  def defaultCharset                                 = java.nio.charset.Charset.defaultCharset
   def fail(msg: String): Nothing                     = throw new RuntimeException(msg)
   def fromUTF8(xs: Array[Byte]): String              = new String(scala.io.Codec fromUTF8 xs)
   def nanoTime: Long                                 = System.nanoTime
-  def nullAs[A] : A                                  = null.asInstanceOf[A]
+  def nullAs[A] : A                                  = asExpected[A](null)
   def printResult[A](msg: String)(result: A): A      = try result finally println(s"$msg: $result")
   def showResult[A: Show](msg: String)(result: A): A = try result finally println("$msg: ${result.to_s}")
   def regex(re: String): Regex                       = Regex(re)
@@ -108,14 +85,16 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
 
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
   def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
-  def convertSeq[A, B](xs: Seq[A])(implicit conversion: A => B): Seq[B]       = xs map conversion
+  def convertSeq[A, B](xs: scSeq[A])(implicit conversion: A => B): scSeq[B]   = xs map conversion
 
-  def scmSeq[A](xs: A*): scm.Seq[A]                       = scm.Seq(xs: _*)
-  def scmSet[A](xs: A*): scm.Set[A]                       = scm.Set(xs: _*)
-  def scmMap[K, V](kvs: (K, V)*): scm.Map[K, V]           = scm.Map[K, V](kvs: _*)
-  def sciSeq[A](xs: A*): sci.Seq[A]                       = sci.Seq(xs: _*)
-  def sciSet[A](xs: A*): sci.Set[A]                       = sci.Set(xs: _*)
-  def sciMap[K, V](kvs: (K, V)*): sci.Map[K, V]           = sci.Map[K, V](kvs: _*)
+  def scmSeq[A](xs: A*): scmSeq[A]             = scm.Seq(xs: _*)
+  def scmSet[A](xs: A*): scmSet[A]             = scm.Set(xs: _*)
+  def scmMap[K, V](kvs: (K, V)*): scmMap[K, V] = scm.Map[K, V](kvs: _*)
+  def sciSeq[A](xs: A*): sciSeq[A]             = sci.Seq(xs: _*)
+  def sciSet[A](xs: A*): sciSet[A]             = sci.Set(xs: _*)
+  def sciMap[K, V](kvs: (K, V)*): sciMap[K, V] = sci.Map[K, V](kvs: _*)
+
+  def setBuilder[A](xs: A*): Builder[A, sciSet[A]]        = sci.Set.newBuilder[A] ++= xs
   def listBuilder[A](xs: A*): Builder[A, List[A]]         = sci.List.newBuilder[A] ++= xs
   def arrayBuilder[A: CTag](xs: A*): Builder[A, Array[A]] = scala.Array.newBuilder[A] ++= xs
   def vectorBuilder[A](xs: A*): Builder[A, Vector[A]]     = sci.Vector.newBuilder[A] ++= xs
@@ -127,7 +106,7 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
   def jFile(s: String): jFile             = path(s).toFile
   def jUri(x: String): jUri               = java.net.URI create x
   def jUrl(x: String): jUrl               = jUri(x).toURL
-  def jClassOf[T: CTag] : Class[_ <: T]   = classTag[T].runtimeClass.asInstanceOf[Class[_ <: T]]
+  def jClassOf[T: CTag] : Class[_ <: T]   = classTag[T].runtimeClass.castTo[Class[_ <: T]]
 
   // OrderedMap is our own creation since SortedMap is way overspecified
   // and LinkedHashMap is too slow and only comes in a mutable variety.

@@ -29,7 +29,7 @@ final class IndexRange private (val bits: Long) extends AnyVal {
   def end: Index     = Index(endInt)
   def length: Long   = (end.toLong - start.toLong) max 0L
   def intLength: Int = length.toInt
-  def size: Size     = if (length > Int.MaxValue) NoSize else Size(intLength)
+  def size: Size     = if (length > MaxInt) NoSize else Size(intLength)
 
   def drop(n: Int): IndexRange                   = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start + n, end)
   def dropRight(n: Int): IndexRange              = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start, end - n)
@@ -76,7 +76,7 @@ object IndexRange {
 
   def to(start: Index, end: Index): IndexRange =
     if (start.isUndefined || end.isUndefined) undefined
-    else if (end.value == Int.MaxValue) throw new IllegalArgumentException("Cannot create IndexRange which contains Int.MaxValue")
+    else if (end.value == MaxInt) throw new IllegalArgumentException("Cannot create IndexRange which contains Int.MaxValue")
     else until(start, end.next)
 
   def until(start: Index, end: Index): IndexRange =

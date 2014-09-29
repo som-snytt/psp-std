@@ -34,8 +34,8 @@ final class UnknownView[A0, Repr](repr: Repr, val tc: Foreachable[Repr] { type A
   }
 }
 
-final class IndexedView[A0, Repr](repr: Repr, val tc: DirectAccess[Repr] { type A = A0 }) extends AtomicView[A0, Repr] with Direct[A0] with api.HasPreciseSize {
-  def size: api.Size                                      = tc length repr
+final class IndexedView[A0, Repr](repr: Repr, val tc: DirectAccess[Repr] { type A = A0 }) extends AtomicView[A0, Repr] with Direct[A0] with HasPreciseSize {
+  def size: Size                                          = tc length repr
   def sizeInfo: Precise                                   = Precise(size)
   def elemAt(index: api.Index): A                         = recordCall(tc.elemAt(repr)(index))
   def contains(x: A): Boolean                             = this exists (_ == x)
@@ -58,7 +58,7 @@ sealed trait BaseView[+A, Repr] extends Any with View.Builder[A, Repr] {
   final def flatMap[B](f: A => Foreach[B]): MapTo[B] = FlatMapped(this, f)
   final def labeled(label: String): MapTo[A]         = LabeledView(this, label)
   final def map[B](f: A => B): MapTo[B]              = Mapped(this, f)
-  final def sized(size: api.Size): MapTo[A]          = Sized(this, size)
+  final def sized(size: Size): MapTo[A]              = Sized(this, size)
   final def slice(range: IndexRange): MapTo[A]       = Sliced(this, range)
   final def take(n: Int): MapTo[A]                   = Taken(this, Size(n))
   final def takeRight(n: Int): MapTo[A]              = TakenR(this, Size(n))

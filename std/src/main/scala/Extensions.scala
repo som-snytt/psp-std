@@ -2,8 +2,6 @@ package psp
 package std
 
 import java.{ lang => jl }
-import scala.{ collection => sc }
-import psp.std.api.{ PCmp, Cmp }
 import api._
 
 object TClass {
@@ -56,13 +54,14 @@ object Ops {
   final val InputStreamBufferSize = 8192
 
   // Have to each go into their own class because the apply methods have the same erasure.
-  final class Seq1[A](val xs: sc.Seq[A]) extends AnyVal {
+  final class Seq1[A](val xs: scSeq[A]) extends AnyVal {
     def apply(nth: Nth): A = if (nth.isUndefined) sys.error(s"apply($nth)") else xs(nth.intIndex)
   }
-  final class Seq2[A](val xs: sc.Seq[A]) extends AnyVal {
+  final class Seq2[A](val xs: scSeq[A]) extends AnyVal {
     def apply(index: Index): A = if (index.isUndefined) sys.error(s"apply($index)") else xs(index.value)
   }
-  final class SeqOps[A](val xs: sc.Seq[A]) extends AnyVal with SeqLikeOps[A] {
+  final class SeqOps[A](val xs: scSeq[A]) extends AnyVal with SeqLikeOps[A] {
+    def toRefs: scSeq[AnyRef] = xs map (_.toRef)
     def elemAt(index: Index): A = if (index.isUndefined) sys.error(s"apply($index)") else xs(index.value)
 
     def length                                   = xs.length
@@ -75,12 +74,12 @@ object Ops {
     // Ignores indices which don't exist in the target sequence.
     def apply(range: IndexRange): Vector[A] = indexRange intersect range map elemAt
   }
-  final class Map[K, V](val map: sc.Map[K, V]) extends AnyVal {
+  final class Map[K, V](val map: scMap[K, V]) extends AnyVal {
     def sortedKeys(implicit ord: Order[K])                     = map.keys.toSeq.sorted(ordering[K])
     def orderByKey(implicit ord: Order[K]): OrderedMap[K, V]   = orderedMap(sortedKeys, map.toMap)
     def orderByValue(implicit ord: Order[V]): OrderedMap[K, V] = orderedMap(sortedKeys(ord on map), map.toMap)
   }
-  final class SortedMap[K, V](val map: sc.SortedMap[K, V]) extends AnyVal {
+  final class SortedMap[K, V](val map: scala.collection.SortedMap[K, V]) extends AnyVal {
     private def ord: Order[K]     = Order create map.ordering
     def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
   }
@@ -124,31 +123,31 @@ object Ops {
     def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs.m.slice(indexRange intersect range).native
     def toSeq: sciSeq[A] = sciSeq(xs: _*)
   }
-  final class AnyOps[A](val __psp_x: A) extends AnyVal {
-    // implicit def opsApiAny[A](x: A): api.Ops.ApiAnyOps[A]           = new api.Ops.ApiAnyOps[A](x)
+  final class AnyOps[A](val x: A) extends AnyVal {
     // Short decoded class name.
-    def shortClass: String = decodeName(__psp_x.getClass.getName.dottedSegments.last)
+    def shortClass: String = decodeName(x.getClass.getName.dottedSegments.last)
 
     // "Maybe we can enforce good programming practice with annoyingly long method names."
-    def castTo[U] : U = __psp_x.asInstanceOf[U]
-    def toRef: AnyRef = castTo[AnyRef]
-    def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(__psp_x, args map (_.asInstanceOf[AnyRef]): _*).asInstanceOf[B]
+    def castTo[U] : U   = x.asInstanceOf[U]
+    def toRef: AnyRef   = castTo[AnyRef]
     def isNull: Boolean = toRef eq null
 
+    def reflect[B](m: jMethod)(args: Any*): B = m.invoke(x, args.toRefs: _*).castTo[B]
+
     // The famed forward pipe.
-    @inline def |>[B](f: A => B): B       = f(__psp_x)
-    @inline def doto(f: A => Unit): A     = try __psp_x finally f(__psp_x)
-    @inline def sideEffect(body: Unit): A = __psp_x
+    @inline def |>[B](f: A => B): B       = f(x)
+    @inline def doto(f: A => Unit): A     = sideEffect(f(x))
+    @inline def sideEffect(body: Unit): A = x
 
     // Calling eq on Anys.
-    def ref_==(y: Any): Boolean = toRef eq y.asInstanceOf[AnyRef]
-    def id_## : Int             = System identityHashCode __psp_x
+    def ref_==(y: Any): Boolean = toRef eq y.toRef
+    def id_## : Int             = System identityHashCode x
 
-    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift __psp_x
-    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else shows show __psp_x
-    def any_s: String = __psp_x match {
+    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift x
+    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else x.to_s
+    def any_s: String = x match {
       case x: ShowDirect => x.to_s
-      case _             => "" + __psp_x
+      case _             => "" + x
     }
   }
   final class IntOps(val self: Int) extends AnyVal {
@@ -184,19 +183,20 @@ object Ops {
     def octal: String       = jl.Long.toOctalString(self)
   }
   final class BooleanAlgebraOps[A](val algebra: BooleanAlgebra[A]) extends AnyVal {
-    def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new BooleanAlgebra.MappedAlgebra[A, B](algebra, f, g)
+    def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new Algebras.Mapped[A, B](algebra, f, g)
   }
   final class Function1Ops[-T, +R](val f: T => R) extends AnyVal {
     def labeled(label: String): T => R = new LabeledFunction(f, label)
   }
   final class InputStreamOps(val in: InputStream) extends AnyVal {
-    private def wrap[A] (f: InputStream => A): A = {
-      val in = this.buffered()
-      try f(in) finally in.close()
-    }
+    private def wrap[A](f: InputStream => A): A = buffered |> (in => f(in) sideEffect in.close)
+
+    //   val in = this.buffered()
+    //   try f(in) finally in.close()
+    // }
     def slurp(): Array[Byte] = slurp(-1)
     def slurp(len: Int): Array[Byte] = {
-      val buf = Array.newBuilder[Byte]
+      val buf = arrayBuilder[Byte]()
       if (len >= 0) buf sizeHint len
       wrap { in =>
         var offset = 0

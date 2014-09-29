@@ -36,8 +36,9 @@ object Direct {
   }
 }
 object IntRange {
-  def empty = IntRange(0, 0, isInclusive = false)
-  def until(start: Int, end: Int): IntRange = if (end < start) empty else new IntRange(start, end - 1, isInclusive = false)
+  val empty = new IntRange(0, -1, isInclusive = false)
+
+  def until(start: Int, end: Int): IntRange = if (end <= start) empty else new IntRange(start, end - 1, isInclusive = false)
   def to(start: Int, last: Int): IntRange   = if (last < start) empty else new IntRange(start, last, isInclusive = true)
 }
 

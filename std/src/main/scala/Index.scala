@@ -51,7 +51,7 @@ final class Index private (val value: Int) extends AnyVal with IndexOrNth with a
 }
 
 object Index extends (Int => Index) {
-  def max: Index       = new Index(Int.MaxValue)
+  def max: Index       = new Index(MaxInt)
   def zero: Index      = new Index(0)
   def undefined: Index = new Index(-1)
 
