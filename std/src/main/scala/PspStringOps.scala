@@ -4,13 +4,20 @@ package std
 import api._
 import java.{ lang => jl }
 
+final class SplitString(s: String, where: Index) extends Product2[String, String] {
+  def isEmpty             = where.isEmpty
+  def get                 = (_1, _2)
+  def _1                  = s.substring(0, where.value)
+  def _2                  = s.substring(where.value, s.length)
+  def canEqual(that: Any) = that.isInstanceOf[SplitString]
+}
+
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll
  *  bury it and reimplement what we want.
  */
 final class PspStringOps(val xs: String) extends AnyVal with Ops.SeqLikeOps[Char] {
   def elemAt(index: Index): Char = xs charAt index.value
-
-  private def augment = Predef augmentString xs
+  def augment = Predef augmentString xs
   private def chars   = xs.toCharArray
 
   private def unwrapArg(arg: Any): AnyRef = arg match {
@@ -35,11 +42,17 @@ final class PspStringOps(val xs: String) extends AnyVal with Ops.SeqLikeOps[Char
     xs.replaceAll(arg1, arg2)
   }
 
-  def head: Char         = xs charAt 0
-  def tail: String       = xs substring 1
-  def init: String       = xs.substring(0, xs.length - 1)
-  def last: Char         = xs charAt xs.length - 1
-  def capitalize: String = if (isEmpty) "" else head.toUpper.toString  + tail
+  def isNonEmptyDigits = !isEmpty && augment.forall(_.isDigit)
+  def isAllWhitespace  = augment forall (_.isWhitespace)
+
+  def reverse: String                        = augment.reverse
+  def withFilter(p: Char => Boolean): String = augment filter p
+  def filter(p: Char => Boolean): String     = augment filter p
+  def head: Char                             = xs charAt 0
+  def tail: String                           = xs substring 1
+  def init: String                           = xs.substring(0, xs.length - 1)
+  def last: Char                             = xs charAt xs.length - 1
+  def capitalize: String                     = if (isEmpty) "" else head.toUpper.toString  + tail
 
   def stripAnsi: String                     = ansi.Ansi strip xs
   def stripMargin(marginChar: Char): String = augment stripMargin marginChar

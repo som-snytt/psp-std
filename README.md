@@ -24,14 +24,14 @@ object ScratchProject extends sbt.Build {
                      resolvers +=  "bintray/paulp" at "https://dl.bintray.com/paulp/maven",
                   scalaVersion :=  "2.11.2",
     initialCommands in console :=  "import psp.std._",
-           libraryDependencies +=  "org.improving" %% "psp-std" % "0.4.5"
+           libraryDependencies +=  "org.improving" %% "psp-std" % "0.4.8"
   )
 }
 ```
 
 Or if a self-contained project isn't your bag:
 ```
-libraryDependencies += "org.improving" %% s"psp-std" % "0.4.3"
+libraryDependencies += "org.improving" %% s"psp-std" % "0.4.8"
 ```
 
 Then ```sbt console``` and you can look around.
