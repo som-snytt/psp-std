@@ -16,8 +16,8 @@ trait Aliases extends Any {
   // common scala
   type ArrayBuffer[A]                  = scm.ArrayBuffer[A]
   type Builder[-Elem, +To]             = scm.Builder[Elem, To]
-  type CanBuild[-Elem, +To]            = scg.CanBuildFrom[_, Elem, To]
   type CanBuildFrom[-From, -Elem, +To] = scg.CanBuildFrom[From, Elem, To]
+  type CanBuild[-Elem, +To]            = scg.CanBuildFrom[_, Elem, To]
   type ClassTag[A]                     = scala.reflect.ClassTag[A]
   type Codec                           = scala.io.Codec
   type GTOnce[+A]                      = scala.collection.GenTraversableOnce[A]
@@ -126,10 +126,10 @@ trait Aliases extends Any {
   // originals.
   type ?=>[-A, +B]   = PartialFunction[A, B]
   type Bytes         = Array[Byte]
+  type CTag[A]       = scala.reflect.ClassTag[A]
   type Chars         = Array[Char]
   type PathDirStream = DirectoryStream[Path]
   type PathPredicate = Path => Boolean
   type Predicate[-A] = A => Boolean
   type Suspended[+A] = (A => Unit) => Unit
-  type CTag[A]       = scala.reflect.ClassTag[A]
 }
