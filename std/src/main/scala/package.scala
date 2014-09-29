@@ -7,6 +7,12 @@ import scala.sys.process.{ Process, ProcessBuilder }
 import psp.std.api._
 
 package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
+  @inline final implicit def arrowAssocInt(x: Int): Ops.ArrowAssocInt             = new Ops.ArrowAssocInt(x)
+  @inline final implicit def arrowAssocLong(x: Long): Ops.ArrowAssocLong          = new Ops.ArrowAssocLong(x)
+  @inline final implicit def arrowAssocDouble(x: Double): Ops.ArrowAssocDouble    = new Ops.ArrowAssocDouble(x)
+  @inline final implicit def arrowAssocChar(x: Char): Ops.ArrowAssocChar          = new Ops.ArrowAssocChar(x)
+  @inline final implicit def arrowAssocBoolean(x: Boolean): Ops.ArrowAssocBoolean = new Ops.ArrowAssocBoolean(x)
+
   final case object ConstantTrue extends Predicate[Any] { def apply(x: Any): Boolean = true }
   final case object ConstantFalse extends Predicate[Any] { def apply(x: Any): Boolean = false }
 
@@ -14,7 +20,9 @@ package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
   implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]] = new Algebras.Predicate[A]
   implicit def scalaSetAlgebra[A] : BooleanAlgebra[sciSet[A]]     = new Algebras.ScalaSet[A]
 
-  final val PspList              = psp.std.linear.List
+  final val PolicyList = psp.std.linear.List
+  type PolicyList[A]   = psp.std.linear.List[A]
+
   final val NoSize: Size         = Size.undefined
   final val NoPath: Path         = path("")
   final val NoFile: jFile        = jFile("")
@@ -31,7 +39,7 @@ package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
   final val ScalaNil             = sci.Nil
   final val CTag                 = scala.reflect.ClassTag
 
-  // Our types.
+  def unknownSize: SizeInfo = SizeInfo.Unknown
 
   type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
     type A = A0
@@ -42,46 +50,74 @@ package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
     type CC[B] = CC0[B]
   }
 
-  type PspList[A] = psp.std.linear.List[A]
 
-  def fileSeparator      = java.io.File.separator
-  def classpathSeparator = java.io.File.pathSeparator
-  def defaultCharset     = java.nio.charset.Charset.defaultCharset
-
-  def now(): FileTime                                       = jnfa.FileTime fromMillis System.currentTimeMillis
+  // Operations involving the filesystem.
+  def javaHome: jFile                                       = jFile(scala.util.Properties.javaHome)
+  def fileSeparator                                         = java.io.File.separator
+  def defaultCharset                                        = java.nio.charset.Charset.defaultCharset
+  def path(s: String, ss: String*): Path                    = ss.foldLeft(jnf.Paths get s)(_ resolve _)
   def newTempDir(prefix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempDirectory(prefix, attrs: _*)
 
-  def path(s: String, ss: String*): Path = ss.foldLeft(jnf.Paths get s)(_ resolve _)
-
-  def javaHome: jFile                           = jFile(scala.util.Properties.javaHome)
-  def openInApp(app: String, file: jFile): Unit = execute("open", "-a", app, file.getAbsolutePath)
-  def openSafari(file: jFile): Unit             = openInApp("Safari", file)
-  def openChrome(file: jFile): Unit             = openInApp("Google Chrome", file)
-
+  // Operations involving external processes.
   def newProcess(line: String): ProcessBuilder      = Process(line)
   def newProcess(args: Seq[String]): ProcessBuilder = Process(args)
   def executeLine(line: String): Int                = Process(line).!
   def execute(args: String*): Int                   = Process(args.toSeq).!
+  def openInApp(app: String, file: jFile): Unit     = execute("open", "-a", app, file.getAbsolutePath)
+  def openSafari(file: jFile): Unit                 = openInApp("Safari", file)
+  def openChrome(file: jFile): Unit                 = openInApp("Google Chrome", file)
 
-  def eqBy[A]    = new Ops.EqBy[A]
-  def orderBy[A] = new Ops.OrderBy[A]
-  def showBy[A]  = new Ops.ShowBy[A]
+  def eqBy[A]       = new Ops.EqBy[A]
+  def orderBy[A]    = new Ops.OrderBy[A]
+  def showBy[A]     = new Ops.ShowBy[A]
+  def hashEq[A: Eq] = HashEq native ?[Eq[A]]
 
-  def ?[A](implicit value: A): A                     = value
-  def Try[A](body: => A): scala.util.Try[A]          = scala.util.Try[A](body)
-  def andFalse(x: Unit): Boolean                     = false
-  def andTrue(x: Unit): Boolean                      = true
-  def asExpected[A](body: Any): A                    = body.castTo[A]
-  def classTag[T: CTag] : CTag[T]                    = implicitly[CTag[T]]
-  def dateTime(): String                             = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new jDate
-  def fail(msg: String): Nothing                     = throw new RuntimeException(msg)
-  def fromUTF8(xs: Array[Byte]): String              = new String(scala.io.Codec fromUTF8 xs)
-  def nanoTime: Long                                 = System.nanoTime
-  def nullAs[A] : A                                  = asExpected[A](null)
+  // Operations involving encoding/decoding of string data.
+  def utf8(xs: Array[Byte]): Utf8   = new Utf8(xs)
+  def decodeName(s: String): String = scala.reflect.NameTransformer decode s
+  def encodeName(s: String): String = scala.reflect.NameTransformer encode s
+
+  // Operations involving time and date.
+  def formattedDate(format: String)(date: jDate): String = new java.text.SimpleDateFormat(format) format date
+  def dateTime(): String                                 = formattedDate("yyyyMMdd-HH-mm-ss")(new jDate)
+  def nanoTime: Long                                     = System.nanoTime
+  def milliTime: Long                                    = System.currentTimeMillis
+  def now(): FileTime                                    = jnfa.FileTime fromMillis milliTime
+  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally errLog("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
+
+  // Operations involving classes, classpaths, and classloaders.
+  def classTag[T: CTag] : CTag[T]          = implicitly[CTag[T]]
+  def contextLoader(): ClassLoader         = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
+  def loaderOf[A: ClassTag] : ClassLoader  = noNull(jClassOf[A].getClassLoader, nullLoader)
+  def nullLoader(): ClassLoader            = NullClassLoader
+  def resource(name: String): Array[Byte]  = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
+  def resourceString(name: String): String = utf8(resource(name)).to_s
+  def classpathSeparator                   = java.io.File.pathSeparator
+
+  // Operations involving Null, Nothing, and casts.
+  def fail(msg: String): Nothing           = throw new RuntimeException(msg)
+  def failEmpty(op: String): Nothing       = throw new NoSuchElementException(s"$op on empty collection")
+  def noNull[A](value: A, orElse: => A): A = if (value == null) orElse else value
+  def nullAs[A] : A                        = asExpected[A](null)
+  def asExpected[A](body: Any): A          = body.castTo[A]
+
+  def ?[A](implicit value: A): A                         = value
+  def Try[A](body: => A): Try[A]                         = scala.util.Try[A](body)
+  def andFalse(x: Unit): Boolean                         = false
+  def andTrue(x: Unit): Boolean                          = true
+  def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
+  def index(x: Int): Index                               = Index(x)
+  def indexRange(start: Int, end: Int): IndexRange       = IndexRange.until(Index(start), Index(end))
+  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
+  def nth(x: Int): Nth                                   = Nth(x)
+  def nullStream(): InputStream                          = NullInputStream
+  def offset(x: Int): Offset                             = Offset(x)
+  def ordering[A: Order] : Ordering[A]                   = ?[Order[A]].toScalaOrdering
+  def regex(re: String): Regex                           = Regex(re)
+
   def printResult[A](msg: String)(result: A): A      = try result finally println(s"$msg: $result")
-  def showResult[A: Show](msg: String)(result: A): A = try result finally println("$msg: ${result.to_s}")
-  def regex(re: String): Regex                       = Regex(re)
-  def ordering[A: Order] : Ordering[A]               = ?[Order[A]].toScalaOrdering
+  def showResult[A: Show](msg: String)(result: A): A = try result finally println(show"$msg: $result")
+  def errLog(msg: String): Unit                      = Console.err println msg
 
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
   def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
@@ -132,24 +168,6 @@ package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
     case _                     => Bounded(lo, hi)
   }
 
-  def contextLoader(): ClassLoader                       = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
-  def decodeName(s: String): String                      = scala.reflect.NameTransformer decode s
-  def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
-  def failEmpty(operation: String): Nothing              = throw new NoSuchElementException(s"$operation on empty collection")
-  def index(x: Int): Index                               = Index(x)
-  def indexRange(start: Int, end: Int): IndexRange       = IndexRange.until(Index(start), Index(end))
-  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
-  def loaderOf[A: ClassTag] : ClassLoader                = noNull(jClassOf[A].getClassLoader, nullLoader)
-  def errLog(msg: String): Unit                          = Console.err println msg
-  def noNull[A](value: A, orElse: => A): A               = if (value == null) orElse else value
-  def nth(x: Int): Nth                                   = Nth(x)
-  def nullLoader(): ClassLoader                          = NullClassLoader
-  def nullStream(): InputStream                          = NullInputStream
-  def offset(x: Int): Offset                             = Offset(x)
-  def resource(name: String): Array[Byte]                = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
-  def resourceString(name: String): String               = fromUTF8(resource(name))
-  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally errLog("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
-  def unknownSize: SizeInfo                              = SizeInfo.Unknown
 
   // String arrangements.
   def tabular[A](rows: Seq[A], join: Seq[String] => String)(columns: (A => String)*): String = {

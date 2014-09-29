@@ -1,6 +1,6 @@
-import scala.collection.{ mutable => scm, immutable => sci, generic => scg }
+import scala.collection.{ mutable => scm, immutable => sci }
 import java.nio.{ file => jnf }
-import psp.std._, ansi._
+import psp.std._, ansi._, api._
 
 implicit final class ReplForeachOps[A](val target: Foreach[A]) {
   def !> : Unit                         = println(target mkString EOL)

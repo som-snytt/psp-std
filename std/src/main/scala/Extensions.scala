@@ -99,7 +99,9 @@ object Ops {
     def sortOrder[B: Order](f: A => B): Vector[A]                  = xs.toVector sorted (Order.order[B] on f).toScalaOrdering
     def sorted(implicit ord: Order[A]): Vector[A]                  = xs.toVector sorted Order.order[A].toScalaOrdering
     def unsortedFrequencyMap: Map[A, Int]                          = sciMap(xs.toVector groupBy identity mapValues (_.size) toSeq: _*)
+    def sameMembers(ys: GTOnce[A])(implicit eqs: HashEq[A])        = EquivSet[A](each(xs)) == EquivSet[A](each(ys))
   }
+
   final class ArrayOps[A](val xs: Array[A]) extends AnyVal with SeqLikeOps[A] with FoldableOps[A] {
     def foldl[B](zero: B)(f: (B, A) => B): B = {
       var result = zero
@@ -185,8 +187,9 @@ object Ops {
   final class BooleanAlgebraOps[A](val algebra: BooleanAlgebra[A]) extends AnyVal {
     def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new Algebras.Mapped[A, B](algebra, f, g)
   }
-  final class Function1Ops[-T, +R](val f: T => R) extends AnyVal {
-    def labeled(label: String): T => R = new LabeledFunction(f, label)
+  final class Function1Ops[T, R](val f: T => R) extends AnyVal {
+    def labeled(label: String): T => R                       = new LabeledFunction(f, label)
+    def sameAt(g: T => R)(implicit eqs: Eq[R]): Predicate[T] = x => f(x) === g(x)
   }
   final class InputStreamOps(val in: InputStream) extends AnyVal {
     private def wrap[A](f: InputStream => A): A = buffered |> (in => f(in) sideEffect in.close)
@@ -270,7 +273,7 @@ object Ops {
 
     def toSet(implicit z: HashEq[A]): EquivSet[A]  = to[EquivSet]
     def toIndexed: Direct[A]                       = to[Direct]
-    def toPspList: PspList[A]                      = to[PspList]
+    def toPolicyList: PolicyList[A]                = to[PolicyList]
     def toArray(implicit z: ClassTag[A]): Array[A] = toScala[Array]
 
     def toIterable: Iterable[A]       = toScala[Iterable]

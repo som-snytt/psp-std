@@ -31,8 +31,8 @@ final class ShowDirectOps(val __psp_x: ShowDirect) extends AnyVal {
 trait ShowImplicits extends LowShowImplicits {
   def inBrackets[A](xs: A*)(implicit shows: Show[A]): String = xs map shows.show mkString ("[", ", ", "]")
 
-  implicit def viewShow[A] : Show[View[A]]             = Show(_.viewChain reverseMap (_.description) joinSpace)
-  implicit def pspListShow[A: Show] : Show[PspList[A]] = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
+  implicit def viewShow[A] : Show[View[A]]                   = Show(_.viewChain reverseMap (_.description) joinSpace)
+  implicit def policyListShow[A: Show] : Show[PolicyList[A]] = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
 
   implicit def booleanShow: Show[Boolean]               = Show.native()
   implicit def charShow: Show[Char]                     = Show.native()

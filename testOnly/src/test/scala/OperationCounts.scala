@@ -50,10 +50,10 @@ class OperationCounts(scalaVersion: String) extends Bundle {
   def scalaIntRange: scala.collection.immutable.Range = Range.inclusive(1, max, 1)
 
   def usCollections = List[IntView](
-    IntRange.to(1, max).toPspList.m,
-    IntRange.to(1, max).toPspList.m sized Size(max),
+    IntRange.to(1, max).toPolicyList.m,
+    IntRange.to(1, max).toPolicyList.m sized Size(max),
     IntRange.to(1, max).m,
-    IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max).toPspList.m
+    IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max).toPolicyList.m
   )
   def themCollections = List[IntView](
     ScalaNative(scalaIntRange.toList.view),

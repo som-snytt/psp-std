@@ -15,21 +15,24 @@ import api._
  */
 abstract class PackageImplicits extends ImplicitRemoval
       with StandardImplicits2
-      with ArrowAssoc2
       with ShowImplicits
       with ReadImplicits
       with OrderImplicits
       with EqImplicits {
 
-  implicit def opsSizeImpl(x: Size): Size.Impl = Size(x.value)
+  // Promotion of the api type (which generally has one method) to the concrete type
+  // which has all the other ones.
+  implicit def apiSizePromote(x: Size): Size.Impl               = Size(x.value)
+  implicit def apiIndexPromote(x: api.Index): IndexImpl         = Index(x.value)
+  implicit def apiNthPromote(x: api.Nth): Nth.Impl              = Nth(x.value)
+  implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A] = Order(ord.compare)
+  implicit def sizeToSizeInfo(s: Size): SizeInfo                = s.toInfo
 
   // The typesafe non-toString-using show"..." interpolator.
   implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
 
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
   implicit def showableToShown[A: Show](x: A): Shown = Shown(implicitly[Show[A]] show x)
-
-  implicit def orderToImpl[A](ord: Order[A]): Order.Impl[A] = new Order.Impl(ord.compare)
 
   implicit class ArrayViewOps[A](val repr: Array[A]) {
     def m: IndexedView[A, Array[A]] = new DirectAccess.ArrayIs[A] wrap repr
@@ -63,15 +66,14 @@ trait ImplicitRemoval {
 }
 
 trait StandardImplicits0 {
+  // The array operations of last resort. To be eliminated.
   implicit def genericArrayOps[T](xs: Array[T]) = scala.Predef.genericArrayOps[T](xs)
+  // Lower priority than the hand-specialized variations.
+  @inline final implicit def arrowAssocRef[A](x: A): Ops.ArrowAssocRef[A] = new Ops.ArrowAssocRef(x)
 }
 
 trait StandardImplicits1 extends StandardImplicits0 {
-  implicit def sizeToSizeInfo(s: Size): SizeInfo    = s.toInfo
-  implicit def apiSizeToSize(s: Size): Size         = Size(s.value)
-  implicit def apiIndexToIndex(x: api.Index): Index = Index(x.value)
-
-  implicit def implicitListBuilder[A] : Builds[A, PspList[A]]                 = Builds(_.foldr(PspList.empty[A])(_ :: _).reverse)
+  implicit def implicitListBuilder[A] : Builds[A, PolicyList[A]]              = Builds(_.foldr(PolicyList.empty[A])(_ :: _).reverse)
   implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]]        = Builds(Array.newBuilder[A] ++= _.trav result)
   implicit def implicitDirectBuilder[A] : Builds[A, Direct[A]]                = Builds(_.toDirect)
   implicit def walkableOps[Repr, A0](repr: Repr)(implicit tc: Walkable[Repr]) = new OpsContainer(() => tc wrap repr)
@@ -166,8 +168,6 @@ trait OrderImplicits {
 }
 
 trait EqImplicits {
-  def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]] = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
-
   implicit def booleanEq: Eq[Boolean] = Eq.native[Boolean]
   implicit def byteEq: Eq[Byte]       = Eq.native[Byte]
   implicit def charEq: Eq[Char]       = Eq.native[Char]
@@ -179,19 +179,10 @@ trait EqImplicits {
   implicit def stringEq: Eq[String]   = Eq.native[String]
   implicit def unitEq: Eq[Unit]       = Eq[Unit]((x, y) => true)
 
-  implicit def sizeInfoEq: Eq[SizeInfo]                = Eq(_ == _)
-  implicit def mapEq[K: HashEq, V: Eq] : Eq[Map[K, V]] = Eq((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
-  implicit def seqEq[A: Eq] : Eq[Seq[A]]               = Eq((xs, ys) => (xs corresponds ys)(_ === _))
+  implicit def sizeEq: Eq[Size]                        = eqBy[Size](_.value)
+  implicit def sizeInfoEq: Eq[SizeInfo]                = Eq.native[SizeInfo]
+  implicit def mapEq[K: HashEq, V: Eq] : Eq[Map[K, V]] = Eq((xs, ys) => (xs.keys sameMembers ys.keys) && (xs.keys forall (xs sameAt ys)))
+  implicit def setEq[A: HashEq] : Eq[scSet[A]]         = Eq(_ sameMembers _)
+  implicit def seqEq[A: Eq] : Eq[scSeq[A]]             = Eq((xs, ys) => (xs corresponds ys)(_ === _))
   implicit def arrayEq[A: Eq] : Eq[Array[A]]           = Eq(_.toSeq === _.toSeq)
-}
-
-trait ArrowAssoc1 {
-  @inline final implicit def arrowAssocRef[A](x: A): Ops.ArrowAssocRef[A] = new Ops.ArrowAssocRef(x)
-}
-trait ArrowAssoc2 extends ArrowAssoc1 {
-  @inline final implicit def arrowAssocInt(x: Int): Ops.ArrowAssocInt             = new Ops.ArrowAssocInt(x)
-  @inline final implicit def arrowAssocLong(x: Long): Ops.ArrowAssocLong          = new Ops.ArrowAssocLong(x)
-  @inline final implicit def arrowAssocDouble(x: Double): Ops.ArrowAssocDouble    = new Ops.ArrowAssocDouble(x)
-  @inline final implicit def arrowAssocChar(x: Char): Ops.ArrowAssocChar          = new Ops.ArrowAssocChar(x)
-  @inline final implicit def arrowAssocBoolean(x: Boolean): Ops.ArrowAssocBoolean = new Ops.ArrowAssocBoolean(x)
 }

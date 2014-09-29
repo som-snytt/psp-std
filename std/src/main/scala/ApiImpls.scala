@@ -11,10 +11,10 @@ object Eq {
 object HashEq {
   def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): Impl[A] = new Impl[A](cmp, hashFn)
 
-  def universal[A]           = apply[A](_ == _, _.##)
-  def reference[A <: AnyRef] = apply[A](_ eq _, System.identityHashCode)
-  def shown[A: Show]         = apply[A](_.to_s == _.to_s, _.to_s.##)
-  def native[A](eqs: Eq[A])  = apply[A](eqs.equiv, _.##)
+  def universal[A] : Impl[A]           = apply[A](_ == _, _.##)
+  def reference[A <: AnyRef] : Impl[A] = apply[A](_ eq _, System.identityHashCode)
+  def shown[A: Show] : Impl[A]         = apply[A](_.to_s == _.to_s, _.to_s.##)
+  def native[A](eqs: Eq[A]): Impl[A]   = apply[A](eqs.equiv, _.##)
 
   final case class Wrap[A: HashEq](value: A) {
     override def hashCode = value.hash
@@ -47,7 +47,7 @@ object PartialOrderEq {
 object Order {
   import Cmp._
 
-  def apply[A](f: (A, A) => Cmp): Order[A]  = new Impl[A](f)
+  def apply[A](f: (A, A) => Cmp): Impl[A]   = new Impl[A](f)
   def order[A: Order] : Order[A]            = ?[Order[A]]
   def fold(xs: Cmp*): Cmp                   = xs.toSeq findOr (_ != EQ, EQ)
   def difference(diff: Long): Cmp           = if (diff < 0) LT else if (diff > 0) GT else EQ
@@ -69,4 +69,10 @@ object Builds {
   final class Impl[Elem, To](val f: Foreach[Elem] => To) extends AnyVal with Builds[Elem, To] {
     def build(xs: Foreach[Elem]): To = f(xs)
   }
+}
+
+final class Utf8(val bytes: Array[Byte]) extends AnyVal {
+  def chars: Chars = scala.io.Codec fromUTF8 bytes
+  def to_s: String = new String(chars)
+  override def toString = to_s
 }

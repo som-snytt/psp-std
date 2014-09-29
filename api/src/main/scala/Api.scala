@@ -49,13 +49,34 @@ trait BooleanAlgebra[R] {
   def one: R
 }
 
+trait IndexOrNth extends Any {
+  type This <: IndexOrNth
+
+  def +(n: Int): This
+  def -(n: Int): This
+  def next: This
+  def prev: This
+
+  def isUndefined: Boolean
+  def value: Int
+  def toInt: Int
+  def toLong: Long
+  def toNth: Nth
+  def toIndex: Index
+
+  // Concessions to reality
+  def intIndex: Int
+  def intNth: Int
+}
+
 /** The builder type class.
  */
 trait Builds[-Elem, +To] extends Any { def build(xs: Foreach[Elem]): To }
 
 /** Collections classes.
  */
-trait Index extends Any                        { def value: Int                  }
+trait Index extends Any with IndexOrNth        { type This = Index ; def value: Int }
+trait Nth extends Any with IndexOrNth          { type This = Nth ; def value: Int }
 trait Size extends Any                         { def value: Int                  }
 trait Invariant[A] extends Any                 { def contains(x: A): Boolean     }
 trait Foreach[+A] extends Any with HasSizeInfo { def foreach(f: A => Unit): Unit }
