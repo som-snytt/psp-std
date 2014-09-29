@@ -2,36 +2,42 @@ package psp
 
 import java.nio.{ file => jnf }
 import jnf.{ attribute => jnfa }
+import scala.collection.{ generic => scg, mutable => scm, immutable => sci }
+import scala.sys.process.{ Process, ProcessBuilder }
+import psp.std.api._
 
-package object std extends psp.std.PackageLevel {
-  type PathPredicate = Path => Boolean
-  type DSFilter[A]   = java.nio.file.DirectoryStream.Filter[A]
-  // type Paths         = Iterable[Path]
-  type PathDirStream = DirectoryStream[Path]
+package std {
+  trait PackageLow {
+    // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
+    implicit def showableToTryShown[A](x: A)(implicit shows: TryShow[A]): TryShown = new TryShown(shows show x)
+  }
+}
+// /** A trait containing implicits to ease scala compatibility,
+//  *  but with some risk of creating ambiguity or masking errors.
+//  *  These aren't included by default.
+//  */
+// trait ScalaCompat extends Any with LowPriorityScalaCompat {
+//   implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A] =
+//     new Ordering[A] { def compare(x: A, y: A): Int = ord.compare(x, y).intValue }
+// }
 
-  type CopyOption          = jnf.CopyOption
-  type FileAttributeView   = jnfa.FileAttributeView
-  type FileAttribute[A]    = jnfa.FileAttribute[A]
-  type FileStore           = jnf.FileStore
-  type FileSystem          = jnf.FileSystem
-  type FileSystemProvider  = jnf.spi.FileSystemProvider
-  type FileVisitOption     = jnf.FileVisitOption
-  type FileVisitor[A]      = jnf.FileVisitor[A]
-  type LinkOption          = jnf.LinkOption
-  type OpenOption          = jnf.OpenOption
-  type PosixFilePermission = jnfa.PosixFilePermission
-  type SeekableByteChannel = java.nio.channels.SeekableByteChannel
-  type UserPrincipal       = jnfa.UserPrincipal
+// trait LowPriorityScalaCompat extends Any {
+//   implicit def showToOrdering[A](implicit show: Show[A]): Ordering[A] =
+//     new Ordering[A] { def compare(x: A, y: A): Int = implicitly[Ordering[String]].compare(show show x, show show y) }
+// }
 
-  type JarFile             = java.util.jar.JarFile
-  type jAttributeName      = java.util.jar.Attributes.Name
-  type jFilePermissions    = jSet[PosixFilePermission]
-  type jLineIterable       = jIterable[_ <: CharSequence]
-  type jManifestJavaAttrs  = jMap[jAttributeName, String]
-  type jManifestScalaAttrs = Map[jAttributeName, String]
 
-  type PspList[A] = linear.List[A]
-  val PspList     = linear.List
+package object std extends psp.std.PackageImplicits with psp.std.api.PackageAliases with PackageLow {
+  implicit def makeSizeOps(x: Size): SizeOps = SizeOps(x.value)
+
+  // The typesafe non-toString-using show"..." interpolator.
+  implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
+
+  // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
+  implicit def showableToShown[A: Show](x: A): Shown = Shown(implicitly[Show[A]] show x)
+
+  // Ops on base type classes.
+  implicit def opsApiOrder[A](x: Order[A]): api.Ops.OrderOps[A] = new api.Ops.OrderOps[A](x)
 
   implicit class ArrayViewOps[A](val repr: Array[A]) {
     def m: IndexedView[A, Array[A]] = new DirectAccess.ArrayIs[A] wrap repr
@@ -40,166 +46,174 @@ package object std extends psp.std.PackageLevel {
     def m: IndexedView[Char, String] = DirectAccess.StringIs wrap repr
   }
 
-  val NoPath: Path         = path("")
-  val NoFile: File         = NoPath.toFile
-  val NoUri: URI           = NoFile.toURI
-  val NoFileTime: FileTime = java.nio.file.attribute.FileTime fromMillis Long.MinValue
+  final val PspList              = linear.List
+  final val NoPath: Path         = path("")
+  final val NoFile: jFile        = jFile("")
+  final val NoUri: jUri          = jUri("")
+  final val NoFileTime: FileTime = jnfa.FileTime fromMillis MinLong
+  final val EOL                  = sys.props.getOrElse("line.separator", "\n")
+  final val MaxInt               = Int.MaxValue
+  final val MinInt               = Int.MinValue
+  final val MaxLong              = Long.MaxValue
+  final val MinLong              = Long.MinValue
+  final val NoIndex              = Index.undefined
+  final val NoNth                = Nth.undefined
+  final val NumericRange         = sci.NumericRange
+  final val ScalaNil             = sci.Nil
+  final val CTag                 = scala.reflect.ClassTag
 
-  def fileSeparator                                         = java.io.File.separator
-  def now(): FileTime                                       = java.nio.file.attribute.FileTime fromMillis System.currentTimeMillis
-  def newFile(s: String): File                              = newPath(s).toFile
-  def newUri(s: String): URI                                = java.net.URI create s
-  def newPath(s: String): Path                              = jnf.Paths get s
-  def newPath(xs: Seq[String]): Path                        = if (xs.isEmpty) NoPath else xs.tail.foldLeft(newPath(xs.head))(_ resolve _)
+  // Our types.
+
+  type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
+    type A = A0
+    type CC[B] = CC0[B]
+  }
+  type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] {
+    type A = A0
+    type CC[B] = CC0[B]
+  }
+
+  // type Show[-A]         = api.Show[A]
+  // type TryShow[-A]      = api.TryShow[A]
+  // type Eq[-A]           = api.Eq[A]
+  // type HashEq[-A]       = api.HashEq[A]
+  // type Order[-A]        = api.Order[A]
+  // type PartialOrder[-A] = api.PartialOrder[A]
+  // type Read[A]          = api.Read[A]
+  // type ShowDirect       = api.ShowDirect
+  // type TryShown      = api.TryShown[A]
+
+  // type Invariant[A] = api.Invariant[A]
+  // type Foreach[+A]  = api.Foreach[A]
+  // type Indexed[+A]  = api.Indexed[A]
+  // type Direct[+A]   = api.Direct[A]
+  // type Linear[+A]   = api.Linear[A]
+  // type SizeInfo     = api.SizeInfo
+  // type Precise      = api.Precise
+  // type Bounded      = api.Bounded
+  // type Atomic       = api.Atomic
+
+  // val Infinite = api.Infinite
+  // val Precise  = api.Precise
+  // val Bounded  = api.Bounded
+  // val Eq       = api.Eq
+  // val Show     = api.Show
+
+  type PspList[A] = psp.std.linear.List[A]
+
+  def fileSeparator      = java.io.File.separator
+  def classpathSeparator = java.io.File.pathSeparator
+  def NameTransformer    = scala.reflect.NameTransformer
+
+  def now(): FileTime                                       = jnfa.FileTime fromMillis System.currentTimeMillis
   def newTempDir(prefix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempDirectory(prefix, attrs: _*)
 
-  // type Zero[A] = api.Zero[A]
+  def path(s: String, ss: String*): Path = ss.foldLeft(jnf.Paths get s)(_ resolve _)
 
-  // def utf8 = java.nio.charset.Charset forName "UTF-8"
-  // def isWhitespace(ch: Char): Boolean = java.lang.Character isWhitespace ch
-  // def isISOControl(ch: Char): Boolean = java.lang.Character isISOControl ch
+  def javaHome: jFile                           = jFile(scala.util.Properties.javaHome)
+  def openInApp(app: String, file: jFile): Unit = execute("open", "-a", app, file.getAbsolutePath)
+  def openSafari(file: jFile): Unit             = openInApp("Safari", file)
+  def openChrome(file: jFile): Unit             = openInApp("Google Chrome", file)
 
-  // def text(s: String): Doc        = Text(s)
-  // def show[A: DocShow](x: A): Doc = implicitly[DocShow[A]] show x
+  def newProcess(line: String): ProcessBuilder      = Process(line)
+  def newProcess(args: Seq[String]): ProcessBuilder = Process(args)
+  def executeLine(line: String): Int                = Process(line).!
+  def execute(args: String*): Int                   = Process(args.toSeq).!
 
-  // // implicit def kiamaToDoc(x: KP.Doc): Doc                                          = Kiama(x)
-  // implicit def pspDocExtensions(x: Doc): PspDoc                                       = new PspDoc(x)
-  // implicit def pspSeqDocExtensions(x: Seq[Doc]): PspSeqDoc                            = new PspSeqDoc(x)
-  // implicit def pspSeqShowableExtensions[A: DocShow](x: Seq[A]): PspSeqShowable[A]     = new PspSeqShowable[A](x)
-  // implicit def pspArrayShowableExtensions[A: DocShow](x: Array[A]): PspSeqShowable[A] = pspSeqShowableExtensions[A](x.toSeq)
-  // // implicit def scalaAnyExtensions[A](x: A): ScalaAny[A]                            = new ScalaAny[A](x)
-  // implicit def stringExtensions(x: String): JavaString                                = new JavaString(x)
-  // implicit def hasShowToDoc[A: DocShow](x: A): Doc                                    = implicitly[DocShow[A]] show x
-  // // implicit def genericWrapArray[T](xs: Array[T]): WrappedArray[T] = Predef.genericWrapArray[T](xs) // XXX
+  def eqBy[A]    = new Ops.EqBy[A]
+  def orderBy[A] = new Ops.OrderBy[A]
+  def showBy[A]  = new Ops.ShowBy[A]
 
-  // implicit class OldScalaAny[A](val x: A) { //  extends AnyVal {
-  //   def doc(implicit shows: DocShow[A]): Doc = shows show x
-  //   def noNull(implicit z: Zero[A]): A       = if (isNull) z.zero else x
-  //   def isNull: Boolean                      = x.toRef eq null
-  // }
+  def ?[A](implicit value: A): A                     = value
+  def Try[A](body: => A): scala.util.Try[A]          = scala.util.Try[A](body)
+  def andFalse(x: Unit): Boolean                     = false
+  def andTrue(x: Unit): Boolean                      = true
+  def asExpected[A](body: Any): A                    = body.asInstanceOf[A]
+  def classTag[T: CTag] : CTag[T]                    = implicitly[CTag[T]]
+  def dateTime(): String                             = new java.text.SimpleDateFormat("yyyyMMdd-HH-mm-ss") format new jDate
+  def defaultCharset                                 = java.nio.charset.Charset.defaultCharset
+  def fail(msg: String): Nothing                     = throw new RuntimeException(msg)
+  def fromUTF8(xs: Array[Byte]): String              = new String(scala.io.Codec fromUTF8 xs)
+  def nanoTime: Long                                 = System.nanoTime
+  def nullAs[A] : A                                  = null.asInstanceOf[A]
+  def printResult[A](msg: String)(result: A): A      = try result finally println(s"$msg: $result")
+  def showResult[A: Show](msg: String)(result: A): A = try result finally println("$msg: ${result.to_s}")
+  def regex(re: String): Regex                       = Regex(re)
 
-  def NameTransformer = scala.reflect.NameTransformer
-  type CSeq[+A]    = scala.collection.Seq[A]
-  type CSet[A]     = scala.collection.Set[A]
-  type CMap[K, +V] = scala.collection.Map[K, V]
+  def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
+  def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
+  def convertSeq[A, B](xs: Seq[A])(implicit conversion: A => B): Seq[B]       = xs map conversion
 
-  // type ISeq[+A]    = scala.collection.immutable.Seq[A]
-  type ISet[A]     = scala.collection.immutable.Set[A]
-  type IMap[K, +V] = scala.collection.immutable.Map[K, V]
-  // type uV      = scala.annotation.unchecked.uncheckedVariance
+  def scmSeq[A](xs: A*): scm.Seq[A]                       = scm.Seq(xs: _*)
+  def scmSet[A](xs: A*): scm.Set[A]                       = scm.Set(xs: _*)
+  def scmMap[K, V](kvs: (K, V)*): scm.Map[K, V]           = scm.Map[K, V](kvs: _*)
+  def sciSeq[A](xs: A*): sci.Seq[A]                       = sci.Seq(xs: _*)
+  def sciSet[A](xs: A*): sci.Set[A]                       = sci.Set(xs: _*)
+  def sciMap[K, V](kvs: (K, V)*): sci.Map[K, V]           = sci.Map[K, V](kvs: _*)
+  def listBuilder[A](xs: A*): Builder[A, List[A]]         = sci.List.newBuilder[A] ++= xs
+  def arrayBuilder[A: CTag](xs: A*): Builder[A, Array[A]] = scala.Array.newBuilder[A] ++= xs
+  def vectorBuilder[A](xs: A*): Builder[A, Vector[A]]     = sci.Vector.newBuilder[A] ++= xs
 
-  // nio
-  type AnyFileAttr              = java.nio.file.attribute.FileAttribute[_]
-  type BasicFileAttributes      = java.nio.file.attribute.BasicFileAttributes
-  type DirectoryStream[A]       = java.nio.file.DirectoryStream[A]
-  type DirectoryStreamFilter[A] = java.nio.file.DirectoryStream.Filter[A]
-  type FileTime                 = java.nio.file.attribute.FileTime
+  // Java.
+  def jMap[K, V](xs: (K, V)*): jMap[K, V] = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
+  def jSet[A](xs: A*): jSet[A]            = new jHashSet[A] doto (b => xs foreach b.add)
+  def jList[A](xs: A*): jArrayList[A]     = new jArrayList[A] doto (b => xs foreach b.add)
+  def jFile(s: String): jFile             = path(s).toFile
+  def jUri(x: String): jUri               = java.net.URI create x
+  def jUrl(x: String): jUrl               = jUri(x).toURL
+  def jClassOf[T: CTag] : Class[_ <: T]   = classTag[T].runtimeClass.asInstanceOf[Class[_ <: T]]
 
-  type ConcurrentHashMap[K, V] = java.util.concurrent.ConcurrentHashMap[K, V]
-  // type sIterator[+A] = scala.collection.Iterator[A]
-  // type sIterable[+A] = scala.collection.Iterable[A]
-  type Bytes         = Array[Byte]
-  type Chars         = Array[Char]
+  // OrderedMap is our own creation since SortedMap is way overspecified
+  // and LinkedHashMap is too slow and only comes in a mutable variety.
+  def orderedMap[K, V](kvs: (K, V)*): OrderedMap[K, V]                 = new OrderedMap[K, V](kvs map (_._1), kvs.toMap)
+  def orderedMap[K, V](keys: Seq[K], map: Map[K, V]): OrderedMap[K, V] = new OrderedMap[K, V](keys, map)
 
-  // private def prop(name: String): String = System.getProperty(name, "")
+  def show[A: Show] : Show[A]        = ?
+  // def readInto[A] : Read.ReadInto[A] = Read.into[A]
 
-  // final def scalaHome: Path        = newPath(prop("scala.home"))
-  // final def javaHome: Path         = newPath(prop("java.home"))
-  // final def userHome: Path         = newPath(prop("user.home"))
-  // final def currentDirectory: Path = newPath(prop("user.dir"))
+  def precise(n: Int): Precise = Precise(Size(n))
+  def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
+    case hi: Atomic     => bounded(lo, hi)
+    case Bounded(_, hi) => bounded(lo, hi)
+  }
+  def bounded(lo: SizeInfo, hi: SizeInfo): SizeInfo = lo match {
+    case Precise(lo)    => bounded(lo, hi)
+    case Bounded(lo, _) => bounded(lo, hi)
+    case Infinite       => Infinite
+  }
+  def bounded(lo: Size, hi: Atomic): SizeInfo = hi match {
+    case Precise(n) if n < lo  => SizeInfo.Empty
+    case Precise(n) if n == lo => hi
+    case _                     => Bounded(lo, hi)
+  }
 
-  // final def bootClassPath: Classpath          = Classpath(prop("sun.boot.class.path"))
-  // final def javaClassPath: Classpath          = Classpath(prop("java.class.path"))
-  // final def javaVersion: Version              = Version(prop("java.version"))
-  // final def javaSpecificationVersion: Version = Version(prop("java.specification.version"))
-  // final def javaClassVersion: Version         = Version(prop("java.class.version"))
-  // final def osInfo: OsInfo                    = OsInfo(prop("os.arch"), prop("os.name"), prop("os.version"))
+  def contextLoader(): ClassLoader                       = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
+  def decodeName(s: String): String                      = scala.reflect.NameTransformer decode s
+  def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
+  def failEmpty(operation: String): Nothing              = throw new NoSuchElementException(s"$operation on empty collection")
+  def index(x: Int): Index                               = Index(x)
+  def indexRange(start: Int, end: Int): IndexRange       = IndexRange.until(Index(start), Index(end))
+  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
+  def loaderOf[A: ClassTag] : ClassLoader                = noNull(jClassOf[A].getClassLoader, nullLoader)
+  def errLog(msg: String): Unit                          = Console.err println msg
+  def noNull[A](value: A, orElse: => A): A               = if (value == null) orElse else value
+  def nth(x: Int): Nth                                   = Nth(x)
+  def nullLoader(): ClassLoader                          = NullClassLoader
+  def nullStream(): InputStream                          = NullInputStream
+  def offset(x: Int): Offset                             = Offset(x)
+  def resource(name: String): Array[Byte]                = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
+  def resourceString(name: String): String               = fromUTF8(resource(name))
+  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally errLog("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
+  def unknownSize: SizeInfo                              = SizeInfo.Unknown
 
-  // @inline final def doto[A](x: A)(f: A => Unit): A                      = { f(x) ; x }
-  // @inline final def printResult[A](msg: String)(body: => A): A          = doto(body)(x => System.err.println(s"$msg: $x"))
-  // @inline final def classTag[A](implicit tag: ClassTag[A]): ClassTag[A] = tag
-  // @inline final def javaClassOf[A](implicit tag: ClassTag[A]): jClass   = tag.runtimeClass
-
-  // def printResult[T](in: Any)(body: T): T = {
-  //   System.err.println(s"$in: $body")
-  //   body
-  // }
-  // @inline final def unbufferedPrintResult[T](in: Any)(body: => T): T = {
-  //   System.err.print(s"$in: ")
-  //   System.err.flush()
-  //   val result = body
-  //   System.err.println(result)
-  //   result
-  // }
-
-  // def eol: Doc  = Doc.line
-
-  // def classpathSeparator  = java.io.File.pathSeparator
-  // def fileSeparator       = java.io.File.separator
-
-  // def now(): FileTime                = attribute.FileTime fromMillis System.currentTimeMillis
-  // def newFile(s: String): File       = newPath(s).toFile
-  // def newUri(s: String): URI         = java.net.URI create s
-  // def newPath(s: String): Path       = Paths get s
-  // def newPath(xs: Seq[String]): Path = if (xs.isEmpty) NoPath else xs.tail.foldLeft(newPath(xs.head))(_ resolve _)
-
-  // def newTempDir(prefix: String, attrs: AnyFileAttr*): Path = Files.createTempDirectory(prefix, attrs: _*)
-
-  // def concurrentMap[K, V](): ConcurrentMapWrapper[K, V]           = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], None)
-  // def concurrentMap[K, V](default: V): ConcurrentMapWrapper[K, V] = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], Some(default))
-  // // def mutableMap[K, V](default: V): mutable.Map[K, V]             = mutable.Map[K, V]() withDefaultValue default
-  // // def mutableSet[A](xs: A*): mutable.Set[A]                       = mutable.Set[A](xs: _*)
-  // // def newBuffer[A](xs: A*): mutable.ArrayBuffer[A]                = mutable.ArrayBuffer[A](xs: _*)
-  // // def vectorBuilder[A](): VectorBuilder[A]                        = Vector.newBuilder[A]
-  // // def listBuilder[A](): ListBuffer[A]                             = mutable.ListBuffer[A]()
-  // def literal(s: String): Doc                                     = text(s)
-
-  // def fromUTF8(xs: Array[Byte]): Array[Char] = scala.io.Codec fromUTF8 xs
-
-  // // def nullAs[A] : A = null.asInstanceOf[A]
-
-  // private def bindDiskValue[A](path: Path) = new impl.OnDiskValue[A](path)
-
-  // def bindValue[A](path: Path): api.Value[A] = {
-  //   if (path.toFile.exists)
-  //     bindDiskValue[A](path).cached
-  //   else
-  //     throw new RuntimeException(s"Path does not exist: $path")
-  // }
-
-  // def newValue[A](path: Path): api.CachingValue[A] =
-  //   bindDiskValue[A](path.ensureFile).cached
-
-  // def newValue[A](path: Path, initialValue: A): api.CachingValue[A] = {
-  //   val v = bindDiskValue[A](path.zeroOut).cached
-  //   v setNow initialValue
-  //   v
-  // }
-
-  // import java.util.Date
-  // import java.text.DateFormat._
-
-  // // The formatting styles include FULL, LONG, MEDIUM, and SHORT.
-  // // "int timeStyle", philistines
-  // def timeString(timeStyle: Int = MEDIUM): Doc = (getTimeInstance(timeStyle) format new Date()).asis
-  // def stackString(frames: Int = 50): Doc = ((new Throwable).getStackTrace drop 3 take frames).toSeq.joinLines
-
-  // // @inline final implicit def anyExtensions[A](x: A): extension.ScalaAny[A]                             = new extension.ScalaAny[A](x)
-  // @inline final implicit def anyRefExtensions[A <: AnyRef](x: A): extension.ScalaAnyRef[A]                = new extension.ScalaAnyRef[A](x)
-  // // @inline final implicit def stringExtensions(x: String): extension.JavaString                            = new extension.JavaString(x)
-  // @inline final implicit def pathExtensions(x: Path): extension.JavaPath                                  = new extension.JavaPath(x)
-  // @inline final implicit def javaIterableExtensions[A](x: jIterable[A]): extension.JavaIterable[A]        = new extension.JavaIterable[A](x)
-  // @inline final implicit def javaClassExtensions(x: jClass): extension.JavaClass                          = new extension.JavaClass(x)
-  // @inline final implicit def fileTimeExtensions(x: FileTime): extension.JavaFileTime                      = new extension.JavaFileTime(x)
-  // @inline final implicit def valueExtensions[A](x: api.Value[A]): extension.PspValue[A]               = new extension.PspValue[A](x)
-  // // @inline final implicit def seqShownExtensions[A: DocShow](x: Seq[A]): extension.PspSeqShown[A]       = new extension.PspSeqShown[A](x)
-  // // @inline final implicit def arrayShownExtensions[A: DocShow](x: Array[A]): extension.PspArrayShown[A] = new extension.PspArrayShown[A](x)
-
-  // @inline final implicit def traversableExtensions[A, CC[X] <: Traversable[X]](x: CC[A]): extension.ScalaTraversable[A, CC] =
-  //   new extension.ScalaTraversable[A, CC](x)
-
-  // // implicit class SeqOfStrings(val elems: Seq[String]) extends SeqOfSomething[String]()(Show.string)
-
-  // implicit def predicateToDirectoryFilter[A](p: A => Boolean): DirectoryStream.Filter[A] = new DirectoryStream.Filter[A] { def accept(entry: A) = p(entry) }
-  // implicit def directoryStreamToIterable[A](stream: DirectoryStream[A]): Iterable[A]     = Bilingual.iterator(stream.iterator).toIterable //.asScala.toIterable
+  // String arrangements.
+  def tabular[A](rows: Seq[A], join: Seq[String] => String)(columns: (A => String)*): String = {
+    val cols   = columns.toVector
+    val widths = cols map (f => rows map f map (_.length) max)
+    def one(width: Int, value: String): String = (
+      if (width == 0 || value == "") ""
+      else ("%-" + width + "s") format value
+    )
+    rows map (row => join(widths zip (cols map (_ apply row)) map { case (w, v) => one(w, v) })) mkString "\n"
+  }
 }

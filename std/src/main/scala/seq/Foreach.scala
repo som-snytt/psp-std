@@ -1,7 +1,7 @@
 package psp
 package std
 
-import scala.collection.immutable
+import api._
 
 object Foreach {
   def Empty = Direct.Empty
@@ -24,7 +24,7 @@ object Foreach {
     override def toString = pp"unfold from $zero"
   }
 
-  final case class Times[A](size: Size, elem: A) extends Foreach[A] with api.HasPreciseSize {
+  final case class Times[A](size: Size, elem: A) extends Foreach[A] with HasPreciseSize {
     def sizeInfo = Precise(size)
     @inline def foreach(f: A => Unit): Unit = IntRange.until(0, size.value) foreach (_ => f(elem))
     override def toString = pp"$elem x$size"
@@ -38,7 +38,7 @@ object Foreach {
     @inline def foreach(f: A => Unit): Unit = { xs foreach f ; ys foreach f }
     override def toString = pp"$xs ++ $ys"
   }
-  final class ToScala[+A](private val xs: Foreach[A]) extends immutable.Traversable[A] {
+  final class ToScala[+A](private val xs: Foreach[A]) extends scala.collection.immutable.Traversable[A] {
     def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
   final class FromScala[+A](val xs: Traversable[A]) extends AnyVal with Foreach[A] {

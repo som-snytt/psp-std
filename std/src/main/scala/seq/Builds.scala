@@ -1,6 +1,8 @@
 package psp
 package std
 
+import api._
+
 trait Builds[-Elem, +To] extends Any {
   def build(xs: Foreach[Elem]): To
 }

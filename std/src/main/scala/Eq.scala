@@ -1,6 +1,8 @@
 package psp
 package std
 
+import api._
+
 object HashEq {
   def universal[A]                                                  = apply[A](_ == _, _.##)
   def reference[A <: AnyRef]                                        = apply[A](_ eq _, System.identityHashCode)

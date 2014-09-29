@@ -4,6 +4,7 @@ package std
 import java.{ lang => jl }
 import scala.{ collection => sc }
 import psp.std.api.{ PCmp, Cmp }
+import api._
 
 object TClass {
   final class OrderOps[A](val __order_lhs: A) extends AnyVal {
@@ -90,7 +91,7 @@ object Ops {
     def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]      = xs.toVector |> (xs => orderedMap(xs map f: _*))
     def sorted(implicit ord: Order[A]): Vector[A]                  = xs.toVector.sorted(ord.toOrdering)
     def distinct: Vector[A]                                        = xs.toVector.distinct
-    def unsortedFrequencyMap: Map[A, Int]                          = immutableMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
+    def unsortedFrequencyMap: Map[A, Int]                          = sciMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
     def ascendingFrequency: OrderedMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
     def descendingFrequency: OrderedMap[A, Int]                    = ascendingFrequency.reverse
   }
@@ -115,11 +116,34 @@ object Ops {
     def takeWhile(p: A => Boolean)(implicit tag: ClassTag[A]): Array[A]  = apply(indexRange takeWhile (i => p(elemAt(i))))
 
     def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs.m.slice(indexRange intersect range).native
-    def toSeq: ISeq[A] = immutableSeq(xs: _*)
+    def toSeq: sciSeq[A] = sciSeq(xs: _*)
   }
-  final class AnyOps[A](val x: A) extends AnyVal {
+  final class AnyOps[A](val __psp_x: A) extends AnyVal {
+    // implicit def opsApiAny[A](x: A): api.Ops.ApiAnyOps[A]           = new api.Ops.ApiAnyOps[A](x)
     // Short decoded class name.
-    def shortClass: String = decodeName(x.getClass.getName.dottedSegments.last)
+    def shortClass: String = decodeName(__psp_x.getClass.getName.dottedSegments.last)
+
+    // "Maybe we can enforce good programming practice with annoyingly long method names."
+    def castTo[U] : U = __psp_x.asInstanceOf[U]
+    def toRef: AnyRef = castTo[AnyRef]
+    def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(__psp_x, args map (_.asInstanceOf[AnyRef]): _*).asInstanceOf[B]
+    def isNull: Boolean = toRef eq null
+
+    // The famed forward pipe.
+    @inline def |>[B](f: A => B): B       = f(__psp_x)
+    @inline def doto(f: A => Unit): A     = try __psp_x finally f(__psp_x)
+    @inline def sideEffect(body: Unit): A = __psp_x
+
+    // Calling eq on Anys.
+    def ref_==(y: Any): Boolean = toRef eq y.asInstanceOf[AnyRef]
+    def id_## : Int             = System identityHashCode __psp_x
+
+    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift __psp_x
+    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else shows show __psp_x
+    def any_s: String = __psp_x match {
+      case x: ShowDirect => x.to_s
+      case _             => "" + __psp_x
+    }
   }
   final class IntOps(val self: Int) extends AnyVal {
     private type This = Int
@@ -191,13 +215,13 @@ object Ops {
     }
   }
   final class IteratorOps[A](it: jIterator[A]) {
-    def toScalaIterator: sIterator[A] = new ScalaIterator(it)
-    def toForeach: Foreach[A]         = each(toScalaIterator)
+    def toScalaIterator: scIterator[A] = new ScalaIterator(it)
+    def toForeach: Foreach[A]          = each(toScalaIterator)
   }
   final class jCollectionOps[A](val xs: jAbstractCollection[A]) extends AnyVal {
-    def toForeach: Foreach[A]         = each(toTraversable)
-    def toTraversable: Traversable[A] = toScalaIterator.toTraversable
-    def toScalaIterator: sIterator[A] = new ScalaIterator(xs.iterator)
+    def toForeach: Foreach[A]          = each(toTraversable)
+    def toTraversable: Traversable[A]  = toScalaIterator.toTraversable
+    def toScalaIterator: scIterator[A] = new ScalaIterator(xs.iterator)
   }
 
   trait SeqLikeOps[A] extends Any {
@@ -246,7 +270,7 @@ object Ops {
     def toIterable: Iterable[A]       = toScala[Iterable]
     def toList: List[A]               = toScala[List]
     def toScalaSet: Set[A]            = toScala[Set]
-    def toSeq: ISeq[A]                = toScala[ISeq]
+    def toSeq: sciSeq[A]              = toScala[sciSeq]
     def toStream: Stream[A]           = toScala[Stream]
     def toTraversable: Traversable[A] = toScala[Traversable]
     def toVector: Vector[A]           = toScala[Vector]
@@ -286,6 +310,26 @@ object Ops {
     def toDirect: Direct[A] = __psp_xs2 match {
       case xs: Direct[_] => xs
       case _             => Direct elems (toSeq: _*)
+    }
+  }
+
+  final class OptionOps[A](val __psp_x: Option[A]) extends AnyVal {
+    def or(alt: => A): A         = __psp_x getOrElse alt
+    def | (alt: => A): A         = __psp_x getOrElse alt
+    def ||(alt: => A): Option[A] = __psp_x orElse Some(alt)
+  }
+  final class TryOps[A](val __psp_x: scala.util.Try[A]) extends AnyVal {
+    def | (expr: => A): A = __psp_x match {
+      case scala.util.Failure(_) => expr
+      case scala.util.Success(x) => x
+    }
+    def ||(expr: => A): scala.util.Try[A] = __psp_x match {
+      case x @ scala.util.Success(_) => x
+      case scala.util.Failure(_)     => scala.util.Try(expr)
+    }
+    def fold[B](f: A => B, g: Throwable => B): B = __psp_x match {
+      case scala.util.Success(x) => f(x)
+      case scala.util.Failure(t) => g(t)
     }
   }
 
@@ -347,6 +391,7 @@ object Ops {
       case Infinite                 => if (rhs.isZero) Unknown else Infinite
     }
 
+    def + (rhs: Size): SizeInfo = this + Precise(rhs)
     def + (rhs: SizeInfo): SizeInfo = (lhs, rhs) match {
       case (Infinite, _) | (_, Infinite)            => Infinite
       case (Precise(l), Precise(r))                 => Precise(Size(l.value + r.value))
@@ -373,12 +418,16 @@ object Ops {
       case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 max l2, h1 max h2)
     }
   }
+
+  final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = Order[A]((x, y) => ord.compare(f(x), f(y))) }
+  final class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = Eq[A]((x, y) => equiv.equiv(f(x), f(y))) }
+  final class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = Show[A](x => show show f(x)) }
 }
 
-final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R) with api.ShowDirectNow {
+final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R) with ShowDirectNow {
   def apply(x: T): R = f(x)
 }
-final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val to_s: String) extends PartialFunction[T, R] with api.ShowDirectNow {
+final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val to_s: String) extends PartialFunction[T, R] with ShowDirectNow {
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R    = pf(x)
 }

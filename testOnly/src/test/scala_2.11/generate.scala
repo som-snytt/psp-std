@@ -5,7 +5,7 @@ package tests
  */
 object Generator {
   def tq    = "\"\"\""
-  def lhses = List("\"abc\"", "Seq(1, 2, 3)", "scala.collection.mutable.Seq('a', 'b', 'c')", "Array(true, false, true)")
+  def lhses = List("\"abc\"", "scala.collection.Seq(1, 2, 3)", "scala.collection.mutable.Seq('a', 'b', 'c')", "Array(true, false, true)")
   def ops   = List("index", "indexOf", "contains", "hasElem")
   def rhses = List("59d", "(1: Int)", "('b': Char)", "100000")
 
@@ -33,22 +33,22 @@ object Generated {
     "abc" contains (1: Int)
     "abc" contains ('b': Char)
     "abc" contains 100000
-    Seq(1, 2, 3) indexOf 59d
-    Seq(1, 2, 3) indexOf (1: Int)
-    Seq(1, 2, 3) indexOf ('b': Char)
-    Seq(1, 2, 3) indexOf 100000
-    Seq(1, 2, 3) contains 59d
-    Seq(1, 2, 3) contains (1: Int)
-    Seq(1, 2, 3) contains ('b': Char)
-    Seq(1, 2, 3) contains 100000
-    mutableSeq('a', 'b', 'c') indexOf 59d
-    mutableSeq('a', 'b', 'c') indexOf (1: Int)
-    mutableSeq('a', 'b', 'c') indexOf ('b': Char)
-    mutableSeq('a', 'b', 'c') indexOf 100000
-    mutableSeq('a', 'b', 'c') contains 59d
-    mutableSeq('a', 'b', 'c') contains (1: Int)
-    mutableSeq('a', 'b', 'c') contains ('b': Char)
-    mutableSeq('a', 'b', 'c') contains 100000
+    scala.collection.Seq(1, 2, 3) indexOf 59d
+    scala.collection.Seq(1, 2, 3) indexOf (1: Int)
+    scala.collection.Seq(1, 2, 3) indexOf ('b': Char)
+    scala.collection.Seq(1, 2, 3) indexOf 100000
+    scala.collection.Seq(1, 2, 3) contains 59d
+    scala.collection.Seq(1, 2, 3) contains (1: Int)
+    scala.collection.Seq(1, 2, 3) contains ('b': Char)
+    scala.collection.Seq(1, 2, 3) contains 100000
+    scala.collection.mutable.Seq('a', 'b', 'c') indexOf 59d
+    scala.collection.mutable.Seq('a', 'b', 'c') indexOf (1: Int)
+    scala.collection.mutable.Seq('a', 'b', 'c') indexOf ('b': Char)
+    scala.collection.mutable.Seq('a', 'b', 'c') indexOf 100000
+    scala.collection.mutable.Seq('a', 'b', 'c') contains 59d
+    scala.collection.mutable.Seq('a', 'b', 'c') contains (1: Int)
+    scala.collection.mutable.Seq('a', 'b', 'c') contains ('b': Char)
+    scala.collection.mutable.Seq('a', 'b', 'c') contains 100000
     Array(true, false, true) indexOf 59d
     Array(true, false, true) indexOf (1: Int)
     Array(true, false, true) indexOf ('b': Char)
@@ -68,22 +68,22 @@ object Generated {
     "abc" hasElem (1: Int)
     "abc" hasElem ('b': Char)
     "abc" hasElem 100000
-    Seq(1, 2, 3) index 59d
-    Seq(1, 2, 3) index (1: Int)
-    Seq(1, 2, 3) index ('b': Char)
-    Seq(1, 2, 3) index 100000
-    Seq(1, 2, 3) hasElem 59d
-    Seq(1, 2, 3) hasElem (1: Int)
-    Seq(1, 2, 3) hasElem ('b': Char)
-    Seq(1, 2, 3) hasElem 100000
-    mutableSeq('a', 'b', 'c') index 59d
-    mutableSeq('a', 'b', 'c') index (1: Int)
-    mutableSeq('a', 'b', 'c') index ('b': Char)
-    mutableSeq('a', 'b', 'c') index 100000
-    mutableSeq('a', 'b', 'c') hasElem 59d
-    mutableSeq('a', 'b', 'c') hasElem (1: Int)
-    mutableSeq('a', 'b', 'c') hasElem ('b': Char)
-    mutableSeq('a', 'b', 'c') hasElem 100000
+    scala.collection.Seq(1, 2, 3) index 59d
+    scala.collection.Seq(1, 2, 3) index (1: Int)
+    scala.collection.Seq(1, 2, 3) index ('b': Char)
+    scala.collection.Seq(1, 2, 3) index 100000
+    scala.collection.Seq(1, 2, 3) hasElem 59d
+    scala.collection.Seq(1, 2, 3) hasElem (1: Int)
+    scala.collection.Seq(1, 2, 3) hasElem ('b': Char)
+    scala.collection.Seq(1, 2, 3) hasElem 100000
+    scala.collection.mutable.Seq('a', 'b', 'c') index 59d
+    scala.collection.mutable.Seq('a', 'b', 'c') index (1: Int)
+    scala.collection.mutable.Seq('a', 'b', 'c') index ('b': Char)
+    scala.collection.mutable.Seq('a', 'b', 'c') index 100000
+    scala.collection.mutable.Seq('a', 'b', 'c') hasElem 59d
+    scala.collection.mutable.Seq('a', 'b', 'c') hasElem (1: Int)
+    scala.collection.mutable.Seq('a', 'b', 'c') hasElem ('b': Char)
+    scala.collection.mutable.Seq('a', 'b', 'c') hasElem 100000
     Array(true, false, true) index 59d
     Array(true, false, true) index (1: Int)
     Array(true, false, true) index ('b': Char)

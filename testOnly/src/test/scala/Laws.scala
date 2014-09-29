@@ -1,8 +1,8 @@
 package psp
 package tests
 
-import psp.std._
 import org.scalacheck._
+import psp.std._, api._
 
 abstract class Laws[A : Eq] {
   def associative(f: BinOp[A]): Forall3[A]               = (a, b, c) => f(a, f(b, c)) === f(f(a, b), c)

@@ -29,7 +29,7 @@ object UInt extends (Int => UInt) {
   final val Max = apply(0xFFFFFFFF)
 
   implicit val UIntShow  = Show.native[UInt]
-  implicit val UIntOrder = Order[UInt](_.longValue compared _.longValue)
+  implicit val UIntOrder = api.OrderEq[UInt](_.longValue compared _.longValue)
 
   def apply(x: Int): UInt  = new UInt(x)
   def apply(x: Long): UInt = new UInt(x.toInt)

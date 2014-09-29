@@ -1,7 +1,7 @@
 package psp
 package std
 
-import Nat._
+import Nat._, api._
 
 trait LowPriorityNatList {
   self: NatList.type =>
@@ -12,7 +12,7 @@ trait LowPriorityNatList {
   }
 }
 
-sealed trait NatList[N <: Nat, A] extends Foreach[A] with api.HasStaticSize[N] {
+sealed trait NatList[N <: Nat, A] extends Foreach[A] with HasStaticSize[N] {
   def isEmpty: Boolean
   def unsafeHead: A
   def unsafeTail: NatList[N#Prev, A]

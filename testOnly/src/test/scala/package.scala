@@ -1,7 +1,7 @@
 package psp
 
-import psp.std._
 import org.scalacheck._, Gen._, Prop._
+import psp.std._, api._
 import SizeInfo._
 
 package object tests {
@@ -36,7 +36,7 @@ package object tests {
     }
   }
 
-  def genSize: Gen[Size]         = chooseNum(1, Int.MaxValue / 2) map (n => Size(n))
+  def genSize: Gen[api.Size]     = chooseNum(1, Int.MaxValue / 2) map (n => Size(n))
   def genPrecise: Gen[Precise]   = genSize map (s => Precise(s))
   def genBounded: Gen[Bounded]   = genSize flatMap (lo => genAtomic map (hi => bounded(lo, hi))) collect { case b: Bounded => b }
   def genAtomic: Gen[Atomic]     = frequency(10 -> genPrecise, 1 -> Empty, 1 -> Infinite)

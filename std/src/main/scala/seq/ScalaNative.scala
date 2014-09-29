@@ -1,16 +1,16 @@
 package psp
 package compat
 
-import psp.std._
+import psp.std._, api._
 
 /** Compatibility layer for wrapping scala views on their own terms.
  */
-final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends api.View[A] with CountCalls {
+final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends View[A] with CountCalls {
   type MapTo[+X] = ScalaNative[X]
 
   private implicit def lift[B](result: Iterable[B]): MapTo[B] = new ScalaNative(result, counter)
 
-  def ++[A1 >: A](that: api.View[A1]): MapTo[A1]     = xs ++ that.trav
+  def ++[A1 >: A](that: View[A1]): MapTo[A1]         = xs ++ that.trav
   def collect[B](pf: PartialFunction[A,B]): MapTo[B] = xs collect pf
   def description                                    = xs.shortClass
   def drop(n: Int): MapTo[A]                         = xs drop n
@@ -23,12 +23,12 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends a
   def labeled(label: String): MapTo[A]               = this
   def map[B](f: A => B): MapTo[B]                    = xs map f
   def sizeInfo: SizeInfo                             = xs maybe { case xs: IndexedSeq[_] => SizeInfo(xs.size) } or unknownSize
-  def sized(size: api.Size): MapTo[A]                = this
+  def sized(size: Size): MapTo[A]                    = this
   def slice(range: IndexRange): MapTo[A]             = xs.slice(range.startInt, range.endInt)
   def take(n: Int): MapTo[A]                         = xs take n
   def takeRight(n: Int): MapTo[A]                    = xs takeRight n
   def takeWhile(p: Predicate[A]): MapTo[A]           = xs takeWhile p
-  def viewChain: List[api.View[_]]                   = this :: Nil
+  def viewChain: List[View[_]]                       = this :: Nil
   def withFilter(p: Predicate[A]): MapTo[A]          = xs filter p
 
   override def toString = description

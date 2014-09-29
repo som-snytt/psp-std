@@ -2,6 +2,8 @@ package psp
 package std
 package ansi
 
+import api._
+
 /** A String carrying color information.
  *  The length of a ColorString is it's *visible* length, which is
  *  likely significantly smaller than the number of characters it contains.

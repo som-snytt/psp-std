@@ -1,6 +1,7 @@
 package psp
 package std
 
+import api._
 import java.{ lang => jl }
 
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll

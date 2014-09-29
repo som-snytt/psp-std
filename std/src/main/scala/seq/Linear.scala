@@ -4,14 +4,14 @@ package linear
 
 import SizeInfo._
 
-trait Leaf[A] extends Any with Linear[A] {
+trait Leaf[A] extends Any with api.Linear[A] {
   def sizeInfo = if (isEmpty) Empty else NonEmpty
   @inline final def foreach(f: A => Unit): Unit = {
-    @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
+    @tailrec def loop(xs: api.Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
     loop(this)
   }
   def contains(x: A): Boolean = {
-    @tailrec def loop(xs: Linear[A]): Boolean = !xs.isEmpty && (x == xs.head || loop(xs.tail))
+    @tailrec def loop(xs: api.Linear[A]): Boolean = !xs.isEmpty && (x == xs.head || loop(xs.tail))
     loop(this)
   }
 }

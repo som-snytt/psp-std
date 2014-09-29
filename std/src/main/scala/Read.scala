@@ -1,6 +1,8 @@
 package psp
 package std
 
+import api._
+
 /** For this to have any hope of being smooth, we need the VALUE
  *  (the type class instance) to be inferred, but the TYPE
  *  to be given explicitly. Type inference can't do anything sensible

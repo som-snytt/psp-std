@@ -1,6 +1,8 @@
 package psp
 package std
 
+import api._
+
 sealed trait Walkable[-Repr] {
   type CC[X]
   type A
@@ -16,7 +18,7 @@ trait DirectAccess[-Repr] extends Foreachable[Repr] {
   def length(repr: Repr): Size
   def elemAt(repr: Repr)(index: Index): A
   override def wrap[R <: Repr](repr: R): IndexedView[A, R] = new IndexedView(repr, this)
-  override def sizeInfo(repr: Repr): SizeInfo              = Precise(length(repr))
+  override def sizeInfo(repr: Repr): SizeInfo              = api.Precise(length(repr))
 }
 
 final class OpsContainer[M](f: () => M) { def m: M = f() }
@@ -98,13 +100,13 @@ object Has {
   trait Tail[R]      extends Any with ElemType    { def hasTail(xs: R): R                                   }
   trait Head[-R]     extends Any with ElemType    { def hasHead(xs: R): Elem                                }
   trait IsEmpty[-R]  extends Any                  { def hasIsEmpty(xs: R): Boolean                          }
-  trait SizeInfo[-R] extends Any with ElemType    { def hasSizeInfo(xs: R): std.SizeInfo                    }
-  trait Size[-R]     extends Any with ElemType    { def hasSize(xs: R): std.Size                            }
+  trait SizeInfo[-R] extends Any with ElemType    { def hasSizeInfo(xs: R): api.SizeInfo                    }
+  trait Size[-R]     extends Any with ElemType    { def hasSize(xs: R): api.Size                            }
   trait Contains[-R] extends Any with ElemType    { def hasContains(xs: R)(x: Elem): Boolean                }
   trait Foreach[-R]  extends Any with ElemType    { def hasForeach(xs: R)(f: Elem => Unit): Unit            }
   trait Filter[R]    extends Any with ElemType    { def hasFilter(xs: R)(p: Predicate[Elem]): R             }
-  trait Index[-R]    extends Any with ElemType    { def hasIndex(xs: R)(index: std.Index): Elem             }
-  trait View[R]      extends Any with ElemType    { def hasView(xs: R): api.View[Elem]                      }
+  trait Index[-R]    extends Any with ElemType    { def hasIndex(xs: R)(index: api.Index): Elem             }
+  trait View[R]      extends Any with ElemType    { def hasView(xs: R): View[Elem]                          }
   trait Apply[-R]    extends Any with ApplyType   { def hasApply(xs: R)(in: In): Out                        }
   trait Map[R]       extends Any with Is.Packaged { def hasMap[A](xs: R)(f: Elem => A): CC[A]               }
   trait FlatMap[R]   extends Any with Is.Packaged { def hasFlatMap[A](xss: R)(f: Elem => Foreach[A]): CC[A] }

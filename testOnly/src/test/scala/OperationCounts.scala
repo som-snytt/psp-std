@@ -2,7 +2,7 @@ package psp
 package tests
 
 import compat.ScalaNative
-import psp.std._
+import psp.std._, api._
 
 class OperationCounts(scalaVersion: String) extends Bundle {
   def is211 = scalaVersion == "2.11"
@@ -12,7 +12,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     finish()
   }
 
-  type IntView = api.View[Int]
+  type IntView = View[Int]
 
   lazy val tupleFlatMap: Int => Foreach[Int] = ((x: Int) => Foreach.elems(x, x)) labeled "(x, x)"
   lazy val isEven: Int => Boolean            = ((x: Int) => x % 2 == 0) labeled "isEven"

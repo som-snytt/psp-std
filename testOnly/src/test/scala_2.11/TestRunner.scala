@@ -1,9 +1,9 @@
 package psp
 package tests
 
-import psp.std._
 import org.scalacheck._
 import org.scalacheck.Prop.forAll
+import psp.std._, api._
 
 object TestRunner_211 extends TestRunnerCommon {
   def scalaVersion = "2.11"

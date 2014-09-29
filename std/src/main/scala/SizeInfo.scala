@@ -1,6 +1,8 @@
 package psp
 package std
 
+import api._
+
 object SizeInfo {
   val Zero     = Size(0)
   val One      = Size(1)

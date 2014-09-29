@@ -1,10 +1,8 @@
 package psp
 package tests
 
-import psp.std._
-import macros._
+import psp.std._, api._, macros._
 import Generated._
-import api.TryShow
 
 class Typecheck extends Bundle {
   def alpha(s: Char, e: Char): Seq[Char] = NumericRange.inclusive[Char](s, e, 1)
@@ -27,9 +25,10 @@ class Typecheck extends Bundle {
    */
   def divide(what: String, xs: Vector[Typechecked]): Unit = divide(what, xs, xs count (_.code startsWith "/* ok */"))
   def divide(what: String, xs: Vector[Typechecked], expectedTypecheck: Int): Unit = {
-    val good = xs filter (_.typechecks)
+    val (good, bad) = xs partition (_.typechecks)
     val passed = expectedTypecheck == good.size
-    assert(passed, s"%s/%s expressions typechecked in %s, but expected %s/%s".format(good.size, xs.size, what, expectedTypecheck, xs.size))
+    assert(passed, s"%s/%s expressions typechecked in %s, but expected %s/%s\ngood:\n%s\nbad:\n%s".format(
+      good.size, xs.size, what, expectedTypecheck, xs.size, good mkString "\n", bad mkString "\n"))
   }
 
   def run(): Boolean = {

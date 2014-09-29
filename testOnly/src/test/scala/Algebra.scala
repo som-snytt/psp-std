@@ -1,9 +1,9 @@
 package psp
 package tests
 
-import psp.std._
 import org.scalacheck._
 import org.scalacheck.Prop.forAll
+import psp.std._, api._
 
 class AlgebraPoliceman[A](val bundle: String)(implicit algebra: BooleanAlgebra[A], arb: Arbitrary[A], equiv: Eq[A]) extends AlgebraLaws[A] with ScalacheckBundle {
   import algebra._

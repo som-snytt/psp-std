@@ -26,11 +26,10 @@ trait View[+A] extends Any with Foreach[A] {
   def withFilter(p: Predicate[A]): MapTo[A]
 }
 
+
 object View {
   trait Atomic[+A] extends Any with View[A]
-  trait Composite[+A] extends Any with View[A] {
-    def prev: View[_]
-  }
+  trait Composite[+A] extends Any with View[A] { def prev: View[_] }
   trait Builder[+A, Repr] extends Any with View[A] {
     type MapTo[+X] <: Builder[X, Repr]
 

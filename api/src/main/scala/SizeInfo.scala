@@ -20,7 +20,7 @@ sealed trait SizeInfo
 // This arrangement means that "x + size" results in the same type as x for any SizeInfo.
 sealed trait Atomic                            extends SizeInfo
 final case class Bounded(lo: Size, hi: Atomic) extends SizeInfo
-final case class Precise(size: Size)           extends Atomic
+final case class Precise(size: Size)           extends Atomic with Size { def value: Int = size.value }
 final case object Infinite                     extends Atomic
 
 trait HasSizeInfo extends Any                        { def sizeInfo: SizeInfo }

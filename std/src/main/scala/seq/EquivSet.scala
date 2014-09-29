@@ -1,7 +1,7 @@
 package psp
 package std
 
-import scala.collection.immutable
+import api._
 
 object EquivSet {
   implicit def equivSetEq[A: HashEq]                          = Eq[EquivSet[A]]((xs, ys) => (xs.size == ys.size) && (xs forall ys))
@@ -13,7 +13,7 @@ object EquivSet {
   def apply[A: HashEq](xs: Foreach[A]): EquivSet[A]       = new EquivSet[A](xs)
 }
 
-final class EquivSet[A : HashEq](basis: Foreach[A]) extends immutable.Set[A] {
+final class EquivSet[A : HashEq](basis: Foreach[A]) extends sciSet[A] {
   private def hasheq: HashEq[A]   = ?
   private[this] val wrapSet       = basis.m map wrap toScalaSet
   private def wrap(elem: A): Wrap = new Wrap(elem)

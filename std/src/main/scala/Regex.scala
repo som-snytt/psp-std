@@ -1,6 +1,5 @@
 package psp
 package std
-package api
 
 import java.util.regex.Pattern, Pattern._
 import java.util.regex.Matcher

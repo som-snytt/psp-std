@@ -1,6 +1,8 @@
 package psp
 package std
 
+import api._
+
 final class CircularBuffer[A](capacity: Size) extends Foreach[A] {
   assert(!capacity.isZero, capacity)
 

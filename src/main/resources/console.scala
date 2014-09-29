@@ -1,4 +1,5 @@
-import scala.collection.{ mutable, immutable }
+import scala.collection.{ mutable => scm, immutable => sci, generic => scg }
+import java.nio.{ file => jnf }
 import psp.std._, ansi._
 
 implicit final class ReplForeachOps[A](val target: Foreach[A]) {

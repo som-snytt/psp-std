@@ -1,9 +1,9 @@
 package psp
 package std
 
-object Order {
-  import api.Cmp, Cmp._
+import api._, Cmp._
 
+object Order {
   def fromOrdering[A](ord: Ordering[A]): Order[A] = apply[A]((x, y) => difference(ord.compare(x, y)))
 
   def apply[A](f: (A, A) => Cmp): Order[A] = api.Order[A](f)

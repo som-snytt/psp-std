@@ -1,11 +1,11 @@
 package psp
 package std
 
-import Size._
+import Size._, api._
 
 class OverflowException extends RuntimeException
 
-final class Size private (val value: Int) extends AnyVal with api.Size {
+final class SizeOps private (val value: Int) extends AnyVal with api.Size {
   def + (n: Size): Size     = if (isUndefined) undefined else (value + n.value) |> (sum => if (sum < value) undefined else Size(sum))
   def - (n: Size): Size     = if (isUndefined) undefined else Size(value - n.value)
   def * (n: Int): Size      = if (isUndefined) undefined else Size(value * n)
@@ -17,7 +17,7 @@ final class Size private (val value: Int) extends AnyVal with api.Size {
   def /% (n: Int): (Size, Size) = (this / n, this % n)
 
   def isZero                   = this == Zero
-  def isUndefined              = this == undefined
+  def isUndefined              = value < 0
   def toIndexRange: IndexRange = if (isUndefined) IndexRange.undefined else IndexRange zeroTo lastIndex
   def toIndex: Index           = Index(value)
   def toScalaRange             = toIndexRange.toScalaRange
@@ -33,19 +33,23 @@ final class Size private (val value: Int) extends AnyVal with api.Size {
 
   override def toString = if (isUndefined) "undefined" else s"$value"
 }
+object SizeOps {
+  def apply(n: Int): SizeOps = new SizeOps(n max 0)
+}
 
 // Size is^Wshould be its own unapply (value class bugs drove us out for now)
 object Size {
-  def undefined = new Size(-1)
+  def undefined: Size = NoSize
+  private case class Impl(value: Int) extends AnyVal with Size
 
-  final val NoSize = undefined
-  final val Zero   = new Size(0)
-  final val One    = new Size(1)
-  final val Two    = new Size(2)
-  final val Three  = new Size(3)
-  final val Four   = new Size(4)
-  final val Five   = new Size(5)
+  final val NoSize: Size = Impl(-1)
+  final val Zero: Size   = Impl(0)
+  final val One: Size    = Impl(1)
+  final val Two: Size    = Impl(2)
+  final val Three: Size  = Impl(3)
+  final val Four: Size   = Impl(4)
+  final val Five: Size   = Impl(5)
 
-  def apply(n: Int): Size           = if (n <= 0) Zero else new Size(n)
+  def apply(n: Int): Size           = if (n <= 0) Zero else Impl(n)
   def unapply(s: Size): Option[Int] = s.toOption
 }

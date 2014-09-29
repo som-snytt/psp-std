@@ -2,6 +2,7 @@ package psp
 package std
 package ansi
 
+import api._
 import RGB._
 
 final case class ColorName(name: String)

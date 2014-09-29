@@ -2,7 +2,7 @@ package psp
 package std
 
 import scala.{ collection => sc }
-import api.Regex
+import api._
 
 /** Yes I know all about implicit classes.
  *  There's no way to write an implicit value class which doesn't hardcode
@@ -86,12 +86,14 @@ trait StandardImplicits2 extends StandardImplicits1 {
   implicit def opsInt(x: Int): Ops.IntOps                                             = new Ops.IntOps(x)
   implicit def opsIterator[A](it: jIterator[A]): Ops.IteratorOps[A]                   = new Ops.IteratorOps(it)
   implicit def opsLong(x: Long): Ops.LongOps                                          = new Ops.LongOps(x)
-  implicit def opsMap[K, V](xs: sc.Map[K, V]): Ops.Map[K, V]                          = new Ops.Map[K, V](xs)
-  implicit def opsSeq1[A](xs: sc.Seq[A]): Ops.Seq1[A]                                 = new Ops.Seq1[A](xs)
-  implicit def opsSeq2[A](xs: sc.Seq[A]): Ops.Seq2[A]                                 = new Ops.Seq2[A](xs)
-  implicit def opsSeqOps[A](xs: sc.Seq[A]): Ops.SeqOps[A]                             = new Ops.SeqOps[A](xs)
+  implicit def opsMap[K, V](xs: scMap[K, V]): Ops.Map[K, V]                           = new Ops.Map[K, V](xs)
+  implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]                           = new Ops.OptionOps[A](x)
+  implicit def opsSeq1[A](xs: scSeq[A]): Ops.Seq1[A]                                  = new Ops.Seq1[A](xs)
+  implicit def opsSeq2[A](xs: scSeq[A]): Ops.Seq2[A]                                  = new Ops.Seq2[A](xs)
+  implicit def opsSeqOps[A](xs: scSeq[A]): Ops.SeqOps[A]                              = new Ops.SeqOps[A](xs)
   implicit def opsSizeInfo(x: SizeInfo): Ops.SizeInfoOps                              = new Ops.SizeInfoOps(x)
   implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): Ops.SortedMap[K, V]        = new Ops.SortedMap[K, V](xs)
+  implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                         = new Ops.TryOps[A](x)
 }
 
 trait ReadImplicits {
@@ -102,7 +104,7 @@ trait ReadImplicits {
   implicit val intRead: Read[Int]           = Read(_.toInt)
   implicit val longRead: Read[Long]         = Read(_.toLong)
   implicit val stringRead: Read[String]     = Read(s => s)
-  implicit val uriRead: Read[URI]           = Read(uri)
+  implicit val uriRead: Read[jUri]          = Read(jUri)
   implicit val regexRead: Read[Regex]       = Read(Regex)
 }
 
@@ -141,11 +143,6 @@ trait OrderImplicits {
         if (h1 p_< lo2) PCmp.LT else if (h2 p_< lo1) PCmp.GT else PCmp.NA
     }
   }
-}
-
-trait ShowImplicits extends api.ShowImplicits {
-  implicit def viewShow[A] : Show[api.View[A]]         = Show(_.viewChain reverseMap (_.description) joinSpace)
-  implicit def pspListShow[A: Show] : Show[PspList[A]] = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
 }
 
 trait EqImplicits {

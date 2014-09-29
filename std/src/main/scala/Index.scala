@@ -1,6 +1,7 @@
 package psp
 package std
 
+import api._
 import Index.{ zero, undefined }
 
 /** A valid index is always non-negative. All negative indices are
