@@ -68,7 +68,7 @@ trait PackageImplicits0 extends Any {
   implicit def showableToTryShown[A](x: A)(implicit shows: TryShow[A]): TryShown = new TryShown(shows show x)
 }
 trait PackageImplicits extends Any with PackageImplicits0 {
-  implicit def opsApiAny[A](x: A): Ops.AnyOps[A]              = new Ops.AnyOps[A](x)
+  implicit def opsApiAny[A](x: A): Ops.ApiAnyOps[A]           = new Ops.ApiAnyOps[A](x)
   implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]   = new Ops.OptionOps[A](x)
   implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A] = new Ops.TryOps[A](x)
 
@@ -87,20 +87,21 @@ trait PackageImplicits extends Any with PackageImplicits0 {
  */
 trait PackageAliases extends Any {
   // common scala
-  type ArrayBuffer[A]              = scala.collection.mutable.ArrayBuffer[A]
-  type Builder[-Elem, +To]         = scala.collection.mutable.Builder[Elem, To]
-  type CanBuild[-Elem, +To]        = scala.collection.generic.CanBuildFrom[_, Elem, To]
-  type ClassTag[A]                 = scala.reflect.ClassTag[A]
-  type Codec                       = scala.io.Codec
-  type GTOnce[+A]                  = scala.collection.GenTraversableOnce[A]
-  type IndexedSeq[+A]              = scala.collection.immutable.IndexedSeq[A]
-  type LinearSeq[+A]               = scala.collection.immutable.LinearSeq[A]
-  type ListBuffer[A]               = scala.collection.mutable.ListBuffer[A]
-  type ScalaNumber                 = scala.math.ScalaNumber
-  type TraversableLike[+A, CC[+X]] = scala.collection.TraversableLike[A, CC[A]]
-  type Try[+A]                     = scala.util.Try[A]
-  type VectorBuilder[A]            = scala.collection.mutable.Builder[A, Vector[A]]
-  type WrappedArray[A]             = scala.collection.mutable.WrappedArray[A]
+  type ArrayBuffer[A]                  = scala.collection.mutable.ArrayBuffer[A]
+  type Builder[-Elem, +To]             = scala.collection.mutable.Builder[Elem, To]
+  type CanBuild[-Elem, +To]            = scala.collection.generic.CanBuildFrom[_, Elem, To]
+  type CanBuildFrom[-From, -Elem, +To] = scala.collection.generic.CanBuildFrom[From, Elem, To]
+  type ClassTag[A]                     = scala.reflect.ClassTag[A]
+  type Codec                           = scala.io.Codec
+  type GTOnce[+A]                      = scala.collection.GenTraversableOnce[A]
+  type IndexedSeq[+A]                  = scala.collection.immutable.IndexedSeq[A]
+  type LinearSeq[+A]                   = scala.collection.immutable.LinearSeq[A]
+  type ListBuffer[A]                   = scala.collection.mutable.ListBuffer[A]
+  type ScalaNumber                     = scala.math.ScalaNumber
+  type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
+  type Try[+A]                         = scala.util.Try[A]
+  type VectorBuilder[A]                = scala.collection.mutable.Builder[A, Vector[A]]
+  type WrappedArray[A]                 = scala.collection.mutable.WrappedArray[A]
 
   // common annotations
   type switch  = scala.annotation.switch
@@ -257,11 +258,12 @@ object Ops {
     new Ordering[A] { def compare(x: A, y: A): Int = f(x, y).intValue }
 
   // Can't make the parameter private until 2.11.
-  final class AnyOps[A](val __psp_x: A) extends AnyVal {
+  final class ApiAnyOps[A](val __psp_x: A) extends AnyVal {
     // "Maybe we can enforce good programming practice with annoyingly long method names."
     def castTo[U] : U = __psp_x.asInstanceOf[U]
     def toRef: AnyRef = castTo[AnyRef]
     def reflect[B](m: java.lang.reflect.Method)(args: Any*): B = m.invoke(__psp_x, args map (_.asInstanceOf[AnyRef]): _*).asInstanceOf[B]
+    def isNull: Boolean = toRef eq null
 
     // The famed forward pipe.
     @inline def |>[B](f: A => B): B       = f(__psp_x)

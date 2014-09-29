@@ -1,9 +1,10 @@
 package psp
 package std
+package linear
 
 import SizeInfo._
 
-trait LinearLeaf[A] extends Any with Linear[A] {
+trait Leaf[A] extends Any with Linear[A] {
   def sizeInfo = if (isEmpty) Empty else NonEmpty
   @inline final def foreach(f: A => Unit): Unit = {
     @tailrec def loop(xs: Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
@@ -15,50 +16,50 @@ trait LinearLeaf[A] extends Any with Linear[A] {
   }
 }
 
-object PspList {
-  def empty[A]                                = nil.castTo[PspList[A]]
-  def fill[A](n: Int)(body: => A): PspList[A] = if (n <= 0) nil() else body :: fill(n - 1)(body)
-  def apply[A](xs: A*): PspList[A]            = xs.foldRight(nil[A]())(_ :: _)
+object List {
+  def empty[A]                             = Nil.castTo[List[A]]
+  def fill[A](n: Int)(body: => A): List[A] = if (n <= 0) Nil() else body :: fill(n - 1)(body)
+  def apply[A](xs: A*): List[A]            = xs.foldRight(Nil[A]())(_ :: _)
 }
 
-sealed trait PspList[A] extends LinearLeaf[A] {
-  type Tail                    = PspList[A]
-  def reverse: PspList[A]      = reverser(this, nil())
-  def take(n: Int): PspList[A] = taker(this, nil(), n)
-  def drop(n: Int): PspList[A] = dropper(this, n)
-  def ::(x: A): PspList[A]     = new ::(x, this)
+sealed trait List[A] extends Leaf[A] {
+  type Tail                    = List[A]
+  def reverse: List[A]      = reverser(this, Nil())
+  def take(n: Int): List[A] = taker(this, Nil(), n)
+  def drop(n: Int): List[A] = dropper(this, n)
+  def ::(x: A): List[A]     = new ::(x, this)
 
-  @tailrec private def reverser(in: PspList[A], out: PspList[A]): PspList[A] =
+  @tailrec private def reverser(in: List[A], out: List[A]): List[A] =
     if (in.isEmpty) out else reverser(in.tail, in.head :: out)
 
-  @tailrec private def taker(in: PspList[A], out: PspList[A], n: Int): PspList[A] =
+  @tailrec private def taker(in: List[A], out: List[A], n: Int): List[A] =
     if (n <= 0 || in.isEmpty) out.reverse else taker(in.tail, in.head :: out, n - 1)
 
-  @tailrec private def dropper(xs: PspList[A], n: Int): PspList[A] =
+  @tailrec private def dropper(xs: List[A], n: Int): List[A] =
     if (n <= 0 || xs.isEmpty) xs else dropper(xs.tail, n - 1)
 }
 
-final case object nil extends PspList[Nothing] {
+final case object Nil extends List[Nothing] {
   def isEmpty  = true
   def head     = failEmpty("head")
   def tail     = failEmpty("tail")
 
-  def apply[A](): PspList[A] = this.castTo[PspList[A]]
-  def unapply[A](xs: PspList[A]): Boolean = xs.isEmpty
+  def apply[A](): List[A] = this.castTo[List[A]]
+  def unapply[A](xs: List[A]): Boolean = xs.isEmpty
 }
-final case class ::[A](head: A, tail: PspList[A]) extends PspList[A] {
+final case class ::[A](head: A, tail: List[A]) extends List[A] {
   def isEmpty = false
 }
 
 
-final class PspStream[A](headFn: => A, tailFn: => LinearLeaf[A]) extends LinearLeaf[A] {
-  type Tail = LinearLeaf[A]
+final class Stream[A](headFn: => A, tailFn: => Leaf[A]) extends Leaf[A] {
+  type Tail = Leaf[A]
   def isEmpty = false
   lazy val head = headFn
   lazy val tail = tailFn
 }
 
-object PspStream {
-  def empty[A]                                                      = nil.castTo[LinearLeaf[A]]
-  def cons[A](headFn: => A, tailFn: => LinearLeaf[A]): PspStream[A] = new PspStream[A](headFn, tailFn)
+object Stream {
+  def empty[A]                                                      = Nil.castTo[Leaf[A]]
+  def cons[A](headFn: => A, tailFn: => Leaf[A]): Stream[A] = new Stream[A](headFn, tailFn)
 }

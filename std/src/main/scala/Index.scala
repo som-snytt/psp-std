@@ -44,6 +44,8 @@ final class Index private (val value: Int) extends AnyVal with IndexOrNth with a
 
   def toSizeInfo: SizeInfo = toSize
 
+  def fold[A](zero: => A)(f: Int => A): A = if (isDefined) f(value) else zero
+
   override def toString = s"$value"
 }
 

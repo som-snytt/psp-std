@@ -27,7 +27,7 @@ abstract class PackageImplicits extends ImplicitRemoval
  */
 trait ImplicitRemoval {
   val any2stringadd, fallbackStringCanBuildFrom                                                           = null
-  val tuple2ToZippedOps, tuple3ToZippedOps                                                                = null
+  // val tuple2ToZippedOps, tuple3ToZippedOps                                                                = null
   val wrapString, unwrapString, augmentString, unaugmentString                                            = null
   val StringAdd, ArrowAssoc, Boolean2boolean, Byte2byte, Character2char                                   = null
   val Double2double, Float2float, Integer2int, Long2long, Short2short                                     = null
@@ -35,13 +35,17 @@ trait ImplicitRemoval {
   val wrapIntArray, wrapLongArray, wrapRefArray, wrapShortArray, wrapUnitArray                            = null
   val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
   val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
-  val genericArrayOps                                                                                     = null
+  // val genericArrayOps                                                                                     = null
 
   // 2.10
   val any2ArrowAssoc = null
 }
 
-trait StandardImplicits1 {
+trait StandardImplicits0 {
+  implicit def genericArrayOps[T](xs: Array[T]) = scala.Predef.genericArrayOps[T](xs)
+}
+
+trait StandardImplicits1 extends StandardImplicits0 {
   implicit def sizeToSizeInfo(s: Size): SizeInfo    = s.toInfo
   implicit def apiSizeToSize(s: api.Size): Size     = Size(s.value)
   implicit def apiIndexToIndex(x: api.Index): Index = Index(x.value)
@@ -73,6 +77,7 @@ trait StandardImplicits2 extends StandardImplicits1 {
   implicit def opsAny[A](x: A): Ops.AnyOps[A]                                         = new Ops.AnyOps[A](x)
   implicit def opsArray[A](xs: Array[A]): Ops.ArrayOps[A]                             = new Ops.ArrayOps[A](xs)
   implicit def opsBooleanAlgebra[A](alg: BooleanAlgebra[A]): Ops.BooleanAlgebraOps[A] = new Ops.BooleanAlgebraOps[A](alg)
+  implicit def opsChar(x: Char): Ops.CharOps                                          = new Ops.CharOps(x)
   implicit def opsCollection[A](x: jAbstractCollection[A]): Ops.jCollectionOps[A]     = new Ops.jCollectionOps(x)
   implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                       = new Ops.ForeachOps(xs)
   implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)

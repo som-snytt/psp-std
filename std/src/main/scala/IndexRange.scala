@@ -30,10 +30,12 @@ final class IndexRange private (val bits: Long) extends AnyVal {
   def intLength: Int = length.toInt
   def size: Size     = if (length > Int.MaxValue) Size.NoSize else Size(intLength)
 
-  def drop(n: Int): IndexRange      = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start + n, end)
-  def dropRight(n: Int): IndexRange = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start, end - n)
-  def take(n: Int): IndexRange      = if (isUndefined) undefined else if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(start, start + n)
-  def takeRight(n: Int): IndexRange = if (isUndefined) undefined else if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(end - n, end)
+  def drop(n: Int): IndexRange                   = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start + n, end)
+  def dropRight(n: Int): IndexRange              = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start, end - n)
+  def take(n: Int): IndexRange                   = if (isUndefined) undefined else if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(start, start + n)
+  def takeRight(n: Int): IndexRange              = if (isUndefined) undefined else if (n <= 0) empty else if (intLength <= n) this else IndexRange.until(end - n, end)
+  def dropWhile(p: Index => Boolean): IndexRange = find(p).fold(this)(drop)
+  def takeWhile(p: Index => Boolean): IndexRange = find(!p).fold(empty)(take)
 
   def foreachNth(f: Nth => Unit): Unit            = foreach(i => f(i.toNth))
   def filterNth(p: Nth => Boolean): Vector[Index] = filter(i => p(i.toNth))

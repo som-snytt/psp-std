@@ -77,7 +77,7 @@ trait PackageMethods {
   def indexRange(start: Int, end: Int): IndexRange       = IndexRange.until(Index(start), Index(end))
   def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
   def loaderOf[A: ClassTag] : ClassLoader                = noNull(javaClassOf[A].getClassLoader, nullLoader)
-  def log(msg: String): Unit                             = Console.err println msg
+  def errLog(msg: String): Unit                          = Console.err println msg
   def noNull[A](value: A, orElse: => A): A               = if (value == null) orElse else value
   def nth(x: Int): Nth                                   = Nth(x)
   def nullLoader(): ClassLoader                          = NullClassLoader
@@ -85,7 +85,7 @@ trait PackageMethods {
   def offset(x: Int): Offset                             = Offset(x)
   def resource(name: String): Array[Byte]                = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
   def resourceString(name: String): String               = fromUTF8(resource(name))
-  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally log("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
+  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally errLog("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
   def unknownSize: SizeInfo                              = SizeInfo.Unknown
 
   // OrderedMap is our own creation since SortedMap is way overspecified
