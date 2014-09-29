@@ -148,10 +148,21 @@ trait OrderImplicits {
 trait EqImplicits {
   def setEq[CC[X] <: Set[X], A: HashEq] : Eq[CC[A]] = Eq[CC[A]]((xs, ys) => each(xs).toSet === each(ys).toSet)
 
-  implicit def sizeInfoEq: Eq[SizeInfo]            = Eq(_ == _)
-  implicit def mapEq[K: Eq, V: Eq] : Eq[Map[K, V]] = Eq((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
-  implicit def seqEq[A: Eq] : Eq[Seq[A]]           = Eq((xs, ys) => (xs corresponds ys)(_ === _))
-  implicit def arrayEq[A: Eq] : Eq[Array[A]]       = Eq(_.toSeq == _.toSeq)
+  implicit def booleanEq: Eq[Boolean] = Eq.native[Boolean]
+  implicit def byteEq: Eq[Byte]       = Eq.native[Byte]
+  implicit def charEq: Eq[Char]       = Eq.native[Char]
+  implicit def doubleEq: Eq[Double]   = Eq.native[Double]
+  implicit def floatEq: Eq[Float]     = Eq.native[Float]
+  implicit def intEq: Eq[Int]         = Eq.native[Int]
+  implicit def longEq: Eq[Long]       = Eq.native[Long]
+  implicit def shortEq: Eq[Short]     = Eq.native[Short]
+  implicit def stringEq: Eq[String]   = Eq.native[String]
+  implicit def unitEq: Eq[Unit]       = Eq[Unit]((x, y) => true)
+
+  implicit def sizeInfoEq: Eq[SizeInfo]                = Eq(_ == _)
+  implicit def mapEq[K: HashEq, V: Eq] : Eq[Map[K, V]] = Eq((xs, ys) => each(xs.keys).toSet === each(ys.keys).toSet && xs.keys.forall(k => xs(k) === ys(k)))
+  implicit def seqEq[A: Eq] : Eq[Seq[A]]               = Eq((xs, ys) => (xs corresponds ys)(_ === _))
+  implicit def arrayEq[A: Eq] : Eq[Array[A]]           = Eq(_.toSeq === _.toSeq)
 }
 
 trait ArrowAssoc1 {

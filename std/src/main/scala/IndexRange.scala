@@ -1,6 +1,7 @@
 package psp
 package std
 
+import api._
 import Index.zero
 import IndexRange.{ undefined, empty }
 
@@ -28,7 +29,7 @@ final class IndexRange private (val bits: Long) extends AnyVal {
   def end: Index     = Index(endInt)
   def length: Long   = (end.toLong - start.toLong) max 0L
   def intLength: Int = length.toInt
-  def size: api.Size = if (length > Int.MaxValue) Size.NoSize else Size(intLength)
+  def size: Size     = if (length > Int.MaxValue) NoSize else Size(intLength)
 
   def drop(n: Int): IndexRange                   = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start + n, end)
   def dropRight(n: Int): IndexRange              = if (isUndefined) undefined else if (n <= 0) this else IndexRange.until(start, end - n)

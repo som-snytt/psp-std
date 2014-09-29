@@ -2,8 +2,8 @@ package psp
 package std
 package api
 
-/** Sorry there's no way to put mutable and immutable into the namespace.
- *  You can import them individually into every file until you die.
+/** Sorry there's no way to put package names such as mutable and immutable into
+ *  the namespace. You can import them individually into every file until you die.
  */
 import scala.collection.{ generic => scg, mutable => scm, immutable => sci }
 import java.nio.{ file => jnf }
@@ -27,7 +27,6 @@ trait PackageAliases extends Any {
   type ScalaNumber                     = scala.math.ScalaNumber
   type TraversableLike[+A, CC[+X]]     = scala.collection.TraversableLike[A, CC[A]]
   type Try[+A]                         = scala.util.Try[A]
-  type VectorBuilder[A]                = scm.Builder[A, Vector[A]]
   type WrappedArray[A]                 = scm.WrappedArray[A]
 
   // common annotations

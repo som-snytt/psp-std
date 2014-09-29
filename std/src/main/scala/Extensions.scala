@@ -20,7 +20,12 @@ object TClass {
   }
   final class PartialOrderOps[A](val __porder_lhs: A) extends AnyVal {
     def partialCompare(rhs: A)(implicit ord: PartialOrder[A]): PCmp    = ord.partialCompare(__porder_lhs, rhs)
-    def tryCompare(rhs: A)(implicit ord: PartialOrder[A]): Option[Cmp] = ord.tryCompare(__porder_lhs, rhs)
+    def tryCompare(rhs: A)(implicit ord: PartialOrder[A]): Option[Cmp] = partialCompare(rhs) match {
+      case PCmp.LT => Some(Cmp.LT)
+      case PCmp.GT => Some(Cmp.GT)
+      case PCmp.EQ => Some(Cmp.EQ)
+      case _       => None
+    }
 
     def p_< (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.LT
     def p_<=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ != Cmp.GT)
@@ -71,29 +76,30 @@ object Ops {
     def apply(range: IndexRange): Vector[A] = indexRange intersect range map elemAt
   }
   final class Map[K, V](val map: sc.Map[K, V]) extends AnyVal {
-    def sortedKeys(implicit ord: Order[K])                     = map.keys.toSeq.sorted(ord.toOrdering)
+    def sortedKeys(implicit ord: Order[K])                     = map.keys.toSeq.sorted(ordering[K])
     def orderByKey(implicit ord: Order[K]): OrderedMap[K, V]   = orderedMap(sortedKeys, map.toMap)
     def orderByValue(implicit ord: Order[V]): OrderedMap[K, V] = orderedMap(sortedKeys(ord on map), map.toMap)
   }
   final class SortedMap[K, V](val map: sc.SortedMap[K, V]) extends AnyVal {
-    private def ord: Order[K] = Order fromOrdering map.ordering
+    private def ord: Order[K]     = Order create map.ordering
     def reverse: OrderedMap[K, V] = map orderByKey ord.reverse
   }
+
   final class GTOnceOps[A](val xs: GTOnce[A]) extends AnyVal with FoldableOps[A] {
-    def foldl[B](zero: B)(f: (B, A) => B): B                       = xs.foldLeft(zero)(f)
+    def ascendingFrequency: OrderedMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
+    def descendingFrequency: OrderedMap[A, Int]                    = ascendingFrequency.reverse
+    def distinct: Vector[A]                                        = xs.toVector.distinct
     def findOr(p: A => Boolean, alt: => A): A                      = (xs find p) | alt
-    def sortOrder[B: Order](f: A => B): Vector[A]                  = xs.toVector sorted (?[Order[B]] on f toOrdering)
-    def sortDistinct(implicit ord: Order[A]): Vector[A]            = distinct.sorted(ord.toOrdering)
-    def mapZip[B, C](ys: GTOnce[B])(f: (A, B) => C): Vector[C]     = for ((x, y) <- xs.toVector zip ys.toVector) yield f(x, y)
+    def foldl[B](zero: B)(f: (B, A) => B): B                       = xs.foldLeft(zero)(f)
     def mapFrom[B](f: A => B): OrderedMap[B, A]                    = orderedMap(xs.toVector map (x => (f(x), x)): _*)
     def mapOnto[B](f: A => B): OrderedMap[A, B]                    = orderedMap(xs.toVector map (x => (x, f(x))): _*)
     def mapToAndOnto[B, C](k: A => B, v: A => C): OrderedMap[B, C] = xs.toVector |> (xs => orderedMap(xs map (x => k(x) -> v(x)): _*))
     def mapToMapPairs[B, C](f: A => (B, C)): OrderedMap[B, C]      = xs.toVector |> (xs => orderedMap(xs map f: _*))
-    def sorted(implicit ord: Order[A]): Vector[A]                  = xs.toVector.sorted(ord.toOrdering)
-    def distinct: Vector[A]                                        = xs.toVector.distinct
-    def unsortedFrequencyMap: Map[A, Int]                          = sciMap(xs.toVector groupBy (x => x) mapValues (_.size) toSeq: _*)
-    def ascendingFrequency: OrderedMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
-    def descendingFrequency: OrderedMap[A, Int]                    = ascendingFrequency.reverse
+    def mapZip[B, C](ys: GTOnce[B])(f: (A, B) => C): Vector[C]     = for ((x, y) <- xs.toVector zip ys.toVector) yield f(x, y)
+    def sortDistinct(implicit ord: Order[A]): Vector[A]            = distinct sorted ord.toScalaOrdering
+    def sortOrder[B: Order](f: A => B): Vector[A]                  = xs.toVector sorted (Order.order[B] on f).toScalaOrdering
+    def sorted(implicit ord: Order[A]): Vector[A]                  = xs.toVector sorted Order.order[A].toScalaOrdering
+    def unsortedFrequencyMap: Map[A, Int]                          = sciMap(xs.toVector groupBy identity mapValues (_.size) toSeq: _*)
   }
   final class ArrayOps[A](val xs: Array[A]) extends AnyVal with SeqLikeOps[A] with FoldableOps[A] {
     def foldl[B](zero: B)(f: (B, A) => B): B = {

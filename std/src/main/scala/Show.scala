@@ -10,6 +10,7 @@ import api._
  */
 trait ShowDirect extends Any { def to_s: String }
 trait ShowDirectNow extends Any with ShowDirect { final override def toString = to_s }
+trait TryShow[-A] extends Any { def show(x: A): String }
 
 /** Used to achieve type-safety in the show interpolator.
  *  It's the String resulting from passing a value through its Show instance.
@@ -69,13 +70,27 @@ final class ShowInterpolator(val __psp_sc: StringContext) extends AnyVal {
 }
 
 object Show {
-  def apply[A](f: A => String): Show[A] = new api.Ops.ShowClass[A](f)
+  final class Impl[-A](val f: A => String) extends AnyVal with Show[A] { def show(x: A) = f(x) }
+  def apply[A](f: A => String): Show[A] = new Impl[A](f)
   def native[A](): Show[A]              = ToString
 
   /** This of course is not implicit as that would defeat the purpose of the endeavor.
    */
-  private val ToString: Show[Any] = apply[Any] {
+  private val ToString = apply[Any]({
+    case null          => ""
     case x: ShowDirect => x.to_s
-    case x             => "" + x
-  }
+    case x             => x.toString
+  })
+}
+
+trait LowTryShow {
+  self: TryShow.type =>
+
+  implicit def hasNoShow[A] : TryShow[A] = NoShow
+}
+object TryShow extends LowTryShow {
+  final class HasShow[-A](shows: Show[A]) extends TryShow[A] { def show(x: A) = shows show x }
+  final object NoShow extends TryShow[Any] { def show(x: Any): String = "" + x }
+
+  implicit def hasShow[A](implicit shows: Show[A]): HasShow[A] = new HasShow(shows)
 }

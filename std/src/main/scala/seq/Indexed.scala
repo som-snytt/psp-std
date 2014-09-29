@@ -3,14 +3,14 @@ package std
 
 import api._
 
-abstract class DirectLeaf[+A](val size: api.Size) extends Direct[A] with api.HasPreciseSize {
-  def sizeInfo = Precise(Size(size.value))
+abstract class DirectLeaf[+A](val size: Size) extends Direct[A] with HasPreciseSize {
+  def sizeInfo                                  = Precise(Size(size.value))
   @inline final def foreach(f: A => Unit): Unit = size foreachIndex (i => f(elemAt(i)))
-  override def toString = Foreach.stringify(this)(Show.native[A])
+  override def toString                         = Foreach.stringify(this)(Show.native[A])
 }
 
 object Direct {
-  final class Pure[+A](size: api.Size, indexFn: api.Index => A) extends DirectLeaf[A](size) {
+  final class Pure[+A](size: Size, indexFn: Index => A) extends DirectLeaf[A](size) {
     def elemAt(index: api.Index): A = indexFn(index)
   }
   object Empty extends DirectLeaf[Nothing](SizeInfo.Zero) with HasStaticSize[Nat._0] {
@@ -26,13 +26,9 @@ object Direct {
   /** Immutability (particularly of Arrays) is on the honor system. */
   def pureArray[A](xs: Array[A]): Direct[A]                               = pure(Size(xs.length), xs apply _.value)
   def pure[Repr](xs: Repr)(implicit tc: DirectAccess[Repr]): Direct[tc.A] = pure(tc length xs, index => (tc elemAt xs)(index))
-  def pure[A](size: Size, indexFn: api.Index => A): Direct[A]             = new Pure(size, indexFn)
+  def pure[A](size: Size, indexFn: Index => A): Direct[A]                 = new Pure(size, indexFn)
 
-  def fill[A](times: Int)(body: => A): Direct[A] = {
-    val buf = Vector.newBuilder[A]
-    indexRange(0, times) foreach (_ => buf += body)
-    pure(buf.result)
-  }
+  def fill[A](times: Int)(body: => A): Direct[A] = elems(0 until times map (_ => body): _*)
   def empty[A] : Direct[A] = Foreach.Empty
   def elems[A](xs: A*): Direct[A] = xs match {
     case xs: WrappedArray[A] => pureArray(xs.array)
@@ -40,8 +36,9 @@ object Direct {
   }
 }
 object IntRange {
-  def until(start: Int, end: Int): IntRange = if (end < start) until(start, start) else new IntRange(start, end - 1, isInclusive = false)
-  def to(start: Int, last: Int): IntRange   = if (last < start) until(start, start) else new IntRange(start, last, isInclusive = true)
+  def empty = IntRange(0, 0, isInclusive = false)
+  def until(start: Int, end: Int): IntRange = if (end < start) empty else new IntRange(start, end - 1, isInclusive = false)
+  def to(start: Int, last: Int): IntRange   = if (last < start) empty else new IntRange(start, last, isInclusive = true)
 }
 
 final class IntRange private (val start: Int, val last: Int, isInclusive: Boolean) extends DirectLeaf[Int](Size(last - start + 1)) {

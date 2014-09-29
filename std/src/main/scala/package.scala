@@ -12,23 +12,9 @@ package std {
     implicit def showableToTryShown[A](x: A)(implicit shows: TryShow[A]): TryShown = new TryShown(shows show x)
   }
 }
-// /** A trait containing implicits to ease scala compatibility,
-//  *  but with some risk of creating ambiguity or masking errors.
-//  *  These aren't included by default.
-//  */
-// trait ScalaCompat extends Any with LowPriorityScalaCompat {
-//   implicit def orderToOrdering[A](implicit ord: Order[A]): Ordering[A] =
-//     new Ordering[A] { def compare(x: A, y: A): Int = ord.compare(x, y).intValue }
-// }
-
-// trait LowPriorityScalaCompat extends Any {
-//   implicit def showToOrdering[A](implicit show: Show[A]): Ordering[A] =
-//     new Ordering[A] { def compare(x: A, y: A): Int = implicitly[Ordering[String]].compare(show show x, show show y) }
-// }
-
 
 package object std extends psp.std.PackageImplicits with psp.std.api.PackageAliases with PackageLow {
-  implicit def makeSizeOps(x: Size): SizeOps = SizeOps(x.value)
+  implicit def opsSizeImpl(x: Size): Size.Impl = Size(x.value)
 
   // The typesafe non-toString-using show"..." interpolator.
   implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator = new ShowInterpolator(sc)
@@ -36,8 +22,7 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
   // Continuing the delicate dance against scala's hostile-to-correctness intrinsics.
   implicit def showableToShown[A: Show](x: A): Shown = Shown(implicitly[Show[A]] show x)
 
-  // Ops on base type classes.
-  implicit def opsApiOrder[A](x: Order[A]): api.Ops.OrderOps[A] = new api.Ops.OrderOps[A](x)
+  implicit def orderToImpl[A](ord: Order[A]): Order.Impl[A] = new Order.Impl(ord.compare)
 
   implicit class ArrayViewOps[A](val repr: Array[A]) {
     def m: IndexedView[A, Array[A]] = new DirectAccess.ArrayIs[A] wrap repr
@@ -45,8 +30,14 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
   implicit class StringViewOps[A](val repr: String) {
     def m: IndexedView[Char, String] = DirectAccess.StringIs wrap repr
   }
+  implicit class ApiOrderOps[A](val ord: Order[A]) extends AnyVal {
+    def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
+    def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
+  }
+
 
   final val PspList              = linear.List
+  final val NoSize: Size         = Size.undefined
   final val NoPath: Path         = path("")
   final val NoFile: jFile        = jFile("")
   final val NoUri: jUri          = jUri("")
@@ -72,32 +63,6 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
     type A = A0
     type CC[B] = CC0[B]
   }
-
-  // type Show[-A]         = api.Show[A]
-  // type TryShow[-A]      = api.TryShow[A]
-  // type Eq[-A]           = api.Eq[A]
-  // type HashEq[-A]       = api.HashEq[A]
-  // type Order[-A]        = api.Order[A]
-  // type PartialOrder[-A] = api.PartialOrder[A]
-  // type Read[A]          = api.Read[A]
-  // type ShowDirect       = api.ShowDirect
-  // type TryShown      = api.TryShown[A]
-
-  // type Invariant[A] = api.Invariant[A]
-  // type Foreach[+A]  = api.Foreach[A]
-  // type Indexed[+A]  = api.Indexed[A]
-  // type Direct[+A]   = api.Direct[A]
-  // type Linear[+A]   = api.Linear[A]
-  // type SizeInfo     = api.SizeInfo
-  // type Precise      = api.Precise
-  // type Bounded      = api.Bounded
-  // type Atomic       = api.Atomic
-
-  // val Infinite = api.Infinite
-  // val Precise  = api.Precise
-  // val Bounded  = api.Bounded
-  // val Eq       = api.Eq
-  // val Show     = api.Show
 
   type PspList[A] = psp.std.linear.List[A]
 
@@ -139,6 +104,7 @@ package object std extends psp.std.PackageImplicits with psp.std.api.PackageAlia
   def printResult[A](msg: String)(result: A): A      = try result finally println(s"$msg: $result")
   def showResult[A: Show](msg: String)(result: A): A = try result finally println("$msg: ${result.to_s}")
   def regex(re: String): Regex                       = Regex(re)
+  def ordering[A: Order] : Ordering[A]               = ?[Order[A]].toScalaOrdering
 
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
   def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
