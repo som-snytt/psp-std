@@ -24,13 +24,13 @@ trait DirectAccess[-Repr] extends Foreachable[Repr] {
 final class OpsContainer[M](f: () => M) { def m: M = f() }
 
 trait WalkableLow {
-  implicit def atomicForeachIs[A] : ForeachableType[A, Foreach[A], Foreach]             = new Foreachable.ForeachIs[A]
-  implicit def atomicTraversableIs[A] : ForeachableType[A, Traversable[A], Traversable] = new Foreachable.TraversableIs[A]
-  implicit def atomicEquivSetIs[A] : ForeachableType[A, EquivSet[A], EquivSet]          = new Foreachable.EquivSetIs[A]
+  implicit def atomicForeachIs[A] : ForeachableType[A, Foreach[A], Foreach]                 = new Foreachable.ForeachIs[A]
+  implicit def atomicTraversableIs[A] : ForeachableType[A, scTraversable[A], scTraversable] = new Foreachable.TraversableIs[A]
+  implicit def atomicEquivSetIs[A] : ForeachableType[A, EquivSet[A], EquivSet]              = new Foreachable.EquivSetIs[A]
 }
 trait WalkableHigh extends WalkableLow {
-  implicit def directIndexedIs[A] : DirectAccessType[A, Direct[A], Direct]              = new DirectAccess.IndexedIs[A]
-  implicit def directScalaIndexedIs[A] : DirectAccessType[A, IndexedSeq[A], IndexedSeq] = new DirectAccess.ScalaIndexedIs[A]
+  implicit def directIndexedIs[A] : DirectAccessType[A, Direct[A], Direct]                    = new DirectAccess.IndexedIs[A]
+  implicit def directScalaIndexedIs[A] : DirectAccessType[A, sciIndexedSeq[A], sciIndexedSeq] = new DirectAccess.ScalaIndexedIs[A]
 }
 object Walkable extends WalkableHigh {
 
@@ -47,8 +47,8 @@ object Foreachable {
     type A = AIn
     def foreach(repr: Foreach[A])(f: A => Unit): Unit = repr foreach f
   }
-  final class TraversableIs[AIn] extends Foreachable[Traversable[AIn]] {
-    type CC[X] = Traversable[X]
+  final class TraversableIs[AIn] extends Foreachable[scTraversable[AIn]] {
+    type CC[X] = scTraversable[X]
     type A = AIn
     def foreach(repr: CC[A])(f: A => Unit): Unit = repr foreach f
   }
@@ -79,7 +79,7 @@ object DirectAccess {
     def length(repr: Array[A]): Size            = Size(repr.length)
     def elemAt(repr: Array[A])(index: Index): A = repr(index.value)
   }
-  final class ScalaIndexedIs[A] extends Impl[A, IndexedSeq[A], IndexedSeq] {
+  final class ScalaIndexedIs[A] extends Impl[A, sciIndexedSeq[A], sciIndexedSeq] {
     def length(repr: CC[A]): Size            = Size(repr.length)
     def elemAt(repr: CC[A])(index: Index): A = repr(index)
   }

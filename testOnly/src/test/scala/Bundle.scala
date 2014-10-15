@@ -3,12 +3,12 @@ package tests
 
 import psp.std._
 import org.scalacheck._
-import scala.Console._
+import scala.Console.{ GREEN, RED, CYAN, RESET }
 
 // TODO - leverage now-available it-doesn't-typecheck test machinery.
 class Nats extends Bundle {
-  def ints = NatList(1, 2, 3, 4)
-  def strs = NatList("a", "ab", "abc", "abcd")
+  def ints = NatList((1, 2, 3, 4))
+  def strs = NatList(("a", "ab", "abc", "abcd"))
 
   def run(): Boolean = {
     assert((ints zip ints map (_ + _)).sum == (ints.sum * 2))

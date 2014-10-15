@@ -10,6 +10,23 @@ abstract class DirectLeaf[+A](val size: Size) extends Direct[A] with HasPreciseS
 }
 
 object Direct {
+  def builder[A] : Builds[A, Direct[A]] = arrayBuilder[Any] map (res => new WrapArray[A](res))
+  def stringBuilder(): Builds[Char, String] = arrayBuilder[Char] map (cs => new String(cs))
+  def arrayBuilder[A: CTag]: Builds[A, Array[A]] = Builds[A, Array[A]](xs =>
+    xs.sizeInfo match {
+      case Precise(Size(size)) => new Array[A](size) doto (arr => xs foreachCounted ((i, x) => arr(i.value) = x))
+      case _                   => scala.Array.newBuilder[A] doto (buf => xs foreach (x => buf += x)) result
+    }
+  )
+  private class WrapString(xs: String) extends DirectLeaf[Char](xs.length.size) {
+    def elemAt(i: Index): Char = xs charAt i.indexValue
+  }
+  private class WrapArray[A](xs: Array[_]) extends DirectLeaf[A](xs.length.size) {
+    def elemAt(i: Index): A = xs(i.indexValue).castTo[A]
+  }
+  private class WrapScalaSeq[A](xs: sciIndexedSeq[A]) extends DirectLeaf[A](xs.length.size) {
+    def elemAt(i: Index): A = xs(i.indexValue)
+  }
   final class Pure[+A](size: Size, indexFn: Index => A) extends DirectLeaf[A](size) {
     def elemAt(index: api.Index): A = indexFn(index)
   }
@@ -28,7 +45,7 @@ object Direct {
   def pure[Repr](xs: Repr)(implicit tc: DirectAccess[Repr]): Direct[tc.A] = pure(tc length xs, index => (tc elemAt xs)(index))
   def pure[A](size: Size, indexFn: Index => A): Direct[A]                 = new Pure(size, indexFn)
 
-  def fill[A](times: Int)(body: => A): Direct[A] = elems(0 until times map (_ => body): _*)
+  def fill[A](times: Int)(body: => A): Direct[A] = elems((0 until times).toSeq map (_ => body): _*)
   def empty[A] : Direct[A] = Foreach.Empty
   def elems[A](xs: A*): Direct[A] = xs match {
     case xs: scmWrappedArray[A] => pureArray(xs.array)

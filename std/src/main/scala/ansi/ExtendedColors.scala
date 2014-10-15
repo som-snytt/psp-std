@@ -2,13 +2,13 @@ package psp
 package std
 package ansi
 
-trait BasicAtoms[Rep] extends Any with BasicColors[Rep] with BasicAttributes[Rep] {
+trait BasicAtoms[Rep] extends scala.Any with BasicColors[Rep] with BasicAttributes[Rep] {
   protected def newRep(atom: Atom): Rep
   protected def newColor(atom: Atom)     = newRep(atom)
   protected def newAttribute(atom: Atom) = newRep(atom)
 }
 
-trait BasicColors[Color] extends Any {
+trait BasicColors[Color] extends scala.Any {
   /** This setup allows the color structure to be reused for quite
    *  different purposes. Supply an Atom => Color and you'll have
    *  an object loaded with named Colors.
@@ -30,7 +30,7 @@ trait BasicColors[Color] extends Any {
   def white: Color    = 37
 }
 
-trait BasicAttributes[Attribute] extends Any {
+trait BasicAttributes[Attribute] extends scala.Any {
   protected def newAttribute(atom: Atom): Attribute
   implicit private def implicitAttribute(code: Int): Attribute = newAttribute(Atom(code))
 

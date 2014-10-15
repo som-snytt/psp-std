@@ -7,7 +7,7 @@ class Collections extends Bundle {
   val xs = scala.collection.immutable.BitSet(1, 2, 3)
   def checkResult[T: ClassTag](result: Object) = assert(classTag[T].runtimeClass isAssignableFrom result.getClass)
 
-  implicit def convertCanBuild[Elem, To](implicit z: CanBuild[Elem, To]): Builds[Elem, To] = Builds wrap z
+  // implicit def convertCanBuild[Elem, To](implicit z: CanBuild[Elem, To]): Builds[Elem, To] = Builds wrap z
 
   def run(): Boolean = {
     checkResult[sciBitSet](xs.m map (_.toString.length) native)

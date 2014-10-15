@@ -96,15 +96,17 @@ package object std extends psp.std.PackageImplicits {
   final val NoNth                = Nth.undefined
   final val NoSize: Size         = Size.undefined
 
-  @inline final implicit def arrowAssocInt(x: Int): Ops.ArrowAssocInt             = new Ops.ArrowAssocInt(x)
-  @inline final implicit def arrowAssocLong(x: Long): Ops.ArrowAssocLong          = new Ops.ArrowAssocLong(x)
-  @inline final implicit def arrowAssocDouble(x: Double): Ops.ArrowAssocDouble    = new Ops.ArrowAssocDouble(x)
-  @inline final implicit def arrowAssocChar(x: Char): Ops.ArrowAssocChar          = new Ops.ArrowAssocChar(x)
-  @inline final implicit def arrowAssocBoolean(x: Boolean): Ops.ArrowAssocBoolean = new Ops.ArrowAssocBoolean(x)
+  def assert(assertion: Boolean): Unit                 = if (!assertion) assertionError("assertion failed")
+  def assert(assertion: Boolean, msg: => Any): Unit    = if (!assertion) assertionError(s"assertion failed: $msg")
+  def require(requirement: Boolean): Unit              = if (!requirement) illegalArgumentException("requirement failed")
+  def require(requirement: Boolean, msg: => Any): Unit = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
+  def ??? : Nothing                                    = throw new NotImplementedError
+  def identity[A](x: A): A                             = x
+  def implicitly[A](implicit x: A): A                  = x
+  def locally[A](x: A): A                              = x
 
-  implicit def identityAlgebra : BooleanAlgebra[Boolean]          = Algebras.Identity
-  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]] = new Algebras.Predicate[A]
-  implicit def scalaSetAlgebra[A] : BooleanAlgebra[sciSet[A]]     = new Algebras.ScalaSet[A]
+  def echoErr[A](x: A)(implicit z: TryShow[A]): Unit     = Console echoErr (z show x)
+  def println[A](x: A)(implicit z: TryShow[A]): Unit     = Console echoOut (z show x)
 
   type PolicyList[A]   = psp.std.linear.List[A]
 
@@ -134,10 +136,11 @@ package object std extends psp.std.PackageImplicits {
   def openSafari(file: jFile): Unit                 = openInApp("Safari", file)
   def openChrome(file: jFile): Unit                 = openInApp("Google Chrome", file)
 
-  def eqBy[A]       = new Ops.EqBy[A]
-  def orderBy[A]    = new Ops.OrderBy[A]
-  def showBy[A]     = new Ops.ShowBy[A]
-  def hashEq[A: Eq] = HashEq native ?[Eq[A]]
+  def eqBy[A]     = new ops.EqBy[A]
+  def hashBy[A]   = new ops.HashBy[A]
+  def hashEqBy[A] = new ops.HashEqBy[A]
+  def orderBy[A]  = new ops.OrderBy[A]
+  def showBy[A]   = new ops.ShowBy[A]
 
   // Operations involving encoding/decoding of string data.
   def utf8(xs: Array[Byte]): Utf8   = new Utf8(xs)
@@ -152,7 +155,7 @@ package object std extends psp.std.PackageImplicits {
 
   // Operations involving classes, classpaths, and classloaders.
   def classTag[T: CTag] : CTag[T]          = implicitly[CTag[T]]
-  def contextLoader(): ClassLoader         = noNull(Thread.currentThread.getContextClassLoader, nullLoader)
+  def contextLoader(): ClassLoader         = noNull(currentThread.getContextClassLoader, nullLoader)
   def loaderOf[A: ClassTag] : ClassLoader  = noNull(jClassOf[A].getClassLoader, nullLoader)
   def nullLoader(): ClassLoader            = NullClassLoader
   def resource(name: String): Array[Byte]  = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
@@ -202,8 +205,8 @@ package object std extends psp.std.PackageImplicits {
 
   // OrderedMap is our own creation since SortedMap is way overspecified
   // and LinkedHashMap is too slow and only comes in a mutable variety.
-  def orderedMap[K, V](kvs: (K, V)*): OrderedMap[K, V]                 = new OrderedMap[K, V](kvs map (_._1), kvs.toMap)
-  def orderedMap[K, V](keys: Seq[K], map: Map[K, V]): OrderedMap[K, V] = new OrderedMap[K, V](keys, map)
+  def orderedMap[K, V](kvs: (K, V)*): OrderedMap[K, V]                       = new OrderedMap[K, V](kvs.toVector map (_._1), kvs.toMap)
+  def orderedMap[K, V](keys: sciSeq[K], map: sciMap[K, V]): OrderedMap[K, V] = new OrderedMap[K, V](keys, map)
 
   def show[A: Show] : Show[A]        = ?
   // def readInto[A] : Read.ReadInto[A] = Read.into[A]
@@ -235,4 +238,6 @@ package object std extends psp.std.PackageImplicits {
     )
     rows map (row => join(widths zip (cols map (_ apply row)) map { case (w, v) => one(w, v) })) mkString "\n"
   }
+
+  def newCmp(difference: Long): Cmp = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
 }

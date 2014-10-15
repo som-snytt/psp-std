@@ -12,16 +12,15 @@ trait PspArb3 extends PspArb2 { implicit def arbPrecise: Arbitrary[Precise]   = 
 class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
   type SI = SizeInfo
   type BinOp[T] = (T, T) => T
-  type Tried[T] = Either[Throwable, T]
 
-  private def tried[T](op: => T) = try Right(op) catch { case t: Throwable => Left(t) }
+  private def tried[T](op: => T) = try scala.Right(op) catch { case t: Throwable => scala.Left(t) }
 
   // When testing e.g. associativity and the sum overflows, we
   // need to do more than compare values for equality.
   private def sameOutcome[T](p1: => T, p2: => T): Boolean = (tried(p1), tried(p2)) match {
-    case (Right(x1), Right(x2)) => x1 == x2
-    case (Left(t1), Left(t2))   => t1.getClass == t2.getClass
-    case _                      => false
+    case (scala.Right(x1), scala.Right(x2)) => x1 == x2
+    case (scala.Left(t1),  scala.Left(t2))  => t1.getClass == t2.getClass
+    case _                                  => false
   }
 
   def commutative[T: Arbitrary](op: BinOp[T]): Prop = forAll((p1: T, p2: T) => sameOutcome(op(p1, p2), op(p2, p1)))
@@ -37,7 +36,6 @@ class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
   def bundle = "SizeInfo"
   // ...Aaaaand right on cue, a bunch of these tests broke until I added a type annotation.
   def props = Seq[NamedProp](
-    "`+` on precises"      -> forAll((s: Precise, n: Size) => (s + n) === s.size + n),
     "s1 <= (s1 max s2)"    -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 max s2)),
     "s1 >= (s1 min s2)"    -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_>= (s1 min s2)),
     "s1 <= (s1 + s2)"      -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 + s2)),

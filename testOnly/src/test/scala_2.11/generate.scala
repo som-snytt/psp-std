@@ -1,6 +1,8 @@
 package psp
 package tests
 
+import psp.std._
+
 /** TODO - actually generate the code via an sbt generator.
  */
 object Generator {

@@ -41,7 +41,7 @@ object Foreach {
   final class ToScala[+A](private val xs: Foreach[A]) extends scala.collection.immutable.Traversable[A] {
     def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
-  final class FromScala[+A](val xs: Traversable[A]) extends AnyVal with Foreach[A] {
+  final class FromScala[+A](val xs: scTraversable[A]) extends AnyVal with Foreach[A] {
     def sizeInfo: SizeInfo          = SizeInfo(xs)
     def foreach(f: A => Unit): Unit = xs foreach f
     override def toString           = xs.shortClass + " (wrapped)"

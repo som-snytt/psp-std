@@ -3,6 +3,7 @@ package tests
 
 import org.scalacheck._, Prop._, Gen._
 import psp.std._
+import StdEq._
 
 class ValuesSpec extends ScalacheckBundle {
   def bundle = "Values"

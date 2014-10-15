@@ -2,6 +2,8 @@ package psp
 package std
 package api
 
+import scala._
+
 /** The SizeInfo hierarchy is:
  *                   SizeInfo
  *                  /        \

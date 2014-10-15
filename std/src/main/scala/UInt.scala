@@ -5,7 +5,7 @@ import java.{ lang => jl }
 import api._
 
 final class UInt private (val bits: Int) extends AnyVal {
-  def compare(that: UInt): Cmp = Order difference longValue - that.longValue
+  def compare(that: UInt): Cmp = newCmp(longValue - that.longValue)
   def max(that: UInt): UInt    = UInt(math.max(value, that.value))
   def min(that: UInt): UInt    = UInt(math.min(value, that.value))
 
@@ -30,7 +30,7 @@ object UInt extends (Int => UInt) {
   final val Max = apply(0xFFFFFFFF)
 
   implicit val UIntShow  = Show.native[UInt]
-  implicit val UIntOrder = OrderEq[UInt](_.longValue compared _.longValue)
+  implicit val UIntOrder = Order[UInt]((x, y) => newCmp(x.longValue - y.longValue))
 
   def apply(x: Int): UInt  = new UInt(x)
   def apply(x: Long): UInt = new UInt(x.toInt)

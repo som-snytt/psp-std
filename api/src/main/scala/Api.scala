@@ -2,16 +2,16 @@ package psp
 package std
 package api
 
+import scala.Any
+import scala.Boolean
+import scala.Unit
+import scala.Int
+import scala.Long
+import java.lang.String
+
 /** The classic type class for encoding value equivalence.
  */
 trait Eq[-A] extends Any { def equiv(x: A, y: A): Boolean }
-
-/** The Eq type class fused with a method to provide the
- *  corresponding hashCodes. I've never had a desire to provide
- *  hash codes independently of equals logic so there's no
- *  separate Hash typeclass.
- */
-trait HashEq[-A] extends Any with Eq[A] { def hash(x: A): Int }
 
 /** The classic type class for turning string representations into typed values.
  */

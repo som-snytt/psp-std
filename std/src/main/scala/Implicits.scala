@@ -15,12 +15,14 @@ import psp.dmz.PolicyDmz
  *  so namespace management has become hopelessly entangled with unrelated concerns
  *  like inheritance, specificity, method dispatch, and so forth.
  */
-abstract class PackageImplicits extends ImplicitRemoval
+abstract class PackageImplicits extends scala.AnyRef
       with StandardImplicits2
       with ShowImplicits
       with ReadImplicits
-      with OrderImplicits
-      with EqImplicits
+      with StdOrder
+      with StdAlgebra
+      with StdGateways
+      with StdArrowAssoc
       with PolicyDmz {
 
   // Promotion of the api type (which generally has one method) to the concrete type
@@ -47,79 +49,51 @@ abstract class PackageImplicits extends ImplicitRemoval
     def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
     def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
   }
-}
-
-/** Various lame global-scope implicits, made to disappear with our friend null.
- *  This list is subject to renegotiation.
- */
-trait ImplicitRemoval {
-  val any2stringadd, fallbackStringCanBuildFrom                                                           = null
-  // val tuple2ToZippedOps, tuple3ToZippedOps                                                                = null
-  val wrapString, unwrapString, augmentString, unaugmentString                                            = null
-  val StringAdd, ArrowAssoc, Boolean2boolean, Byte2byte, Character2char                                   = null
-  val Double2double, Float2float, Integer2int, Long2long, Short2short                                     = null
-  val genericWrapArray, wrapBooleanArray, wrapByteArray, wrapCharArray, wrapDoubleArray, wrapFloatArray   = null
-  val wrapIntArray, wrapLongArray, wrapRefArray, wrapShortArray, wrapUnitArray                            = null
-  val byteWrapper, shortWrapper, charWrapper, intWrapper, longWrapper, floatWrapper, doubleWrapper        = null
-  val byteArrayOps, shortArrayOps, charArrayOps, intArrayOps, longArrayOps, floatArrayOps, doubleArrayOps = null
-  // val genericArrayOps                                                                                     = null
-
-  // 2.10
-  val any2ArrowAssoc = null
+  implicit class BuildsOps[Elem, To](z: Builds[Elem, To]) {
+    def map[Next](f: To => Next): Builds[Elem, Next] = Builds(xs => f(z build xs))
+  }
 }
 
 trait StandardImplicits0 {
   // The array operations of last resort. To be eliminated.
   implicit def genericArrayOps[T](xs: Array[T]) = scala.Predef.genericArrayOps[T](xs)
-  // Lower priority than the hand-specialized variations.
-  @inline final implicit def arrowAssocRef[A](x: A): Ops.ArrowAssocRef[A] = new Ops.ArrowAssocRef(x)
 }
-
 trait StandardImplicits1 extends StandardImplicits0 {
-  implicit def implicitListBuilder[A] : Builds[A, PolicyList[A]]              = Builds(_.foldr(PolicyList.empty[A])(_ :: _).reverse)
-  implicit def implicitArrayBuilder[A: ClassTag] : Builds[A, Array[A]]        = Builds(Array.newBuilder[A] ++= _.trav result)
-  implicit def implicitDirectBuilder[A] : Builds[A, Direct[A]]                = Builds(_.toDirect)
   implicit def walkableOps[Repr, A0](repr: Repr)(implicit tc: Walkable[Repr]) = new OpsContainer(() => tc wrap repr)
-
-  // Deprioritize PartialOrder vs. Order since they both have comparison methods.
-  implicit def tclassPartialOrderOps[A: PartialOrder](x: A): TClass.PartialOrderOps[A] = new TClass.PartialOrderOps[A](x)
 }
-
 trait StandardImplicits2 extends StandardImplicits1 {
   // We buried Predef's {un,}augmentString in favor of these.
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
   @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
 
-  // Typeclass requiring extension methods. There is something very depraved going on here,
-  // see if you can tell what it is.
-  implicit def tclassOrderOps[A: Order](x: A): TClass.OrderOps[A]              = new TClass.OrderOps[A](x)
-  implicit def tclassAlgebraOps[A: BooleanAlgebra](x: A): TClass.AlgebraOps[A] = new TClass.AlgebraOps[A](x)
-  implicit def tclassEqOps[A: Eq](x: A): TClass.EqOps[A]                       = new TClass.EqOps[A](x)
-  implicit def tclassHashEqOps[A: HashEq](x: A): TClass.HashEqOps[A]           = new TClass.HashEqOps[A](x)
-  implicit def tclassHasForeach[R: Has.Foreach](xs: R)                         = opsForeach(Foreach(?[Has.Foreach[R]] hasForeach xs))
-
   // Direct-acting extension methods. These are extension methods installed directly onto the
   // type of interest, as opposed to involving a typeclass.
-  implicit def opsAny[A](x: A): Ops.AnyOps[A]                                         = new Ops.AnyOps[A](x)
-  implicit def opsArray[A](xs: Array[A]): Ops.ArrayOps[A]                             = new Ops.ArrayOps[A](xs)
-  implicit def opsBooleanAlgebra[A](alg: BooleanAlgebra[A]): Ops.BooleanAlgebraOps[A] = new Ops.BooleanAlgebraOps[A](alg)
-  implicit def opsChar(x: Char): Ops.CharOps                                          = new Ops.CharOps(x)
-  implicit def opsCollection[A](x: jAbstractCollection[A]): Ops.jCollectionOps[A]     = new Ops.jCollectionOps(x)
-  implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                       = new Ops.ForeachOps(xs)
-  implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]                  = new Ops.Function1Ops[T, R](f)
-  implicit def opsGTOnce[A](xs: GTOnce[A]): Ops.GTOnceOps[A]                          = new Ops.GTOnceOps[A](xs)
-  implicit def opsInputStream(x: InputStream): Ops.InputStreamOps                     = new Ops.InputStreamOps(x)
-  implicit def opsInt(x: Int): Ops.IntOps                                             = new Ops.IntOps(x)
-  implicit def opsIterator[A](it: jIterator[A]): Ops.IteratorOps[A]                   = new Ops.IteratorOps(it)
-  implicit def opsLong(x: Long): Ops.LongOps                                          = new Ops.LongOps(x)
-  implicit def opsMap[K, V](xs: scMap[K, V]): Ops.Map[K, V]                           = new Ops.Map[K, V](xs)
-  implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]                           = new Ops.OptionOps[A](x)
-  implicit def opsSeq1[A](xs: scSeq[A]): Ops.Seq1[A]                                  = new Ops.Seq1[A](xs)
-  implicit def opsSeq2[A](xs: scSeq[A]): Ops.Seq2[A]                                  = new Ops.Seq2[A](xs)
-  implicit def opsSeqOps[A](xs: scSeq[A]): Ops.SeqOps[A]                              = new Ops.SeqOps[A](xs)
-  implicit def opsSizeInfo(x: SizeInfo): Ops.SizeInfoOps                              = new Ops.SizeInfoOps(x)
-  implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): Ops.SortedMap[K, V]        = new Ops.SortedMap[K, V](xs)
-  implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                         = new Ops.TryOps[A](x)
+  implicit def opsArray[A](xs: Array[A]): Ops.ArrayOps[A]                         = new Ops.ArrayOps[A](xs)
+  implicit def opsChar(x: Char): ops.CharOps                                      = new ops.CharOps(x)
+  implicit def opsCollection[A](x: jAbstractCollection[A]): Ops.jCollectionOps[A] = new Ops.jCollectionOps(x)
+  implicit def opsForeach[A](xs: Foreach[A]): Ops.ForeachOps[A]                   = new Ops.ForeachOps(xs)
+  implicit def opsFunction1[T, R](f: T => R): Ops.Function1Ops[T, R]              = new Ops.Function1Ops[T, R](f)
+  implicit def opsGTOnce[A](xs: GTOnce[A]): Ops.GTOnceOps[A]                      = new Ops.GTOnceOps[A](xs)
+  implicit def opsInputStream(x: InputStream): Ops.InputStreamOps                 = new Ops.InputStreamOps(x)
+  implicit def opsInt(x: Int): ops.IntOps                                         = new ops.IntOps(x)
+  implicit def opsIterator[A](it: jIterator[A]): Ops.IteratorOps[A]               = new Ops.IteratorOps(it)
+  implicit def opsLong(x: Long): ops.LongOps                                      = new ops.LongOps(x)
+  implicit def opsMap[K, V](xs: scMap[K, V]): Ops.Map[K, V]                       = new Ops.Map[K, V](xs)
+  implicit def opsOption[A](x: Option[A]): Ops.OptionOps[A]                       = new Ops.OptionOps[A](x)
+  implicit def opsSeq1[A](xs: scSeq[A]): Ops.Seq1[A]                              = new Ops.Seq1[A](xs)
+  implicit def opsSeq2[A](xs: scSeq[A]): Ops.Seq2[A]                              = new Ops.Seq2[A](xs)
+  implicit def opsSeqOps[A](xs: scSeq[A]): Ops.SeqOps[A]                          = new Ops.SeqOps[A](xs)
+  implicit def opsSizeInfo(x: SizeInfo): Ops.SizeInfoOps                          = new Ops.SizeInfoOps(x)
+  implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): Ops.SortedMap[K, V]    = new Ops.SortedMap[K, V](xs)
+  implicit def opsTry[A](x: scala.util.Try[A]): Ops.TryOps[A]                     = new Ops.TryOps[A](x)
+}
+
+trait StdAlgebra {
+  implicit def identityAlgebra : BooleanAlgebra[Boolean]          = Algebras.Identity
+  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]] = new Algebras.Predicate[A]
+  implicit def scalaSetAlgebra[A] : BooleanAlgebra[sciSet[A]]     = new Algebras.ScalaSet[A]
+
+  implicit def opsBooleanAlgebra[A](x: BooleanAlgebra[A]): ops.BooleanAlgebraOps[A] = new ops.BooleanAlgebraOps[A](x)
 }
 
 trait ReadImplicits {
@@ -134,58 +108,71 @@ trait ReadImplicits {
   implicit val regexRead: Read[Regex]       = Read(Regex)
 }
 
-trait OrderImplicits {
-  implicit val booleanOrder: Order[Boolean] = Order[Boolean](_ compare _ cmp)
-  implicit val byteOrder: Order[Byte]       = Order[Byte](_ - _ cmp)
-  implicit val charOrder: Order[Char]       = Order[Char](_ - _ cmp)
-  implicit val intOrder: Order[Int]         = Order[Int](_ - _ cmp)
-  implicit val longOrder: Order[Long]       = Order[Long](_ - _ cmp)
-  implicit val shortOrder: Order[Short]     = Order[Short](_ - _ cmp)
-  implicit val stringOrder: Order[String]   = Order[String](_ compareTo _ cmp)
+trait StdOrder {
+  implicit def booleanOrder: Order[Boolean] = orderBy[Boolean](x => if (x) 1 else 0)
+  implicit def byteOrder: Order[Byte]       = Order.fromInt[Byte](_ - _)
+  implicit def charOrder: Order[Char]       = Order.fromInt[Char](_ - _)
+  implicit def intOrder: Order[Int]         = Order.fromInt[Int](_ - _)
+  implicit def longOrder: Order[Long]       = Order.fromLong[Long](_ - _)
+  implicit def shortOrder: Order[Short]     = Order.fromInt[Short](_ - _)
+  implicit def stringOrder: Order[String]   = Order.fromLong[String](_ compareTo _)
 
-  implicit def indexOrder: Order[api.Index]                                 = orderBy[api.Index](_.value)
-  implicit def sizeOrder: Order[Size]                                       = orderBy[Size](_.value)
+  implicit def indexOrder: Order[Index] = orderBy[Index](_.indexValue)
+  implicit def sizeOrder: Order[Size]   = orderBy[Size](_.value)
+
   implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
   implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
 
-  // no, infinity doesn't really equal infinity, but it can for our
-  // purposes as long as <inf> - <inf> is ill-defined.
-  implicit object sizeInfoPartialOrder extends PartialOrder[SizeInfo] {
-    import SizeInfo.GenBounded
-
-    def partialCompare(lhs: SizeInfo, rhs: SizeInfo): PCmp = (lhs, rhs) match {
-      case (Infinite, Infinite)                     => PCmp.EQ
-      case (Precise(_), Infinite)                   => PCmp.LT
-      case (Infinite, Precise(_))                   => PCmp.GT
-      case (Precise(x), Precise(y))                 => if (x < y) PCmp.LT else if (y < x) PCmp.GT else PCmp.EQ
-      case (Infinite, Bounded(_, Infinite))         => PCmp.NA
-      case (Infinite, _)                            => PCmp.GT
-      case (Bounded(_, Infinite), Infinite)         => PCmp.NA
-      case (_, Infinite)                            => PCmp.LT
-      case (GenBounded(l1, h1), GenBounded(l2, h2)) =>
-        def lo1 = Precise(l1)
-        def lo2 = Precise(l2)
-        if (h1 p_< lo2) PCmp.LT else if (h2 p_< lo1) PCmp.GT else PCmp.NA
-    }
-  }
+  implicit def sizeInfoPartialOrder: PartialOrder[SizeInfo] = PartialOrder(SizeInfo.partialCompare)
 }
 
-trait EqImplicits {
-  implicit def booleanEq: Eq[Boolean] = Eq.native[Boolean]
-  implicit def byteEq: Eq[Byte]       = Eq.native[Byte]
-  implicit def charEq: Eq[Char]       = Eq.native[Char]
-  implicit def doubleEq: Eq[Double]   = Eq.native[Double]
-  implicit def floatEq: Eq[Float]     = Eq.native[Float]
-  implicit def intEq: Eq[Int]         = Eq.native[Int]
-  implicit def longEq: Eq[Long]       = Eq.native[Long]
-  implicit def shortEq: Eq[Short]     = Eq.native[Short]
-  implicit def stringEq: Eq[String]   = Eq.native[String]
+trait StdEq {
+  implicit def booleanEq: Eq[Boolean] = Eq.natural[Boolean]
+  implicit def byteEq: Eq[Byte]       = Eq.natural[Byte]
+  implicit def charEq: Eq[Char]       = Eq.natural[Char]
+  implicit def doubleEq: Eq[Double]   = Eq.natural[Double]
+  implicit def floatEq: Eq[Float]     = Eq.natural[Float]
+  implicit def intEq: Eq[Int]         = Eq.natural[Int]
+  implicit def longEq: Eq[Long]       = Eq.natural[Long]
+  implicit def shortEq: Eq[Short]     = Eq.natural[Short]
+  implicit def stringEq: Eq[String]   = Eq.natural[String]
   implicit def unitEq: Eq[Unit]       = Eq[Unit]((x, y) => true)
 
-  implicit def sizeEq: Eq[Size]                        = eqBy[Size](_.value)
-  implicit def sizeInfoEq: Eq[SizeInfo]                = Eq.native[SizeInfo]
-  implicit def mapEq[K: HashEq, V: Eq] : Eq[Map[K, V]] = Eq((xs, ys) => (xs.keys sameMembers ys.keys) && (xs.keys forall (xs sameAt ys)))
-  implicit def setEq[A: HashEq] : Eq[scSet[A]]         = Eq(_ sameMembers _)
-  implicit def seqEq[A: Eq] : Eq[scSeq[A]]             = Eq((xs, ys) => (xs corresponds ys)(_ === _))
-  implicit def arrayEq[A: Eq] : Eq[Array[A]]           = Eq(_.toSeq === _.toSeq)
+  implicit def sizeEq: Eq[Size]         = eqBy[Size](_.value)
+  implicit def indexEq: Eq[Index]       = eqBy[Index](_.indexValue)
+  implicit def sizeInfoEq: Eq[SizeInfo] = Eq.natural()
+  implicit def jTypeEq: Eq[jType]       = Eq.natural()
+
+  implicit def setEq[A: HashEq] : Eq[scSet[A]]            = Eq(_ sameMembers _)
+  implicit def seqEq[A: Eq] : Eq[scSeq[A]]                = Eq((xs, ys) => (xs corresponds ys)(_ === _))
+  implicit def directEq[A: Eq] : Eq[Direct[A]]            = Eq((xs, ys) => (xs.size == ys.size) && (xs.size.toIndexRange forall (i => xs.elemAt(i) === ys.elemAt(i))))
+  implicit def arrayEq[A: Eq] : Eq[Array[A]]              = eqBy[Array[A]](_.toSeq)
+  implicit def mapEq[K: HashEq, V: Eq] : Eq[sciMap[K, V]] = Eq((xs, ys) => (xs.keys sameMembers ys.keys) && (xs.keys forall (xs sameAt ys)))
+
+  implicit def equivFromOrder[A: Order] : Eq[A] = Eq[A]((x, y) => (x compare y) eq Cmp.EQ)
 }
+
+trait StdHash {
+  implicit def booleanHash: Hash[Boolean] = Hash.natural()
+  implicit def byteHash: Hash[Byte]       = Hash.natural()
+  implicit def charHash: Hash[Char]       = Hash.natural()
+  implicit def doubleHash: Hash[Double]   = Hash.natural()
+  implicit def floatHash: Hash[Float]     = Hash.natural()
+  implicit def intHash: Hash[Int]         = Hash.natural()
+  implicit def longHash: Hash[Long]       = Hash.natural()
+  implicit def shortHash: Hash[Short]     = Hash.natural()
+  implicit def stringHash: Hash[String]   = Hash.natural()
+  implicit def unitHash: Hash[Unit]       = Hash.natural()
+  implicit def pathHash: Hash[Path]       = Hash.natural()
+  implicit def jTypeHash: Hash[jType]     = Hash.natural()
+
+  implicit def sizeHash: Hash[Size]   = hashBy[Size](_.value)
+  implicit def indexHash: Hash[Index] = hashBy[Index](_.indexValue)
+
+  implicit def seqHash[A: Hash] : Hash[scSeq[A]]     = Hash[scSeq[A]](xs => xs.map(_.hash).##)
+  implicit def directHash[A: Hash] : Hash[Direct[A]] = hashBy(_.toScalaVector)
+  implicit def arrayHash[A: Hash] : Hash[Array[A]]   = hashBy[Array[A]](_.m.toScalaVector)
+}
+
+object StdEq extends StdEq
+object StdHash extends StdHash

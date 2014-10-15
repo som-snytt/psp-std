@@ -4,52 +4,6 @@ package std
 import java.{ lang => jl }
 import api._
 
-object TClass {
-  final class OrderOps[A](val __order_lhs: A) extends AnyVal {
-    import Cmp._
-    def compare(rhs: A)(implicit ord: Order[A]): Cmp = ord.compare(__order_lhs, rhs)
-
-    def < (rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) == LT
-    def <=(rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) != GT
-    def > (rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) == GT
-    def >=(rhs: A)(implicit ord: Order[A]): Boolean  = compare(rhs) != LT
-    def min(rhs: A)(implicit ord: Order[A]): A       = if (this < rhs) __order_lhs else rhs
-    def max(rhs: A)(implicit ord: Order[A]): A       = if (this > rhs) __order_lhs else rhs
-  }
-  final class PartialOrderOps[A](val __porder_lhs: A) extends AnyVal {
-    def partialCompare(rhs: A)(implicit ord: PartialOrder[A]): PCmp    = ord.partialCompare(__porder_lhs, rhs)
-    def tryCompare(rhs: A)(implicit ord: PartialOrder[A]): Option[Cmp] = partialCompare(rhs) match {
-      case PCmp.LT => Some(Cmp.LT)
-      case PCmp.GT => Some(Cmp.GT)
-      case PCmp.EQ => Some(Cmp.EQ)
-      case _       => None
-    }
-
-    def p_< (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.LT
-    def p_<=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ != Cmp.GT)
-    def p_> (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.GT
-    def p_>=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ != Cmp.LT)
-
-    def pmin(rhs: A)(implicit ord: PartialOrder[A]): Option[A] = tryCompare(rhs) map { case Cmp.GT => rhs ; case _ => __porder_lhs }
-    def pmax(rhs: A)(implicit ord: PartialOrder[A]): Option[A] = tryCompare(rhs) map { case Cmp.LT => rhs ; case _ => __porder_lhs }
-  }
-  final class AlgebraOps[A](val lhs: A) extends AnyVal {
-    def implies(rhs: A)(implicit alg: BooleanAlgebra[A]) = !lhs || rhs
-    def && (rhs: A)(implicit alg: BooleanAlgebra[A]): A  = if (isOne) rhs else if (rhs.isOne) lhs else if (lhs.isZero || rhs.isZero) alg.zero else alg.and(lhs, rhs)
-    def || (rhs: A)(implicit alg: BooleanAlgebra[A]): A  = if (isZero) rhs else if (rhs.isZero) lhs else if (lhs.isOne || rhs.isOne) alg.one else alg.or(lhs, rhs)
-    def unary_!(implicit alg: BooleanAlgebra[A]): A      = if (isZero) alg.one else if (isOne) alg.zero else alg.not(lhs)
-    def isZero(implicit alg: BooleanAlgebra[A]): Boolean = alg.zero ref_== lhs
-    def isOne(implicit alg: BooleanAlgebra[A]): Boolean  = alg.one ref_== lhs
-  }
-  final class EqOps[A](val lhs: A) extends AnyVal {
-    def ===(rhs: A)(implicit eq: Eq[A]): Boolean = eq.equiv(lhs, rhs)
-    def !==(rhs: A)(implicit eq: Eq[A]): Boolean = !eq.equiv(lhs, rhs)
-  }
-  final class HashEqOps[A](val lhs: A) extends AnyVal {
-    def hash(implicit eq: HashEq[A]): Int = eq hash lhs
-  }
-}
-
 object Ops {
   final val InputStreamBufferSize = 8192
 
@@ -75,7 +29,7 @@ object Ops {
     def apply(range: IndexRange): Vector[A] = indexRange intersect range map elemAt
   }
   final class Map[K, V](val map: scMap[K, V]) extends AnyVal {
-    def sortedKeys(implicit ord: Order[K])                     = map.keys.toSeq.sorted(ordering[K])
+    def sortedKeys(implicit ord: Order[K])                     = map.keys.toVector.sorted(ordering[K])
     def orderByKey(implicit ord: Order[K]): OrderedMap[K, V]   = orderedMap(sortedKeys, map.toMap)
     def orderByValue(implicit ord: Order[V]): OrderedMap[K, V] = orderedMap(sortedKeys(ord on map), map.toMap)
   }
@@ -125,68 +79,6 @@ object Ops {
     def apply(range: IndexRange)(implicit tag: ClassTag[A]): Array[A] = xs.m.slice(indexRange intersect range).native
     def toSeq: sciSeq[A] = sciSeq(xs: _*)
   }
-  final class AnyOps[A](val x: A) extends AnyVal {
-    // Short decoded class name.
-    def shortClass: String = decodeName(x.getClass.getName.dottedSegments.last)
-
-    // "Maybe we can enforce good programming practice with annoyingly long method names."
-    def castTo[U] : U   = x.asInstanceOf[U]
-    def toRef: AnyRef   = castTo[AnyRef]
-    def isNull: Boolean = toRef eq null
-
-    def reflect[B](m: jMethod)(args: Any*): B = m.invoke(x, args.toRefs: _*).castTo[B]
-
-    // The famed forward pipe.
-    @inline def |>[B](f: A => B): B       = f(x)
-    @inline def doto(f: A => Unit): A     = sideEffect(f(x))
-    @inline def sideEffect(body: Unit): A = x
-
-    // Calling eq on Anys.
-    def ref_==(y: Any): Boolean = toRef eq y.toRef
-    def id_## : Int             = jl.System identityHashCode x
-
-    def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift x
-    def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else x.to_s
-    def any_s: String = x match {
-      case x: ShowDirect => x.to_s
-      case _             => "" + x
-    }
-  }
-  final class IntOps(val self: Int) extends AnyVal {
-    private type This = Int
-
-    def cmp: Cmp              = Order difference self
-    def abs: This             = math.abs(self)
-    def max(that: This): This = math.max(self, that)
-    def min(that: This): This = math.min(self, that)
-    def signum: This          = math.signum(self)
-
-    def until(end: Int): scala.Range = scala.Range(self, end) // XXX
-    def to(end: Int): scala.Range    = scala.Range.inclusive(self, end) // XXX
-
-    def u: UInt        = UInt(self)
-    def binary: String = jl.Integer.toBinaryString(self)
-    def hex: String    = jl.Integer.toHexString(self)
-    def octal: String  = jl.Integer.toOctalString(self)
-  }
-  final class LongOps(val self: Long) extends AnyVal {
-    private type This = Long
-
-    def compared(that: Long): Cmp = Order difference (self - that)
-    def cmp: Cmp                  = Order difference self
-    def abs: This                 = math.abs(self)
-    def max(that: This): This     = math.max(self, that)
-    def min(that: This): This     = math.min(self, that)
-    def signum: This              = math.signum(self)
-
-    def toUnsignedInt: UInt = UInt(self)
-    def binary: String      = jl.Long.toBinaryString(self)
-    def hex: String         = jl.Long.toHexString(self)
-    def octal: String       = jl.Long.toOctalString(self)
-  }
-  final class BooleanAlgebraOps[A](val algebra: BooleanAlgebra[A]) extends AnyVal {
-    def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new Algebras.Mapped[A, B](algebra, f, g)
-  }
   final class Function1Ops[T, R](val f: T => R) extends AnyVal {
     def labeled(label: String): T => R                       = new LabeledFunction(f, label)
     def sameAt(g: T => R)(implicit eqs: Eq[R]): Predicate[T] = x => f(x) === g(x)
@@ -228,9 +120,9 @@ object Ops {
     def toForeach: Foreach[A]          = each(toScalaIterator)
   }
   final class jCollectionOps[A](val xs: jAbstractCollection[A]) extends AnyVal {
-    def toForeach: Foreach[A]          = each(toTraversable)
-    def toTraversable: Traversable[A]  = toScalaIterator.toTraversable
-    def toScalaIterator: scIterator[A] = new ScalaIterator(xs.iterator)
+    def toForeach: Foreach[A]           = each(toTraversable)
+    def toTraversable: scTraversable[A] = toScalaIterator.toTraversable
+    def toScalaIterator: scIterator[A]  = new ScalaIterator(xs.iterator)
   }
 
   trait SeqLikeOps[A] extends Any {
@@ -257,6 +149,7 @@ object Ops {
     private def stringed(sep: String)(f: A => String): String =
       foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
 
+    def foreachCounted(f: (Index, A) => Unit): Unit        = foldl(0.index)((idx, x) => try idx.next finally f(idx, x))
     def join(sep: String)(implicit shows: Show[A]): String = stringed(sep)(_.to_s)
     def joinLines(implicit shows: Show[A]): String         = join(EOL)
     def joinComma(implicit shows: Show[A]): String         = join(", ")
@@ -276,16 +169,17 @@ object Ops {
     def toPolicyList: PolicyList[A]                = to[PolicyList]
     def toArray(implicit z: ClassTag[A]): Array[A] = toScala[Array]
 
-    def toIterable: Iterable[A]       = toScala[Iterable]
-    def toList: List[A]               = toScala[List]
-    def toScalaSet: Set[A]            = toScala[Set]
-    def toSeq: sciSeq[A]              = toScala[sciSeq]
-    def toStream: Stream[A]           = toScala[Stream]
-    def toTraversable: Traversable[A] = toScala[Traversable]
-    def toVector: Vector[A]           = toScala[Vector]
+    def toIterable: scIterable[A]       = toScala[scIterable]
+    def toList: sciList[A]              = toScala[sciList]
+    def toScalaSet: sciSet[A]           = toScala[sciSet]
+    def toSeq: sciSeq[A]                = toScala[sciSeq]
+    def toStream: sciStream[A]          = toScala[sciStream]
+    def toTraversable: scTraversable[A] = toScala[scTraversable]
+    def toVector: sciVector[A]          = toScala[sciVector]
+    def toScalaVector: sciVector[A]     = toVector
 
-    def trav: Traversable[A]       = toTraversable
-    def scalaIterator: Iterator[A] = toIterable.iterator
+    def trav: scTraversable[A]       = toTraversable
+    def scalaIterator: scIterator[A] = toIterable.iterator
   }
 
   final class IndexedSeqOps[A](val __psp_xs1: Direct[A]) extends AnyVal with FoldableOps[A] with ConversionOps[A] {
@@ -343,34 +237,13 @@ object Ops {
   }
 
   final class CharOps(val ch: Char) extends AnyVal {
-    def isDigit      = Character isDigit ch
-    def toUpper      = Character toUpperCase ch
-    def toLower      = Character toLowerCase ch
-    def isUpper      = Character isUpperCase ch
-    def isLower      = Character isLowerCase ch
-    def isWhitespace = Character isWhitespace ch
-    def isControl    = Character isISOControl ch
-  }
-
-  /** Hand specialized on the left, @specialized on the right, value classes for tuple creation.
-   */
-   final class ArrowAssocInt(val self: Int) extends AnyVal {
-    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Int, B] = Tuple2(self, y)
-  }
-  final class ArrowAssocLong(val self: Long) extends AnyVal {
-    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Long, B] = Tuple2(self, y)
-  }
-  final class ArrowAssocDouble(val self: Double) extends AnyVal {
-    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Double, B] = Tuple2(self, y)
-  }
-  final class ArrowAssocChar(val self: Char) extends AnyVal {
-    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Char, B] = Tuple2(self, y)
-  }
-  final class ArrowAssocBoolean(val self: Boolean) extends AnyVal {
-    @inline def -> [@specialized(Int, Long, Double, Char, Boolean) B](y: B): Tuple2[Boolean, B] = Tuple2(self, y)
-  }
-  final class ArrowAssocRef[A](val self: A) extends AnyVal {
-    @inline def -> [B](y: B): Tuple2[A, B] = Tuple2(self, y)
+    def isDigit      = jl.Character isDigit ch
+    def toUpper      = jl.Character toUpperCase ch
+    def toLower      = jl.Character toLowerCase ch
+    def isUpper      = jl.Character isUpperCase ch
+    def isLower      = jl.Character isLowerCase ch
+    def isWhitespace = jl.Character isWhitespace ch
+    def isControl    = jl.Character isISOControl ch
   }
 
   final class SizeInfoOps(val lhs: SizeInfo) extends AnyVal {
@@ -427,10 +300,6 @@ object Ops {
       case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 max l2, h1 max h2)
     }
   }
-
-  final class OrderBy[A] { def apply[B](f: A => B)(implicit ord: Order[B]): Order[A] = Order[A]((x, y) => ord.compare(f(x), f(y))) }
-  final class EqBy[A]    { def apply[B](f: A => B)(implicit equiv: Eq[B]): Eq[A]     = Eq[A]((x, y) => equiv.equiv(f(x), f(y))) }
-  final class ShowBy[A]  { def apply[B](f: A => B)(implicit show: Show[B]): Show[A]  = Show[A](x => show show f(x)) }
 }
 
 final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R) with ShowDirectNow {
@@ -439,4 +308,9 @@ final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R
 final class LabeledPartialFunction[-T, +R](pf: PartialFunction[T, R], val to_s: String) extends PartialFunction[T, R] with ShowDirectNow {
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R    = pf(x)
+}
+
+final class ScalaIterator[A](xs: jIterator[A]) extends scala.Iterator[A] {
+  def next    = xs.next
+  def hasNext = xs.hasNext
 }

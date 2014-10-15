@@ -17,7 +17,7 @@ final class SplitString(s: String, where: Index) extends Product2[String, String
  */
 final class PspStringOps(val xs: String) extends AnyVal with Ops.SeqLikeOps[Char] {
   def elemAt(index: Index): Char = xs charAt index.value
-  def augment = Predef augmentString xs
+  def augment = scala.Predef augmentString xs
   private def chars   = xs.toCharArray
 
   private def unwrapArg(arg: Any): AnyRef = arg match {
@@ -69,15 +69,15 @@ final class PspStringOps(val xs: String) extends AnyVal with Ops.SeqLikeOps[Char
 
   def length                      = xs.length
   def bytes: Array[Byte]          = xs.getBytes
-  def words: Vector[String]       = (xs.trim split "\\s+").toVector
-  def wordSet: Set[String]        = words.toSet
-  def lines: Vector[String]       = (xs split EOL).toVector
-  def * (n: Int): String          = Range.inclusive(1, n) map (_ => xs) mkString ""
+  def words: sciVector[String]    = (xs.trim split "\\s+").m.toVector
+  def wordSet: sciSet[String]     = words.toSet
+  def lines: sciVector[String]    = (xs split EOL).m.toVector
+  def * (n: Int): String          = sciRange.inclusive(1, n) map (_ => xs) mkString ""
   def format(args : Any*): String = java.lang.String.format(xs, args map unwrapArg: _*)
 
-  def splitChar(ch: Char): Vector[String] = (xs split s"[$ch]").toVector
-  def dottedSegments: Vector[String]      = splitChar('.')
-  def slashSegments: Vector[String]       = splitChar('/')
+  def splitChar(ch: Char): sciVector[String] = (xs split s"[$ch]").m.toVector
+  def dottedSegments: sciVector[String]      = splitChar('.')
+  def slashSegments: sciVector[String]       = splitChar('/')
 
   def index(elem: Char): Index                    = Index(xs indexOf elem)
   def lastIndex(elem: Char): Index                = Index(xs lastIndexOf elem)
@@ -87,7 +87,7 @@ final class PspStringOps(val xs: String) extends AnyVal with Ops.SeqLikeOps[Char
   def containsChar(ch: Char): Boolean             = (xs indexOf ch) >= 0
 
   def mapLines(f: String => String): String = lines map f mkString EOL
-  def map(f: Char => Char): String          = augment map f
+  def map(f: Char => Char): String          = chars map f mkString ""
   def flatMap(f: Char => String): String    = new StringBuilder doto (sb => augment foreach (x => sb append f(x))) result
 
   def apply(index: Index): Char        = xs charAt index.value

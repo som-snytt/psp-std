@@ -1,4 +1,4 @@
-def libsbtVersion = sys.props.getOrElse("libsbt.version", "0.4.9")
+def libsbtVersion = sys.props.getOrElse("libsbt.version", "0.5.2")
 
 def libsbtRef = addSbtPlugin("org.improving" % "psp-libsbt" % libsbtVersion)
 
@@ -13,3 +13,5 @@ lazy val root = add(project in file(".")) settings (
     "paulp/maven" at "https://dl.bintray.com/paulp/maven"
   )
 )
+
+target := baseDirectory.value.getParentFile / "target" / "project" / "target"

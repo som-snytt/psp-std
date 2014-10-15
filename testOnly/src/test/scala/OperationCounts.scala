@@ -26,7 +26,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
   /** Can't use dropRight and takeRight in 2.10 without the scala library
    *  implementations going off the rails entirely.
    */
-  private def basicOps210 = List[IntView => IntView](
+  private def basicOps210 = sciList[IntView => IntView](
     _ drop 5,
     _ slice indexRange(7, 41),
     _ take 13,
@@ -35,7 +35,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     _ map timesThree,
     _ collect collectDivSix
   )
-  private def basicOps211 = List[IntView => IntView](
+  private def basicOps211 = sciList[IntView => IntView](
     _ drop 5,
     _ dropRight 11,
     _ slice indexRange(7, 41),
@@ -47,15 +47,15 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     _ collect collectDivSix
   )
 
-  def scalaIntRange: scala.collection.immutable.Range = Range.inclusive(1, max, 1)
+  def scalaIntRange: sciRange = sciRange.inclusive(1, max, 1)
 
-  def usCollections = List[IntView](
+  def usCollections = sciList[IntView](
     IntRange.to(1, max).toPolicyList.m,
     IntRange.to(1, max).toPolicyList.m sized Size(max),
     IntRange.to(1, max).m,
     IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max).toPolicyList.m
   )
-  def themCollections = List[IntView](
+  def themCollections = sciList[IntView](
     ScalaNative(scalaIntRange.toList.view),
     ScalaNative(scalaIntRange.toStream),
     ScalaNative(scalaIntRange.toStream.view),
@@ -64,7 +64,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
   )
   def rootCollections = usCollections ++ themCollections
 
-  def compositesOfN(n: Int): List[IntView => IntView] = (
+  def compositesOfN(n: Int): sciList[IntView => IntView] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
       map (xss => xss reduceLeft (_ andThen _))
   )
@@ -96,7 +96,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     def usAverage   = usCounts.sum / us.size.toDouble
     def themAverage = themCounts.sum / them.size.toDouble
     def ratioDouble = themAverage / usAverage
-    def ratio       = if (ratioDouble == Double.PositiveInfinity) "Inf" else "%.2f" format ratioDouble
+    def ratio       = if (ratioDouble == PositiveInfinity) "Inf" else "%.2f" format ratioDouble
 
     def headResult  = us.head
 

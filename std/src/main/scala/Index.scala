@@ -9,6 +9,7 @@ import api._
  *  value as an unsigned Int other than -1.
  */
 final class IndexImpl private[std] (val value: Int) extends AnyVal with IndexOrNth with api.Index {
+  def indexValue = value
   // type This = Index
 
   // Manipulations of NoIndex result in NoIndex, it's like NaN in that way.

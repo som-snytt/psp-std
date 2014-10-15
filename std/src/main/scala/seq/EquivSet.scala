@@ -7,7 +7,7 @@ object EquivSet {
   implicit def equivSetEq[A: HashEq]                          = Eq[EquivSet[A]]((xs, ys) => (xs.size == ys.size) && (xs forall ys))
   implicit def newBuilder[A: HashEq] : Builds[A, EquivSet[A]] = Builds(xs => new EquivSet[A](xs))
 
-  def universal[A](xs: Foreach[A]): EquivSet[A]           = apply[A](xs)(HashEq.universal[A])
+  def universal[A](xs: Foreach[A]): EquivSet[A]           = apply[A](xs)(HashEq.natural[A])
   def reference[A <: AnyRef](xs: Foreach[A]): EquivSet[A] = apply[A](xs)(HashEq.reference[A])
   def shown[A: Show](xs: Foreach[A]): EquivSet[A]         = apply[A](xs)(HashEq.shown[A])
   def apply[A: HashEq](xs: Foreach[A]): EquivSet[A]       = new EquivSet[A](xs)
@@ -26,14 +26,14 @@ final class EquivSet[A : HashEq](basis: Foreach[A]) extends sciSet[A] {
     override def toString = s"$unwrap (wrapped)"
   }
 
-  def byUniversal = EquivSet[A](basis)(HashEq.universal)
-  def byReference = EquivSet[A with AnyRef](basis.m map (_.castTo[A with AnyRef]))(HashEq.reference)
-  def byShown     = EquivSet[A](basis)(HashEq shown Show.native[A])
+  def byUniversal = EquivSet[A](basis)(HashEq.natural[A])
+  def byReference = EquivSet[A with AnyRef](basis.m map (_.castTo[A with AnyRef]))(HashEq.reference())
+  def byShown     = EquivSet[A](basis)(HashEq.shown[A]()(Show.native[A]))
 
   def grouped = wrapSet.toList groupBy (x => x) map { case (k, vs) => (k.unwrap, vs map (_.unwrap)) }
 
   override def size              = wrapSet.size
-  def iterator: Iterator[A]      = wrapSet.iterator map (_.unwrap)
+  def iterator: scIterator[A]    = wrapSet.iterator map (_.unwrap)
   def contains(elem: A): Boolean = wrapSet(wrap(elem))
   def -(elem: A)                 = this
   def +(elem: A)                 = this
@@ -43,7 +43,7 @@ object ScalaSet {
   final val Zero: sciSet[Any] = new EmptySet[Any]
   final val One: sciSet[Any]  = new Complement[Any](Zero)
   final class EmptySet[A] extends sciSet[A] {
-    def iterator          = Iterator[A]()
+    def iterator          = scIterator[A]()
     def -(elem: A)        = this
     def +(elem: A)        = Set(elem)
     def contains(elem: A) = false
@@ -52,7 +52,7 @@ object ScalaSet {
 
   def isSubSet[A: Eq](xs: sciSet[A], ys: sciSet[A]): Boolean = xs forall (x => ys exists (y => x === y))
 
-  implicit def scalaSetEq[CC[X] <: Set[X], A : Eq] : Eq[CC[A]] = Eq[CC[A]] {
+  implicit def scalaSetEq[CC[X] <: sciSet[X], A : Eq] : Eq[CC[A]] = Eq[CC[A]] {
     case (Complement(xs), Complement(ys)) => isSubSet(xs, ys) && isSubSet(ys, xs)
     case (Complement(xs), y)              => false
     case (x, Complement(ys))              => false

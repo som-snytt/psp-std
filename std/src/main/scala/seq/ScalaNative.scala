@@ -5,10 +5,10 @@ import psp.std._, api._
 
 /** Compatibility layer for wrapping scala views on their own terms.
  */
-final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends View[A] with CountCalls {
+final class ScalaNative[+A](val xs: scIterable[A], val counter: Counter) extends View[A] with CountCalls {
   type MapTo[+X] = ScalaNative[X]
 
-  private implicit def lift[B](result: Iterable[B]): MapTo[B] = new ScalaNative(result, counter)
+  private implicit def lift[B](result: scIterable[B]): MapTo[B] = new ScalaNative(result, counter)
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]         = xs ++ that.trav
   def collect[B](pf: PartialFunction[A,B]): MapTo[B] = xs collect pf
@@ -22,7 +22,7 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends V
   def foreach(f: A => Unit): Unit                    = xs foreach f
   def labeled(label: String): MapTo[A]               = this
   def map[B](f: A => B): MapTo[B]                    = xs map f
-  def sizeInfo: SizeInfo                             = xs maybe { case xs: IndexedSeq[_] => SizeInfo(xs.size) } or unknownSize
+  def sizeInfo: SizeInfo                             = xs.matchOr(unknownSize) { case xs: IndexedSeq[_] => SizeInfo(xs.size) }
   def sized(size: Size): MapTo[A]                    = this
   def slice(range: IndexRange): MapTo[A]             = xs.slice(range.startInt, range.endInt)
   def take(n: Int): MapTo[A]                         = xs take n
@@ -35,7 +35,7 @@ final class ScalaNative[+A](val xs: Iterable[A], val counter: Counter) extends V
 }
 
 object ScalaNative {
-  def apply[A](xs: Iterable[A]): ScalaNative[A] = {
+  def apply[A](xs: scIterable[A]): ScalaNative[A] = {
     val counter = new Counter()
     new ScalaNative(xs map counter.record, counter)
   }

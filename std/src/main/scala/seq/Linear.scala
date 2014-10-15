@@ -2,6 +2,7 @@ package psp
 package std
 package linear
 
+import api._
 import SizeInfo._
 
 trait Leaf[A] extends Any with api.Linear[A] {
@@ -17,6 +18,7 @@ trait Leaf[A] extends Any with api.Linear[A] {
 }
 
 object List {
+  def builder[A] : Builds[A, List[A]]      = Builds(xs => xs.foldr(empty[A])(_ :: _).reverse)
   def empty[A]                             = Nil.castTo[List[A]]
   def fill[A](n: Int)(body: => A): List[A] = if (n <= 0) Nil() else body :: fill(n - 1)(body)
   def apply[A](xs: A*): List[A]            = xs.foldRight(Nil[A]())(_ :: _)

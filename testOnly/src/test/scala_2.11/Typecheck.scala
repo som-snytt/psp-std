@@ -3,13 +3,12 @@ package tests
 
 import psp.std._, api._, macros._
 import Generated._
+import StdEq._
 
 class Typecheck extends Bundle {
   def alpha(s: Char, e: Char): sciIndexedSeq[Char] = sciNumericRange.inclusive[Char](s, e, 1)
-  def range(s: Int, e: Int): IndexRange            = Index(s) to Index(e)
-
-  def atoz     = alpha('a', 'z')
-  def alphabet = atoz.mkString
+  def atoz                                         = alpha('a', 'z')
+  def alphabet                                     = atoz.mkString
 
   def expect[A](msg: String, expected: A)(result: A)(implicit eqs: Eq[A], shows: TryShow[A]) = {
     def s1 = result.to_s
@@ -23,8 +22,8 @@ class Typecheck extends Bundle {
    *  Will make this more robust. For now this makes it easy to put the expectation of
    *  success or failure next to the code in question.
    */
-  def divide(what: String, xs: Vector[Typechecked]): Unit = divide(what, xs, xs count (_.code startsWith "/* ok */"))
-  def divide(what: String, xs: Vector[Typechecked], expectedTypecheck: Int): Unit = {
+  def divide(what: String, xs: sciVector[Typechecked]): Unit = divide(what, xs, xs count (_.code startsWith "/* ok */"))
+  def divide(what: String, xs: sciVector[Typechecked], expectedTypecheck: Int): Unit = {
     val (good, bad) = xs partition (_.typechecks)
     val passed = expectedTypecheck == good.size
     assert(passed, s"%s/%s expressions typechecked in %s, but expected %s/%s\ngood:\n%s\nbad:\n%s".format(
@@ -32,13 +31,15 @@ class Typecheck extends Bundle {
   }
 
   def run(): Boolean = {
-    check(alpha('a', 'g'), range(2, 4), alpha('c', 'e'))((x, y) => show"$x($y)")(_ apply _)
-    check(alpha('a', 'g').mkString, range(2, 4), "cde")((x, y) => show"$x($y)")(_ apply _)
-    check(alpha('a', 'g').toArray, range(2, 4), Array('c', 'd', 'e'))((x, y) => show"$x($y)")(_ apply _)
+    check(alpha('a', 'g'), indexRange(2, 5), alpha('c', 'e'))((x, y) => pp"$x($y)")(_.m slice _ force)
+    check(alpha('a', 'g').mkString, indexRange(2, 5), "cde")((x, y) => pp"$x($y)")(_.m slice _ force)
+    check(alpha('a', 'g').toArray, indexRange(2, 5), Array('c', 'd', 'e'))((x, y) => pp"$x($y)")(_.m slice _ force)
 
     // We don't want to protect scala library from itself so let's unmask augmentString etc.
     {
-      import Predef._
+      val pspAugmentString = null
+      // val opsDirectString = null
+      import scala.Predef._
       divide("scala-library", typecheckedLines(scalaLibraryCode), expectedTypecheck = 32)
     }
 

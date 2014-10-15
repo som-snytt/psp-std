@@ -43,14 +43,14 @@ trait ArityApplies extends AnyRef {
 final class TupleApplies[AA <: ArityApplies](val arity: AA) extends AnyVal {
   import arity.Coll
 
-  def apply[A](p: A): Coll[_1, A]                                 = arity[A](p)
-  def apply[A](p: Tuple1[A]): Coll[_1, A]                         = arity[A](p._1)
-  def apply[A](p: Tuple2[A, A]): Coll[_2, A]                      = arity[A](p._1, p._2)
-  def apply[A](p: Tuple3[A, A, A]): Coll[_3, A]                   = arity[A](p._1, p._2, p._3)
-  def apply[A](p: Tuple4[A, A, A, A]): Coll[_4, A]                = arity[A](p._1, p._2, p._3, p._4)
-  def apply[A](p: Tuple5[A, A, A, A, A]): Coll[_5, A]             = arity[A](p._1, p._2, p._3, p._4, p._5)
-  def apply[A](p: Tuple6[A, A, A, A, A, A]): Coll[_6, A]          = arity[A](p._1, p._2, p._3, p._4, p._5, p._6)
-  def apply[A](p: Tuple7[A, A, A, A, A, A, A]): Coll[_7, A]       = arity[A](p._1, p._2, p._3, p._4, p._5, p._6, p._7)
-  def apply[A](p: Tuple8[A, A, A, A, A, A, A, A]): Coll[_8, A]    = arity[A](p._1, p._2, p._3, p._4, p._5, p._6, p._7, p._8)
-  def apply[A](p: Tuple9[A, A, A, A, A, A, A, A, A]): Coll[_9, A] = arity[A](p._1, p._2, p._3, p._4, p._5, p._6, p._7, p._8, p._9)
+  def apply[A](p: A): Coll[_1, A]                                       = arity[A](p)
+  def apply[A](p: scala.Tuple1[A]): Coll[_1, A]                         = arity[A](p._1)
+  def apply[A](p: scala.Tuple2[A, A]): Coll[_2, A]                      = arity[A](p._1, p._2)
+  def apply[A](p: scala.Tuple3[A, A, A]): Coll[_3, A]                   = arity[A](p._1, p._2, p._3)
+  def apply[A](p: scala.Tuple4[A, A, A, A]): Coll[_4, A]                = arity[A](p._1, p._2, p._3, p._4)
+  def apply[A](p: scala.Tuple5[A, A, A, A, A]): Coll[_5, A]             = arity[A](p._1, p._2, p._3, p._4, p._5)
+  def apply[A](p: scala.Tuple6[A, A, A, A, A, A]): Coll[_6, A]          = arity[A](p._1, p._2, p._3, p._4, p._5, p._6)
+  def apply[A](p: scala.Tuple7[A, A, A, A, A, A, A]): Coll[_7, A]       = arity[A](p._1, p._2, p._3, p._4, p._5, p._6, p._7)
+  def apply[A](p: scala.Tuple8[A, A, A, A, A, A, A, A]): Coll[_8, A]    = arity[A](p._1, p._2, p._3, p._4, p._5, p._6, p._7, p._8)
+  def apply[A](p: scala.Tuple9[A, A, A, A, A, A, A, A, A]): Coll[_9, A] = arity[A](p._1, p._2, p._3, p._4, p._5, p._6, p._7, p._8, p._9)
 }

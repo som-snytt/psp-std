@@ -43,8 +43,8 @@ trait ShowImplicits extends LowShowImplicits {
   implicit def showDirect: Show[ShowDirect]             = Show(_.to_s)
   implicit def stringShow: Show[String]                 = Show(x => x)
 
-  implicit def indexShow: Show[api.Index] = new Ops.ShowBy[api.Index] apply (_.value.toString)
-  implicit def sizeShow: Show[Size]       = new Ops.ShowBy[Size] apply (_.value.toString)
+  implicit def indexShow: Show[api.Index] = new ops.ShowBy[api.Index] apply (_.value.toString)
+  implicit def sizeShow: Show[Size]       = new ops.ShowBy[Size] apply (_.value.toString)
 
   implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
   implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(implicitly[Show[A]].show))
