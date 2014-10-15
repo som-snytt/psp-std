@@ -4,14 +4,15 @@ package ansi
 
 import api._
 import RGB._
+import StdShow._
 
 final case class ColorName(name: String)
 
 object ColorName {
   def empty = ColorName("<none>")
 
-  implicit def ReadColorNames = Read[Seq[ColorName]](s => colorMap namesOf s.to[RGB])
-  implicit def ShowColorName  = Show[ColorName](x => (colorMap get x).fold(x.name)(idx => Ansi(38, 5, idx.value)(x.name)))
+  implicit def ReadColorNames: Read[pVector[ColorName]] = Read[pVector[ColorName]](s => colorMap namesOf s.readAs[RGB])
+  implicit def ShowColorName: Show[ColorName]           = Show[ColorName](x => (colorMap get x).fold(x.name)(idx => Ansi(38, 5, idx.indexValue)(x.name)))
 }
 
 final class RGB private (val bits: Int) extends AnyVal {
@@ -19,14 +20,14 @@ final class RGB private (val bits: Int) extends AnyVal {
   override def toString  = s"RGB($bits)"
 }
 
-final class RgbMap(val keys: Vector[ColorName], val lookup: ColorName => RGB, val palette: Vector[RGB]) {
-  def grouped = (keys groupBy nearestIndex).values.toVector sortOrder (x => (x.length, x.head.name.length)) map (_.to_s)
+final class RgbMap(val keys: pVector[ColorName], val lookup: ColorName => RGB, val palette: pVector[RGB]) {
+  def grouped = (keys.toScalaVector groupBy nearestIndex).values.toVector sortOrder (x => (x.length, x.head.name.length)) map (_.joinSpace)
 
   def get(key: ColorName): Option[Index]  = Try(nearestIndex(key)).toOption
-  def namesOf(rgb: RGB): Seq[ColorName]   = keys filter (k => nearest(rgb) == nearest(lookup(k)))
+  def namesOf(rgb: RGB): pVector[ColorName] = keys filter (k => nearest(rgb) == nearest(lookup(k)))
   def nearestIndex(key: ColorName): Index = nearestIndex(lookup(key))
-  def nearest(rgb: RGB): RGB              = palette minBy rgb.distanceTo
-  def nearestIndex(rgb: RGB): Index       = Index(palette.indices minBy (i => rgb distanceTo palette(i)))
+  def nearest(rgb: RGB): RGB              = palette.toScalaVector minBy rgb.distanceTo
+  def nearestIndex(rgb: RGB): Index       = palette.indices.toScalaVector minBy (i => rgb distanceTo palette(i))
 
   override def toString = "RgbMap(%s color names, _, %s in palette)".format(keys.length, palette.length)
 }
@@ -38,8 +39,8 @@ object RgbMap {
       val rgb = palette(idx)
       def dist(key: ColorName) = lookup(key) distanceTo rgb
       val k = "%3s %s".format(idx, rgb.hex_s.to_s)
-      val v = keys sortBy dist take 5 map { k =>
-        val s = Ansi(38, 5, idx)(k.name)
+      val v = keys.toScalaVector sortBy dist take 5 map { k =>
+        val s = Ansi(38, 5, idx.indexValue)(k.name)
         "%8s  %s%s".format("%.3f" format dist(k), s, " " * (20 - k.name.length))
       }
       k -> (v mkString "  ")
@@ -53,7 +54,7 @@ object RgbMap {
       val v1       = lookup(k)
       val v2       = nearest(v1)
       val distance = "%.3f" format (v1 distanceTo v2)
-      val index    = "%3s" format (palette indexOf v2)
+      val index    = "%3s" format (palette.toScalaVector indexOf v2)
 
       k -> show"#$v1 => $index $v2 ($distance)"
     }
@@ -70,7 +71,7 @@ object RGB {
   implicit def ReadRGB: Read[RGB] = Read[RGB](s => if (s.words.length == 1) ReadRGBHex1 read s else ReadRGBDec3 read s)
 
   def ReadRGBHex1: Read[RGB] = Read[RGB](s => fromBits(("0x" + s).toInt))
-  def ReadRGBDec3: Read[RGB] = Read[RGB](s => s.words match { case Vector(r, g, b) => RGB(r.toInt, g.toInt, b.toInt) })
+  def ReadRGBDec3: Read[RGB] = Read[RGB](s => s.words.toScalaVector match { case Vector(r, g, b) => RGB(r.toInt, g.toInt, b.toInt) })
 
   implicit class RGBOps(val rgb: RGB) {
     def redValue    = (rgb.bits >> 16) & 0xFF

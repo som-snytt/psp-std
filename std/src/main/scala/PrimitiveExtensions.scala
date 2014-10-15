@@ -4,10 +4,11 @@ package ops
 
 import api._
 import java.{ lang => jl }
+import lowlevel._
 
 final class AnyOps[A](val x: A) extends AnyVal {
   // Short decoded class name.
-  def shortClass: String   = decodeName(x.getClass.getName split "[.]" last)
+  def shortClass: String   = x.getClass.shortName
   def shortPackage: String = x.getClass.shortPackage
 
   // "Maybe we can enforce good programming practice with annoyingly long method names."
@@ -60,7 +61,7 @@ final class IntOps(val self: Int) extends AnyVal {
   def nth: Nth       = Nth(self)
   def index: Index   = Index(self)
   def offset: Offset = Offset(self)
-  def size: Precise  = Precise(Size(self))
+  def size: Precise  = Precise(self)
 
   /** Make a 64-bit long by concatenating two 32-bit Ints.
    *  Retrieve the original Ints with lbits and rbits.
@@ -72,8 +73,8 @@ final class IntOps(val self: Int) extends AnyVal {
   def min(that: This): This = scala.math.min(self, that)
   def signum: This          = scala.math.signum(self)
 
-  def until(end: Int) = IntRange.until(self, end)
-  def to(end: Int)    = IntRange.to(self, end)
+  def until(end: Int): ExclusiveIntRange = intRange(self, end)
+  def to(end: Int): ExclusiveIntRange    = nthRange(self, end)
 
   def times[A](expr: => A): Direct[A] = Direct.fill(self)(expr)
   def u: UInt                         = UInt(self)
@@ -98,13 +99,3 @@ final class LongOps(val self: Long) extends AnyVal {
   def hex: String         = jl.Long.toHexString(self)
   def octal: String       = jl.Long.toOctalString(self)
 }
-
-final class BooleanAlgebraOps[A](val algebra: BooleanAlgebra[A]) extends AnyVal {
-  def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new Algebras.Mapped[A, B](algebra, f, g)
-}
-
-final class OrderBy[A]   { def apply[B](f: A => B)(implicit z: Order[B]): Order[A]   = Order[A]((x, y) => z.compare(f(x), f(y))) }
-final class EqBy[A]      { def apply[B](f: A => B)(implicit z: Eq[B]): Eq[A]         = Eq[A]((x, y) => z.equiv(f(x), f(y)))      }
-final class ShowBy[A]    { def apply[B](f: A => B)(implicit z: Show[B]): Show[A]     = Show[A](x => z show f(x))                 }
-final class HashBy[A]    { def apply[B](f: A => B)(implicit z: Hash[B]): Hash[A]     = Hash[A](x => z hash f(x))                 }
-final class HashEqBy[A]  { def apply[B](f: A => B)(implicit z: HashEq[B]): HashEq[A] = HashEq[A]((x, y) => z.equiv(f(x), f(y)), x => z hash f(x)) }

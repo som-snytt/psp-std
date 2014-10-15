@@ -11,15 +11,15 @@ package object ansi extends BasicAtoms[Ansi] {
     def create(name: String, rgb: RGB): Ansi = (Atom(48) +: Atom(5) +: rgb.colorAtoms).foldLeft(Ansi.empty)(_ / _)
   }
 
-  private def actualLines(resource: String) = resourceString(resource).lines filterNot (_ startsWith "#")
+  private def actualLines(resource: String) = resourceString(resource).lineVector filterNot "#".r.starts
 
   lazy val colorMap: RgbMap = {
     val map = actualLines("xkcd-colors.txt") mapToMapPairs { s =>
-      val Vector(name, r, g, b) = s.words
+      val Vector(name, r, g, b) = s.words.toScalaVector
       ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
     }
-    val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.to[RGB])
-    new RgbMap(map.keys.toVector, map, palette)
+    val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.readAs[RGB]) pvec;
+    new RgbMap(map.keys.pvec, map, palette)
   }
 
   implicit def impliciStringOps(x: String): TextOps               = new TextOps(x)

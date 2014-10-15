@@ -1,36 +1,33 @@
 package psp
 package std
 
-import java.{ lang => jl }
-import api._
-
 final class UInt private (val bits: Int) extends AnyVal {
-  def compare(that: UInt): Cmp = newCmp(longValue - that.longValue)
-  def max(that: UInt): UInt    = UInt(math.max(value, that.value))
-  def min(that: UInt): UInt    = UInt(math.min(value, that.value))
+  def max(that: UInt): UInt = UInt(longValue max that.longValue)
+  def min(that: UInt): UInt = UInt(longValue min that.longValue)
 
-  def binary: String = value.binary
-  def hex: String    = value.hex
-  def octal: String  = value.octal
+  def binary: String = longValue.binary
+  def hex: String    = longValue.hex
+  def octal: String  = longValue.octal
 
   def unary_~ : UInt   = UInt(~bits)
   def |(x: UInt): UInt = UInt(bits | x.bits)
   def &(x: UInt): UInt = UInt(bits & x.bits)
   def ^(x: UInt): UInt = UInt(bits ^ x.bits)
-  def +(x: UInt): UInt = UInt(value + x.value)
-  def *(x: UInt): UInt = UInt(value * x.value)
+  def +(x: UInt): UInt = UInt(longValue + x.longValue)
+  def *(x: UInt): UInt = UInt(longValue * x.longValue)
 
   def intValue: Int   = bits
-  def longValue: Long = 0xFFFFFFFFL & bits
-  def value: Long     = longValue
-  override def toString = s"${value}u"
+  def longValue: Long = UInt.mask32 & bits
+
+  override def toString = s"${longValue}u"
 }
 object UInt extends (Int => UInt) {
-  final val Min = apply(0)
-  final val Max = apply(0xFFFFFFFF)
+  final val mask32 = 0xFFFFFFFFL
+  final val Min: UInt = apply(0)
+  final val Max: UInt = apply((1L << 32) - 1)
 
-  implicit val UIntShow  = Show.native[UInt]
-  implicit val UIntOrder = Order[UInt]((x, y) => newCmp(x.longValue - y.longValue))
+  implicit val UIntShow  = Show.natural[UInt]
+  implicit val UIntOrder = orderBy[UInt](_.longValue)
 
   def apply(x: Int): UInt  = new UInt(x)
   def apply(x: Long): UInt = new UInt(x.toInt)

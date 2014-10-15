@@ -6,6 +6,7 @@ import api._
 import SizeInfo._
 
 trait Leaf[A] extends Any with api.Linear[A] {
+  type Tail <: Leaf[A]
   def sizeInfo = if (isEmpty) Empty else NonEmpty
   @inline final def foreach(f: A => Unit): Unit = {
     @tailrec def loop(xs: api.Linear[A]): Unit = if (!xs.isEmpty) { f(xs.head) ; loop(xs.tail) }
@@ -25,7 +26,7 @@ object List {
 }
 
 sealed trait List[A] extends Leaf[A] {
-  type Tail                    = List[A]
+  type Tail                 = List[A]
   def reverse: List[A]      = reverser(this, Nil())
   def take(n: Int): List[A] = taker(this, Nil(), n)
   def drop(n: Int): List[A] = dropper(this, n)
@@ -42,26 +43,26 @@ sealed trait List[A] extends Leaf[A] {
 }
 
 final case object Nil extends List[Nothing] {
-  def isEmpty  = true
-  def head     = failEmpty("head")
-  def tail     = failEmpty("tail")
+  override def isEmpty = true
+  def head             = abort("Nil.head")
+  def tail             = abort("Nil.tail")
 
   def apply[A](): List[A] = this.castTo[List[A]]
   def unapply[A](xs: List[A]): Boolean = xs.isEmpty
 }
 final case class ::[A](head: A, tail: List[A]) extends List[A] {
-  def isEmpty = false
+  override def isEmpty = false
 }
 
 
 final class Stream[A](headFn: => A, tailFn: => Leaf[A]) extends Leaf[A] {
-  type Tail = Leaf[A]
-  def isEmpty = false
-  lazy val head = headFn
-  lazy val tail = tailFn
+  type Tail            = Leaf[A]
+  override def isEmpty = false
+  lazy val head        = headFn
+  lazy val tail        = tailFn
 }
 
 object Stream {
-  def empty[A]                                                      = Nil.castTo[Leaf[A]]
+  def empty[A]                                             = Nil.castTo[Leaf[A]]
   def cons[A](headFn: => A, tailFn: => Leaf[A]): Stream[A] = new Stream[A](headFn, tailFn)
 }

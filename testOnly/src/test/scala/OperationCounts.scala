@@ -4,6 +4,27 @@ package tests
 import compat.ScalaNative
 import psp.std._, api._
 
+object IntViews {
+  type IntView    = View[Int]
+  type IntViewFun = IntView => IntView
+  type IntPred    = Predicate[Int]
+
+  // Type inference buddies.
+  private def fn[A](f: Int => A): Int => A    = f
+  private def pfn[A](f: Int ?=> A): Int ?=> A = f
+
+  lazy val tupleFlatMap: Int => pSeq[Int] = "(x, x)" |: fn(x => Foreach.elems(x, x))
+  lazy val isEven: IntPred                = "isEven" |: divisibleBy(2)
+  lazy val timesThree: Int => Int         = "*3"     |: fn(_ * 3)
+  lazy val collectDivSix: Int ?=> Int     = "%/6"    |: pfn({ case x if x % 6 == 0 => x / 6 })
+  lazy val isOdd: IntPred                 = "isOdd"  |: !isEven
+
+  def divisibleBy(n: Int): IntPred            = s"/$n"             |: fn(_ % n == 0)
+  def lessThan(n: Int): IntPred               = s"<$n"             |: fn(_ < n)
+  def fizzbuzz(fizz: Int, buzz: Int): IntPred = s"fb[$fizz/$buzz]" |: !(divisibleBy(fizz) ^ divisibleBy(buzz))
+}
+import IntViews._
+
 class OperationCounts(scalaVersion: String) extends Bundle {
   def is211 = scalaVersion == "2.11"
   def run(): Boolean = {
@@ -11,69 +32,57 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     showResults()
     finish()
   }
-
-  type IntView = View[Int]
-
-  lazy val tupleFlatMap: Int => Foreach[Int] = ((x: Int) => Foreach.elems(x, x)) labeled "(x, x)"
-  lazy val isEven: Int => Boolean            = ((x: Int) => x % 2 == 0) labeled "isEven"
-  lazy val timesThree: Int => Int            = ((x: Int) => x * 3) labeled "*3"
-  lazy val collectDivSix: Int ?=> Int        = labelpf("%/6")({ case x: Int if x % 6 == 0 => x / 6 })
-
-  def max    = 1000
+  def max    = 500
   def numOps = 3
   def basicOps = if (is211) basicOps211 else basicOps210
 
+  private def basicOps210 = List[IntViewFun](
+    _ drop 5,
+    _ slice indexRange(7, 41) labeledAs "slice(7,41)",
+    _ take 13,
+    _ flatMap tupleFlatMap,
+    _ filter isEven,
+    _ map timesThree,
+    _ collect collectDivSix,
+    _ takeWhile lessThan(max / 3),
+    _ dropWhile lessThan(max / 3)
+  )
   /** Can't use dropRight and takeRight in 2.10 without the scala library
    *  implementations going off the rails entirely.
    */
-  private def basicOps210 = sciList[IntView => IntView](
-    _ drop 5,
-    _ slice indexRange(7, 41),
-    _ take 13,
-    _ flatMap tupleFlatMap,
-    _ filter isEven,
-    _ map timesThree,
-    _ collect collectDivSix
-  )
-  private def basicOps211 = sciList[IntView => IntView](
-    _ drop 5,
+  private def basicOps211 = basicOps210 ++ List[IntViewFun](
     _ dropRight 11,
-    _ slice indexRange(7, 41),
-    _ take 13,
-    _ takeRight 17,
-    _ flatMap tupleFlatMap,
-    _ filter isEven,
-    _ map timesThree,
-    _ collect collectDivSix
+    _ takeRight 17
   )
 
   def scalaIntRange: sciRange = sciRange.inclusive(1, max, 1)
 
-  def usCollections = sciList[IntView](
-    IntRange.to(1, max).toPolicyList.m,
-    IntRange.to(1, max).toPolicyList.m sized Size(max),
-    IntRange.to(1, max).m,
-    IntRange.to(1, max / 2).m ++ IntRange.to(max / 2 + 1, max).toPolicyList.m
+    // (Foreach from 1 take max).m,
+  def usCollections = List[IntView](
+    (1 to max).toPolicyList.m,
+    (1 to max).toPolicyList.m sized Size(max),
+    (1 to max).toPolicyVector.m,
+    (1 until max / 2).toPolicyVector.m ++ (max / 2 to max).toPolicyList.m
   )
-  def themCollections = sciList[IntView](
-    ScalaNative(scalaIntRange.toList.view),
+  def themCollections = List[IntView](
+    ScalaNative(scalaIntRange.toScalaList.view),
     ScalaNative(scalaIntRange.toStream),
     ScalaNative(scalaIntRange.toStream.view),
     ScalaNative(scalaIntRange.view),
-    ScalaNative(scalaIntRange.toVector.view)
+    ScalaNative(scalaIntRange.toScalaVector.view)
   )
   def rootCollections = usCollections ++ themCollections
 
-  def compositesOfN(n: Int): sciList[IntView => IntView] = (
+  def compositesOfN(n: Int): List[IntViewFun] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
       map (xss => xss reduceLeft (_ andThen _))
   )
 
-  class CollectionResult(viewFn: IntView => IntView, xs: IntView) {
+  class CollectionResult(viewFn: IntViewFun, xs: IntView) {
     val view    = viewFn(xs)
     val result  = view take 3 mkString ", "
     val count   = xs.calls
-    def display = view.viewChain reverseMap (v => fmtdesc(v.description)) filterNot (_.trim.length == 0) mkString ("<xs>  ", " ", "")
+    def display = "<xs>  " + (view.viewChain.pvec.reverse map (v => fmtdesc(v.description)) filterNot (_.trim.length == 0)).join(" ")
 
     def fmtdesc(description: String): String = description indexOf ' ' match {
       case -1  => "%-15s" format description
@@ -82,7 +91,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     override def toString = display
   }
 
-  class CompositeOp(viewFn: IntView => IntView) {
+  class CompositeOp(viewFn: IntViewFun) {
     val us: List[CollectionResult]   = usCollections map (xs => new CollectionResult(viewFn, xs))
     val control: CollectionResult    = new CollectionResult(viewFn, ScalaNative(scalaIntRange.toList))
     val them: List[CollectionResult] = themCollections map (xs => new CollectionResult(viewFn, xs))
@@ -106,7 +115,13 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     }
     def headView      = us.head.toString
     def isAgreement   = allResults.distinct.size == 1
-    def display       = !isAgreement || (usCounts.distinct.size == usCollections.size)
+    def display       = (
+         isTestDebug
+      || !isAgreement
+      || usCounts.distinct.size == usCollections.size
+      || ratio == "Inf"
+      || ratioDouble < 1   // horrors!
+    )
     def countsString  = allCounts map ("%7s" format _) mkString " "
     def resultsString = if (isAgreement) headResult.result else "!!! " + failedString
     def failedString   = {

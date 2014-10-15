@@ -12,5 +12,5 @@ final class Atom private (val value: Int) extends AnyVal {
 }
 
 object Atom extends (Int => Atom) {
-  def apply(n: Int): Atom = if (n < 0) throw new IllegalArgumentException(s"$n") else new Atom(n)
+  def apply(n: Int): Atom = if (n < 0) illegalArgumentException(s"$n") else new Atom(n)
 }

@@ -12,6 +12,7 @@ trait PspArb3 extends PspArb2 { implicit def arbPrecise: Arbitrary[Precise]   = 
 class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
   type SI = SizeInfo
   type BinOp[T] = (T, T) => T
+  type Tried[T] = scala.Either[Throwable, T]
 
   private def tried[T](op: => T) = try scala.Right(op) catch { case t: Throwable => scala.Left(t) }
 
@@ -19,7 +20,7 @@ class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
   // need to do more than compare values for equality.
   private def sameOutcome[T](p1: => T, p2: => T): Boolean = (tried(p1), tried(p2)) match {
     case (scala.Right(x1), scala.Right(x2)) => x1 == x2
-    case (scala.Left(t1),  scala.Left(t2))  => t1.getClass == t2.getClass
+    case (scala.Left(t1), scala.Left(t2))   => t1.getClass == t2.getClass
     case _                                  => false
   }
 

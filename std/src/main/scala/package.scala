@@ -3,11 +3,12 @@ package psp
 import java.nio.{ file => jnf }
 import jnf.{ attribute => jnfa }
 import scala.{ collection => sc }
-import scala.collection.{ generic => scg, mutable => scm, immutable => sci }
+import sc.{ mutable => scm, immutable => sci }
 import scala.sys.process.{ Process, ProcessBuilder }
 import psp.std.api._
+import psp.std.lowlevel._
 
-package object std extends psp.std.PackageImplicits {
+package object std extends psp.std.StdPackage {
   type sMap[K, +V] = sciMap[K, V]
   type sList[+A]   = sciList[A]
   type sSet[A]     = sciSet[A]
@@ -16,6 +17,9 @@ package object std extends psp.std.PackageImplicits {
 
   type pSeq[+A]    = Foreach[A]
   type pVector[+A] = Direct[A]
+  type pMap[K, +V] = PolicyMap[K, V]
+  type pList[A]    = PolicyList[A]
+  type pSet[A]     = PolicySet[A]
 
   // Inlinable.
   final val InputStreamBufferSize = 8192
@@ -83,9 +87,8 @@ package object std extends psp.std.PackageImplicits {
   final val scmSet          = scm.Set
   final val scmWrappedArray = scm.WrappedArray
 
-  final val ConstantTrue: Predicate[Any]  = _ => true
-  final val ConstantFalse: Predicate[Any] = _ => false
-
+  final val ConstantTrue         = newPredicate[Any](_ => true)
+  final val ConstantFalse        = newPredicate[Any](_ => false)
   final val CTag                 = scala.reflect.ClassTag
   final val EOL                  = sys.props.getOrElse("line.separator", "\n")
   final val NoFile: jFile        = jFile("")
@@ -95,6 +98,70 @@ package object std extends psp.std.PackageImplicits {
   final val NoIndex              = Index.undefined
   final val NoNth                = Nth.undefined
   final val NoSize: Size         = Size.undefined
+
+  type PolicyList[A]                      = psp.std.linear.List[A]
+  type Walks[A0, Repr]                    = Walkable[Repr] { type A = A0 }
+  type ForeachableType[A0, Repr, CC0[X]]  = Foreachable[Repr]  { type A = A0 ; type CC[B] = CC0[B] }
+  type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] { type A = A0 ; type CC[B] = CC0[B] }
+
+  def classOf[A: CTag](): Class[_ <: A]     = classTag[A].runtimeClass.castTo[Class[_ <: A]]
+  def classLoaderOf[A: CTag](): ClassLoader = classOf[A].getClassLoader
+  def nullLoader(): ClassLoader             = NullClassLoader
+  def loaderOf[A: CTag] : ClassLoader       = noNull(classLoaderOf[A], nullLoader)
+  def resource(name: String): Array[Byte]   = Try(noNull(currentThread.getContextClassLoader, nullLoader)) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
+  def resourceString(name: String): String  = utf8(resource(name)).to_s
+
+  implicit def viewifyString(x: String): BaseView[Char, String]    = x.m
+  implicit def viewifyArray[A](x: Array[A]): BaseView[A, Array[A]] = x.m[DirectAccess] // must give this type argument explicitly.
+  implicit def unViewifyString(x: View[Char]): String              = x.force[String]
+  implicit def unViewifyArray[A: CTag](x: View[A]): Array[A]       = x.force[Array[A]]
+
+  implicit def convertIntensional[K, V](x: Intensional[K, V]): K ?=> V = { case k if x contains k => x(k) }
+  implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
+  implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
+
+  implicit class GeneratorOps[A](val g: Generator.Gen[A]) extends AnyVal {
+    import Generator._
+
+    def nonEmpty     = !isEmpty
+    def isEmpty      = g id_== Empty
+    def size: Size   = Size(fold(0)((res, _) => res + 1))
+    def tail: Gen[A] = if (g.isEmpty) Empty else g(_ => ())
+
+    def take(n: Int): Gen[A]               = taken(g, n)
+    def drop(n: Int): Gen[A]               = dropped(g, n)
+    def zip[B](h: Gen[B]): Gen[(A, B)]     = Zipped(g, h)
+    def map[B](f: A => B): Gen[B]          = mapped[A, B](g, f)
+    def flatMap[B](f: A => Gen[B]): Gen[B] = flatten(g map f)
+
+    def memo: Gen[A] = g match {
+      case x: IteratorGenerator[_] => x.memo
+      case _                       => g
+    }
+    def ++[A1 >: A](h: Gen[A1]): Gen[A1]          = concat[A1](g, h)
+    def intersperse[A1 >: A](h: Gen[A1]): Gen[A1] = Interspersed(g, h)
+    def cyclic: Gen[A]                            = memo |> (c => Cyclic(c, c))
+
+    // @tailrec
+    def foreach(f: A => Unit): Unit = if (nonEmpty) g(f) foreach f
+
+    @inline def reduce(f: (A, A) => A): A = {
+      var nonEmpty = false
+      var first = nullAs[A]
+      val result = g(x => try first = x finally nonEmpty = true).fold(first)(f)
+      if (nonEmpty) result else abort("empty.reduce")
+    }
+    @inline def fold[B](zero: B)(f: (B, A) => B): B = {
+      def loop(gen: Gen[A], in: B): B = {
+        var out = in
+        val next = gen(x => out = f(out, x))
+        if (next.isEmpty) out else loop(next, out)
+      }
+      loop(g, zero)
+    }
+    @inline def withFilter(p: A => Boolean): Gen[A] = filtered(g, p)
+    @inline def filter(p: A => Boolean): Gen[A]     = filtered(g, p)
+  }
 
   def assert(assertion: Boolean): Unit                 = if (!assertion) assertionError("assertion failed")
   def assert(assertion: Boolean, msg: => Any): Unit    = if (!assertion) assertionError(s"assertion failed: $msg")
@@ -107,34 +174,32 @@ package object std extends psp.std.PackageImplicits {
 
   def echoErr[A](x: A)(implicit z: TryShow[A]): Unit     = Console echoErr (z show x)
   def println[A](x: A)(implicit z: TryShow[A]): Unit     = Console echoOut (z show x)
+  def printResult[A: TryShow](msg: String)(result: A): A = result doto (r => println(pp"$msg: $r"))
+  def showResult[A: Show](msg: String)(result: A): A     = result doto (r => println(pp"$msg: $r"))
 
-  type PolicyList[A]   = psp.std.linear.List[A]
-
-  def unknownSize: SizeInfo = SizeInfo.Unknown
-
-  type ForeachableType[A0, Repr, CC0[X]] = Foreachable[Repr] {
-    type A = A0
-    type CC[B] = CC0[B]
-  }
-  type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] {
-    type A = A0
-    type CC[B] = CC0[B]
-  }
-
+  def installedProviders: List[FileSystemProvider] = java.nio.file.spi.FileSystemProvider.installedProviders.asScala.toList
 
   // Operations involving the filesystem.
-  def javaHome: jFile                                       = jFile(scala.util.Properties.javaHome)
-  def path(s: String, ss: String*): Path                    = ss.foldLeft(jnf.Paths get s)(_ resolve _)
-  def newTempDir(prefix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempDirectory(prefix, attrs: _*)
+  def path(s: String, ss: String*): Path                                     = ss.foldLeft(jnf.Paths get s)(_ resolve _)
+  def newTempDir(prefix: String, attrs: AnyFileAttr*): Path                  = jnf.Files.createTempDirectory(prefix, attrs: _*)
+  def newTempFile(prefix: String, suffix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempFile(prefix, suffix, attrs: _*)
 
   // Operations involving external processes.
   def newProcess(line: String): ProcessBuilder      = Process(line)
   def newProcess(args: Seq[String]): ProcessBuilder = Process(args)
   def executeLine(line: String): Int                = Process(line).!
   def execute(args: String*): Int                   = Process(args.toSeq).!
-  def openInApp(app: String, file: jFile): Unit     = execute("open", "-a", app, file.getAbsolutePath)
-  def openSafari(file: jFile): Unit                 = openInApp("Safari", file)
-  def openChrome(file: jFile): Unit                 = openInApp("Google Chrome", file)
+
+  def openSafari(path: Path): Unit = open.Safari(path)
+  def openChrome(path: Path): Unit = open.`Google Chrome`(path)
+
+  object open extends Dynamic {
+    def applyDynamic(name: String)(args: TryShown*): String = Process(Seq("open", "-a", name) ++ args.map(_.to_s)).!!
+  }
+
+  def summonZero[A](implicit z: Zero[A]): Zero[A] = z
+
+  def show[A: Show] : Show[A]        = ?
 
   def eqBy[A]     = new ops.EqBy[A]
   def hashBy[A]   = new ops.HashBy[A]
@@ -144,100 +209,80 @@ package object std extends psp.std.PackageImplicits {
 
   // Operations involving encoding/decoding of string data.
   def utf8(xs: Array[Byte]): Utf8   = new Utf8(xs)
-  def decodeName(s: String): String = scala.reflect.NameTransformer decode s
-  def encodeName(s: String): String = scala.reflect.NameTransformer encode s
+  def decodeName(s: String): String = s.mapSplit('.')(NameTransformer.decode)
+  def encodeName(s: String): String = s.mapSplit('.')(NameTransformer.encode)
 
   // Operations involving time and date.
   def formattedDate(format: String)(date: jDate): String = new java.text.SimpleDateFormat(format) format date
   def dateTime(): String                                 = formattedDate("yyyyMMdd-HH-mm-ss")(new jDate)
   def now(): FileTime                                    = jnfa.FileTime fromMillis milliTime
-  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally errLog("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
+  def timed[A](body: => A): A                            = nanoTime |> (start => try body finally echoErr("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
 
   // Operations involving classes, classpaths, and classloaders.
-  def classTag[T: CTag] : CTag[T]          = implicitly[CTag[T]]
-  def contextLoader(): ClassLoader         = noNull(currentThread.getContextClassLoader, nullLoader)
-  def loaderOf[A: ClassTag] : ClassLoader  = noNull(jClassOf[A].getClassLoader, nullLoader)
-  def nullLoader(): ClassLoader            = NullClassLoader
-  def resource(name: String): Array[Byte]  = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
-  def resourceString(name: String): String = utf8(resource(name)).to_s
+  def manifest[A: Manifest] : Manifest[A]             = implicitly[Manifest[A]]
+  def classTag[T: CTag] : CTag[T]                     = implicitly[CTag[T]]
 
   // Operations involving Null, Nothing, and casts.
-  def fail(msg: String): Nothing           = throw new RuntimeException(msg)
-  def failEmpty(op: String): Nothing       = throw new NoSuchElementException(s"$op on empty collection")
+  def abortTrace(msg: String): Nothing     = new RuntimeException(msg) |> (ex => try throw ex finally ex.printStackTrace)
+  def abort(msg: String): Nothing          = runtimeException(msg)
   def noNull[A](value: A, orElse: => A): A = if (value == null) orElse else value
   def nullAs[A] : A                        = asExpected[A](null)
   def asExpected[A](body: Any): A          = body.castTo[A]
 
-  def ?[A](implicit value: A): A                         = value
-  def andFalse(x: Unit): Boolean                         = false
-  def andTrue(x: Unit): Boolean                          = true
-  def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
-  def index(x: Int): Index                               = Index(x)
-  def indexRange(start: Int, end: Int): IndexRange       = IndexRange.until(Index(start), Index(end))
-  def labelpf[T, R](label: String)(pf: T ?=> R): T ?=> R = new LabeledPartialFunction(pf, label)
-  def nth(x: Int): Nth                                   = Nth(x)
-  def nullStream(): InputStream                          = NullInputStream
-  def offset(x: Int): Offset                             = Offset(x)
-  def ordering[A: Order] : Ordering[A]                   = ?[Order[A]].toScalaOrdering
-  def regex(re: String): Regex                           = Regex(re)
+  def intRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end)
+  def nthRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end + 1)
+  def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)
 
-  def printResult[A](msg: String)(result: A): A      = try result finally println(s"$msg: $result")
-  def showResult[A: Show](msg: String)(result: A): A = try result finally println(show"$msg: $result")
-  def errLog(msg: String): Unit                      = Console.err println msg
+  def optImplicit[A](implicit value: A = null): Option[A] = if (value == null) None else Some(value)
 
-  def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
-  def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
-  def convertSeq[A, B](xs: scSeq[A])(implicit conversion: A => B): scSeq[B]   = xs map conversion
+  def ?[A](implicit value: A): A                = value
+  def andFalse(x: Unit): Boolean                = false
+  def andTrue(x: Unit): Boolean                 = true
+  def direct[A](xs: A*): Direct[A]              = Direct fromScala xs.toVector
+  def each[A](xs: sCollection[A]): Foreach[A]   = Foreach fromScala xs
+  def nullStream(): InputStream                 = NullInputStream
+  def offset(x: Int): Offset                    = Offset(x)
+  def option[A](p: Boolean, x: => A): Option[A] = if (p) Some(x) else None
+  def ordering[A: Order] : Ordering[A]          = ?[Order[A]].toScalaOrdering
+  def regex(re: String): Regex                  = Regex(re)
 
-  def setBuilder[A](xs: A*): Builder[A, sciSet[A]]        = sci.Set.newBuilder[A] ++= xs
-  def listBuilder[A](xs: A*): Builder[A, List[A]]         = sci.List.newBuilder[A] ++= xs
-  def arrayBuilder[A: CTag](xs: A*): Builder[A, Array[A]] = scala.Array.newBuilder[A] ++= xs
-  def vectorBuilder[A](xs: A*): Builder[A, Vector[A]]     = sci.Vector.newBuilder[A] ++= xs
+  // implicit def nilToSeq[A](x: scala.Nil.type): pSeq[A] = Nil.pseq
+
+  def convertSeq[A, B](xs: sList[A])(implicit conversion: A => B): sList[B]     = xs map conversion
+  def convertSeq[A, B](xs: sVector[A])(implicit conversion: A => B): sVector[B] = xs map conversion
+  def convertSeq[A, B](xs: sSeq[A])(implicit conversion: A => B): sSeq[B]       = xs map conversion
+
+  def mapBuilder[K, V](xs: (K, V)*): Builder[(K, V), sMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
+  def setBuilder[A](xs: A*): Builder[A, sSet[A]]                 = sciSet.newBuilder[A] ++= xs
+  def listBuilder[A](xs: A*): Builder[A, sList[A]]               = sciList.newBuilder[A] ++= xs
+  def arrayBuilder[A: CTag](xs: A*): Builder[A, Array[A]]        = scala.Array.newBuilder[A] ++= xs
+  def vectorBuilder[A](xs: A*): Builder[A, sVector[A]]           = sciVector.newBuilder[A] ++= xs
+  def mapToList[K, V](): scmMap[K, sList[V]]                     = scmMap[K, sciList[V]]() withDefaultValue Nil
+
+  def pmapBuilder[K, V]() = mapBuilder[K, V]() mapResult (m => newMap(m.toSeq: _*))
 
   // Java.
-  def jMap[K, V](xs: (K, V)*): jMap[K, V] = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
-  def jSet[A](xs: A*): jSet[A]            = new jHashSet[A] doto (b => xs foreach b.add)
-  def jList[A](xs: A*): jArrayList[A]     = new jArrayList[A] doto (b => xs foreach b.add)
-  def jFile(s: String): jFile             = path(s).toFile
-  def jUri(x: String): jUri               = java.net.URI create x
-  def jUrl(x: String): jUrl               = jUri(x).toURL
-  def jClassOf[T: CTag] : Class[_ <: T]   = classTag[T].runtimeClass.castTo[Class[_ <: T]]
+  // def jIterable[A](body: => jIterator[A]): BiIterable[A] = BiIterable[A](body)
+  def jMap[K, V](xs: (K, V)*): jMap[K, V]                = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
+  def jSet[A](xs: A*): jSet[A]                           = new jHashSet[A] doto (b => xs foreach b.add)
+  def jList[A](xs: A*): jList[A]                         = java.util.Arrays.asList(xs: _* )
+  def jFile(s: String): jFile                            = path(s).toFile
+  def jUri(x: String): jUri                              = java.net.URI create x
+  def jUrl(x: String): jUrl                              = jUri(x).toURL
 
-  // OrderedMap is our own creation since SortedMap is way overspecified
+  def concurrentMap[K, V](): ConcurrentMapWrapper[K, V]           = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], None)
+  def concurrentMap[K, V](default: V): ConcurrentMapWrapper[K, V] = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], Some(default))
+
+  // PolicyMap is our own creation since SortedMap is way overspecified
   // and LinkedHashMap is too slow and only comes in a mutable variety.
-  def orderedMap[K, V](kvs: (K, V)*): OrderedMap[K, V]                       = new OrderedMap[K, V](kvs.toVector map (_._1), kvs.toMap)
-  def orderedMap[K, V](keys: sciSeq[K], map: sciMap[K, V]): OrderedMap[K, V] = new OrderedMap[K, V](keys, map)
+  def newMap[K, V](kvs: (K, V)*): pMap[K, V]                      = PolicyMap[K, V](kvs.m.toPolicyVector.map(_._1), kvs.toMap)
+  def newMap[K, V](keys: pVector[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
+  def newCmp(difference: Long): Cmp                               = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
+  def newList[A](xs: A*): pList[A]                                = PolicyList(xs: _*)
+  def newSet[A: HashEq](xs: A*): pSet[A]                          = PolicySet(Direct.elems(xs: _*))
+  def newVector[A](xs: A*): pVector[A]                            = Direct.elems(xs: _*)
+  def newSeq[A](xs: A*): pSeq[A]                                  = newVector[A](xs: _*)
+  def newPredicate[A](f: Predicate[A]): Predicate[A]              = f
 
-  def show[A: Show] : Show[A]        = ?
-  // def readInto[A] : Read.ReadInto[A] = Read.into[A]
-
-  def precise(n: Int): Precise = Precise(Size(n))
-  def bounded(lo: Size, hi: SizeInfo): SizeInfo = hi match {
-    case hi: Atomic     => bounded(lo, hi)
-    case Bounded(_, hi) => bounded(lo, hi)
-  }
-  def bounded(lo: SizeInfo, hi: SizeInfo): SizeInfo = lo match {
-    case Precise(lo)    => bounded(lo, hi)
-    case Bounded(lo, _) => bounded(lo, hi)
-    case Infinite       => Infinite
-  }
-  def bounded(lo: Size, hi: Atomic): SizeInfo = hi match {
-    case Precise(n) if n < lo  => SizeInfo.Empty
-    case Precise(n) if n == lo => hi
-    case _                     => Bounded(lo, hi)
-  }
-
-
-  // String arrangements.
-  def tabular[A](rows: Seq[A], join: Seq[String] => String)(columns: (A => String)*): String = {
-    val cols   = columns.toVector
-    val widths = cols map (f => rows map f map (_.length) max)
-    def one(width: Int, value: String): String = (
-      if (width == 0 || value == "") ""
-      else ("%-" + width + "s") format value
-    )
-    rows map (row => join(widths zip (cols map (_ apply row)) map { case (w, v) => one(w, v) })) mkString "\n"
-  }
-
-  def newCmp(difference: Long): Cmp = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
+  def newArray[A: CTag](size: Size): Array[A] = new Array[A](size.sizeValue)
 }

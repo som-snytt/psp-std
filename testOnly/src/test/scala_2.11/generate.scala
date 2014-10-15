@@ -62,37 +62,37 @@ object Generated {
   """
 
   final val pspCode = """
-    "abc" index 59d
-    "abc" index (1: Int)
-    "abc" index ('b': Char)
-    "abc" index 100000
-    "abc" hasElem 59d
-    "abc" hasElem (1: Int)
-    "abc" hasElem ('b': Char)
-    "abc" hasElem 100000
-    scala.collection.Seq(1, 2, 3) index 59d
-    scala.collection.Seq(1, 2, 3) index (1: Int)
-    scala.collection.Seq(1, 2, 3) index ('b': Char)
-    scala.collection.Seq(1, 2, 3) index 100000
-    scala.collection.Seq(1, 2, 3) hasElem 59d
-    scala.collection.Seq(1, 2, 3) hasElem (1: Int)
-    scala.collection.Seq(1, 2, 3) hasElem ('b': Char)
-    scala.collection.Seq(1, 2, 3) hasElem 100000
-    scala.collection.mutable.Seq('a', 'b', 'c') index 59d
-    scala.collection.mutable.Seq('a', 'b', 'c') index (1: Int)
-    scala.collection.mutable.Seq('a', 'b', 'c') index ('b': Char)
-    scala.collection.mutable.Seq('a', 'b', 'c') index 100000
-    scala.collection.mutable.Seq('a', 'b', 'c') hasElem 59d
-    scala.collection.mutable.Seq('a', 'b', 'c') hasElem (1: Int)
-    scala.collection.mutable.Seq('a', 'b', 'c') hasElem ('b': Char)
-    scala.collection.mutable.Seq('a', 'b', 'c') hasElem 100000
-    Array(true, false, true) index 59d
-    Array(true, false, true) index (1: Int)
-    Array(true, false, true) index ('b': Char)
-    Array(true, false, true) index 100000
-    Array(true, false, true) hasElem 59d
-    Array(true, false, true) hasElem (1: Int)
-    Array(true, false, true) hasElem ('b': Char)
-    Array(true, false, true) hasElem 100000
+    "abc" indexByEquals 59d
+    "abc" indexByEquals (1: Int)
+    "abc" indexByEquals ('b': Char)
+    "abc" indexByEquals 100000
+    "abc" containsByEquals 59d
+    "abc" containsByEquals (1: Int)
+    "abc" containsByEquals ('b': Char)
+    "abc" containsByEquals 100000
+    scala.collection.Seq(1, 2, 3) indexByEquals 59d
+    scala.collection.Seq(1, 2, 3) indexByEquals (1: Int)
+    scala.collection.Seq(1, 2, 3) indexByEquals ('b': Char)
+    scala.collection.Seq(1, 2, 3) indexByEquals 100000
+    scala.collection.Seq(1, 2, 3) containsByEquals 59d
+    scala.collection.Seq(1, 2, 3) containsByEquals (1: Int)
+    scala.collection.Seq(1, 2, 3) containsByEquals ('b': Char)
+    scala.collection.Seq(1, 2, 3) containsByEquals 100000
+    scala.collection.mutable.Seq('a', 'b', 'c') indexByEquals 59d
+    scala.collection.mutable.Seq('a', 'b', 'c') indexByEquals (1: Int)
+    scala.collection.mutable.Seq('a', 'b', 'c') indexByEquals ('b': Char)
+    scala.collection.mutable.Seq('a', 'b', 'c') indexByEquals 100000
+    scala.collection.mutable.Seq('a', 'b', 'c') containsByEquals 59d
+    scala.collection.mutable.Seq('a', 'b', 'c') containsByEquals (1: Int)
+    scala.collection.mutable.Seq('a', 'b', 'c') containsByEquals ('b': Char)
+    scala.collection.mutable.Seq('a', 'b', 'c') containsByEquals 100000
+    Array(true, false, true) indexByEquals 59d
+    Array(true, false, true) indexByEquals (1: Int)
+    Array(true, false, true) indexByEquals ('b': Char)
+    Array(true, false, true) indexByEquals 100000
+    Array(true, false, true) containsByEquals 59d
+    Array(true, false, true) containsByEquals (1: Int)
+    Array(true, false, true) containsByEquals ('b': Char)
+    Array(true, false, true) containsByEquals 100000
   """
 }

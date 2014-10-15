@@ -2,21 +2,8 @@ package psp
 package tests
 
 import psp.std._
-import org.scalacheck._
-import scala.Console.{ GREEN, RED, CYAN, RESET }
-
-// TODO - leverage now-available it-doesn't-typecheck test machinery.
-class Nats extends Bundle {
-  def ints = NatList((1, 2, 3, 4))
-  def strs = NatList(("a", "ab", "abc", "abcd"))
-
-  def run(): Boolean = {
-    assert((ints zip ints map (_ + _)).sum == (ints.sum * 2))
-    assert((ints zip ints zip ints map (_ + _ + _) sum) == ints.sum * 3)
-    assert((ints zip strs zip ints map (_ + _.length + _) sum) == ints.sum * 3)
-    finish()
-  }
-}
+import org.scalacheck.Test
+import scala.Console.{ println => _, _ }
 
 trait Bundle {
   private var count = 0
@@ -26,7 +13,7 @@ trait Bundle {
     count += 1
     Try(body).toOption match {
       case Some(true) => passed += 1
-      case _          => Console.err.println(s"Failed: $msg")
+      case _          => System.err.println(s"Failed: $msg")
     }
   }
   def assert(body: => Boolean): Unit = {
@@ -46,9 +33,16 @@ trait Bundle {
   def run(): Boolean
 }
 
-final case class NamedProp(label: String, prop: Prop)
+/** Needed because scalacheck doesn't expose the label if you add
+ *  labels with the |: operator.
+ */
+final class NamedProp(val label: String, p: Prop) {
+  def prop = p :| label
+}
 object NamedProp {
-  implicit def liftPair(x: (String, Prop)): NamedProp = NamedProp(x._1, x._2)
+  def apply(label: String, p: Prop): NamedProp = new NamedProp(label, p)
+  implicit def liftSeqPair(x: (String, Seq[Prop])): NamedProp = NamedProp(x._1, x._2 reduceLeft (_ && _))
+  implicit def liftPair(x: (String, Prop)): NamedProp         = NamedProp(x._1, x._2)
 }
 
 trait ScalacheckBundle extends Bundle {

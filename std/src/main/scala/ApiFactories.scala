@@ -41,3 +41,10 @@ object Builds {
     def apply(mf: Suspended[Elem]): To = build(Foreach(mf))
   }
 }
+
+object Zero {
+  def apply[A](zero: A): Impl[A] = new Impl[A](zero)
+  final class Impl[A](val zero: A) extends AnyVal with Zero[A] {
+    def isZero(x: A): Boolean = zero == x
+  }
+}
