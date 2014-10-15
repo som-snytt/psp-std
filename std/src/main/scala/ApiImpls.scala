@@ -12,7 +12,7 @@ object HashEq {
   def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): Impl[A] = new Impl[A](cmp, hashFn)
 
   def universal[A] : Impl[A]           = apply[A](_ == _, _.##)
-  def reference[A <: AnyRef] : Impl[A] = apply[A](_ eq _, System.identityHashCode)
+  def reference[A <: AnyRef] : Impl[A] = apply[A](_ eq _, _.id_##)
   def shown[A: Show] : Impl[A]         = apply[A](_.to_s == _.to_s, _.to_s.##)
   def native[A](eqs: Eq[A]): Impl[A]   = apply[A](eqs.equiv, _.##)
 

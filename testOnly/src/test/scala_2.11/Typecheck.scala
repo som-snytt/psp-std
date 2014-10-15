@@ -5,8 +5,8 @@ import psp.std._, api._, macros._
 import Generated._
 
 class Typecheck extends Bundle {
-  def alpha(s: Char, e: Char): Seq[Char] = NumericRange.inclusive[Char](s, e, 1)
-  def range(s: Int, e: Int): IndexRange  = Index(s) to Index(e)
+  def alpha(s: Char, e: Char): sciIndexedSeq[Char] = sciNumericRange.inclusive[Char](s, e, 1)
+  def range(s: Int, e: Int): IndexRange            = Index(s) to Index(e)
 
   def atoz     = alpha('a', 'z')
   def alphabet = atoz.mkString

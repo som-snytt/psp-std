@@ -2,42 +2,111 @@ package psp
 
 import java.nio.{ file => jnf }
 import jnf.{ attribute => jnfa }
+import scala.{ collection => sc }
 import scala.collection.{ generic => scg, mutable => scm, immutable => sci }
 import scala.sys.process.{ Process, ProcessBuilder }
 import psp.std.api._
 
 package object std extends psp.std.PackageImplicits {
+  type sMap[K, +V] = sciMap[K, V]
+  type sList[+A]   = sciList[A]
+  type sSet[A]     = sciSet[A]
+  type sVector[+A] = sciVector[A]
+  type sSeq[+A]    = scSeq[A]
+
+  type pSeq[+A]    = Foreach[A]
+  type pVector[+A] = Direct[A]
+
+  // Inlinable.
+  final val InputStreamBufferSize = 8192
+  final val MaxInt                = scala.Int.MaxValue
+  final val MaxLong               = scala.Long.MaxValue
+  final val MinInt                = scala.Int.MinValue
+  final val MinLong               = scala.Long.MinValue
+  final val PositiveInfinity      = scala.Double.PositiveInfinity
+
+  // DMZ.
+  // final val +:      = psp.dmz.+:
+  final val :+      = psp.dmz.:+
+  final val ::      = psp.dmz.::
+  final val Array   = psp.dmz.Array
+  final val Console = psp.dmz.Console
+  final val List    = psp.dmz.List
+  final val Map     = psp.dmz.Map
+  final val Option  = psp.dmz.Option
+  final val Seq     = psp.dmz.Seq
+  final val Set     = psp.dmz.Set
+  final val Some    = psp.dmz.Some
+  final val System  = psp.dmz.System
+  final val Try     = psp.dmz.Try
+  final val Tuple2  = psp.dmz.Tuple2
+  final val Vector  = psp.dmz.Vector
+  final val math    = psp.dmz.math
+  final val sys     = psp.dmz.sys
+  final val Success = psp.dmz.Success
+  final val Failure = psp.dmz.Failure
+
+  final val BigDecimal      = scala.math.BigDecimal
+  final val BigInt          = scala.math.BigInt
+  final val ClassTag        = scala.reflect.ClassTag
+  final val NameTransformer = scala.reflect.NameTransformer
+  final val Nil             = sci.Nil
+  final val None            = scala.None
+  final val Ordering        = scala.math.Ordering
+  final val PolicyList      = psp.std.linear.List
+  final val StringContext   = scala.StringContext
+  final val sConsole        = scala.Console
+  final val scBitSet        = sc.BitSet
+  final val scIndexedSeq    = sc.IndexedSeq
+  final val scIterable      = sc.Iterable
+  final val scIterator      = sc.Iterator
+  final val scLinearSeq     = sc.LinearSeq
+  final val scMap           = sc.Map
+  final val scSeq           = sc.Seq
+  final val scSet           = sc.Set
+  final val scTraversable   = sc.Traversable
+  final val sciBitSet       = sci.BitSet
+  final val sciIndexedSeq   = sci.IndexedSeq
+  final val sciIterable     = sci.Iterable
+  final val sciLinearSeq    = sci.LinearSeq
+  final val sciList         = sci.List
+  final val sciMap          = sci.Map
+  final val sciNumericRange = sci.NumericRange
+  final val sciRange        = sci.Range
+  final val sciSeq          = sci.Seq
+  final val sciSet          = sci.Set
+  final val sciStream       = sci.Stream
+  final val sciTraversable  = sci.Traversable
+  final val sciVector       = sci.Vector
+  final val scmMap          = scm.Map
+  final val scmSeq          = scm.Seq
+  final val scmSet          = scm.Set
+  final val scmWrappedArray = scm.WrappedArray
+
+  final val ConstantTrue: Predicate[Any]  = _ => true
+  final val ConstantFalse: Predicate[Any] = _ => false
+
+  final val CTag                 = scala.reflect.ClassTag
+  final val EOL                  = sys.props.getOrElse("line.separator", "\n")
+  final val NoFile: jFile        = jFile("")
+  final val NoPath: Path         = path("")
+  final val NoUri: jUri          = jUri("")
+  final val NoFileTime: FileTime = jnfa.FileTime fromMillis MinLong
+  final val NoIndex              = Index.undefined
+  final val NoNth                = Nth.undefined
+  final val NoSize: Size         = Size.undefined
+
   @inline final implicit def arrowAssocInt(x: Int): Ops.ArrowAssocInt             = new Ops.ArrowAssocInt(x)
   @inline final implicit def arrowAssocLong(x: Long): Ops.ArrowAssocLong          = new Ops.ArrowAssocLong(x)
   @inline final implicit def arrowAssocDouble(x: Double): Ops.ArrowAssocDouble    = new Ops.ArrowAssocDouble(x)
   @inline final implicit def arrowAssocChar(x: Char): Ops.ArrowAssocChar          = new Ops.ArrowAssocChar(x)
   @inline final implicit def arrowAssocBoolean(x: Boolean): Ops.ArrowAssocBoolean = new Ops.ArrowAssocBoolean(x)
 
-  final case object ConstantTrue extends Predicate[Any] { def apply(x: Any): Boolean = true }
-  final case object ConstantFalse extends Predicate[Any] { def apply(x: Any): Boolean = false }
-
   implicit def identityAlgebra : BooleanAlgebra[Boolean]          = Algebras.Identity
   implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]] = new Algebras.Predicate[A]
   implicit def scalaSetAlgebra[A] : BooleanAlgebra[sciSet[A]]     = new Algebras.ScalaSet[A]
 
-  final val PolicyList = psp.std.linear.List
   type PolicyList[A]   = psp.std.linear.List[A]
-
-  final val NoSize: Size         = Size.undefined
-  final val NoPath: Path         = path("")
-  final val NoFile: jFile        = jFile("")
-  final val NoUri: jUri          = jUri("")
-  final val NoFileTime: FileTime = jnfa.FileTime fromMillis MinLong
-  final val EOL                  = sys.props.getOrElse("line.separator", "\n")
-  final val MaxInt               = Int.MaxValue
-  final val MinInt               = Int.MinValue
-  final val MaxLong              = Long.MaxValue
-  final val MinLong              = Long.MinValue
-  final val NoIndex              = Index.undefined
-  final val NoNth                = Nth.undefined
-  final val NumericRange         = sci.NumericRange
-  final val ScalaNil             = sci.Nil
-  final val CTag                 = scala.reflect.ClassTag
 
   def unknownSize: SizeInfo = SizeInfo.Unknown
 
@@ -97,7 +166,6 @@ package object std extends psp.std.PackageImplicits {
   def asExpected[A](body: Any): A          = body.castTo[A]
 
   def ?[A](implicit value: A): A                         = value
-  def Try[A](body: => A): Try[A]                         = scala.util.Try[A](body)
   def andFalse(x: Unit): Boolean                         = false
   def andTrue(x: Unit): Boolean                          = true
   def each[A](xs: GTOnce[A]): Foreach[A]                 = Foreach traversable xs
@@ -117,13 +185,6 @@ package object std extends psp.std.PackageImplicits {
   def convertSeq[A, B](xs: List[A])(implicit conversion: A => B): List[B]     = xs map conversion
   def convertSeq[A, B](xs: Vector[A])(implicit conversion: A => B): Vector[B] = xs map conversion
   def convertSeq[A, B](xs: scSeq[A])(implicit conversion: A => B): scSeq[B]   = xs map conversion
-
-  def scmSeq[A](xs: A*): scmSeq[A]             = scm.Seq(xs: _*)
-  def scmSet[A](xs: A*): scmSet[A]             = scm.Set(xs: _*)
-  def scmMap[K, V](kvs: (K, V)*): scmMap[K, V] = scm.Map[K, V](kvs: _*)
-  def sciSeq[A](xs: A*): sciSeq[A]             = sci.Seq(xs: _*)
-  def sciSet[A](xs: A*): sciSet[A]             = sci.Set(xs: _*)
-  def sciMap[K, V](kvs: (K, V)*): sciMap[K, V] = sci.Map[K, V](kvs: _*)
 
   def setBuilder[A](xs: A*): Builder[A, sciSet[A]]        = sci.Set.newBuilder[A] ++= xs
   def listBuilder[A](xs: A*): Builder[A, List[A]]         = sci.List.newBuilder[A] ++= xs

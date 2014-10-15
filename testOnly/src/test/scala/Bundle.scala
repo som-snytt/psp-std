@@ -3,6 +3,7 @@ package tests
 
 import psp.std._
 import org.scalacheck._
+import scala.Console._
 
 // TODO - leverage now-available it-doesn't-typecheck test machinery.
 class Nats extends Bundle {
@@ -35,8 +36,8 @@ trait Bundle {
 
   def finish(msg: String): Boolean = {
     val ok = count == passed
-    val color = if (ok) Console.GREEN else Console.RED
-    val str = color + "%3s/%-3s".format(passed, count) + Console.RESET
+    val color = if (ok) GREEN else RED
+    val str = color + "%3s/%-3s".format(passed, count) + RESET
     println(s"$str passed: $msg")
     ok
   }
@@ -54,12 +55,12 @@ trait ScalacheckBundle extends Bundle {
   def bundle: String
   def props: Seq[NamedProp]
 
-  def pass = Console.GREEN + "pass" + Console.RESET
-  def fail = Console.RED + "fail" + Console.RESET
+  def pass = GREEN + "pass" + RESET
+  def fail = RED + "fail" + RESET
 
   def pp(r: Result) = Pretty.pretty(r, Pretty.Params(0))
   def runOne(p: NamedProp): Boolean = Test.check(p.prop)(identity) match {
-    case x if p.label startsWith "---" => andTrue(println("+ %s".format(Console.CYAN + p.label.stripPrefix("---").trim + Console.RESET)))
+    case x if p.label startsWith "---" => andTrue(println("+ %s".format(CYAN + p.label.stripPrefix("---").trim + RESET)))
     case x if x.passed                 => andTrue(println("+ %s  %s".format(pass, p.label)))
     case r                             => andFalse(println("- %s  %s\nFalsified after %s passed tests\n%s".format(p.label, fail, r.succeeded, pp(r))))
   }

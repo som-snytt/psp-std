@@ -143,7 +143,7 @@ object Ops {
 
     // Calling eq on Anys.
     def ref_==(y: Any): Boolean = toRef eq y.toRef
-    def id_## : Int             = System identityHashCode x
+    def id_## : Int             = jl.System identityHashCode x
 
     def maybe[B](pf: PartialFunction[A, B]): Option[B] = pf lift x
     def try_s[A1 >: A](implicit shows: Show[A1] = null): String = if (shows == null) any_s else x.to_s
