@@ -6,7 +6,7 @@ import scala.collection.{ generic => scg, mutable => scm, immutable => sci }
 import scala.sys.process.{ Process, ProcessBuilder }
 import psp.std.api._
 
-package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
+package object std extends psp.std.PackageImplicits {
   @inline final implicit def arrowAssocInt(x: Int): Ops.ArrowAssocInt             = new Ops.ArrowAssocInt(x)
   @inline final implicit def arrowAssocLong(x: Long): Ops.ArrowAssocLong          = new Ops.ArrowAssocLong(x)
   @inline final implicit def arrowAssocDouble(x: Double): Ops.ArrowAssocDouble    = new Ops.ArrowAssocDouble(x)
@@ -53,8 +53,6 @@ package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
 
   // Operations involving the filesystem.
   def javaHome: jFile                                       = jFile(scala.util.Properties.javaHome)
-  def fileSeparator                                         = java.io.File.separator
-  def defaultCharset                                        = java.nio.charset.Charset.defaultCharset
   def path(s: String, ss: String*): Path                    = ss.foldLeft(jnf.Paths get s)(_ resolve _)
   def newTempDir(prefix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempDirectory(prefix, attrs: _*)
 
@@ -80,8 +78,6 @@ package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
   // Operations involving time and date.
   def formattedDate(format: String)(date: jDate): String = new java.text.SimpleDateFormat(format) format date
   def dateTime(): String                                 = formattedDate("yyyyMMdd-HH-mm-ss")(new jDate)
-  def nanoTime: Long                                     = System.nanoTime
-  def milliTime: Long                                    = System.currentTimeMillis
   def now(): FileTime                                    = jnfa.FileTime fromMillis milliTime
   def timed[A](body: => A): A                            = nanoTime |> (start => try body finally errLog("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
 
@@ -92,7 +88,6 @@ package object std extends psp.std.PackageImplicits with psp.std.api.Aliases {
   def nullLoader(): ClassLoader            = NullClassLoader
   def resource(name: String): Array[Byte]  = Try(contextLoader) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
   def resourceString(name: String): String = utf8(resource(name)).to_s
-  def classpathSeparator                   = java.io.File.pathSeparator
 
   // Operations involving Null, Nothing, and casts.
   def fail(msg: String): Nothing           = throw new RuntimeException(msg)

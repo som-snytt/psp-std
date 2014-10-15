@@ -1,8 +1,10 @@
 package psp
 package std
 
+import java.{ lang => jl }
 import scala.{ collection => sc }
 import api._
+import psp.dmz.PolicyDmz
 
 /** Yes I know all about implicit classes.
  *  There's no way to write an implicit value class which doesn't hardcode
@@ -18,7 +20,8 @@ abstract class PackageImplicits extends ImplicitRemoval
       with ShowImplicits
       with ReadImplicits
       with OrderImplicits
-      with EqImplicits {
+      with EqImplicits
+      with PolicyDmz {
 
   // Promotion of the api type (which generally has one method) to the concrete type
   // which has all the other ones.

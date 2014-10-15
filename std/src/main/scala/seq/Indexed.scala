@@ -31,8 +31,8 @@ object Direct {
   def fill[A](times: Int)(body: => A): Direct[A] = elems(0 until times map (_ => body): _*)
   def empty[A] : Direct[A] = Foreach.Empty
   def elems[A](xs: A*): Direct[A] = xs match {
-    case xs: WrappedArray[A] => pureArray(xs.array)
-    case _                   => pure(xs.toVector)
+    case xs: scmWrappedArray[A] => pureArray(xs.array)
+    case _                      => pure(xs.toVector)
   }
 }
 object IntRange {
