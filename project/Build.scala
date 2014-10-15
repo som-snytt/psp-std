@@ -23,15 +23,16 @@ object Build extends sbt.Build with LibSbt {
     description := text
   )
 
-  lazy val root = setup(project.root, "root aggregator") aggregate (api, std) dependsOn (api, std) settings (
+  lazy val root = setup(project.root, "root aggregator") aggregate (api, dmz, std) dependsOn std settings (
          console <<= console in consoleOnly,
             test <<= test in testOnly,
     watchSources ++= (sources in Test in testOnly).value
   )
-  lazy val api  = setup(project, "api for psp's non-standard standard library")
-  lazy val std  = setup(project, "psp's non-standard standard library") dependsOn api
+  lazy val api = setup(project, "api for psp's non-standard standard library")
+  lazy val dmz = setup(project, "dmz for psp's non-standard standard library") dependsOn api
+  lazy val std = setup(project, "psp's non-standard standard library") dependsOn dmz
 
-  lazy val testOnly = setup(project.noArtifacts, "test encapsulation") dependsOn (api, std) settings (
+  lazy val testOnly = setup(project.noArtifacts, "test encapsulation") dependsOn std settings (
           testOptions in Test  +=  Tests.Argument(TestFrameworks.ScalaCheck, "-verbosity", "1"),
     parallelExecution in Test  :=  false,
                  fork in Test  :=  true,
@@ -44,7 +45,7 @@ object Build extends sbt.Build with LibSbt {
   // A console project which pulls in misc additional dependencies currently being explored.
   // Removing all scalac options except the ones listed here, to eliminate all the warnings
   // repl startup code in resources/console.scala
-  lazy val consoleOnly = setup(project.noArtifacts, "console encapsulation") dependsOn (std, api) settings (
+  lazy val consoleOnly = setup(project.noArtifacts, "console encapsulation") dependsOn std settings (
                      libraryDependencies <++= consoleDependencies,
                                  console <<=  console in Compile,
      scalacOptions in (Compile, console)  :=  Seq("-language:_"),
