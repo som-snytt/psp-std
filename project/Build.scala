@@ -13,7 +13,7 @@ object Build extends sbt.Build {
   def javaCrossTarget(id: String) = key.buildBase mapValue (_ / "target" / id / s"java_$javaBinaryVersion")
 
   def rootResourceDir: SettingOf[File] = resourceDirectory in Compile in LocalRootProject
-  def subprojects                      = List[sbt.Project](api, dmz, std)
+  def subprojects                      = List[sbt.Project](api, dmz, std, dev)
   def classpathDeps                    = convertSeq(subprojects): List[ClasspathDep[ProjectReference]]
   def projectRefs                      = convertSeq(subprojects): List[ProjectReference]
 
@@ -78,6 +78,7 @@ object Build extends sbt.Build {
   lazy val api = project setup "api for psp's non-standard standard library"
   lazy val dmz = project setup "dmz for psp's non-standard standard library" dependsOn api
   lazy val std = project setup "psp's non-standard standard library" dependsOn dmz
+  lazy val dev = project setup "psp's even less stable code" dependsOn std
 
   lazy val publishOnly = project.helper.noSources aggregate (api, dmz, std)
   lazy val compileOnly = project.helper.noSources aggregate (projectRefs: _*)

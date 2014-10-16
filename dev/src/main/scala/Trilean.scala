@@ -29,7 +29,7 @@ final class Trilean private (val value: Byte) extends AnyVal {
   def booleanValue: Boolean = this match {
     case True  => true
     case False => false
-    case _     => sys.error("Not a Boolean value")
+    case _     => abort("Not a Boolean value")
   }
 
   override def toString = this match {
