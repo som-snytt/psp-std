@@ -12,7 +12,7 @@ object ColorName {
   def empty = ColorName("<none>")
 
   implicit def ReadColorNames: Read[pVector[ColorName]] = Read[pVector[ColorName]](s => colorMap namesOf s.readAs[RGB])
-  implicit def ShowColorName: Show[ColorName]           = Show[ColorName](x => (colorMap get x).fold(x.name)(idx => Ansi(38, 5, idx.indexValue)(x.name)))
+  implicit def ShowColorName: Show[ColorName]           = Show[ColorName](x => (colorMap get x).fold(x.name)(idx => Ansi(38, 5, idx.safeToInt)(x.name)))
 }
 
 final class RGB private (val bits: Int) extends AnyVal {
@@ -23,11 +23,11 @@ final class RGB private (val bits: Int) extends AnyVal {
 final class RgbMap(val keys: pVector[ColorName], val lookup: ColorName => RGB, val palette: pVector[RGB]) {
   def grouped = (keys.toScalaVector groupBy nearestIndex).values.toVector sortOrder (x => (x.length, x.head.name.length)) map (_.joinSpace)
 
-  def get(key: ColorName): Option[Index]  = Try(nearestIndex(key)).toOption
+  def get(key: ColorName): Option[Index]    = Try(nearestIndex(key)).toOption
   def namesOf(rgb: RGB): pVector[ColorName] = keys filter (k => nearest(rgb) == nearest(lookup(k)))
-  def nearestIndex(key: ColorName): Index = nearestIndex(lookup(key))
-  def nearest(rgb: RGB): RGB              = palette.toScalaVector minBy rgb.distanceTo
-  def nearestIndex(rgb: RGB): Index       = palette.indices.toScalaVector minBy (i => rgb distanceTo palette(i))
+  def nearestIndex(key: ColorName): Index   = nearestIndex(lookup(key))
+  def nearest(rgb: RGB): RGB                = palette.toScalaVector minBy rgb.distanceTo
+  def nearestIndex(rgb: RGB): Index         = palette.indices.toScalaVector minBy (i => rgb distanceTo palette(i))
 
   override def toString = "RgbMap(%s color names, _, %s in palette)".format(keys.length, palette.length)
 }
@@ -40,7 +40,7 @@ object RgbMap {
       def dist(key: ColorName) = lookup(key) distanceTo rgb
       val k = "%3s %s".format(idx, rgb.hex_s.to_s)
       val v = keys.toScalaVector sortBy dist take 5 map { k =>
-        val s = Ansi(38, 5, idx.indexValue)(k.name)
+        val s = Ansi(38, 5, idx.safeToInt)(k.name)
         "%8s  %s%s".format("%.3f" format dist(k), s, " " * (20 - k.name.length))
       }
       k -> (v mkString "  ")

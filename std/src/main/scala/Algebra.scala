@@ -3,7 +3,7 @@ package std
 
 import api._
 
-final class Label(val label: String) extends {
+final class Label(val label: String) extends AnyVal {
   def matches(r: Regex)   = r isMatch label
   def contains(s: String) = label contains s
   def containsOp          = contains("&&") || contains("||") || (label startsWith "!")
@@ -39,10 +39,6 @@ object Algebras {
     def one: Boolean                         = true
   }
   object LabelAlgebra extends BooleanAlgebra[Label] {
-    // private val parens                    = """^[(](.*?)[)]$""".r
-    // private def containsOp(s: Label)      = (s contains "&&") || (s contains "||")
-    // private def isParenthesized(s: Label) = parens matches s
-    // private def isSafe(s: Label)          = isParenthesized(s) || !containsOp(s)
     private def maybeParens(lhs: Label, op: String, rhs: Label): String =
       if (lhs.isSafe && rhs.isSafe) s"$lhs $op $rhs" else s"($lhs $op $rhs)"
 

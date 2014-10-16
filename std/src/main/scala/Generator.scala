@@ -75,15 +75,57 @@ object Generator {
 
   final class IteratorGenerator[A](private val it: sIterator[A]) extends Gen[A] {
     def memo: Gen[A] = Generator[A](it.toStream)
-    def apply(f: A => Unit): Gen[A] = try this finally f(it.next) // if (it.isEmpty) Empty else try this finally f(it.next)
-    override def toString = "IteratorGenerator"
+    def apply(f: A => Unit): Gen[A] = try this finally f(it.next)
   }
   final class LinearGenerator[A](val xs: sciLinearSeq[A]) extends AnyVal with Gen[A] {
     def apply(f: A => Unit): Gen[A] = if (xs.isEmpty) Empty else try Generator(xs.tail) finally f(xs.head)
-    override def toString = "LinearGenerator"
   }
   final class StreamGenerator[A](val xs: sciStream[A]) extends AnyVal with Gen[A] {
     def apply(f: A => Unit): Gen[A] = if (xs.isEmpty) Empty else try Generator(xs.tail) finally f(xs.head)
-    override def toString = "StreamGenerator"
+  }
+}
+
+package ops {
+  import Generator._
+
+  final class GeneratorOps[A](val g: Generator.Gen[A]) extends AnyVal {
+    def nonEmpty          = !isEmpty
+    def isEmpty           = g id_== Empty
+    def size: PreciseSize = fold(0.size)((res, _) => res + 1.size)
+    def tail: Gen[A]      = if (g.isEmpty) Empty else g(_ => ())
+
+    def take(n: Int): Gen[A]               = taken(g, n)
+    def drop(n: Int): Gen[A]               = dropped(g, n)
+    def zip[B](h: Gen[B]): Gen[(A, B)]     = Zipped(g, h)
+    def map[B](f: A => B): Gen[B]          = mapped[A, B](g, f)
+    def flatMap[B](f: A => Gen[B]): Gen[B] = flatten(g map f)
+
+    def memo: Gen[A] = g match {
+      case x: IteratorGenerator[_] => x.memo
+      case _                       => g
+    }
+    def ++[A1 >: A](h: Gen[A1]): Gen[A1]          = concat[A1](g, h)
+    def intersperse[A1 >: A](h: Gen[A1]): Gen[A1] = Interspersed(g, h)
+    def cyclic: Gen[A]                            = memo |> (c => Cyclic(c, c))
+
+    // @tailrec
+    def foreach(f: A => Unit): Unit = if (nonEmpty) g(f) foreach f
+
+    @inline def reduce(f: (A, A) => A): A = {
+      var nonEmpty = false
+      var first = nullAs[A]
+      val result = g(x => try first = x finally nonEmpty = true).fold(first)(f)
+      if (nonEmpty) result else abort("empty.reduce")
+    }
+    @inline def fold[B](zero: B)(f: (B, A) => B): B = {
+      def loop(gen: Gen[A], in: B): B = {
+        var out = in
+        val next = gen(x => out = f(out, x))
+        if (next.isEmpty) out else loop(next, out)
+      }
+      loop(g, zero)
+    }
+    @inline def withFilter(p: A => Boolean): Gen[A] = filtered(g, p)
+    @inline def filter(p: A => Boolean): Gen[A]     = filtered(g, p)
   }
 }

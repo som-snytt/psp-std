@@ -4,7 +4,57 @@ package ops
 
 import api._
 import java.{ lang => jl }
-import StdZero._
+
+trait HasPreciseSizeMethods extends Any {
+  def size: PreciseSize
+
+  def longSize: Long      = size.value
+  def intSize: Int        = longSize.safeToInt
+  def isZero: Boolean     = longSize == 0L
+  def isPositive: Boolean = longSize > 0L
+  def indices: IndexRange = indexRange(0, intSize)
+  def lastIndex: Index    = Index(longSize - 1)  // effectively maps both undefined and zero to no index.
+  def lastNth: Nth        = lastIndex.toNth
+
+  def containsIndex(index: Index): Boolean            = indices contains index
+  @inline def mapIndices[A](f: Index => A): Direct[A] = indices map f
+  @inline def foreachIndex(f: Index => Unit): Unit    = indices foreach f
+  @inline def foreachNth(f: Nth => Unit): Unit        = indices foreach (i => f(i.toNth))
+}
+
+final class HasPreciseSizeOps(val x: HasPreciseSize) extends HasPreciseSizeMethods {
+  def size = x.size
+}
+
+final class PreciseSizeOps(val size: PreciseSize) extends AnyRef with HasPreciseSizeMethods {
+  def get: Long   = longSize
+  def getInt: Int = intSize
+
+  def + (n: Int): PreciseSize = newSize(longSize + n)
+  def - (n: Int): PreciseSize = newSize(longSize - n)
+  def * (n: Int): PreciseSize = newSize(longSize * n)
+  def / (n: Int): PreciseSize = newSize(longSize / n)
+  def % (n: Int): PreciseSize = newSize(longSize % n)
+
+  def + (n: PreciseSize): PreciseSize = newSize(longSize + n.longSize)
+  def - (n: PreciseSize): PreciseSize = newSize(longSize - n.longSize)
+  def * (n: PreciseSize): PreciseSize = newSize(longSize * n.longSize)
+  def / (n: PreciseSize): PreciseSize = newSize(longSize / n.longSize)
+  def % (n: PreciseSize): PreciseSize = newSize(longSize % n.longSize)
+
+  def min(that: PreciseSize): PreciseSize = newSize(longSize min that.longSize)
+  def max(that: PreciseSize): PreciseSize = newSize(longSize max that.longSize)
+  def increment: PreciseSize              = newSize(longSize + 1L)
+  def decrement: PreciseSize              = newSize(longSize - 1L)
+
+  def toIntRange          = intRange(0, intSize)
+  def leftFormat: String  = "%%-%ds" format intSize
+  def rightFormat: String = "%%%ds" format intSize
+
+  def containsRange(range: IndexRange): Boolean = range.endInt <= intSize
+
+  override def toString = s"$longSize"
+}
 
 final class Map[K, V](val map: scMap[K, V]) extends AnyVal {
   def sortedKeys(implicit ord: Order[K])                    = map.keys.sorted
@@ -37,7 +87,7 @@ final class InputStreamOps(val in: InputStream) extends AnyVal {
           val read = in.read(arr, 0, InputStreamBufferSize)
           if (read >= 0) {
             offset += read
-            buf ++= (arr.m take read).force
+            buf ++= (arr take newSize(read)).seq
             loop()
           }
         }
@@ -56,24 +106,20 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   // Foreach from 0
   // 1 to 100 splitSeq (_ splitAt 3.index) take 3 foreach println
   def apply(i: Index): A                              = xs elemAt i
-  def containsIndex(index: Index): Boolean            = indices contains index
   def exclusiveEnd: Index                             = Index(length)
-  def hasIndex(index: Index): Boolean                 = indices contains index
   def hasSameSize(that: HasSizeInfo): Boolean         = (xs: HasSizeInfo).sizeInfo p_== that.sizeInfo
-  def indices: IndexRange                             = indexRange(0, length)
-  def indicesAtWhich(p: Predicate[A]): pVector[Index] = indices filter (i => p(apply(i)))
-  def init: pVector[A]                                = xs.m dropRight 1 force
-  def tail: pVector[A]                                = xs drop 1 force
+  def indicesAtWhich(p: Predicate[A]): pVector[Index] = xs.indices filter (i => p(apply(i)))
+  def init: pVector[A]                                = xs.m dropRight 1.size force
+  def tail: pVector[A]                                = xs drop 1.size force
   def last: A                                         = apply(size.lastIndex)
-  def lastIndex(elem: A): Index                       = lastIndexAtWhich(_ == elem)
-  def lastIndexAtWhich(p: Predicate[A]): Index        = indices.reverse findOrZero (i => p(apply(i)))
-  def length: Int                                     = size.get
-  def nths: Direct[Nth]                               = indices map (_.toNth)
-  def offsets: Direct[Offset]                         = indices map (_.toOffset)
+  def length: Int                                     = size.intSize
+  def nths: pVector[Nth]                              = xs mapIndices (_.toNth)
+  def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
   def runForeach(f: A => Unit): Unit                  = xs foreach f
-  def size: Size                                      = xs.size
-  def takeRight(n: Int): pVector[A]                   = xs.m takeRight n force
+  def size: PreciseSize                               = xs.size
+  def takeRight(n: PreciseSize): pVector[A]           = xs takeRight n
 
+  def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
   def reverse: Direct[A]  = xs match {
     case Direct.Reversed(xs) => xs
     case _                   => new Direct.Reversed(xs)
@@ -88,13 +134,14 @@ final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, F
   protected def rebuild[B](xs: Foreach[B]): Foreach[B] = xs
 }
 
-trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] {
+trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with FrontSliceable[View[A]] {
   def xs: CC[A]
   def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
   protected def rebuild[B](xs: Foreach[B]): CC[B]
 
-  def take(n: Int) = xs.m take n
-  def drop(n: Int) = xs.m drop n
+  def take(n: PreciseSize)     = xs.m take n
+  def drop(n: PreciseSize)     = xs.m drop n
+  def slice(range: IndexRange) = this drop range.precedingSize take range.size
 
   def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.toPolicySeq)
   def flatten[B](implicit ev: A <:< Foreach[B]): CC[B]                              = rebuild(Foreach[B](f => xs foreach (x => ev(x) foreach f)))
@@ -116,17 +163,15 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] {
   def without(x: A) = filterNot(_ id_== x)
 
   def head: A = {
-    take(1).force.foreach(x => return x)
+    take(1.size).force.foreach(x => return x)
     abort("empty.head")
   }
 
-  def reducel(f: (A, A) => A): A     = drop(1).foldl(head)(f)
+  def reducel(f: (A, A) => A): A     = drop(1.size).foldl(head)(f)
   def max(implicit ord: Order[A]): A = reducel(_ max2 _)
   def min(implicit ord: Order[A]): A = reducel(_ min2 _)
 
-  def foldr[B](zero: B)(f: (A, B) => B): B
-
-            = {
+  def foldr[B](zero: B)(f: (A, B) => B): B = {
     var result = zero
     xs.foreach(x => result = f(x, result))
     result

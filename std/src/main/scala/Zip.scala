@@ -8,7 +8,7 @@ trait StdZipped {
   // Requiring a call to this method means scala can figure shit out even on 2.10. It's an easy decision.
   // def zip2[A1, R1, A2, R2](xs: R1, ys: R2)(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2]): Zip2Ops[A1, R1, A2, R2]                                             = new Zip2Ops(xs, ys, (x, y) => true)
 
-  def zipIndex[A1, R1](xs: R1)(implicit tc1: Walks[A1, R1]): Zip2Ops[A1, Index] = zip2(xs, Foreach from 0 map (_.index))
+  def zipIndex[A1, R1](xs: R1)(implicit tc1: Walks[A1, R1]): Zip2Ops[A1, Index] = zip2(xs, Foreach from 0 map (i => Index(i)))
 
   def zip2[A1, R1, A2, R2](xs: R1, ys: R2)(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2]): Zip2Ops[A1, A2] = new Zip2Ops(tc1 wrap xs, tc2 wrap ys, (x, y) => true)
 

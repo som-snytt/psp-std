@@ -27,6 +27,7 @@ package object std extends psp.std.StdPackage {
   final val MaxLong               = scala.Long.MaxValue
   final val MinInt                = scala.Int.MinValue
   final val MinLong               = scala.Long.MinValue
+  final val MaxIndex              = Index(MaxLong)
   final val PositiveInfinity      = scala.Double.PositiveInfinity
 
   // DMZ.
@@ -97,7 +98,6 @@ package object std extends psp.std.StdPackage {
   final val NoFileTime: FileTime = jnfa.FileTime fromMillis MinLong
   final val NoIndex              = Index.undefined
   final val NoNth                = Nth.undefined
-  final val NoSize: Size         = Size.undefined
 
   type PolicyList[A]                      = psp.std.linear.List[A]
   type Walks[A0, Repr]                    = Walkable[Repr] { type A = A0 }
@@ -120,48 +120,7 @@ package object std extends psp.std.StdPackage {
   implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
   implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
 
-  implicit class GeneratorOps[A](val g: Generator.Gen[A]) extends AnyVal {
-    import Generator._
-
-    def nonEmpty     = !isEmpty
-    def isEmpty      = g id_== Empty
-    def size: Size   = Size(fold(0)((res, _) => res + 1))
-    def tail: Gen[A] = if (g.isEmpty) Empty else g(_ => ())
-
-    def take(n: Int): Gen[A]               = taken(g, n)
-    def drop(n: Int): Gen[A]               = dropped(g, n)
-    def zip[B](h: Gen[B]): Gen[(A, B)]     = Zipped(g, h)
-    def map[B](f: A => B): Gen[B]          = mapped[A, B](g, f)
-    def flatMap[B](f: A => Gen[B]): Gen[B] = flatten(g map f)
-
-    def memo: Gen[A] = g match {
-      case x: IteratorGenerator[_] => x.memo
-      case _                       => g
-    }
-    def ++[A1 >: A](h: Gen[A1]): Gen[A1]          = concat[A1](g, h)
-    def intersperse[A1 >: A](h: Gen[A1]): Gen[A1] = Interspersed(g, h)
-    def cyclic: Gen[A]                            = memo |> (c => Cyclic(c, c))
-
-    // @tailrec
-    def foreach(f: A => Unit): Unit = if (nonEmpty) g(f) foreach f
-
-    @inline def reduce(f: (A, A) => A): A = {
-      var nonEmpty = false
-      var first = nullAs[A]
-      val result = g(x => try first = x finally nonEmpty = true).fold(first)(f)
-      if (nonEmpty) result else abort("empty.reduce")
-    }
-    @inline def fold[B](zero: B)(f: (B, A) => B): B = {
-      def loop(gen: Gen[A], in: B): B = {
-        var out = in
-        val next = gen(x => out = f(out, x))
-        if (next.isEmpty) out else loop(next, out)
-      }
-      loop(g, zero)
-    }
-    @inline def withFilter(p: A => Boolean): Gen[A] = filtered(g, p)
-    @inline def filter(p: A => Boolean): Gen[A]     = filtered(g, p)
-  }
+  def asserting[A](x: A)(assertion: => Boolean, msg: => String): A = x sideEffect assert(assertion, msg)
 
   def assert(assertion: Boolean): Unit                 = if (!assertion) assertionError("assertion failed")
   def assert(assertion: Boolean, msg: => Any): Unit    = if (!assertion) assertionError(s"assertion failed: $msg")
@@ -284,5 +243,6 @@ package object std extends psp.std.StdPackage {
   def newSeq[A](xs: A*): pSeq[A]                                  = newVector[A](xs: _*)
   def newPredicate[A](f: Predicate[A]): Predicate[A]              = f
 
-  def newArray[A: CTag](size: Size): Array[A] = new Array[A](size.sizeValue)
+  def newArray[A: CTag](size: PreciseSize): Array[A] = new Array[A](size.intSize)
+  def newSize(n: Long): PreciseSize                  = PreciseSize(n.nonNegative)
 }

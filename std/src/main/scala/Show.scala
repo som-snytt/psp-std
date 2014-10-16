@@ -51,7 +51,6 @@ trait StdShow extends StdShowLow {
   implicit def showClass: Show[jClass]                  = Show(_.shortName)
   implicit def indexShow: Show[Index]                   = showBy[Index](_.indexValue)
   implicit def nthShow: Show[Nth]                       = showBy[Nth](_.nthValue)
-  implicit def sizeShow: Show[Size]                     = showBy[Size](_.sizeValue)
 
   implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
   implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(?[Show[A]].show))
@@ -78,18 +77,18 @@ trait StdShow extends StdShowLow {
   implicit def sizeInfoShow: Show[SizeInfo] = Show[SizeInfo] {
     case Bounded(lo, Infinite) => "[%s, <inf>)".format(lo.toString)
     case Bounded(lo, hi)       => "[%s, %s]".format(lo.toString, hi.toString)
-    case Precise(size)         => size.toString
+    case PreciseSize(size)     => size.toString
     case Infinite              => "<inf>"
   }
 
   private def stringify[A: Show](xs: Foreach[A], max: Int = 3): String = {
     def base = xs.m take max joinComma;
     xs.sizeInfo match {
-      case Precise(0)             => pp"[ ]"
-      case Precise(n) if n <= max => pp"[ $base ]"
-      case Precise(n)             => pp"[ $base, ... $n elements ]"
-      case Infinite               => pp"[ $base, ... <inf> ]"
-      case info                   => pp"[ $base, ... $info ]"
+      case PreciseSize(0)             => pp"[ ]"
+      case PreciseSize(n) if n <= max => pp"[ $base ]"
+      case PreciseSize(n)             => pp"[ $base, ... $n elements ]"
+      case Infinite                   => pp"[ $base, ... <inf> ]"
+      case info                       => pp"[ $base, ... $info ]"
     }
   }
 

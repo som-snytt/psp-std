@@ -60,7 +60,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     // (Foreach from 1 take max).m,
   def usCollections = List[IntView](
     (1 to max).toPolicyList.m,
-    (1 to max).toPolicyList.m sized Size(max),
+    (1 to max).toPolicyList.m sized PreciseSize(max),
     (1 to max).toPolicyVector.m,
     (1 until max / 2).toPolicyVector.m ++ (max / 2 to max).toPolicyList.m
   )

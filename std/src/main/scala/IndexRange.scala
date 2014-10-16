@@ -6,31 +6,32 @@ import Index.zero
 import IndexRange.{ undefined, empty }
 import lowlevel.ExclusiveIntRange
 
-final class IntIndexRange private[std] (val bits: Long) extends AnyVal with IndexRange {
+final class IntIndexRange private[std] (val bits: Long) extends AnyVal with IndexRange with RearSliceable[IndexRange] {
+  def startInt      = intRange.start
+  def endInt        = intRange.end
   def intRange      = ExclusiveIntRange create bits
-  def start         = intRange.start.index
-  def end           = intRange.end.index
+  def start         = Index(startInt)
+  def end           = Index(endInt)
   def endInclusive  = if (end <= start) NoIndex else end.prev
-  def size: Precise = intRange.size
+  def size          = intRange.size
+  def precedingSize = newSize(startInt)
 
-  @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(i.index))
+  @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(Index(i)))
 
   def elemAt(index: Index): Index = index + intRange.start
-  def contains(i: Index): Boolean = !i.isEmpty && (intRange contains i.indexValue)
+  def contains(i: Index): Boolean = intRange contains i.safeToInt
 
-  def >> (n: Int): IndexRange              = IndexRange(intRange >> n)
-  def << (n: Int): IndexRange              = IndexRange(intRange << n)
-  def drop(n: Int): IndexRange             = IndexRange(intRange drop n)
-  def dropRight(n: Int): IndexRange        = IndexRange(intRange dropRight n)
-  def take(n: Int): IndexRange             = IndexRange(intRange take n)
-  def takeRight(n: Int): IndexRange        = IndexRange(intRange takeRight n)
-  def slice(range: IndexRange): IndexRange = IndexRange(intRange slice range)
-  def limitTo(x: Size): IndexRange         = start until (x min size).sizeValue.index //IndexRange(start.indexValue, x.sizeValue min size.sizeValue)
-  def extendBy(x: Size): IndexRange        = IndexRange(start.indexValue, (size + x).sizeValue)
+  def >> (n: Int): IndexRange               = IndexRange(intRange >> n)
+  def << (n: Int): IndexRange               = IndexRange(intRange << n)
+  def drop(n: PreciseSize): IndexRange      = IndexRange(intRange drop n)
+  def dropRight(n: PreciseSize): IndexRange = IndexRange(intRange dropRight n)
+  def take(n: PreciseSize): IndexRange      = IndexRange(intRange take n)
+  def takeRight(n: PreciseSize): IndexRange = IndexRange(intRange takeRight n)
+  def slice(range: IndexRange): IndexRange  = IndexRange(intRange slice range)
 
-  def prefixLength(p: Index => Boolean): Int     = intRange prefixLength ((i: Int) => p(i.index))
-  def dropWhile(p: Index => Boolean): IndexRange = IndexRange(intRange dropWhile (i => p(i.index)))
-  def takeWhile(p: Index => Boolean): IndexRange = IndexRange(intRange takeWhile (i => p(i.index)))
+  def prefixLength(p: Index => Boolean): Long    = intRange prefixLength (i => p(Index(i)))
+  def dropWhile(p: Index => Boolean): IndexRange = IndexRange(intRange dropWhile (i => p(Index(i))))
+  def takeWhile(p: Index => Boolean): IndexRange = IndexRange(intRange takeWhile (i => p(Index(i))))
 
   override def toString = s"[$start,$end)"
 }
@@ -41,7 +42,7 @@ object IndexRange {
   def empty: IndexRange                           = new IntIndexRange(0L)
   def undefined: IndexRange                       = new IntIndexRange(-1L)
   def full: IndexRange                            = apply(0, MaxInt)
-  def apply(range: ExclusiveIntRange): IndexRange = apply(range.start max 0, range.end max 0)
-  def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else new IntIndexRange(start join end)
-  def impl(x: IndexRange): IntIndexRange          = new IntIndexRange(x.start.indexValue join x.end.indexValue)
+  def apply(range: ExclusiveIntRange): IndexRange = apply(range.start.nonNegative, range.end.nonNegative)
+  def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else new IntIndexRange(start join64 end)
+  def impl(x: IndexRange): IntIndexRange          = new IntIndexRange(x.start.safeToInt join64 x.end.safeToInt)
 }

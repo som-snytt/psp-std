@@ -17,21 +17,17 @@ import scala._
  *  Operations on sizes which are ill-defined will result in "Unknown", which
  *  encodes no available size information: Bounded(Zero, Infinite).
  */
-sealed trait SizeInfo
 
-// This arrangement means that "x + size" results in the same type as x for any SizeInfo.
-sealed trait Atomic                            extends SizeInfo
-final case class Bounded(lo: Size, hi: Atomic) extends SizeInfo
-final case class Precise(sizeValue: Int)       extends Atomic with Size {
-  def isEmpty                   = sizeValue < 0
-  def get                       = sizeValue
-  def +(that: Precise): Precise = Precise(sizeValue + that.sizeValue)
-}
-final case object Infinite                     extends Atomic
+sealed trait SizeInfo extends Any
+sealed trait Atomic extends Any with SizeInfo
+
+final case class Bounded(lo: PreciseSize, hi: Atomic) extends SizeInfo
+final case class PreciseSize(value: Long) extends AnyVal with Atomic { override def toString = s"$value" }
+final case object Infinite extends Atomic
 
 trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
 trait HasPreciseSize extends Any with HasSizeInfo with IsEmpty {
-  def size: Precise
+  def size: PreciseSize
   def sizeInfo = size
-  def isEmpty  = size.sizeValue == 0
+  def isEmpty  = size.value == 0L
 }

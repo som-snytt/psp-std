@@ -6,6 +6,7 @@ import scala.Any
 import scala.Boolean
 import scala.Unit
 import scala.Int
+import scala.Long
 import java.lang.String
 import ApiAliases.Suspended
 
@@ -31,6 +32,7 @@ trait PartialOrder[-A] extends Any { def partialCompare(x: A, y: A): PCmp }
 trait IsEmpty extends Any              { def isEmpty: Boolean }
 trait Opt[+A] extends Any with IsEmpty { def get: A           }
 trait OptInt extends Any with Opt[Int]
+trait OptLong extends Any with Opt[Long]
 
 /** The builder type class.
  */
@@ -41,7 +43,6 @@ trait Builds[-Elem, +To] extends Any {
 
 /** Collections classes.
  */
-trait Size                extends Any with OptInt
 trait Foreach[+A]         extends Any with HasSizeInfo                    { def foreach(f: A => Unit): Unit }
 trait Direct[+A]          extends Any with Foreach[A] with HasPreciseSize { def elemAt(i: Index): A         }
 trait Contains[-A]        extends Any                                     { def contains(x: A): Boolean     }
@@ -54,7 +55,7 @@ trait Linear[+A] extends Any with Foreach[A] with IsEmpty {
   def tail: Tail
 }
 
-trait DerivedIntConversions extends Any {
+trait DerivedLongConversions extends Any {
   def toIndex: Index
   def toNth: Nth
   def toOffset: Offset
@@ -64,26 +65,26 @@ trait IndexRange extends Any with Direct[Index] {
   def start: Index
   def end: Index
 }
-trait Offset extends Any with DerivedIntConversions {
+trait Offset extends Any with DerivedLongConversions {
   def offsetValue: Int
   def +(n: Int): Offset
 }
 trait Index extends Any with IndexLike {
   type This = Index
-  def indexValue: Int
+  def indexValue: Long
   def get     = indexValue
   def isEmpty = indexValue < 0
 }
 trait Nth extends Any with IndexLike {
   type This = Nth
-  def nthValue: Int
+  def nthValue: Long
   def get     = nthValue
   def isEmpty = nthValue <= 0
 }
 
-sealed trait IndexLike extends Any with OptInt with DerivedIntConversions {
+sealed trait IndexLike extends Any with OptLong with DerivedLongConversions {
   type This <: IndexLike
-  def +(n: Int): This
+  def +(n: Long): This
 }
 
 trait AndThis {

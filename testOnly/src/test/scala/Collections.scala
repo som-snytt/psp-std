@@ -2,7 +2,6 @@ package psp
 package tests
 
 import psp.std._, api._
-import Prop._
 
 class Collections extends ScalacheckBundle {
   def bundle = "Collections"

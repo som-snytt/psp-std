@@ -55,10 +55,10 @@ object Regex extends (String => Regex) {
 }
 
 final class SplitString(s: String, where: Index) extends Product2[String, String] {
-  def isEmpty             = where.isEmpty
+  def isEmpty             = where == NoIndex
   def get                 = (_1, _2)
-  def _1                  = s.substring(0, where.indexValue)
-  def _2                  = s.substring(where.indexValue, s.length)
+  def _1                  = s.substring(0, where.safeToInt)
+  def _2                  = s.substring(where.safeToInt, s.length)
   def canEqual(that: Any) = that.isInstanceOf[SplitString]
 }
 

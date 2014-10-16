@@ -98,11 +98,14 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsClassLoader(x: jClassLoader): ops.ClassLoaderOps             = new ops.ClassLoaderOps(x)
   implicit def opsFileTime(x: jFileTime): ops.FileTimeOps                      = new ops.FileTimeOps(x)
   implicit def opsFunction1[T, R](f: T => R): ops.Function1Ops[T, R]           = new ops.Function1Ops[T, R](f)
+  implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]           = new ops.GeneratorOps(x)
+  implicit def opsHasPreciseSize(x: HasPreciseSize): ops.HasPreciseSizeOps     = new ops.HasPreciseSizeOps(x)
   implicit def opsInputStream(x: InputStream): ops.InputStreamOps              = new ops.InputStreamOps(x)
   implicit def opsInt(x: Int): ops.IntOps                                      = new ops.IntOps(x)
   implicit def opsLong(x: Long): ops.LongOps                                   = new ops.LongOps(x)
   implicit def opsMap[K, V](xs: scMap[K, V]): ops.Map[K, V]                    = new ops.Map[K, V](xs)
   implicit def opsOption[A](x: Option[A]): ops.OptionOps[A]                    = new ops.OptionOps[A](x)
+  implicit def opsPreciseSize(x: PreciseSize): ops.PreciseSizeOps              = new ops.PreciseSizeOps(x)
   implicit def opsPredicate[A](f: Predicate[A]): ops.PredicateOps[A]           = new ops.PredicateOps(f)
   implicit def opsSizeInfo(x: SizeInfo): SizeInfo.Ops                          = new SizeInfo.Ops(x)
   implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): ops.SortedMap[K, V] = new ops.SortedMap[K, V](xs)
@@ -112,15 +115,13 @@ trait StdOps3 extends Any with StdOps2 {
 trait StdOps extends Any with StdOps3 {
   implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator              = new ShowInterpolator(sc)
   implicit def predicateToDirectoryFilter[A](p: Predicate[A]): DirectoryStreamFilter[A] = new DirectoryStreamFilter[A] { def accept(entry: A) = p(entry) }
-  implicit def sizeToSizeInfo(s: Size): SizeInfo                                        = s.fold(SizeInfo.unknown)(SizeInfo.precise)
 
   // Promotion of the api type (which has as few methods as possible) to the
   // concrete type which has all the other ones.
-  implicit def apiOffsetPromote(x: Offset): IntOffset             = Offset impl x
-  implicit def apiSizePromote(x: Size): IntSize                   = Size impl x
-  implicit def apiIndexLikePromote(x: IndexLike): IntIndex        = Index impl x.toIndex
-  implicit def apiIndexRangePromote(x: IndexRange): IntIndexRange = IndexRange impl x
-  implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]   = Order(ord.compare)
+  implicit def apiOffsetPromote(x: Offset): IntOffset                            = Offset impl x
+  implicit def apiIndexLikePromote(x: IndexLike): IntIndex                       = Index impl x.toIndex
+  implicit def apiIndexRangePromote(x: IndexRange): IntIndexRange                = IndexRange impl x
+  implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]                  = Order(ord.compare)
   implicit def directoryStreamToIterable[A](stream: DirectoryStream[A]): pSeq[A] = BiIterable(stream).pseq
 }
 

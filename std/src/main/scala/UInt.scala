@@ -30,5 +30,5 @@ object UInt extends (Int => UInt) {
   implicit val UIntOrder = orderBy[UInt](_.longValue)
 
   def apply(x: Int): UInt  = new UInt(x)
-  def apply(x: Long): UInt = new UInt(x.toInt)
+  def apply(x: Long): UInt = new UInt(x.toInt) // not safeToInt
 }

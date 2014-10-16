@@ -73,8 +73,8 @@ final class PspStringOps(val xs: String) extends AnyVal {
 
   def readAs[A](implicit reads: Read[A]): A = reads read xs
 
-  def foldPrefix[A](prefix: String)(none: => A, some: String => A): A = if (xs startsWith prefix) some(xs drop prefix.length) else none
-  def foldSuffix[A](suffix: String)(none: => A, some: String => A): A = if (xs endsWith suffix) some(xs dropRight suffix.length) else none
+  def foldPrefix[A](prefix: String)(none: => A, some: String => A): A = if (xs startsWith prefix) some(xs drop prefix.size) else none
+  def foldSuffix[A](suffix: String)(none: => A, some: String => A): A = if (xs endsWith suffix) some(xs dropRight suffix.size) else none
 
   def trimTrailing: String        = mapLines(_ remove whitespace.ends)
   def trimLeading: String         = mapLines(_ remove whitespace.starts)
@@ -84,11 +84,8 @@ final class PspStringOps(val xs: String) extends AnyVal {
   def stripSuffix(suffix: String) = xs remove suffix.r.literal.ends
   def sanitize: String            = mapChars { case x if x.isControl => '?' }
 
-  def truncateAndLeftJustifyTo(maxlen: Int): String =
-    ("%-" + maxlen + "s").format(normalizeSpace truncateTo maxlen)
-
-  def truncateTo(maxlen: Int): String =
-    if (length <= maxlen) xs else xs.take(maxlen - 3) + "..."
+  def truncateAndLeftJustifyTo(max: PreciseSize) = max.leftFormat format (normalizeSpace truncateTo max)
+  def truncateTo(max: PreciseSize)               = if (xs.size <= max) xs else (xs take max - 3) + "..."
 
   def normalizeSpace: String = xs.trim.replacePattern(
     "\\n+"      -> "\n",

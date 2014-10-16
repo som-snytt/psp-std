@@ -91,13 +91,3 @@ trait DerivedIntCompanion extends Any {
   def ordering: Order[Derived]
   def shows: Show[Derived]
 }
-
-
-/**
-trait Show[-A] extends Any { def show(x: A): Doc }
-
-trait Doc extends Any {
-  def render: String
-}
-**/
-

@@ -95,10 +95,10 @@ trait StdOrder {
   implicit def shortOrder: Order[Short]     = Order.fromInt[Short](_ - _)
   implicit def stringOrder: Order[String]   = Order.fromLong[String](_ compareTo _)
 
-  implicit def indexOrder: Order[Index]   = orderBy[Index](_.indexValue)
-  implicit def nthOrder: Order[Nth]       = orderBy[Nth](_.nthValue)
-  implicit def offsetOrder: Order[Offset] = orderBy[Offset](_.offsetValue)
-  implicit def sizeOrder: Order[Size]     = orderBy[Size](_.sizeValue)
+  implicit def indexOrder: Order[Index]      = orderBy[Index](_.indexValue)
+  implicit def nthOrder: Order[Nth]          = orderBy[Nth](_.nthValue)
+  implicit def offsetOrder: Order[Offset]    = orderBy[Offset](_.offsetValue)
+  implicit def sizeOrder: Order[PreciseSize] = orderBy[PreciseSize](_.value)
 
   implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
   implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
@@ -145,12 +145,13 @@ trait StdEq {
   implicit def stringEq: Eq[String]   = Eq.natural[String]
   implicit def unitEq: Eq[Unit]       = Eq[Unit]((x, y) => true)
 
-  implicit def sizeEq: Eq[Size]     = eqBy[Size](_.sizeValue)
-  implicit def indexEq: Eq[Index]   = eqBy[Index](_.indexValue)
-  implicit def nthEq: Eq[Nth]       = eqBy[Nth](_.nthValue)
-  implicit def offsetEq: Eq[Offset] = eqBy[Offset](_.offsetValue)
-  implicit def pathEq: Eq[Path]     = eqBy[Path](_.toString)
-  implicit def jTypeEq: Eq[jType]   = Eq.natural()
+  implicit def sizeInfoEq: Eq[SizeInfo] = Eq.natural()
+  implicit def sizeEq: Eq[PreciseSize]  = eqBy[PreciseSize](_.value)
+  implicit def indexEq: Eq[Index]       = eqBy[Index](_.indexValue)
+  implicit def nthEq: Eq[Nth]           = eqBy[Nth](_.nthValue)
+  implicit def offsetEq: Eq[Offset]     = eqBy[Offset](_.offsetValue)
+  implicit def pathEq: Eq[Path]         = eqBy[Path](_.toString)
+  implicit def jTypeEq: Eq[jType]       = Eq.natural()
 
   implicit def seqEq[A: Eq] : Eq[scSeq[A]]                = Eq((xs, ys) => (xs corresponds ys)(_ === _))
   implicit def directEq[A: Eq] : Eq[Direct[A]]            = Eq((xs, ys) => (xs.size == ys.size) && (xs.indices forall (i => xs(i) === ys(i))))
@@ -174,10 +175,10 @@ trait StdHash {
   implicit def pathHash: Hash[Path]       = Hash.natural()
   implicit def jTypeHash: Hash[jType]     = Hash.natural()
 
-  implicit def sizeHash: Hash[Size]     = hashBy[Size](_.sizeValue)
-  implicit def indexHash: Hash[Index]   = hashBy[Index](_.indexValue)
-  implicit def nthHash: Hash[Nth]       = hashBy[Nth](_.nthValue)
-  implicit def offsetHash: Hash[Offset] = hashBy[Offset](_.offsetValue)
+  implicit def sizeHash: Hash[PreciseSize] = hashBy[PreciseSize](_.value)
+  implicit def indexHash: Hash[Index]      = hashBy[Index](_.indexValue)
+  implicit def nthHash: Hash[Nth]          = hashBy[Nth](_.nthValue)
+  implicit def offsetHash: Hash[Offset]    = hashBy[Offset](_.offsetValue)
 
   implicit def seqHash[A: Hash] : Hash[scSeq[A]]     = Hash[scSeq[A]](xs => xs.map(_.hash).##)
   implicit def directHash[A: Hash] : Hash[Direct[A]] = hashBy(_.toScalaVector)

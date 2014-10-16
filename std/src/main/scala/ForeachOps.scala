@@ -5,12 +5,14 @@ package ops
 import api._
 import linear._
 
-final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal {
+final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPreciseSizeMethods {
+  def size = newSize(xs.length)
   private def andThis(op: Unit): xs.type = xs
 
-  def updated(idx: Index, value: A) = andThis(xs(idx.indexValue) = value)
-  def mapInPlace(f: A => A)         = andThis(xs.size foreachIndex (i => xs(i.indexValue) = f(xs(i.indexValue))))
-  def sortInPlace: Array[A]         = Array sortInPlace xs
+  def apply(idx: Index): A                   = xs(idx.safeToInt)
+  def updated(idx: Index, value: A): xs.type = andThis(xs(idx.safeToInt) = value)
+  def mapInPlace(f: A => A): xs.type         = andThis(foreachIndex(i => updated(i, f(apply(i)))))
+  def sortInPlace: Array[A]                  = Array sortInPlace xs
 }
 
 trait ConversionOps[A] extends Any {
@@ -26,8 +28,8 @@ trait ConversionOps[A] extends Any {
   def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z(runForeach)
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
-  def mapWithIndex[B](f: (Index, A) => B): pSeq[B] = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(i.index, x) ).toPolicySeq
-  def mapWithNth[B](f: (Nth, A) => B): pSeq[B]     = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f((i + 1).nth, x) ).toPolicySeq
+  def mapWithIndex[B](f: (Index, A) => B): pSeq[B] = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(Index(i), x) ).toPolicySeq
+  def mapWithNth[B](f: (Nth, A) => B): pSeq[B]     = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(Index(i).toNth, x) ).toPolicySeq
 
   def toPolicySet(implicit z: HashEq[A]): pSet[A]              = PolicySet.builder[A].apply(runForeach)
   def toPolicyMap[K, V](implicit ev: A <:< (K, V)): pMap[K, V] = PolicyMap.builder[K, V] build (Foreach(runForeach) map ev)
@@ -106,7 +108,6 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   def sorted(implicit ord: Order[A]): pVector[A]               = toScalaVector sorted ord.toScalaOrdering
   def unsortedFrequencyMap: Map[A, Int]                        = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
   def sameMembers(ys: sCollection[A])(implicit eqs: HashEq[A]) = toPolicySet === each(ys).toPolicySet
-  // def sameLength(that: sCollection[_])                      = toScalaVector hasSameSize that
 
   def foreachCounted(f: (Index, A) => Unit): Unit   = foldl(0.index)((idx, x) => try idx.next finally f(idx, x))
 

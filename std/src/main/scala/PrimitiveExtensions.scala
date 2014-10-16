@@ -58,20 +58,19 @@ final class CharOps(val ch: Char) extends AnyVal {
 final class IntOps(val self: Int) extends AnyVal {
   private type This = Int
 
-  def nth: Nth       = Nth(self)
-  def index: Index   = Index(self)
   def offset: Offset = Offset(self)
-  def size: Precise  = Precise(self)
 
   /** Make a 64-bit long by concatenating two 32-bit Ints.
-   *  Retrieve the original Ints with lbits and rbits.
+   *  Retrieve the original Ints with left32 and right32.
    */
-  @inline def join(that: Int): Long = (self.toLong << 32) | that.toLong
+  @inline def join64(that: Int): Long = (self.toLong << 32) | that.toLong
 
-  def abs: This             = scala.math.abs(self)
-  def max(that: This): This = scala.math.max(self, that)
-  def min(that: This): This = scala.math.min(self, that)
-  def signum: This          = scala.math.signum(self)
+  def abs: This               = scala.math.abs(self)
+  def max(that: This): This   = scala.math.max(self, that)
+  def min(that: This): This   = scala.math.min(self, that)
+  def signum: This            = scala.math.signum(self)
+  def lowerBound(n: Int): Int = max(n)
+  def nonNegative: Int        = lowerBound(0)
 
   def until(end: Int): ExclusiveIntRange = intRange(self, end)
   def to(end: Int): ExclusiveIntRange    = nthRange(self, end)
@@ -86,13 +85,30 @@ final class IntOps(val self: Int) extends AnyVal {
 final class LongOps(val self: Long) extends AnyVal {
   private type This = Long
 
-  def abs: This             = scala.math.abs(self)
-  def max(that: This): This = scala.math.max(self, that)
-  def min(that: This): This = scala.math.min(self, that)
-  def signum: This          = scala.math.signum(self)
+  def nth: Nth          = Nth(self)
+  def index: Index      = Index(self)
+  def size: PreciseSize = PreciseSize(self)
 
-  def lbits: Int = (self >>> 32).toInt
-  def rbits: Int = self.toInt
+  def abs: This                 = scala.math.abs(self)
+  def max(that: This): This     = scala.math.max(self, that)
+  def min(that: This): This     = scala.math.min(self, that)
+  def signum: This              = scala.math.signum(self)
+  def lowerBound(n: Long): Long = max(n)
+  def nonNegative: Long         = lowerBound(0)
+
+  def left32: Int  = (self >>> 32).toInt
+  def right32: Int = self.toInt
+
+  /** Safe in the senses that it won't silently truncate values, and
+   *  will translate MaxLong to MaxInt instead of -1.
+   */
+  def safeToInt: Int = self match {
+    case MaxLong => MaxInt
+    case MinLong => MinInt
+    case _       =>
+      assert(self <= (MaxInt: Long), s"$self < $MaxInt")
+      self.toInt
+  }
 
   def toUnsignedInt: UInt = UInt(self)
   def binary: String      = jl.Long.toBinaryString(self)

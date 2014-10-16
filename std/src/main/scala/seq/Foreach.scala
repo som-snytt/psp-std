@@ -36,7 +36,7 @@ object Foreach {
       }
     }
   }
-  final case class Times[A](size: Precise, elem: A) extends Foreach[A] with HasPreciseSize {
+  final case class Times[A](size: PreciseSize, elem: A) extends Foreach[A] with HasPreciseSize {
     @inline def foreach(f: A => Unit): Unit = size foreachNth (_ => f(elem))
   }
 
@@ -49,7 +49,7 @@ object Foreach {
   def constant[A](elem: A): Constant[A]                   = Constant[A](elem)
   def continually[A](elem: => A): Continually[A]          = Continually[A](() => elem)
   def unfold[A](start: A)(next: A => A): Unfold[A]        = Unfold[A](start)(next)
-  def times[A](size: Precise, elem: A): Times[A]          = Times[A](size, elem)
+  def times[A](size: PreciseSize, elem: A): Times[A]          = Times[A](size, elem)
 
   def apply[A](mf: Suspended[A]): Foreach[A] = new Impl[A](SizeInfo.unknown, mf)
   def elems[A](xs: A*): Foreach[A]           = new Impl[A](SizeInfo(xs), xs foreach _)
