@@ -4,97 +4,134 @@ package std
 import api._
 
 object PolicySet {
-  def builder[A: HashEq] : Builds[A, PolicySet[A]] = Builds(xs => new PolicySet[A](xs))
+  def builder[A: HashEq] : Builds[A, exSet[A]] = Builds(apply[A](_))
 
-  implicit def policySetEq[A : HashEq] : Eq[PolicySet[A]] = Eq[PolicySet[A]]((xs, ys) => (xs.size == ys.size) && (xs forall ys))
+  def natural[A](xs: Foreach[A]): exSet[A]                                    = apply[A](xs)(HashEq.natural[A])
+  def reference[A <: AnyRef](xs: Foreach[A]): exSet[A]                        = apply[A](xs)(HashEq.reference[A])
+  def shown[A: Show](xs: Foreach[A]): exSet[A]                                = apply[A](xs)(HashEq.shown[A])
+  def direct[A](xs: Foreach[A])(equiv: Relation[A], hash: A => Int): exSet[A] = apply[A](xs)(HashEq(equiv, hash))
+  def elems[A: HashEq](xs: A*): exSet[A]                                      = apply[A](fromElems(xs: _*))
+  def apply[A: HashEq](xs: Foreach[A]): exSet[A]                              = new ExtensionalSet.Impl[A](xs, implicitly)
 
-  def natural[A](xs: Foreach[A]): PolicySet[A]                                          = apply[A](xs)(HashEq.natural[A])
-  def reference[A <: AnyRef](xs: Foreach[A]): PolicySet[A]                              = apply[A](xs)(HashEq.reference[A])
-  def shown[A: Show](xs: Foreach[A]): PolicySet[A]                                      = apply[A](xs)(HashEq.shown[A])
-  def direct[A](xs: Foreach[A])(equiv: (A, A) => Boolean, hash: A => Int): PolicySet[A] = apply[A](xs)(HashEq(equiv, hash))
-  def apply[A: HashEq](xs: Foreach[A]): PolicySet[A]                                    = new PolicySet[A](xs)
-}
-
-/** XXX TODO - don't involve scala's set.
- */
-final class PolicySet[A: HashEq](basis: Foreach[A]) extends sciSet[A] {
-  private[this] val wrapSet: jSet[Wrap] = jSet(basis map wrap seq: _*)
-  private def wrap(elem: A): Wrap = new Wrap(elem)
-  private class Wrap(val unwrap: A) {
-    final override def equals(that: Any): Boolean = that match {
-      case x: Wrap => equiv(unwrap, x.unwrap)
-      case _       => false
-    }
-    override def hashCode = hash(unwrap)
-    override def toString = s"$unwrap (wrapped)"
+  class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
+    def sizeInfo          = SizeInfo(xs)
+    def contained         = Foreach[A](xs foreach _)
+    def contains(elem: A) = xs(elem)
+    def equiv(x: A, y: A) = x == y
+    def hash(x: A)        = x.##
   }
-  def equiv(x: A, y: A): Boolean = x === y
-  def hash(x: A): Int            = x.hash
-
-  def toPolicySeq: pVector[A]             = Direct.builder[A](iterator foreach _)
-  def addIfAbsent(elem: A): PolicySet[A]  = if (contains(elem)) this else this + elem
-  def addOrReplace(elem: A): PolicySet[A] = if (contains(elem)) (this - elem) + elem else this + elem
-
-  def by[B : HashEq](f: A => B): PolicySet[A]    = PolicySet[A](basis)(hashEqBy[A](f))
-  def byNatural                                  = PolicySet.natural[A](basis)
-  def byReference(implicit ev: A <:< AnyRef)     = PolicySet.reference(basis map ev)
-  def byShown(implicit z: Show[A]): PolicySet[A] = PolicySet.shown[A](basis)
-
-  override def size              = wrapSet.size
-  def iterator: BiIterator[A]    = BiIterable(wrapSet).iterator map (_.unwrap)
-  def contains(elem: A): Boolean = wrapSet contains wrap(elem)
-  def -(elem: A)                 = this
-  def +(elem: A)                 = this
-}
-
-object ScalaSet {
-  final val Zero: sciSet[Any] = new EmptySet[Any]
-  final val One: sciSet[Any]  = new Complement[Any](Zero)
-  final class EmptySet[A] extends sciSet[A] {
-    def iterator          = scIterator.empty
-    def -(elem: A)        = this
-    def +(elem: A)        = Set(elem)
-    def contains(elem: A) = false
-    override def toString = "Ø"
-  }
-
-  def isSubSet[A: Eq](xs: sciSet[A], ys: sciSet[A]): Boolean = xs forall (x => ys exists (y => x === y))
-
-  implicit def scalaSetEq[CC[X] <: sciSet[X], A : Eq] : Eq[CC[A]] = Eq[CC[A]] {
-    case (Complement(xs), Complement(ys)) => isSubSet(xs, ys) && isSubSet(ys, xs)
-    case (Complement(xs), y)              => false
-    case (x, Complement(ys))              => false
-    case (xs, ys)                         => isSubSet(xs, ys) && isSubSet(ys, xs)
-  }
-
-  final case class Difference[A](lhs: sciSet[A], rhs: sciSet[A]) extends sciSet[A] {
-    def iterator              = lhs.iterator filterNot rhs
-    def -(elem: A): sciSet[A] = if (lhs(elem)) Difference(lhs, rhs + elem) else this
-    def +(elem: A): sciSet[A] = if (lhs(elem) && !rhs(elem)) this else Difference(lhs + elem, rhs - elem)
-    def contains(elem: A)     = lhs(elem) && !rhs(elem)
-    override def toString = lhs match {
-      case Complement(_) => s"($lhs) / $rhs"
-      case _             => (lhs filterNot rhs).toString
-    }
-  }
-  final case class Complement[A](xs: sciSet[A]) extends sciSet[A] {
-    // The repl calls size to see if it needs to truncate the string, and then
-    // the size implementation calls iterator.
-    override def size         = MaxInt
-    def iterator              = abortTrace("Cannot iterate over set complement")
-    def -(elem: A): sciSet[A] = !(xs + elem)
-    def +(elem: A): sciSet[A] = !(xs - elem)
-    def contains(elem: A)     = !(xs contains elem)
-
-    // It's impossible to meet the hashcode contract.
-    override def hashCode = ~(xs.##)
-    override def equals(x: Any): Boolean = x match {
-      case Complement(ys) => xs == ys
-      case _              => false
-    }
-    override def toString = xs match {
-      case Zero => "U"
-      case _    => s"U ∖ $xs"
-    }
+  class FromJava[A](xs: jSet[A]) extends ExtensionalSet[A] {
+    def sizeInfo          = SizeInfo(xs)
+    def contained         = Foreach[A](BiIterable(xs) foreach _)
+    def contains(elem: A) = xs contains elem
+    def equiv(x: A, y: A) = x == y
+    def hash(x: A)        = x.##
   }
 }
+
+sealed trait IntensionalSet[A] extends Any with Intensional[A, Boolean] {
+  def apply(elem: A): Boolean = contains(elem)
+  def contains(elem: A): Boolean
+  def equiv(x: A, y: A): Boolean
+  def hash(x: A): Int
+}
+sealed trait ExtensionalSet[A] extends Any with IntensionalSet[A] with Extensional[A] with HasSizeInfo {
+  def contained: Foreach[A]
+}
+
+object ExtensionalSet {
+  sealed trait Derived[A] extends Any with ExtensionalSet[A] with IntensionalSet.Derived[A] {
+    protected def underlying: exSet[A]
+  }
+  final case class Filtered[A](lhs: exSet[A], rhs: A => Boolean) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+    def contained            = lhs.contained filter rhs
+    def sizeInfo             = lhs.sizeInfo.atMost
+  }
+  final case class Intersect[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A)    = lhs(elem) && rhs(elem)
+    def contained            = lhs.contained filter rhs
+    def sizeInfo             = lhs.sizeInfo intersect rhs.sizeInfo
+  }
+  final case class Union[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A)    = lhs(elem) || rhs(elem)
+    def contained            = lhs.contained ++ (rhs.contained filterNot lhs)
+    def sizeInfo             = lhs.sizeInfo union rhs.sizeInfo
+  }
+  final case class Diff[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+    def contained            = lhs.contained filterNot rhs
+    def sizeInfo             = lhs.sizeInfo diff rhs.sizeInfo
+  }
+  final class Impl[A](basis: Foreach[A], heq: HashEq[A]) extends ExtensionalSet[A] {
+    private[this] val wrapSet: jSet[Wrap] = basis map wrap toJavaSet
+    private def wrap(elem: A): Wrap = new Wrap(elem)
+    private class Wrap(val unwrap: A) {
+      final override def equals(that: Any): Boolean = that match {
+        case x: Wrap => equiv(unwrap, x.unwrap)
+        case _       => false
+      }
+      override def hashCode = hash(unwrap)
+      override def toString = s"$unwrap (wrapped)"
+    }
+    def equiv(x: A, y: A)     = heq.equiv(x, y)
+    def hash(x: A): Int       = heq.hash(x)
+    def contains(elem: A)     = wrapSet contains wrap(elem)
+    def sizeInfo: SizeInfo    = newSize(wrapSet.size)
+    def contained: Foreach[A] = wrapSet.m map (_.unwrap)
+  }
+}
+object IntensionalSet {
+  sealed trait Derived[A] extends Any with inSet[A] {
+    protected def underlying: inSet[A]
+    def equiv(x: A, y: A) = underlying.equiv(x, y)
+    def hash(x: A)        = underlying.hash(x)
+  }
+  final case class Filtered[A](lhs: inSet[A], rhs: A => Boolean) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+  }
+  final case class Complement[A](xs: inSet[A]) extends Derived[A] {
+    protected def underlying = xs
+    def contains(elem: A) = !xs(elem)
+  }
+  final case class Intersect[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A) = lhs(elem) && rhs(elem)
+  }
+  final case class Union[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A) = lhs(elem) && !rhs(elem)
+  }
+  final case class Diff[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
+    protected def underlying = lhs
+    def contains(elem: A) = lhs(elem) && !rhs(elem)
+  }
+  final case class Impl[A](member: A => Boolean, heq: HashEq[A]) extends IntensionalSet[A] {
+    def equiv(x: A, y: A) = heq.equiv(x, y)
+    def hash(x: A): Int   = heq.hash(x)
+    def contains(elem: A) = member(elem)
+  }
+}
+
+/*** TODO - salvage.
+
+//   def addIfAbsent(elem: A): PolicySet[A]  = if (contains(elem)) this else this + elem
+//   def addOrReplace(elem: A): PolicySet[A] = if (contains(elem)) (this - elem) + elem else this + elem
+
+//   def by[B : HashEq](f: A => B): PolicySet[A]    = PolicySet[A](basis)(hashEqBy[A](f))
+//   def byNatural                                  = PolicySet.natural[A](basis)
+//   def byReference(implicit ev: A <:< AnyRef)     = PolicySet.reference(basis map ev)
+//   def byShown(implicit z: Show[A]): PolicySet[A] = PolicySet.shown[A](basis)
+//   implicit def scalaSetEq[CC[X] <: sciSet[X], A : Eq] : Eq[CC[A]] = Eq[CC[A]] {
+//     case (Complement(xs), Complement(ys)) => isSubSet(xs, ys) && isSubSet(ys, xs)
+//     case (Complement(xs), y)              => false
+//     case (x, Complement(ys))              => false
+//     case (xs, ys)                         => isSubSet(xs, ys) && isSubSet(ys, xs)
+//   }
+
+***/

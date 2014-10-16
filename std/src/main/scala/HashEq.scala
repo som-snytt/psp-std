@@ -1,7 +1,7 @@
 package psp
 package std
 
-import api._
+import api._, StdShow._
 
 trait HashEq[-A] extends Any with Hash[A] with Eq[A]
 
@@ -20,6 +20,7 @@ object Eq {
   def natural[A](): Impl[A]                   = new Impl[A](_ == _)
   def apply[A](f: (A, A) => Boolean): Impl[A] = new Impl[A](f)
 }
+
 object HashEq {
   implicit def composeHashEq[A](implicit eqs: Eq[A], hash: Hash[A]): HashEq[A] = new Impl[A](eqs.equiv, hash.hash)
 

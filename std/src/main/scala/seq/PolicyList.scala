@@ -5,6 +5,24 @@ package linear
 import api._
 import SizeInfo._
 
+object List {
+  /*** TODO
+  final class FromJava[A](xs: jCollection[A]) extends Leaf[A] {
+  }
+  ***/
+  final class FromScala[A](xs: sciLinearSeq[A]) extends Leaf[A] {
+    type Tail = FromScala[A]
+    def isEmpty = xs.isEmpty
+    def head    = xs.head
+    def tail    = new FromScala(xs.tail)
+  }
+
+  def builder[A] : Builds[A, List[A]]      = Builds(xs => xs.foldr(empty[A])(_ :: _).reverse)
+  def empty[A]                             = Nil.castTo[List[A]]
+  def fill[A](n: Int)(body: => A): List[A] = if (n <= 0) Nil() else body :: fill(n - 1)(body)
+  def apply[A](xs: A*): List[A]            = xs.foldRight(Nil[A]())(_ :: _)
+}
+
 trait Leaf[A] extends Any with api.Linear[A] {
   type Tail <: Leaf[A]
   def sizeInfo = if (isEmpty) Empty else NonEmpty
@@ -16,13 +34,6 @@ trait Leaf[A] extends Any with api.Linear[A] {
     @tailrec def loop(xs: api.Linear[A]): Boolean = !xs.isEmpty && (x == xs.head || loop(xs.tail))
     loop(this)
   }
-}
-
-object List {
-  def builder[A] : Builds[A, List[A]]      = Builds(xs => xs.foldr(empty[A])(_ :: _).reverse)
-  def empty[A]                             = Nil.castTo[List[A]]
-  def fill[A](n: Int)(body: => A): List[A] = if (n <= 0) Nil() else body :: fill(n - 1)(body)
-  def apply[A](xs: A*): List[A]            = xs.foldRight(Nil[A]())(_ :: _)
 }
 
 sealed trait List[A] extends Leaf[A] {

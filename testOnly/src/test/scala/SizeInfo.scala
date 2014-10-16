@@ -9,6 +9,8 @@ trait PspArb2 extends PspArb1 { implicit def arbAtomic: Arbitrary[Atomic]    = A
 trait PspArb3 extends PspArb2 { implicit def arbSize: Arbitrary[PreciseSize] = Arbitrary(genPrecise)  }
 
 class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
+  def bundle = "SizeInfo laws"
+
   type SI = SizeInfo
   type BinOp[T] = (T, T) => T
   type Tried[T] = scala.Either[Throwable, T]
@@ -27,25 +29,23 @@ class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
   def associative[T: Arbitrary](op: BinOp[T]): Prop = forAll((p1: T, p2: T, p3: T) => sameOutcome(op(op(p1, p2), p3), op(p1, op(p2, p3))))
   def certain[T: Arbitrary, U: Arbitrary](f: (T, U) => Boolean): Prop = forAll((p1: T, p2: U) => f(p1, p2))
 
+  def associatives[A: Arbitrary](ops: BinOp[A]*): Prop = ops map (x => associative(x)) reduceLeft (_ && _)
+  def commutatives[A: Arbitrary](ops: BinOp[A]*): Prop = ops map (x => commutative(x)) reduceLeft (_ && _)
+
   def flip(r: Prop.Result): Prop.Result = r match {
     case Prop.Result(Prop.True, _, _, _)  => r.copy(status = Prop.False)
     case Prop.Result(Prop.False, _, _, _) => r.copy(status = Prop.True)
     case _                                => r
   }
 
-  def bundle = "SizeInfo"
   // ...Aaaaand right on cue, a bunch of these tests broke until I added a type annotation.
   def props = Seq[NamedProp](
-    "s1 <= (s1 max s2)"    -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 max s2)),
-    "s1 >= (s1 min s2)"    -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_>= (s1 min s2)),
-    "s1 <= (s1 + s2)"      -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 + s2)),
-    "s1 >= (s1 - s2)"      -> certain[Atomic, PreciseSize]((s1, s2) => (s1: SI) p_>= (s1 - s2)),
-    "<inf> + n"            -> forAll((s1: SI) => ((Infinite + s1) partialCompare Infinite) == PCmp.EQ),
-    "`+` is associative"   -> associative[SI](_ + _),
-    "`max` is associative" -> associative[SI](_ max _),
-    "`min` is associative" -> associative[SI](_ min _),
-    "`+` is commutative"   -> commutative[SI](_ + _),
-    "`max` is commutative" -> commutative[SI](_ max _),
-    "`min` is commutative" -> commutative[SI](_ min _)
+    "s1 <= (s1 max s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 max s2)),
+    "s1 >= (s1 min s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_>= (s1 min s2)),
+    "s1 <= (s1 + s2)"                 -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 + s2)),
+    "s1 >= (s1 - s2)"                 -> certain[Atomic, PreciseSize]((s1, s2) => (s1: SI) p_>= (s1 - s2)),
+    "<inf> + n"                       -> forAll((s1: SI) => ((Infinite + s1) partialCompare Infinite) == PCmp.EQ),
+    "max, min, and + are associative" -> associatives[SI](_ + _, _ max _, _ min _),
+    "max, min, and + are commutative" -> commutatives[SI](_ + _, _ max _, _ min _)
   )
 }

@@ -5,7 +5,8 @@ import org.scalacheck._
 import org.scalacheck.Prop.forAll
 import psp.std._, api._
 
-class AlgebraPoliceman[A](val bundle: String)(implicit algebra: BooleanAlgebra[A], arb: Arbitrary[A], equiv: Eq[A]) extends AlgebraLaws[A] with ScalacheckBundle {
+class AlgebraPoliceman[A](name: String)(implicit algebra: BooleanAlgebra[A], arb: Arbitrary[A], equiv: Eq[A]) extends AlgebraLaws[A] with ScalacheckBundle {
+  def bundle = s"Boolean Algebra laws for type $name"
   import algebra._
 
   def join = "∨"
@@ -13,7 +14,6 @@ class AlgebraPoliceman[A](val bundle: String)(implicit algebra: BooleanAlgebra[A
   def not  = "¬"
 
   def props = Seq[NamedProp](
-    s"--- Boolean Algebra laws for type $bundle"             -> Prop.passed,
     s"  a $meet (b $meet c) = (a $meet b) $meet c"           -> forAll(associative(and)),
     s"  a $join (b $join c) = (a $join b) $join c"           -> forAll(associative(or)),
     s"  a $meet b = b $meet a"                               -> forAll(commutative(and)),
@@ -25,7 +25,6 @@ class AlgebraPoliceman[A](val bundle: String)(implicit algebra: BooleanAlgebra[A
     s"  a $join 0 = a"                                       -> forAll(identity(or, zero)),
     s"  a $meet 1 = a"                                       -> forAll(identity(and, one)),
     s"  a $join ${not}a = 1"                                 -> forAll(complement(or, one)),
-    s"  a $meet ${not}a = 0"                                 -> forAll(complement(and, zero)),
-    "---"                                                    -> Prop.passed
+    s"  a $meet ${not}a = 0"                                 -> forAll(complement(and, zero))
   )
 }

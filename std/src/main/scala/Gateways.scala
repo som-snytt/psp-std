@@ -24,36 +24,15 @@ trait StdGateways extends Any
 // This lets us use all our own methods yet still build the scala type at the end, e.g.
 //   Vector("a", "b", "cd", "ef").m filter (_.length == 1) build
 // Returns a Vector[String].
-
 trait StdBuilds0 extends Any                 { implicit def implicitBuildsFromCBF[A, That](implicit z: CanBuild[A, That]): Builds[A, That] = Builds wrap z          }
-trait StdBuilds1 extends Any with StdBuilds0 { implicit def implicitBuildsList[A] : Builds[A, PolicyList[A]]                               = PolicyList.builder[A]  }
-trait StdBuilds2 extends Any with StdBuilds1 { implicit def implicitBuildsDirect[A] : Builds[A, Direct[A]]                                 = Direct.builder[A]      }
-trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsArray[A: CTag] : Builds[A, Array[A]]                             = Direct.arrayBuilder[A] }
-trait StdBuilds  extends Any with StdBuilds3 { implicit def implicitBuildsString: Builds[Char, String]                                     = Direct.stringBuilder() }
-
-trait StdShow0 {
-  // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  implicit def showableToTryShown[A](x: A)(implicit z: TryShow[A]): TryShown = new TryShown(z show x)
-}
-trait StdShow1 extends StdShow0 {
-  implicit def showableToShown[A](x: A)(implicit z: Show[A]): Shown = Shown(z show x)
-}
-trait StdShowLow extends StdShow1 {
-  implicit def stringShow: Show[String] = Show(x => x)
-  implicit def charShow: Show[Char]     = Show.natural()
-
-  implicit class seqShowOps[A: Show](xs: Foreach[A]) {
-    private def mkstr(sep: String): String = xs map (_.to_s) mkString sep
-    def mk_s(sep: String): Shown           = Shown(mkstr(sep))
-
-    def joinWith: Shown     = mk_s(" with ")
-    def joinComma: Shown    = mk_s(", ")
-    def joinInParens: Shown = Shown("(", joinComma, ")")
-    def optBrackets: Shown  = Shown(mkstr(", ") mapNonEmpty ("[" + _ + "]"))
-  }
-}
+trait StdBuilds1 extends Any with StdBuilds0 { implicit def implicitBuildsList[A] : Builds[A, pSeq[A]]                                     = PolicyList.builder[A]  }
+trait StdBuilds2 extends Any with StdBuilds1 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, exSet[A]]                             = PolicySet.builder[A]   }
+trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsDirect[A] : Builds[A, pVector[A]]                                = Direct.builder[A]      }
+trait StdBuilds4 extends Any with StdBuilds3 { implicit def implicitBuildsArray[A: CTag] : Builds[A, Array[A]]                             = Direct.arrayBuilder[A] }
+trait StdBuilds  extends Any with StdBuilds4 { implicit def implicitBuildsString: Builds[Char, String]                                     = Direct.stringBuilder() }
 
 trait StdWalks0 extends Any {
+  implicit def javaIterableIs[A] : ForeachableType[A, jIterable[A], jIterable]              = new Foreachable.JavaIterableIs[A]
   implicit def atomicForeachIs[A] : ForeachableType[A, Foreach[A], Foreach]                 = new Foreachable.ForeachIs[A]
   implicit def atomicTraversableIs[A] : ForeachableType[A, scTraversable[A], scTraversable] = new Foreachable.TraversableIs[A]
 }
@@ -61,20 +40,22 @@ trait StdWalks1 extends Any with StdWalks0 {
   implicit def directScalaIndexedIs[A] : DirectAccessType[A, IndexedSeq[A], IndexedSeq] = new DirectAccess.ScalaIndexedIs[A]
 }
 trait StdWalks extends Any with StdWalks1 {
-  implicit def policySetIs[A] : ForeachableType[A, PolicySet[A], PolicySet] = new Foreachable.PolicySetIs[A]
-  implicit def directIndexedIs[A] : DirectAccessType[A, Direct[A], Direct]  = new DirectAccess.IndexedIs[A]
-  implicit def directArrayIs[A] : DirectAccessType[A, Array[A], Direct]     = new DirectAccess.ArrayIs[A]
-  implicit def directStringIs: DirectAccessType[Char, String, Direct]       = DirectAccess.StringIs
+  implicit def extensionalSetIs[A] : ForeachableType[A, exSet[A], exSet]   = new Foreachable.ExtensionalSetIs[A]
+  implicit def directIndexedIs[A] : DirectAccessType[A, Direct[A], Direct] = new DirectAccess.IndexedIs[A]
+  implicit def directArrayIs[A] : DirectAccessType[A, Array[A], Direct]    = new DirectAccess.ArrayIs[A]
+  implicit def directStringIs: DirectAccessType[Char, String, Direct]      = DirectAccess.StringIs
 }
 
 trait StdOps0 extends Any {
-  implicit def opsForeach[A](xs: Foreach[A]): ops.ForeachOps[A]         = new ops.ForeachOps(xs)
-  implicit def opsJavaIterable[A](x: jIterable[A]): ops.jIterableOps[A] = new ops.jIterableOps[A](x)
+  implicit def opsForeach[A](xs: Foreach[A]): ops.ForeachOps[A]                     = new ops.ForeachOps(xs)
+  implicit def opsJavaIterable[A](x: jIterable[A]): ops.jIterableOps[A]             = new ops.jIterableOps[A](x)
+  implicit def opsIntensionalSet[A](x: IntensionalSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps[A](x)
 }
 trait StdOps1 extends Any with StdOps0 {
   implicit def opsScalaCollection[A, CC[X] <: sCollection[X]](x: CC[A]): ops.sCollectionOps[A, CC] = new ops.sCollectionOps[A, CC](x)
   implicit def opsDirect[A](xs: Direct[A]): ops.DirectOps[A]                                       = new ops.DirectOps(xs)
   implicit def arraySpecificOps[A](xs: Array[A]): ops.ArraySpecificOps[A]                          = new ops.ArraySpecificOps[A](xs)
+  implicit def opsExtensionalSet[A](x: ExtensionalSet[A]): ops.ExtensionalSetOps[A]                = new ops.ExtensionalSetOps[A](x)
 }
 trait StdOps2 extends Any with StdOps1 {
   implicit def opsDirectArray[A](xs: Array[A]): ops.DirectOps[A] = new ops.DirectOps(Direct fromArray xs)
@@ -82,7 +63,6 @@ trait StdOps2 extends Any with StdOps1 {
 
   // We buried Predef's {un,}augmentString in favor of these.
   @inline final implicit def pspAugmentString(x: String): PspStringOps   = new PspStringOps(x)
-  @inline final implicit def pspUnaugmentString(x: PspStringOps): String = x.toString
 }
 
 trait StdOps3 extends Any with StdOps2 {
@@ -93,24 +73,25 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def infixOpsEq[A: Eq](x: A): infix.EqOps[A]                               = new infix.EqOps[A](x)
   implicit def infixOpsHash[A: Hash](x: A): infix.HashOps[A]                         = new infix.HashOps[A](x)
 
-  implicit def opsChar(x: Char): ops.CharOps                                   = new ops.CharOps(x)
-  implicit def opsClass(x: jClass): ops.ClassOps                               = new ops.ClassOps(x)
-  implicit def opsClassLoader(x: jClassLoader): ops.ClassLoaderOps             = new ops.ClassLoaderOps(x)
-  implicit def opsFileTime(x: jFileTime): ops.FileTimeOps                      = new ops.FileTimeOps(x)
-  implicit def opsFunction1[T, R](f: T => R): ops.Function1Ops[T, R]           = new ops.Function1Ops[T, R](f)
-  implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]           = new ops.GeneratorOps(x)
-  implicit def opsHasPreciseSize(x: HasPreciseSize): ops.HasPreciseSizeOps     = new ops.HasPreciseSizeOps(x)
-  implicit def opsInputStream(x: InputStream): ops.InputStreamOps              = new ops.InputStreamOps(x)
-  implicit def opsInt(x: Int): ops.IntOps                                      = new ops.IntOps(x)
-  implicit def opsLong(x: Long): ops.LongOps                                   = new ops.LongOps(x)
-  implicit def opsMap[K, V](xs: scMap[K, V]): ops.Map[K, V]                    = new ops.Map[K, V](xs)
-  implicit def opsOption[A](x: Option[A]): ops.OptionOps[A]                    = new ops.OptionOps[A](x)
-  implicit def opsPreciseSize(x: PreciseSize): ops.PreciseSizeOps              = new ops.PreciseSizeOps(x)
-  implicit def opsPredicate[A](f: Predicate[A]): ops.PredicateOps[A]           = new ops.PredicateOps(f)
-  implicit def opsSizeInfo(x: SizeInfo): SizeInfo.Ops                          = new SizeInfo.Ops(x)
-  implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): ops.SortedMap[K, V] = new ops.SortedMap[K, V](xs)
-  implicit def opsStdOpt[A](x: Opt[A]): ops.StdOptOps[A]                       = new ops.StdOptOps[A](x)
-  implicit def opsTry[A](x: Try[A]): ops.TryOps[A]                             = new ops.TryOps[A](x)
+  implicit def opsBiFunction[T, R](f: (T, T) => R): ops.BiFunctionOps[T, R]           = new ops.BiFunctionOps(f)
+  implicit def opsChar(x: Char): ops.CharOps                                          = new ops.CharOps(x)
+  implicit def opsClass(x: jClass): ops.ClassOps                                      = new ops.ClassOps(x)
+  implicit def opsClassLoader(x: jClassLoader): ops.ClassLoaderOps                    = new ops.ClassLoaderOps(x)
+  implicit def opsFileTime(x: jFileTime): ops.FileTimeOps                             = new ops.FileTimeOps(x)
+  implicit def opsFunction1[T, R](f: T => R): ops.Function1Ops[T, R]                  = new ops.Function1Ops(f)
+  implicit def opsFunction2[T1, T2, R](f: (T1, T2) => R): ops.Function2Ops[T1, T2, R] = new ops.Function2Ops(f)
+  implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]                  = new ops.GeneratorOps(x)
+  implicit def opsHasPreciseSize(x: HasPreciseSize): ops.HasPreciseSizeOps            = new ops.HasPreciseSizeOps(x)
+  implicit def opsInputStream(x: InputStream): ops.InputStreamOps                     = new ops.InputStreamOps(x)
+  implicit def opsInt(x: Int): ops.IntOps                                             = new ops.IntOps(x)
+  implicit def opsLong(x: Long): ops.LongOps                                          = new ops.LongOps(x)
+  implicit def opsMap[K, V](xs: scMap[K, V]): ops.Map[K, V]                           = new ops.Map[K, V](xs)
+  implicit def opsOption[A](x: Option[A]): ops.OptionOps[A]                           = new ops.OptionOps[A](x)
+  implicit def opsPreciseSize(x: PreciseSize): ops.PreciseSizeOps                     = new ops.PreciseSizeOps(x)
+  implicit def opsSizeInfo(x: SizeInfo): SizeInfo.Ops                                 = new SizeInfo.Ops(x)
+  implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): ops.SortedMap[K, V]        = new ops.SortedMap[K, V](xs)
+  implicit def opsStdOpt[A](x: Opt[A]): ops.StdOptOps[A]                              = new ops.StdOptOps[A](x)
+  implicit def opsTry[A](x: Try[A]): ops.TryOps[A]                                    = new ops.TryOps[A](x)
 }
 trait StdOps extends Any with StdOps3 {
   implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator              = new ShowInterpolator(sc)

@@ -56,10 +56,9 @@ final class PolicyLoader(val classMap: pMap[String, Bytes]) extends ClassLoader 
   def define(name: String): jClass               = define(name, classMap(name))
   def define(name: String, bytes: Bytes): jClass = defineClass(name, bytes, 0, bytes.length, null)
 
-  private def doDefine(name: String): jClass = Try(define(name)) match {
-    case Failure(l: LinkageError) => errorMap(name) = l ; null
-    case Failure(l)               => throw l
-    case Success(x)               => x
+  private def doDefine(name: String): jClass = try define(name) catch {
+    case t: LinkageError => errorMap(name) = t ; null
+    case t: Throwable    => println(s"Caught $t") ; null
   }
 
   override def findClass(name: String) = instanceMap.getOrElse(name,

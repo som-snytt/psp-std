@@ -38,21 +38,23 @@ final class AnyOps[A](val x: A) extends AnyVal {
 }
 
 final class AnyRefOps[A <: AnyRef](val x: A) extends AnyVal {
+  @inline def foldNull[B](zero: => B)(f: A => B): B = if (x eq null) zero else f(x)
   @inline def doto(f: A => Unit): x.type     = sideEffect(f(x))
   @inline def sideEffect(body: Unit): x.type = x
 }
 
 final class CharOps(val ch: Char) extends AnyVal {
-  def prev: Char   = (ch - 1).toChar
-  def next: Char   = (ch + 1).toChar
-  def isAlphabetic = jl.Character isAlphabetic ch
-  def isDigit      = jl.Character isDigit ch
-  def toUpper      = jl.Character toUpperCase ch
-  def toLower      = jl.Character toLowerCase ch
-  def isUpper      = jl.Character isUpperCase ch
-  def isLower      = jl.Character isLowerCase ch
-  def isWhitespace = jl.Character isWhitespace ch
-  def isControl    = jl.Character isISOControl ch
+  def prev: Char                  = (ch - 1).toChar
+  def next: Char                  = (ch + 1).toChar
+  def isAlphabetic                = jl.Character isAlphabetic ch
+  def isDigit                     = jl.Character isDigit ch
+  def toUpper                     = jl.Character toUpperCase ch
+  def toLower                     = jl.Character toLowerCase ch
+  def isUpper                     = jl.Character isUpperCase ch
+  def isLower                     = jl.Character isLowerCase ch
+  def isWhitespace                = jl.Character isWhitespace ch
+  def isControl                   = jl.Character isISOControl ch
+  def to(end: Char): Direct[Char] = ch.toInt to end.toInt map (_.toChar)
 }
 
 final class IntOps(val self: Int) extends AnyVal {

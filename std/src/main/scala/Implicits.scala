@@ -16,8 +16,7 @@ import psp.dmz.PolicyDmz
  *  like inheritance, specificity, method dispatch, and so forth.
  */
 abstract class StdPackage
-      extends StdShowLow
-         with StdLabel
+      extends StdLabel
          with StdOrder
          with StdZipped
          with StdProperties
@@ -31,24 +30,20 @@ abstract class StdPackage
     def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
   }
   implicit class BuildsOps[Elem, To](z: Builds[Elem, To]) {
-    def map[Next](f: To => Next): Builds[Elem, Next] = Builds(xs => f(z build xs))
-  }
-  implicit class TryShowOps[A](val tc: TryShow[A]) {
-    import StdEq._, StdHash._
-    def toShow: Show[A]   = showBy[A](tc.show)
-    def toEq: Eq[A]       = eqBy[A](tc.show)
-    def toHash: Hash[A]   = hashBy[A](tc.show)
-    def toOrder: Order[A] = orderBy[A](tc.show)
+    def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))
+    def map[Next](f: To => Next): Builds[Elem, Next]   = Builds(xs => f(z build xs))
   }
   implicit class IndexLikeOps[A](val x: IndexLike { type This = A }) {
     def -(n: Int): A = x + (-n)
     def prev: A      = x + (-1)
     def next: A      = x + 1
   }
-  implicit class StringVectorOps(val xs: pVector[String]) {
-    def nonEmpties: pVector[String] = xs filterNot (s => (s eq null) || (s == ""))
+  implicit class JavaEnumerationOps[A](it: jEnumeration[A]) {
+    def toIterator = BiIterator enumeration it
   }
   implicit def conforms[A] : (A <:< A) = new conformance[A]
+
+  implicit def intensionalToFunction1[T, R](f: Intensional[T, R]): T => R = x => f(x)
 }
 
 trait StdLabel0 {
@@ -69,7 +64,8 @@ trait StdAlgebra {
   implicit def identityAlgebra : BooleanAlgebra[Boolean]          = Algebras.Identity
   implicit def scalaLabelAlgebra : BooleanAlgebra[Label]          = Algebras.LabelAlgebra
   implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]] = new Algebras.Predicate[A]
-  implicit def scalaSetAlgebra[A] : BooleanAlgebra[sciSet[A]]     = new Algebras.ScalaSet[A]
+  // TODO
+  // implicit def policySetAlgebra[A] : BooleanAlgebra[pSet[A]]   = new Algebras.PolicySet[A]
 
   implicit def opsBooleanAlgebra[A](x: BooleanAlgebra[A]): ops.BooleanAlgebraOps[A] = new ops.BooleanAlgebraOps[A](x)
 }
@@ -134,16 +130,16 @@ trait StdZero {
 }
 
 trait StdEq {
-  implicit def booleanEq: Eq[Boolean] = Eq.natural[Boolean]
-  implicit def byteEq: Eq[Byte]       = Eq.natural[Byte]
-  implicit def charEq: Eq[Char]       = Eq.natural[Char]
-  implicit def doubleEq: Eq[Double]   = Eq.natural[Double]
-  implicit def floatEq: Eq[Float]     = Eq.natural[Float]
-  implicit def intEq: Eq[Int]         = Eq.natural[Int]
-  implicit def longEq: Eq[Long]       = Eq.natural[Long]
-  implicit def shortEq: Eq[Short]     = Eq.natural[Short]
-  implicit def stringEq: Eq[String]   = Eq.natural[String]
-  implicit def unitEq: Eq[Unit]       = Eq[Unit]((x, y) => true)
+  implicit def booleanEq: HashEq[Boolean] = HashEq.natural()
+  implicit def byteEq: HashEq[Byte]       = HashEq.natural()
+  implicit def charEq: HashEq[Char]       = HashEq.natural()
+  implicit def doubleEq: HashEq[Double]   = HashEq.natural()
+  implicit def floatEq: HashEq[Float]     = HashEq.natural()
+  implicit def intEq: HashEq[Int]         = HashEq.natural()
+  implicit def longEq: HashEq[Long]       = HashEq.natural()
+  implicit def shortEq: HashEq[Short]     = HashEq.natural()
+  implicit def unitHash: HashEq[Unit]     = HashEq.natural()
+  implicit def stringEq: HashEq[String]   = HashEq.natural()
 
   implicit def sizeInfoEq: Eq[SizeInfo] = Eq.natural()
   implicit def sizeEq: Eq[PreciseSize]  = eqBy[PreciseSize](_.value)
@@ -153,25 +149,8 @@ trait StdEq {
   implicit def pathEq: Eq[Path]         = eqBy[Path](_.toString)
   implicit def jTypeEq: Eq[jType]       = Eq.natural()
 
-  implicit def seqEq[A: Eq] : Eq[scSeq[A]]                = Eq((xs, ys) => (xs corresponds ys)(_ === _))
-  implicit def directEq[A: Eq] : Eq[Direct[A]]            = Eq((xs, ys) => (xs.size == ys.size) && (xs.indices forall (i => xs(i) === ys(i))))
-  implicit def arrayEq[A: Eq] : Eq[Array[A]]              = eqBy[Array[A]](_.pvec)
-  implicit def mapEq[K: HashEq, V: Eq] : Eq[sciMap[K, V]] = Eq((xs, ys) => (xs.keys sameMembers ys.keys) && (xs.keys forall (xs sameAt ys)))
-
   implicit def equivFromOrder[A: Order] : Eq[A] = Eq[A]((x, y) => (x compare y) eq Cmp.EQ)
-}
 
-trait StdHash {
-  implicit def booleanHash: Hash[Boolean] = Hash.natural()
-  implicit def byteHash: Hash[Byte]       = Hash.natural()
-  implicit def charHash: Hash[Char]       = Hash.natural()
-  implicit def doubleHash: Hash[Double]   = Hash.natural()
-  implicit def floatHash: Hash[Float]     = Hash.natural()
-  implicit def intHash: Hash[Int]         = Hash.natural()
-  implicit def longHash: Hash[Long]       = Hash.natural()
-  implicit def shortHash: Hash[Short]     = Hash.natural()
-  implicit def stringHash: Hash[String]   = Hash.natural()
-  implicit def unitHash: Hash[Unit]       = Hash.natural()
   implicit def pathHash: Hash[Path]       = Hash.natural()
   implicit def jTypeHash: Hash[jType]     = Hash.natural()
 
@@ -180,11 +159,17 @@ trait StdHash {
   implicit def nthHash: Hash[Nth]          = hashBy[Nth](_.nthValue)
   implicit def offsetHash: Hash[Offset]    = hashBy[Offset](_.offsetValue)
 
-  implicit def seqHash[A: Hash] : Hash[scSeq[A]]     = Hash[scSeq[A]](xs => xs.map(_.hash).##)
-  implicit def directHash[A: Hash] : Hash[Direct[A]] = hashBy(_.toScalaVector)
-  implicit def arrayHash[A: Hash] : Hash[Array[A]]   = hashBy[Array[A]](_.toScalaVector)
+  implicit def exSetEq[A] : Eq[exSet[A]]        = Eq((xs, ys) => (xs isSubsetOf ys) && (ys isSubsetOf xs))
+  implicit def seqEq[A: Eq] : HashEq[scSeq[A]]  = HashEq[scSeq[A]]((x, y) => (x corresponds y)(_ === _), _.##)
+  implicit def directEq[A: Eq] : Eq[pVector[A]] = Eq((xs, ys) => (xs.size == ys.size) && (xs.indices forall (i => xs(i) === ys(i))))
+  implicit def arrayEq[A: Eq] : Eq[Array[A]]    = eqBy[Array[A]](_.pvec)
+
+  // implicit def mapEq[K: HashEq, V: Eq] : Eq[sciMap[K, V]] = Eq((xs, ys) => (xs.keys sameMembers ys.keys) && (xs.keys forall (xs sameAt ys)))
+  // implicit def tupleEq[A: Eq, B: Eq] : Eq[(A, B)]         = Eq((x, y) => (x._1 === y._1) && (x._2 === y._2))
+
+  implicit def tupleHash[A: HashEq, B: HashEq] : HashEq[(A, B)] =
+    HashEq[(A, B)]((x, y) => (x._1 === y._1) && (x._2 === y._2), x => x._1.hash + x._2.hash)
 }
 
 object StdZero extends StdZero
 object StdEq extends StdEq
-object StdHash extends StdHash

@@ -44,12 +44,13 @@ final class PartialOrderOps[A](val lhs: A) extends AnyVal {
   def pmax(rhs: A)(implicit ord: PartialOrder[A]): Option[A] = tryCompare(rhs) map { case Cmp.LT => rhs ; case _ => lhs }
 }
 final class AlgebraOps[A](val lhs: A) extends AnyVal {
-  def implies(rhs: A)(implicit alg: BooleanAlgebra[A]) = !lhs || rhs
-  def && (rhs: A)(implicit alg: BooleanAlgebra[A]): A  = if (isOne) rhs else if (rhs.isOne) lhs else if (lhs.isZero || rhs.isZero) alg.zero else alg.and(lhs, rhs)
-  def || (rhs: A)(implicit alg: BooleanAlgebra[A]): A  = if (isZero) rhs else if (rhs.isZero) lhs else if (lhs.isOne || rhs.isOne) alg.one else alg.or(lhs, rhs)
-  def unary_!(implicit alg: BooleanAlgebra[A]): A      = if (isZero) alg.one else if (isOne) alg.zero else alg.not(lhs)
-  def isZero(implicit alg: BooleanAlgebra[A]): Boolean = alg.zero id_== lhs
-  def isOne(implicit alg: BooleanAlgebra[A]): Boolean  = alg.one id_== lhs
+  def ^(rhs: A)(implicit z: BooleanAlgebra[A]): A       = (lhs || rhs) && !(lhs && rhs) // xor
+  def implies(rhs: A)(implicit z: BooleanAlgebra[A]): A = !lhs || rhs
+  def && (rhs: A)(implicit z: BooleanAlgebra[A]): A     = if (isOne) rhs else if (rhs.isOne) lhs else if (lhs.isZero || rhs.isZero) z.zero else z.and(lhs, rhs)
+  def || (rhs: A)(implicit z: BooleanAlgebra[A]): A     = if (isZero) rhs else if (rhs.isZero) lhs else if (lhs.isOne || rhs.isOne) z.one else z.or(lhs, rhs)
+  def unary_!(implicit z: BooleanAlgebra[A]): A         = if (isZero) z.one else if (isOne) z.zero else z.not(lhs)
+  def isZero(implicit z: BooleanAlgebra[A]): Boolean    = z.zero id_== lhs
+  def isOne(implicit z: BooleanAlgebra[A]): Boolean     = z.one id_== lhs
 }
 final class EqOps[A](val lhs: A) extends AnyVal {
   def ===(rhs: A)(implicit eq: Eq[A]): Boolean = eq.equiv(lhs, rhs)

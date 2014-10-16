@@ -3,6 +3,7 @@ package std
 
 import SizeInfo._, api._
 import lowlevel.CircularBuffer
+import psp.std.StdShow._
 
 object FlattenIndexedSlice {
   def foreachTakeWhile[A](xs: Foreach[A], f: A => Unit, p: Predicate[A]): Int = {
@@ -42,7 +43,7 @@ object FlattenIndexedSlice {
 
 final class LinearView[A0, Repr](repr: Repr, val tc: Foreachable[Repr] { type A = A0 }) extends AtomicView[A0, Repr] {
   def description = ""
-  def sizeInfo    = SizeInfo.unknown
+  def sizeInfo    = SizeInfo(repr)
   def viewRange   = IndexRange.full
 
   @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)

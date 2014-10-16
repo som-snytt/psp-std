@@ -2,7 +2,7 @@ package psp
 package std
 package ops
 
-import api._
+import api._, StdShow._
 import linear._
 
 final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPreciseSizeMethods {
@@ -16,6 +16,8 @@ final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPrecise
 }
 
 trait ConversionOps[A] extends Any {
+  protected def underlying: Foreach[A]
+
   def nonEmpty = !isEmpty
   def isEmpty: Boolean = { runForeach(_ => return false) ; true }
   def runForeach(f: A => Unit): Unit
@@ -28,10 +30,10 @@ trait ConversionOps[A] extends Any {
   def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z(runForeach)
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
-  def mapWithIndex[B](f: (Index, A) => B): pSeq[B] = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(Index(i), x) ).toPolicySeq
-  def mapWithNth[B](f: (Nth, A) => B): pSeq[B]     = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(Index(i).toNth, x) ).toPolicySeq
+  def mapWithIndex[B](f: (A, Index) => B): pVector[B] = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(x, Index(i)) ).pvec
+  def mapWithNth[B](f: (A, Nth) => B): pVector[B]     = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(x, Nth(i + 1)) ).pvec
 
-  def toPolicySet(implicit z: HashEq[A]): pSet[A]              = PolicySet.builder[A].apply(runForeach)
+  def toPolicySet(implicit z: HashEq[A]): exSet[A]             = PolicySet.builder[A].apply(runForeach)
   def toPolicyMap[K, V](implicit ev: A <:< (K, V)): pMap[K, V] = PolicyMap.builder[K, V] build (Foreach(runForeach) map ev)
   def toPolicyList: pList[A]                                   = PolicyList.builder[A](runForeach)
   def toPolicyVector: pVector[A]                               = Direct.builder[A](runForeach)
@@ -49,6 +51,7 @@ trait ConversionOps[A] extends Any {
 
   def toArray(implicit z: CTag[A]): Array[A] = Array.newBuilder[A] ++= trav result
   def toJava: jList[A]                       = jList(seq: _*)
+  def toJavaSet: jSet[A]                     = jSet(seq: _*)
 
   def biIterator: BiIterator[A] = biIterable.iterator
   def biIterable: BiIterable[A] = BiIterable(toScalaIterable)
@@ -71,10 +74,11 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   private def stringed(sep: String)(f: A => String): String =
     foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
 
-  def joinEOL(implicit z: TryShow[A]): String            = stringed(EOL)(_.try_s)
-  def join(sep: String)(implicit shows: Show[A]): String = stringed(sep)(_.to_s)
-  // def joinLines(implicit shows: Show[A]): String         = join(EOL)
-  // def joinComma(implicit shows: Show[A]): String         = join(", ")
+  def joinEOL(implicit z: Show[A]): String           = stringed(EOL)(_.to_s)
+  def join(sep: String)(implicit z: Show[A]): String = stringed(sep)(_.to_s)
+
+  // def joinLines(implicit shows: Show[A]): String      = join(EOL)
+  // def joinComma(implicit shows: Show[A]): String      = join(", ")
   def joinSpace(implicit shows: Show[A]): String         = join(" ")
   def mkString(sep: String): String                      = stringed(sep)(_.any_s)
   def find(p: Predicate[A]): Option[A]                   = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
@@ -95,19 +99,18 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
 
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): sciVector[C] = toScalaVector map (f => ev(f)(x))
 
-  def ascendingFrequency: pMap[A, Int]                         = unsortedFrequencyMap |> (_.orderByValue)
-  def descendingFrequency: pMap[A, Int]                        = ascendingFrequency.reverse
-  def findOr(p: A => Boolean, alt: => A): A                    = find(p) | alt
-  def mapFrom[B](f: A => B): pMap[B, A]                        = newMap(toScalaVector map (x => f(x) -> x): _*)
-  def mapOnto[B](f: A => B): pMap[A, B]                        = newMap(toScalaVector map (x => x -> f(x)): _*)
-  def mapToAndOnto[B, C](k: A => B, v: A => C): pMap[B, C]     = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
-  def mapToMapPairs[B, C](f: A => (B, C)): pMap[B, C]          = toScalaVector |> (xs => newMap(xs map f: _*))
-  def sortDistinct(implicit ord: Order[A]): pVector[A]         = toScalaVector.distinct sorted ord.toScalaOrdering
-  def sortByShow(implicit z: Show[A]): pVector[A]              = toScalaVector sorted orderBy[A](_.to_s).toScalaOrdering
-  def sortOrder[B: Order](f: A => B): pVector[A]               = toScalaVector sorted orderBy[A](f).toScalaOrdering
-  def sorted(implicit ord: Order[A]): pVector[A]               = toScalaVector sorted ord.toScalaOrdering
-  def unsortedFrequencyMap: Map[A, Int]                        = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
-  def sameMembers(ys: sCollection[A])(implicit eqs: HashEq[A]) = toPolicySet === each(ys).toPolicySet
+  def ascendingFrequency: pMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
+  def descendingFrequency: pMap[A, Int]                    = ascendingFrequency.reverse
+  def findOr(p: A => Boolean, alt: => A): A                = find(p) | alt
+  def mapFrom[B](f: A => B): pMap[B, A]                    = newMap(toScalaVector map (x => f(x) -> x): _*)
+  def mapOnto[B](f: A => B): pMap[A, B]                    = newMap(toScalaVector map (x => x -> f(x)): _*)
+  def mapToAndOnto[B, C](k: A => B, v: A => C): pMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
+  def mapToMapPairs[B, C](f: A => (B, C)): pMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
+  def sortDistinct(implicit ord: Order[A]): pVector[A]     = toScalaVector.distinct sorted ord.toScalaOrdering
+  def sortByShow(implicit z: Show[A]): pVector[A]          = toScalaVector sorted orderBy[A](_.to_s).toScalaOrdering
+  def sortOrder[B: Order](f: A => B): pVector[A]           = toScalaVector sorted orderBy[A](f).toScalaOrdering
+  def sorted(implicit ord: Order[A]): pVector[A]           = toScalaVector sorted ord.toScalaOrdering
+  def unsortedFrequencyMap: Map[A, Int]                    = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
 
   def foreachCounted(f: (Index, A) => Unit): Unit   = foldl(0.index)((idx, x) => try idx.next finally f(idx, x))
 
@@ -119,22 +122,20 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
 
   def tabular(columns: (A => String)*): String = tabularLines(columns: _*) mkString EOL
   def tabularLines(columns: (A => String)*): pVector[String] = {
-    val rows   = pvec
-    val cols   = columns.m.pvec
+    val rows: pVector[A]           = pvec
+    val cols: pVector[A => String] = columns.m.pvec
     if (rows.isEmpty || cols.isEmpty) return newVector()
+    val coords: pVector[pVector[Coordinate[A]]] =
+      rows mapWithNth ((value, row) =>
+        cols mapWithNth ((fn, col) =>
+          Coordinate(row, col, value, fn(value))
+        )
+      )
 
-    val widths: pVector[Int] = cols map (f => rows map f map (_.length) max)
+    val widths = coords.indices map (i => coords map (c => c(i).width) max)
+    val fmt    = widths map (_.size.leftFormat) mkString " "
 
-    def one(width: Int, value: String): String = if (width == 0 || value == "") "" else s"%-${width}s" format value
-
-    // In 2.11, compiles like you'd expect:
-    //   def oneRow(base: A): String = (widths, cols map (_ apply base)) map one mkString " "
-    // Handholding necessary to compile in 2.10.
-    // def oneRow(base: A): String = new Tuple2WalkableOps[Direct[Int], Int, Direct[String], String](widths -> (cols map (_ apply base))) map one mkString " "
-    // def oneRow(base: A): String = new Tuple2WalkableOps(widths -> (cols map (_ apply base))) map one mkString " "
-    def oneRow(base: A): String = zip2(widths, cols map (_ apply base)) map one mkString " "
-
-    rows map oneRow
+    coords map (xs => fmt.format(xs.seq: _*))
   }
 
   def scanFilter(f: (sciSet[A], A) => Boolean): Foreach[A] =
@@ -144,11 +145,19 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
 }
 
 final class jIterableOps[A](val xs: jIterable[A]) extends AnyVal with CombinedOps[A] {
+  protected def underlying: Foreach[A] = fromJava(xs)
   override def isEmpty = !xs.iterator.hasNext
   def runForeach(f: A => Unit): Unit = BiIterable(xs) foreach f
 }
 final class sCollectionOps[A, CC[A] <: sCollection[A]](val xs: CC[A]) extends AnyVal with CombinedOps[A] {
+  protected def underlying: Foreach[A] = fromScala(xs)
   override def isEmpty = xs.isEmpty
   def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
   def runForeach(f: A => Unit): Unit = xs foreach f
+}
+
+case class Coordinate[A](row: Nth, column: Nth, value: A, to_s: String) {
+  def width = newSize(to_s.length)
+  def fmt   = width.leftFormat
+  override def toString = to_s
 }

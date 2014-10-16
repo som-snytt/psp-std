@@ -14,7 +14,7 @@ final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) extends (
  *  It's true one could say its ordering is Ordering[Int] on indexOf.
  *  Maybe that will seem like a good idea at some point.
  */
-final class PolicyMap[K, +V](val contained: pVector[K], lookup: MapLookup[K, V]) extends Foreach[K] with HasPreciseSize with Intensional[K, V] with Extensional[K] {
+final class PolicyMap[K, +V](val contained: pVector[K], lookup: MapLookup[K, V]) extends HasPreciseSize { //extends Foreach[K] with HasPreciseSize with Intensional[K, V] with Extensional[K] {
   def keys: pVector[K]                              = contained
   def values: pVector[V]                            = keys map lookup
   def contains(key: K)                              = keys containsByEquals key

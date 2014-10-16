@@ -36,6 +36,7 @@ trait ApiAliases extends scala.Any {
   // which landed here to be near their buddy.
   type ?=>[-A, +B]             = PartialFunction[A, B]
   type Predicate[-A]           = A => Boolean
+  type Relation[-A]            = (A, A) => Boolean
   type Suspended[+A]           = (A => Unit) => Unit
   type SuspendedTo[+A, CC[+X]] = (A => Unit) => CC[A]
 }

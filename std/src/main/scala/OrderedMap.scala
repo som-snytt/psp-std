@@ -1,7 +1,7 @@
 package psp
 package std
 
-import api._
+import api._, StdShow._
 
 /** An immutable Map with a fixed iteration order.
  *  It's not a "sorted" map since it has no ordering.

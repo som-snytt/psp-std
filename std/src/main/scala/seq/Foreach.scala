@@ -6,13 +6,21 @@ import api._
 object Foreach {
   def builder[A] : Builds[A, Foreach[A]] = Builds(identity)
 
+  final class FromJava[A](xs: jIterable[A]) extends Foreach[A] {
+    def sizeInfo = SizeInfo(xs)
+    @inline def foreach(f: A => Unit): Unit = BiIterable(xs) foreach f
+  }
+  final class FromScala[A](xs: sCollection[A]) extends Foreach[A] {
+    def sizeInfo = SizeInfo(xs)
+    @inline def foreach(f: A => Unit): Unit = xs foreach f
+  }
   final class ToScala[A](xs: Foreach[A]) extends sciTraversable[A] {
     def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
   final class Impl[A](val sizeInfo: SizeInfo, mf: Suspended[A]) extends Foreach[A] {
     @inline def foreach(f: A => Unit): Unit = mf(f)
   }
-  final case class Join[A](xs: Foreach[A], ys: Foreach[A]) extends Foreach[A] {
+  final case class Joined[A](xs: Foreach[A], ys: Foreach[A]) extends Foreach[A] {
     def sizeInfo = xs.sizeInfo + ys.sizeInfo
     @inline def foreach(f: A => Unit): Unit = {
       xs foreach f
@@ -44,18 +52,14 @@ object Foreach {
   def from(n: Long): Foreach[Long]                        = unfold(n)(_ + 1)
   def from(n: BigInt): Foreach[BigInt]                    = unfold(n)(_ + 1)
 
-  def empty[A] : Foreach[A]                               = Direct.Empty
-  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A] = Join[A](xs, ys)
-  def constant[A](elem: A): Constant[A]                   = Constant[A](elem)
-  def continually[A](elem: => A): Continually[A]          = Continually[A](() => elem)
-  def unfold[A](start: A)(next: A => A): Unfold[A]        = Unfold[A](start)(next)
-  def times[A](size: PreciseSize, elem: A): Times[A]          = Times[A](size, elem)
+  def empty[A] : Foreach[A]                                       = Direct.Empty
+  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]         = Joined[A](xs, ys)
+  def constant[A](elem: A): Constant[A]                           = Constant[A](elem)
+  def continually[A](elem: => A): Continually[A]                  = Continually[A](() => elem)
+  def continuallySpan[A](p: A => Boolean)(expr: => A): Foreach[A] = continually(expr).m takeWhile p
+  def unfold[A](start: A)(next: A => A): Unfold[A]                = Unfold[A](start)(next)
+  def times[A](size: PreciseSize, elem: A): Times[A]              = Times[A](size, elem)
 
-  def apply[A](mf: Suspended[A]): Foreach[A] = new Impl[A](SizeInfo.unknown, mf)
-  def elems[A](xs: A*): Foreach[A]           = new Impl[A](SizeInfo(xs), xs foreach _)
-
-  def fromScala[A](xs: sCollection[A]): Foreach[A]                          = new Impl[A](SizeInfo(xs), xs.seq foreach _)
-  def fromJava[A](xs: jIterable[A]): Foreach[A]                             = new Impl[A](SizeInfo(xs), BiIterable(xs) foreach _)
-  def toScala[A, That](xs: Foreach[A])(implicit z: CanBuild[A, That]): That = z() ++= new ToScala(xs) result
-  def toJava[A](xs: Foreach[A]): jArrayList[A]                              = new jArrayList[A] doto (b => xs foreach (x => b add x))
+  def sized[A](sizeInfo: SizeInfo)(mf: Suspended[A]): Foreach[A] = new Impl[A](sizeInfo, mf)
+  def apply[A](mf: Suspended[A]): Foreach[A]                     = sized(SizeInfo.unknown)(mf)
 }

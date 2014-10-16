@@ -25,6 +25,12 @@ object BiIterator {
   def mapped[A, B](it: BiIterator[A], f: A => B): BiIterator[B]      = new Mapped(it, f)
   def array[A](xs: Array[A]): BiIterator[A]                          = new ArrayIterator(xs)
   def stream[A](xs: Leaf[A]): BiIterator[A]                          = new StreamIterator(xs)
+  def enumeration[A](enum: jEnumeration[A]): BiIterator[A]           = new EnumerationIterator(enum)
+
+  final class EnumerationIterator[A](enum: jEnumeration[A]) extends BiIterator[A] {
+    def hasNext = enum.hasMoreElements
+    def next()  = enum.nextElement()
+  }
 
   private object Empty extends BiIterator[Nothing] {
     def hasNext         = false

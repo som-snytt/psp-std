@@ -19,7 +19,7 @@ package object ansi extends BasicAtoms[Ansi] {
       ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
     }
     val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.readAs[RGB]) pvec;
-    new RgbMap(map.keys.pvec, map, palette)
+    new RgbMap(map.keys.pvec, x => map(x), palette)
   }
 
   implicit def impliciStringOps(x: String): TextOps               = new TextOps(x)

@@ -2,7 +2,7 @@ package psp
 package tests
 
 import compat.ScalaNative
-import psp.std._, api._
+import psp.std._, api._, StdShow._
 
 object IntViews {
   type IntView    = View[Int]
@@ -13,7 +13,7 @@ object IntViews {
   private def fn[A](f: Int => A): Int => A    = f
   private def pfn[A](f: Int ?=> A): Int ?=> A = f
 
-  lazy val tupleFlatMap: Int => pSeq[Int] = "(x, x)" |: fn(x => Foreach.elems(x, x))
+  lazy val tupleFlatMap: Int => pSeq[Int] = "(x, x)" |: fn(x => fromElems(x, x))
   lazy val isEven: IntPred                = "isEven" |: divisibleBy(2)
   lazy val timesThree: Int => Int         = "*3"     |: fn(_ * 3)
   lazy val collectDivSix: Int ?=> Int     = "%/6"    |: pfn({ case x if x % 6 == 0 => x / 6 })
@@ -141,20 +141,21 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     val (show, noshow)    = results partition (_.display)
     val banner: String    = List("Improve", "Linear", "Sized", "Direct", "50/50", "<EAGER>", "ListV", "Stream", "StreamV", "RangeV", "VectorV") map ("%7s" format _) mkString " "
     val underline: String = banner.toCharArray.m map (ch => if (ch == ' ') ' ' else '-') mkString ""
-    val padding           = if (show.isEmpty) "" else show.head.padding
+    def padding = show.head.padding
 
-    println(pp"""
-      |Basis sequence was 1 to $max
-      |Displaying ${show.size}/${results.size} results - omitted ${noshow.size} less interesting results
+    if (show.isEmpty) {
+      if (is211) {
+        results foreach println
+        abort("Something is wrong if we never see a line where each of our view types has a different count")
+      }
+      else println(s"\nNo especially interesting operation counts amongst ${results.size} results.")
+    }
+    else println("\n" + pp"""
+      |Displaying ${show.size}/${results.size} results on basis sequence 1 to $max (omitted ${noshow.size})
       |
       |$padding$banner
       |$padding$underline
       |${show mkString EOL}
       |""".stripMargin)
-
-    if (is211 && show.isEmpty) {
-      results foreach println
-      sys error "Something is wrong if we never see a line where each of our view types has a different count"
-    }
   }
 }

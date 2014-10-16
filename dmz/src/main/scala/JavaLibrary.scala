@@ -85,6 +85,7 @@ trait JavaLibrary extends Any {
   type jClassLoader                            = java.lang.ClassLoader
   type jCollection[A]                          = java.util.Collection[A]
   type jDate                                   = java.util.Date
+  type jEnumeration[A]                         = java.util.Enumeration[A]
   type jField                                  = java.lang.reflect.Field
   type jFile                                   = java.io.File
   type jFilePermissions                        = jSet[PosixFilePermission]

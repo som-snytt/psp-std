@@ -1,7 +1,7 @@
 package psp
 package std
 
-import api._
+import api._, StdShow._
 import java.text.DateFormat._
 
 class DelayedLog {

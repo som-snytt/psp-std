@@ -7,6 +7,7 @@ import sc.{ mutable => scm, immutable => sci }
 import scala.sys.process.{ Process, ProcessBuilder }
 import psp.std.api._
 import psp.std.lowlevel._
+import psp.std.StdShow._
 
 package object std extends psp.std.StdPackage {
   type sMap[K, +V] = sciMap[K, V]
@@ -19,7 +20,10 @@ package object std extends psp.std.StdPackage {
   type pVector[+A] = Direct[A]
   type pMap[K, +V] = PolicyMap[K, V]
   type pList[A]    = PolicyList[A]
-  type pSet[A]     = PolicySet[A]
+
+  type pSet[A]  = ExtensionalSet[A]
+  type inSet[A] = IntensionalSet[A]
+  type exSet[A] = ExtensionalSet[A]
 
   // Inlinable.
   final val InputStreamBufferSize = 8192
@@ -131,10 +135,10 @@ package object std extends psp.std.StdPackage {
   def implicitly[A](implicit x: A): A                  = x
   def locally[A](x: A): A                              = x
 
-  def echoErr[A](x: A)(implicit z: TryShow[A]): Unit     = Console echoErr (z show x)
-  def println[A](x: A)(implicit z: TryShow[A]): Unit     = Console echoOut (z show x)
+  def echoErr[A: TryShow](x: A): Unit                    = Console echoErr pp"$x"
+  def println[A: TryShow](x: A): Unit                    = Console echoOut pp"$x"
   def printResult[A: TryShow](msg: String)(result: A): A = result doto (r => println(pp"$msg: $r"))
-  def showResult[A: Show](msg: String)(result: A): A     = result doto (r => println(pp"$msg: $r"))
+  def showResult[A: TryShow](msg: String)(result: A): A  = result doto (r => println(pp"$msg: $r"))
 
   def installedProviders: List[FileSystemProvider] = java.nio.file.spi.FileSystemProvider.installedProviders.asScala.toList
 
@@ -197,8 +201,8 @@ package object std extends psp.std.StdPackage {
   def ?[A](implicit value: A): A                = value
   def andFalse(x: Unit): Boolean                = false
   def andTrue(x: Unit): Boolean                 = true
-  def direct[A](xs: A*): Direct[A]              = Direct fromScala xs.toVector
-  def each[A](xs: sCollection[A]): Foreach[A]   = Foreach fromScala xs
+  def direct[A](xs: A*): Direct[A]              = new Direct.FromScala(xs.toVector)
+  def each[A](xs: sCollection[A]): Foreach[A]   = fromScala(xs)
   def nullStream(): InputStream                 = NullInputStream
   def offset(x: Int): Offset                    = Offset(x)
   def option[A](p: Boolean, x: => A): Option[A] = if (p) Some(x) else None
@@ -206,6 +210,23 @@ package object std extends psp.std.StdPackage {
   def regex(re: String): Regex                  = Regex(re)
 
   // implicit def nilToSeq[A](x: scala.Nil.type): pSeq[A] = Nil.pseq
+
+  def fromScala[A](xs: sCollection[A]): Foreach[A] = xs match {
+    case xs: scIndexedSeq[_] => new Direct.FromScala(xs.toIndexedSeq)
+    case xs: sciLinearSeq[_] => new PolicyList.FromScala(xs)
+    case xs: scSet[A]        => (new PolicySet.FromScala(xs.toSet[A])).m[Foreachable]
+    case _                   => new Foreach.FromScala(xs)
+  }
+  def fromJava[A](xs: jIterable[A]): Foreach[A] = xs match {
+    case xs: jList[_] => new Direct.FromJava[A](xs)
+    case xs: jSet[_]  => (new PolicySet.FromJava[A](xs)).m[Foreachable]
+    case xs           => new Foreach.FromJava[A](xs)
+  }
+  def fromElems[A](xs: A*): Foreach[A] = xs match {
+    case xs: scmWrappedArray[A] => Direct fromArray xs.array
+    case xs: sCollection[_]     => fromScala[A](xs)
+    case _                      => fromScala(xs.toVector)
+  }
 
   def convertSeq[A, B](xs: sList[A])(implicit conversion: A => B): sList[B]     = xs map conversion
   def convertSeq[A, B](xs: sVector[A])(implicit conversion: A => B): sVector[B] = xs map conversion
@@ -236,12 +257,13 @@ package object std extends psp.std.StdPackage {
   // and LinkedHashMap is too slow and only comes in a mutable variety.
   def newMap[K, V](kvs: (K, V)*): pMap[K, V]                      = PolicyMap[K, V](kvs.m.toPolicyVector.map(_._1), kvs.toMap)
   def newMap[K, V](keys: pVector[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
-  def newCmp(difference: Long): Cmp                               = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
   def newList[A](xs: A*): pList[A]                                = PolicyList(xs: _*)
-  def newSet[A: HashEq](xs: A*): pSet[A]                          = PolicySet(Direct.elems(xs: _*))
-  def newVector[A](xs: A*): pVector[A]                            = Direct.elems(xs: _*)
+  def newSet[A: HashEq](xs: A*): exSet[A]                         = PolicySet.elems[A](xs: _*)
+  def newVector[A](xs: A*): pVector[A]                            = Direct[A](xs: _*)
   def newSeq[A](xs: A*): pSeq[A]                                  = newVector[A](xs: _*)
   def newPredicate[A](f: Predicate[A]): Predicate[A]              = f
+
+  def newCmp(difference: Long): Cmp                               = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
 
   def newArray[A: CTag](size: PreciseSize): Array[A] = new Array[A](size.intSize)
   def newSize(n: Long): PreciseSize                  = PreciseSize(n.nonNegative)

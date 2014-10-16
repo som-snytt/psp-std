@@ -65,6 +65,7 @@ trait ScalaLibrary extends Any with ApiAliases {
   type scIndexedSeq[+A]      = sc.IndexedSeq[A]
   type scIterable[+A]        = sc.Iterable[A]
   type scIterator[+A]        = sc.Iterator[A]
+  type scLinearSeq[+A]       = sc.LinearSeq[A]
   type scMap[K, +V]          = sc.Map[K, V]
   type scSeq[+A]             = sc.Seq[A]
   type scSet[A]              = sc.Set[A]

@@ -74,6 +74,14 @@ object SizeInfo {
       case x: Atomic      => x
     }
 
+    /** For instance taking the union of two sets. The new size is
+     *  at least the size of the larger operand, but at most the sum
+     *  of the two sizes.
+     */
+    def union(rhs: SizeInfo): SizeInfo     = bounded(lhs max rhs, lhs + rhs)
+    def intersect(rhs: SizeInfo): SizeInfo = bounded(0.size, lhs min rhs)
+    def diff(rhs: SizeInfo): SizeInfo      = bounded(lhs - rhs, lhs)
+
     def slice(range: IndexRange): SizeInfo = (lhs - range.precedingSize) min range.size
 
     def * (m: Long): SizeInfo = lhs match {

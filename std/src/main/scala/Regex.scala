@@ -11,7 +11,7 @@ import api._
 // When in MULTILINE mode $ matches just before a line terminator or the end of the input sequence.
 //
 // The regular expression . matches any character except a line terminator unless the DOTALL flag is specified.
-final class Regex(val pattern: Pattern) extends AnyVal with ShowDirectNow {
+final class Regex(val pattern: Pattern) extends AnyVal { //with ShowDirectNow {
   def matcher(input: CharSequence) = pattern matcher input
   def to_s = pattern.toString
 

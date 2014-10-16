@@ -5,6 +5,28 @@ package ops
 import api._
 import java.{ lang => jl }
 
+final class IntensionalSetOps[A](xs: inSet[A]) {
+  def diff(that: inSet[A]): inSet[A]      = this filter that
+  def filter(p: A => Boolean): inSet[A]   = IntensionalSet.Filtered(xs, p)
+  def union(that: inSet[A]): inSet[A]     = IntensionalSet.Union(xs, that)
+  def intersect(that: inSet[A]): inSet[A] = IntensionalSet.Intersect(xs, that)
+  def complement: inSet[A] = (xs: inSet[A]) match {
+    case IntensionalSet.Complement(xs) => xs
+    case _                             => IntensionalSet.Complement(xs)
+  }
+}
+final class ExtensionalSetOps[A](xs: exSet[A]) {
+  def intersect(that: exSet[A]): exSet[A] = ExtensionalSet.Intersect(xs, that)
+  def diff(that: exSet[A]): exSet[A]      = ExtensionalSet.Diff(xs, that)
+  def intersect(that: inSet[A]): exSet[A] = filter(that)
+  def diff(that: inSet[A]): exSet[A]      = filterNot(that)
+
+  def filterNot(p: A => Boolean): exSet[A] = ExtensionalSet.Filtered(xs, !p)
+  def filter(p: A => Boolean): exSet[A]    = ExtensionalSet.Filtered(xs, p)
+  def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
+  def isSubsetOf(ys: inSet[A]): Boolean    = xs.m forall ys
+}
+
 trait HasPreciseSizeMethods extends Any {
   def size: PreciseSize
 
@@ -99,6 +121,7 @@ final class InputStreamOps(val in: InputStream) extends AnyVal {
 }
 
 final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Direct] {
+  protected def underlying = xs
   protected def rebuild[B](xs: pSeq[B]): pVector[B] = xs.pvec
 
   override def head: A              = apply(0.index)
@@ -127,6 +150,7 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
 }
 
 final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, Foreach] {
+  protected def underlying = xs
   // def +: (elem: A): Foreach[A] = Foreach.join(direct(elem), xs)
   // def :+ (elem: A): Foreach[A] = Foreach.join(xs, direct(elem))
   def toRefs: pSeq[AnyRef] = xs map (_.toRef)
@@ -143,7 +167,7 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def drop(n: PreciseSize)     = xs.m drop n
   def slice(range: IndexRange) = this drop range.precedingSize take range.size
 
-  def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.toPolicySeq)
+  def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.contained)
   def flatten[B](implicit ev: A <:< Foreach[B]): CC[B]                              = rebuild(Foreach[B](f => xs foreach (x => ev(x) foreach f)))
   def map[B](g: A => B): CC[B]                                                      = rebuild(Foreach[B](f => xs foreach (x => f(g(x)))))
   def flatMap[B](g: A => Foreach[B]): CC[B]                                         = rebuild(Foreach[B](f => xs foreach (x => g(x) foreach f)))
@@ -157,8 +181,8 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
   def ++[A1 >: A](ys: Foreach[A1]): CC[A1] = rebuild(Foreach.join(xs, ys))
 
-  def +:(elem: A): CC[A]                   = rebuild(Foreach.join(Foreach elems elem, xs))
-  def :+(elem: A): CC[A]                   = rebuild(Foreach.join(xs, Foreach elems elem))
+  def +:(elem: A): CC[A] = rebuild(Foreach.join(fromElems(elem), xs))
+  def :+(elem: A): CC[A] = rebuild(Foreach.join(xs, fromElems(elem)))
 
   def without(x: A) = filterNot(_ id_== x)
 

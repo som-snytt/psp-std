@@ -30,10 +30,10 @@ trait DirectAccess[-Repr] extends Walkable[Repr] {
 }
 
 object Foreachable {
-  final class PolicySetIs[AIn] extends Foreachable[PolicySet[AIn]] {
-    type CC[X] = PolicySet[X]
+  final class ExtensionalSetIs[AIn] extends Foreachable[exSet[AIn]] {
+    type CC[X] = exSet[X]
     type A = AIn
-    def foreach(repr: PolicySet[A])(f: A => Unit): Unit = repr foreach f
+    def foreach(repr: exSet[A])(f: A => Unit): Unit = repr.contained foreach f
   }
   final class ForeachIs[AIn] extends Foreachable[Foreach[AIn]] {
     type CC[X] = Foreach[X]
@@ -47,6 +47,11 @@ object Foreachable {
   }
   final class JavaIterableIs[AIn] extends Foreachable[jIterable[AIn]] {
     type CC[X] = jIterable[X]
+    type A = AIn
+    def foreach(repr: CC[A])(f: A => Unit): Unit = BiIterable(repr) foreach f
+  }
+  final class JavaSetIs[AIn] extends Foreachable[jSet[AIn]] {
+    type CC[X] = jSet[X]
     type A = AIn
     def foreach(repr: CC[A])(f: A => Unit): Unit = BiIterable(repr) foreach f
   }

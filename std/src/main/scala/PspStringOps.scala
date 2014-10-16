@@ -49,7 +49,7 @@ final class PspStringOps(val xs: String) extends AnyVal {
 
   def bytes: Array[Byte]              = xs.getBytes
   def chars: Array[Char]              = xs.toCharArray
-  def wordSet: pSet[String]           = words.naturalSet
+  def wordSet: exSet[String]          = words.naturalSet
   def lineVector: pVector[String]     = splitChar('\n')
   def dollarSegments: pVector[String] = splitChar('$')
   def dottedSegments: pVector[String] = splitChar('.')

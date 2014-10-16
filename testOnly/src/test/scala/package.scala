@@ -20,17 +20,14 @@ package object tests {
   type Failed             = org.scalacheck.Test.Failed
   type Buildable[A, C[X]] = org.scalacheck.util.Buildable[A, C]
 
-  def assignable(storage: jClass, value: jClass): NamedProp =
-    show"$storage isAssignablefrom $value" -> Prop(storage isAssignableFrom value)
+  def expectType(expected: jClass, found: jClass): NamedProp        = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
+  def expectTypes(expected: jClass, found: pSeq[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
 
-  def allAssignable(storage: jClass, values: Seq[jClass]): NamedProp =
-    show"$storage isAssignableFrom [${values.size} values]" -> (values map (v => Prop(storage isAssignableFrom v)))
-
-  def checkResult[A, T: CTag](result: A): NamedProp    = assignable(classOf[T], result.getClass)
-  def checkResults[A, T: CTag](results: A*): NamedProp = allAssignable(classOf[T], results map (_.getClass))
+  def expectType[A: CTag](result: A): NamedProp                     = expectType(classOf[A], result.getClass)
+  def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], results.toSeq.pseq map (_.getClass))
 
   implicit def buildsToBuildable[A, CC[X]](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
-    new Buildable[A, CC] { def builder = Vector.newBuilder[A] mapResult (r => z build Foreach.elems(r: _*)) }
+    new Buildable[A, CC] { def builder: Builder[A, CC[A]] = Vector.newBuilder[A] mapResult (xs => z(xs foreach _)) }
 
   implicit class GenOps[A](gen: Gen[A]) {
     def collect[B](pf: A ?=> B): Gen[B]                   = gen suchThat pf.isDefinedAt map pf.apply
