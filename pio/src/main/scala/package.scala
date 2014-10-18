@@ -3,6 +3,7 @@ package std
 
 import api._
 import java.util.jar.Attributes.Name
+import StdEq._
 
 package object pio {
   type jDirStreamFilter[A] = DirectoryStreamFilter[A]

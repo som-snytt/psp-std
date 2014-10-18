@@ -1,7 +1,50 @@
 package psp
 package tests
 
-import psp.std._
+import psp.std._, api._
+import scala.collection.immutable.StringOps
+import psp.std.PspStringOps
+import org.scalacheck._, Prop._
+
+class StringExtensions extends ScalacheckBundle {
+  import StdEq._
+
+  def bundle = "String Extensions"
+  val s = "123 monkey dog ^^.* hello mother 456"
+  implicit def arbWord: Arbitrary[String] = Arbitrary(genWord)
+  implicit def throwableEq: Eq[Throwable] = eqBy[Throwable](_.getClass)
+
+  def scalaOps(s: String)  = new StringOps(s)
+  def policyOps(s: String) = new PspStringOps(s)
+  def sameBehavior[A: Eq](expr1: => A, expr2: => A): Prop = Try(expr1) === Try(expr2)
+
+  def newProp[A: Eq](f: StringOps => A, g: String => A): Prop = forAll((s: String) => sameBehavior(f(scalaOps(s)), g(s)))
+
+  def newProp2[B] = new {
+    def apply[R](f: (StringOps, B) => R)(g: (String, B) => R)(implicit z1: Arbitrary[B], z2: Eq[R]): Prop =
+      forAll((s: String, x: B) => sameBehavior(f(scalaOps(s), x), g(s, x)))
+  }
+
+  // dropRight and takeRight have the domain limited because of a scala bug with
+  // take/dropRight with values around MinInt.
+  def mostInts = implicitly[Arbitrary[Int]] filter (_ > MinInt + 5000)
+
+  def props: Seq[NamedProp] = Seq(
+    "stripSuffix" -> newProp2[String](_ stripSuffix _)(_ stripSuffix _),
+    "stripPrefix" -> newProp2[String](_ stripPrefix _)(_ stripPrefix _),
+    "take"        -> newProp2[Int](_ take _)(_ take _),
+    "drop"        -> newProp2[Int](_ drop _)(_ drop _),
+    "takeRight"   -> newProp2[Int](_ takeRight _)(_ takeRight _)(mostInts, ?),
+    "dropRight"   -> newProp2[Int](_ dropRight _)(_ dropRight _)(mostInts, ?),
+    "toInt"       -> newProp[Int](_.toInt, _.toInt),
+    "tail"        -> newProp[String](_.tail, _.tail.force),
+    "drop"        -> newProp[Char](_.head, _.head),
+    "reverse"     -> newProp[String](_.reverse, _.reverse.force)
+
+    // "tail"     -> newProp(_.tail, _.m.tail),
+    // "head"     -> newProp(_.head, _.head)
+  )
+}
 
 class Collections extends ScalacheckBundle {
   def bundle = "Type Inference, General"
@@ -89,3 +132,4 @@ class Collections extends ScalacheckBundle {
     )
   }
 }
+

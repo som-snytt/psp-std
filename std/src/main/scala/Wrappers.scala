@@ -1,16 +1,18 @@
 package psp
 package std
 
+import StdEq._
+
 object +: {
   def unapply[A](xs: Array[A])       = if (xs.length == 0) None else Some(xs(0) -> (xs drop 1))
   def unapply[A](xs: api.Foreach[A])     = if (xs.isEmpty) None else Some(xs.head -> xs.drop(1))
   def unapply[A](xs: sCollection[A]) = if (xs.isEmpty) None else Some(xs.head -> xs.tail)
 }
 
-final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R) with ShowDirectNow {
+final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R) with ShowDirect {
   def apply(x: T): R = f(x)
 }
-final class LabeledPartialFunction[-T, +R](pf: T ?=> R, val to_s: String) extends (T ?=> R) with ShowDirectNow {
+final class LabeledPartialFunction[-T, +R](pf: T ?=> R, val to_s: String) extends (T ?=> R) with ShowDirect {
   def isDefinedAt(x: T) = pf isDefinedAt x
   def apply(x: T): R    = pf(x)
 }
@@ -37,7 +39,7 @@ trait ClassLoaderTrait {
 }
 
 final class PolicyLoader(val classMap: pMap[String, Bytes]) extends ClassLoader {
-  private val keys        = classMap.keys
+  private val keys        = classMap.keyVector
   private val instanceMap = scmMap[String, jClass]()
   private val errorMap    = scmMap[String, LinkageError]()
   private def isNoClassDefFoundError(t: Throwable) = t match {
@@ -45,7 +47,7 @@ final class PolicyLoader(val classMap: pMap[String, Bytes]) extends ClassLoader 
     case _                       => false
   }
 
-  def totalClasses = classMap.size
+  def totalClasses = keys.size
   def names        = keys
   def classes      = names map findClass
   def errors       = errorMap.toMap

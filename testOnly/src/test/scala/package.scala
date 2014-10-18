@@ -29,12 +29,21 @@ package object tests {
   implicit def buildsToBuildable[A, CC[X]](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
     new Buildable[A, CC] { def builder: Builder[A, CC[A]] = Vector.newBuilder[A] mapResult (xs => z(xs foreach _)) }
 
+  def pvectorOf[A: Arbitrary](g: Gen[A]): Gen[pVector[A]]          = containerOf[pVector, A](g)(?, _.toScalaTraversable)
+  def pseqOf[A: Arbitrary](g: Gen[A]): Gen[pSeq[A]]                = containerOf[pSeq, A](g)(?, _.toScalaTraversable)
+  def pvectorOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[pVector[A]] = containerOfN[pVector, A](n, g)(?, _.toScalaTraversable)
+  def pseqOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[pSeq[A]]       = containerOfN[pSeq, A](n, g)(?, _.toScalaTraversable)
+
+  implicit class ArbitraryOps[A](x: Arbitrary[A]) {
+    def map[B](f: A => B): Arbitrary[B]       = Arbitrary(x.arbitrary map f)
+    def filter(p: A => Boolean): Arbitrary[A] = Arbitrary(x.arbitrary filter p)
+  }
   implicit class GenOps[A](gen: Gen[A]) {
-    def collect[B](pf: A ?=> B): Gen[B]                   = gen suchThat pf.isDefinedAt map pf.apply
-    def collectN[B](n: Int)(pf: sciList[A] ?=> B): Gen[B] = containerOfN[sciList, A](n, gen) collect pf
-    def stream: scIterator[A]                             = scIterator continually gen.sample flatMap (x => x)
-    def take(n: Int): pVector[A]                          = (stream take n).toSeq.pvec
-    def next(): A                                         = stream.next
+    def collect[B](pf: A ?=> B): Gen[B]                                          = gen suchThat pf.isDefinedAt map pf.apply
+    def collectN[B](n: Int)(pf: pSeq[A] ?=> B)(implicit z: Arbitrary[A]): Gen[B] = pseqOfN(n, gen) collect pf
+    def stream: pSeq[A]                                                          = Foreach continually gen.sample flatMap (_.pvec)
+    def take(n: Int): pVector[A]                                                 = stream take n pvec
+    def next(): A                                                                = stream.head
   }
   implicit class PropOps(p: Prop) {
     def unary_! : Prop = p map (r => !r)
@@ -54,23 +63,30 @@ package object tests {
     def to[B](implicit f: A => B): Gen[B] = gen map f
   }
 
-  implicit def charToString(g: Gen[Char]): Gen[String]  = g map ("" + _)
-  implicit def chooseIndex: Choose[Index]               = Choose.xmap[Long, Index](_.index, _.indexValue)
-  implicit def chooseSize: Choose[PreciseSize]          = Choose.xmap[Long, PreciseSize](n => PreciseSize(n), _.value)
-  implicit def chooseNth: Choose[Nth]                   = Choose.xmap[Long, Nth](_.nth, _.nthValue)
-  implicit def indexRangeGen(r: IndexRange): Gen[Index] = Gen.choose(r.start, r.endInclusive)
+  def charToString(g: Gen[Char]): Gen[String]  = g map (_.to_s)
+  def indexRangeGen(r: IndexRange): Gen[Index] = Gen.choose(r.start, r.endInclusive)
+
+  implicit def chooseIndex: Choose[Index]      = Choose.xmap[Long, Index](_.index, _.indexValue)
+  implicit def chooseSize: Choose[PreciseSize] = Choose.xmap[Long, PreciseSize](newSize, _.value)
+  implicit def chooseNth: Choose[Nth]          = Choose.xmap[Long, Nth](_.nth, _.nthValue)
 
   def randomGen[A](xs: pVector[Gen[A]]): Gen[A] = indexRangeGen(xs.indices) flatMap xs.elemAt
   def randomGen[A](xs: Gen[A]*): Gen[A]         = randomGen(xs.seq.pvec)
 
-  def genPrecise: Gen[PreciseSize] = chooseNum(1, MaxInt / 2) map (s => PreciseSize(s))
-  def genBounded: Gen[Bounded]     = genPrecise flatMap (lo => genAtomic map (hi => bounded(lo, hi))) collect { case b: Bounded => b }
-  def genAtomic: Gen[Atomic]       = frequency(10 -> genPrecise, 1 -> Empty, 1 -> Infinite)
-  def genSizeInfo: Gen[SizeInfo]   = oneOf(genAtomic, genBounded)
-  def genLong: Gen[Long]           = Gen.choose(MinLong, MaxLong)
-  def genInt: Gen[Int]             = Gen.choose(MinInt, MaxInt)
-  def genPosInt: Gen[Int]          = Gen.choose(0, MaxInt)
-  def genUInt: Gen[UInt]           = genInt map UInt
+  def genPrecise: Gen[PreciseSize]           = chooseNum(1, MaxInt / 2) map (x => newSize(x))
+  def genBounded: Gen[Bounded]               = genPrecise flatMap (lo => genAtomic map (hi => bounded(lo, hi))) collect { case b: Bounded => b }
+  def genAtomic: Gen[Atomic]                 = frequency(10 -> genPrecise, 1 -> Empty, 1 -> Infinite)
+  def genSizeInfo: Gen[SizeInfo]             = oneOf(genAtomic, genBounded)
+  def genLong: Gen[Long]                     = Gen.choose(MinLong, MaxLong)
+  def genInt: Gen[Int]                       = Gen.choose(MinInt, MaxInt)
+  def genPosInt: Gen[Int]                    = Gen.choose(0, MaxInt)
+  def genUInt: Gen[UInt]                     = genInt map UInt
+  def genLetter: Gen[Char]                   = letterFrom("amnz09_")
+  def genWord: Gen[String]                   = choose(1, 10) flatMap genWordOfLength
+  def genLine: Gen[String]                   = choose(3, 7) flatMap (n => listOfN(n, genWord)) map (_ mkString " ")
+  def genWordOfLength(n: Int): Gen[String]   = listOfN(n, genLetter) map (_.mkString)
+  def genLines(n: Int): Gen[pVector[String]] = choose(3, 7) flatMap (n => pvectorOfN(n, genLine))
+  def letterFrom(s: String): Gen[Char]       = frequency(s.toCharArray map (c => 1 -> (c: Gen[Char])) seq: _*)
 
   object genregex {
     def letter: Gen[Char]            = choose[Char]('a', 'f')

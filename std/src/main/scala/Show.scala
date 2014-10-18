@@ -7,11 +7,8 @@ import StdEq.stringEq
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
  *  using a synthetic toString, e.g. of case classes.
- *  ShowDirectNow performs that override.
  */
 trait ShowDirect extends Any { def to_s: String }
-trait ShowDirectNow extends Any with ShowDirect { final override def toString = to_s }
-
 
 class TryShow[-A](shows: Show[A]) {
   def show(x: A): String = if (shows == null) "" + x else shows show x
@@ -19,13 +16,16 @@ class TryShow[-A](shows: Show[A]) {
 object TryShow {
   implicit def apply[A](implicit z: Show[A] = Show.natural()): TryShow[A] = new TryShow[A](z)
 }
-final case class TryShown(to_s: String) extends AnyVal with ShowDirectNow
+final case class TryShown(to_s: String) extends AnyVal with ShowDirect {
+  override def toString = to_s
+}
 
 /** Used to achieve type-safety in the show interpolator.
  *  It's the String resulting from passing a value through its Show instance.
  */
-final case class Shown(to_s: String) extends AnyVal with ShowDirectNow {
+final case class Shown(to_s: String) extends AnyVal with ShowDirect {
   def ~ (that: Shown): Shown = new Shown(to_s + that.to_s)
+  override def toString = to_s
 }
 
 object Shown {

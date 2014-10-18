@@ -18,7 +18,7 @@ package object std extends psp.std.StdPackage {
 
   type pSeq[+A]    = Foreach[A]
   type pVector[+A] = Direct[A]
-  type pMap[K, +V] = PolicyMap[K, V]
+  type pMap[K, V]  = PolicyMap[K, V]
   type pList[A]    = PolicyList[A]
 
   type pSet[A]  = ExtensionalSet[A]
@@ -115,12 +115,12 @@ package object std extends psp.std.StdPackage {
   def resource(name: String): Array[Byte]   = Try(noNull(currentThread.getContextClassLoader, nullLoader)) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
   def resourceString(name: String): String  = utf8(resource(name)).to_s
 
-  implicit def viewifyString(x: String): BaseView[Char, String]    = x.m
-  implicit def viewifyArray[A](x: Array[A]): BaseView[A, Array[A]] = x.m[DirectAccess] // must give this type argument explicitly.
-  implicit def unViewifyString(x: View[Char]): String              = x.force[String]
-  implicit def unViewifyArray[A: CTag](x: View[A]): Array[A]       = x.force[Array[A]]
+  implicit def viewifyString(x: String): View[Char]          = x.m
+  implicit def viewifyArray[A](x: Array[A]): View[A]         = x.m[DirectAccess] // must give this type argument explicitly.
+  implicit def unViewifyString(x: View[Char]): String        = x.force[String]
+  implicit def unViewifyArray[A: CTag](x: View[A]): Array[A] = x.force[Array[A]]
 
-  implicit def convertIntensional[K, V](x: Intensional[K, V]): K ?=> V = { case k if x contains k => x(k) }
+  // implicit def convertIntensional[K, V](x: Intensional[K, V]): K ?=> V = { case k if x contains k => x(k) }
   implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
   implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
 
@@ -239,8 +239,6 @@ package object std extends psp.std.StdPackage {
   def vectorBuilder[A](xs: A*): Builder[A, sVector[A]]           = sciVector.newBuilder[A] ++= xs
   def mapToList[K, V](): scmMap[K, sList[V]]                     = scmMap[K, sciList[V]]() withDefaultValue Nil
 
-  def pmapBuilder[K, V]() = mapBuilder[K, V]() mapResult (m => newMap(m.toSeq: _*))
-
   // Java.
   // def jIterable[A](body: => jIterator[A]): BiIterable[A] = BiIterable[A](body)
   def jMap[K, V](xs: (K, V)*): jMap[K, V]                = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
@@ -255,16 +253,17 @@ package object std extends psp.std.StdPackage {
 
   // PolicyMap is our own creation since SortedMap is way overspecified
   // and LinkedHashMap is too slow and only comes in a mutable variety.
-  def newMap[K, V](kvs: (K, V)*): pMap[K, V]                      = PolicyMap[K, V](kvs.m.toPolicyVector.map(_._1), kvs.toMap)
-  def newMap[K, V](keys: pVector[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
-  def newList[A](xs: A*): pList[A]                                = PolicyList(xs: _*)
-  def newSet[A: HashEq](xs: A*): exSet[A]                         = PolicySet.elems[A](xs: _*)
-  def newVector[A](xs: A*): pVector[A]                            = Direct[A](xs: _*)
-  def newSeq[A](xs: A*): pSeq[A]                                  = newVector[A](xs: _*)
-  def newPredicate[A](f: Predicate[A]): Predicate[A]              = f
+  def newMap[K : HashEq, V](kvs: (K, V)*): pMap[K, V]          = PolicyMap[K, V](PolicySet(kvs.m.toPolicyVector.map(_._1)), kvs.toMap)
+  def newMap[K, V](keys: pSet[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
+  def newMap[K : HashEq, V](kvs: pSeq[(K, V)]): pMap[K, V]     = newMap(kvs.seq: _*)
+  def newList[A](xs: A*): pList[A]                             = PolicyList(xs: _*)
+  def newSet[A: HashEq](xs: A*): exSet[A]                      = PolicySet.elems[A](xs: _*)
+  def newVector[A](xs: A*): pVector[A]                         = Direct[A](xs: _*)
+  def newSeq[A](xs: A*): pSeq[A]                               = newVector[A](xs: _*)
+  def newPredicate[A](f: Predicate[A]): Predicate[A]           = f
 
   def newCmp(difference: Long): Cmp                               = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
 
   def newArray[A: CTag](size: PreciseSize): Array[A] = new Array[A](size.intSize)
-  def newSize(n: Long): PreciseSize                  = PreciseSize(n.nonNegative)
+  def newSize(n: Long): PreciseSize                  = PreciseSize create n.zeroPlus
 }

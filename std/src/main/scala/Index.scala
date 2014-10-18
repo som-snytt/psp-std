@@ -19,6 +19,7 @@ final class IntIndex private[std] (val indexValue: Long) extends AnyVal with Ind
   def %(size: PreciseSize): Index   = if (isEmpty) this else Index(indexValue % size.value)
   def +(n: Long): Index             = if (isEmpty) this else Index(indexValue + n)
   def until(end: Index): IndexRange = indexRange(safeToInt, end.safeToInt)
+  def toSize: PreciseSize           = newSize(indexValue)
   def toIndex: Index                = this
   def toNth: Nth                    = Nth(indexValue + 1)
   def toOffset: Offset              = if (isEmpty) abort("undefined") else Offset(safeToInt)

@@ -4,6 +4,7 @@ package pio
 
 import java.util.jar.Attributes.Name
 import scala.util.Properties._
+import Unsafe.universalEq
 
 object ManifestMap {
   def initialMainAttrs: pVector[(Name, String)] = newVector(

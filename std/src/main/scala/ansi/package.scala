@@ -14,14 +14,17 @@ package object ansi extends BasicAtoms[Ansi] {
   private def actualLines(resource: String) = resourceString(resource).lineVector filterNot "#".r.starts
 
   lazy val colorMap: RgbMap = {
-    val map = actualLines("xkcd-colors.txt") mapToMapPairs { s =>
-      val Vector(name, r, g, b) = s.words.toScalaVector
-      ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
-    }
+    val map = newMap(
+      actualLines("xkcd-colors.txt") map { s =>
+        val Vector(name, r, g, b) = s.words.toScalaVector
+        ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
+      }
+    )
     val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.readAs[RGB]) pvec;
-    new RgbMap(map.keys.pvec, x => map(x), palette)
+    new RgbMap(map.keyVector, x => map(x), palette)
   }
 
+  implicit def colorNameEq: HashEq[ColorName]                     = HashEq.natural()
   implicit def impliciStringOps(x: String): TextOps               = new TextOps(x)
   implicit def implicitColorStringOps(x: ColorString): ColoredOps = new ColoredOps(x)
   implicit def implicitLiftAnsiAtom(c: Atom): Ansi                = Ansi(c)

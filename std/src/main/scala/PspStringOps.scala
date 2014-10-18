@@ -10,45 +10,46 @@ import java.util.regex.{ Pattern, Matcher }
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll
  *  bury it and reimplement what we want.
  */
-final class PspStringOps(val xs: String) extends AnyVal {
-  def r: Regex = Regex(xs)
-  def u: jUrl  = jUrl(xs)
+final class PspStringOps(val self: String) extends AnyVal {
+  def r: Regex = Regex(self)
+  def u: jUrl  = jUrl(self)
 
   private def unwrapArg(arg: Any): AnyRef = arg match {
     case x: ScalaNumber => x.underlying
     case x: AnyRef      => x
   }
   private def isEmpty = onull == ""
-  private def onull   = if (xs eq null) "" else xs
+  private def onull   = if (self eq null) "" else self
 
-  def remove(regex: Regex): String       = regex matcher xs replaceFirst ""
-  def removeAll(regex: Regex): String    = regex matcher xs replaceAll ""
+  def retain(regex: Regex): String       = regex all self mkString ""
+  def remove(regex: Regex): String       = regex matcher self replaceFirst ""
+  def removeAll(regex: Regex): String    = regex matcher self replaceAll ""
   def remove(literal: String): String    = remove(Regex quote literal)
   def removeAll(literal: String): String = removeAll(Regex quote literal)
 
-  def replaceChar(pair: (Char, Char)): String = xs.replace(pair._1, pair._2)
+  def replaceChar(pair: (Char, Char)): String = self.replace(pair._1, pair._2)
   def replaceLiteral(sub: LiteralReplacement): String =
-    (Regex quote sub.from) matcher xs replaceAll (Matcher quoteReplacement sub.to)
+    (Regex quote sub.from) matcher self replaceAll (Matcher quoteReplacement sub.to)
 
-  // def replaceLiteral(subs: LiteralReplacement*): String = subs.foldLeft(xs) {
+  // def replaceLiteral(subs: LiteralReplacement*): String = subs.foldLeft(self) {
   //   case (res, LiteralReplacement(from, to)) =>
-  //     (Regex quote from) matcher xs replaceAll (Matcher quoteReplacement to)
+  //     (Regex quote from) matcher self replaceAll (Matcher quoteReplacement to)
   // }
-  def replacePattern(subs: PatternReplacement*): String = subs.foldLeft(xs) {
-    case (res, PatternReplacement(from, to)) => from matcher xs replaceAll to
+  def replacePattern(subs: PatternReplacement*): String = subs.foldLeft(self) {
+    case (res, PatternReplacement(from, to)) => from matcher self replaceAll to
   }
 
-  def isNonEmptyDigits   = xs matches """^[\d]+$"""
-  def isAllWhitespace    = xs matches """[\s]*"""
+  def isNonEmptyDigits   = self matches """^[\d]+$"""
+  def isAllWhitespace    = self matches """[\s]*"""
   def nonEmpty: Boolean  = onull.length > 0
-  def capitalize: String = mapNonEmpty(s => "" + s.head.toUpper + s.tail)
+  def capitalize: String = mapNonEmpty(x => x.head.toUpper.to_s + x.tail.force[String])
 
-  def length                      = xs.length
-  def * (n: Int): String          = n times xs mkString ""
-  def format(args : Any*): String = java.lang.String.format(xs, args map unwrapArg: _*)
+  def length                      = self.length
+  def * (n: Int): String          = n times self mkString ""
+  def format(args : Any*): String = java.lang.String.format(self, args map unwrapArg: _*)
 
-  def bytes: Array[Byte]              = xs.getBytes
-  def chars: Array[Char]              = xs.toCharArray
+  def bytes: Array[Byte]              = self.getBytes
+  def chars: Array[Char]              = self.toCharArray
   def wordSet: exSet[String]          = words.naturalSet
   def lineVector: pVector[String]     = splitChar('\n')
   def dollarSegments: pVector[String] = splitChar('$')
@@ -57,42 +58,50 @@ final class PspStringOps(val xs: String) extends AnyVal {
 
   def containsChar(ch: Char): Boolean       = chars contains ch
   def splitChar(ch: Char): pVector[String]  = splitRegex(Regex quote ch.toString)
-  def splitRegex(r: Regex): pVector[String] = r.pattern split xs pvec
+  def splitRegex(r: Regex): pVector[String] = r.pattern split self pvec
   def words: pVector[String]                = splitRegex(whitespace)
 
-  def mapNonEmpty(f: Unary[String]): String        = if (isEmpty) "" else f(xs)
+  def mapNonEmpty(f: Unary[String]): String        = if (isEmpty) "" else f(self)
   def mapSplit(ch: Char)(f: Unary[String]): String = splitChar(ch) map f mkString ch.toString
   def mapLines(f: Unary[String]): String           = mapSplit('\n')(f)
-  def mapChars(pf: Char ?=> Char): String          = xs map (c => if (pf isDefinedAt c) pf(c) else c)
+  def mapChars(pf: Char ?=> Char): String          = self map (c => if (pf isDefinedAt c) pf(c) else c)
   def stripMargin(marginChar: Char): String        = mapLines(_ remove ("""^\s*[""" + marginChar + "]").r)
 
-  def toInt: Int       = foldPrefix("0x")(jl.Integer parseInt xs, jl.Integer.parseInt(_, 16))
-  def toLong: Long     = foldPrefix("0x")(jl.Long parseLong xs, jl.Long.parseLong(_, 16))
-  def toDouble: Double = jl.Double parseDouble xs
-  def toFloat: Float   = jl.Float parseFloat xs
+  private def dropSuffix(s: String, drop: String) = s remove drop.r.characterClass.ends
 
-  def readAs[A](implicit reads: Read[A]): A = reads read xs
+  def toInt: Int            = foldPrefix("0x")(jl.Integer parseInt self, s => jl.Integer.parseInt(s, 16))
+  def toLong: Long          = foldPrefix("0x")(jl.Long parseLong dropSuffix(self, "lL"), s => jl.Long.parseLong(dropSuffix(s, "lL"), 16))
+  def toDouble: Double      = jl.Double parseDouble dropSuffix(self, "dD")
+  def toFloat: Float        = jl.Float parseFloat dropSuffix(self, "fF")
+  def toBigInt: BigInt      = scala.math.BigInt(self)
+  def toDecimal: BigDecimal = scala.math.BigDecimal(self)
 
-  def foldPrefix[A](prefix: String)(none: => A, some: String => A): A = if (xs startsWith prefix) some(xs drop prefix.size) else none
-  def foldSuffix[A](suffix: String)(none: => A, some: String => A): A = if (xs endsWith suffix) some(xs dropRight suffix.size) else none
+  def readAs[A](implicit reads: Read[A]): A = reads read self
 
-  def trimTrailing: String        = mapLines(_ remove whitespace.ends)
-  def trimLeading: String         = mapLines(_ remove whitespace.starts)
-  def stripAnsi: String           = removeAll(ansiCodes)
-  def stripMargin: String         = stripMargin('|')
-  def stripPrefix(prefix: String) = xs remove prefix.r.literal.starts
-  def stripSuffix(suffix: String) = xs remove suffix.r.literal.ends
-  def sanitize: String            = mapChars { case x if x.isControl => '?' }
+  def foldRemove[A](r: Regex)(none: => A, some: String => A): A       = remove(r) match { case `self` => none ; case s => some(s) }
+  def foldMatch[A](r: Regex)(none: => A, some: String => A): A        = (r first self).fold(none)(some)
+  def foldPrefix[A](prefix: String)(none: => A, some: String => A): A = foldRemove(prefix.r.literal.starts)(none, some)
+  def foldSuffix[A](suffix: String)(none: => A, some: String => A): A = foldRemove(suffix.r.literal.ends)(none, some)
+  def stripPrefix(prefix: String): String                             = foldPrefix(prefix)(self, s => s)
+  def stripSuffix(suffix: String): String                             = foldSuffix(suffix)(self, s => s)
+
+  def trimLines: String    = mapLines(_.trim)
+  def trimTrailing: String = mapLines(_ remove whitespace.ends)
+  def trimLeading: String  = mapLines(_ remove whitespace.starts)
+
+  def stripAnsi: String   = removeAll(ansiCodes)
+  def stripMargin: String = stripMargin('|')
+  def sanitize: String    = mapChars { case x if x.isControl => '?' }
 
   def truncateAndLeftJustifyTo(max: PreciseSize) = max.leftFormat format (normalizeSpace truncateTo max)
-  def truncateTo(max: PreciseSize)               = if (xs.size <= max) xs else (xs take max - 3) + "..."
+  def truncateTo(max: PreciseSize)               = if (self.size <= max) self else (self take max - 3) + "..."
 
-  def normalizeSpace: String = xs.trim.replacePattern(
+  def normalizeSpace: String = self.trim.replacePattern(
     "\\n+"      -> "\n",
     "([{(])\\n" -> "$1 ",
     "\\n"       -> "; ",
     "\\s+"      -> " "
   )
 
-  override def toString = xs
+  override def toString = self
 }

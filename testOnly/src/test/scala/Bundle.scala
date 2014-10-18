@@ -63,4 +63,5 @@ trait ScalacheckBundle extends Bundle {
     println("\n" + start)
     props map runOne forall (x => x)
   }
+  override def toString = bundle
 }

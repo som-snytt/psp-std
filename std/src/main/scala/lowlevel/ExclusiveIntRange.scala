@@ -11,7 +11,7 @@ final class ExclusiveIntRange private (val bits: Long) extends AnyVal with Direc
   def last: Int    = end - step
   def step: Int    = math.signum(end - start)
   def length: Int  = math.abs(end - start)
-  def size         = PreciseSize(length)
+  def size         = newSize(length)
   def isDescending = end < start
   def isAscending  = start < end
 

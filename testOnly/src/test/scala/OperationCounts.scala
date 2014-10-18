@@ -2,7 +2,7 @@ package psp
 package tests
 
 import compat.ScalaNative
-import psp.std._, api._, StdShow._
+import psp.std._, api._, StdShow._, StdEq._
 
 object IntViews {
   type IntView    = View[Int]
@@ -55,23 +55,30 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     _ takeRight 17
   )
 
+  def policyList   = (1 to max).toPolicyList
+  def policyVector = (1 to max).pvec
+  def policyMixed  = (1 until max / 2).pvec.m ++ (max / 2 to max).toPolicyList.m
+
   def scalaIntRange: sciRange = sciRange.inclusive(1, max, 1)
+  def scalaIntList            = scalaIntRange.toList
+  def scalaIntStream          = scalaIntRange.toStream
+  def scalaIntVector          = scalaIntRange.toVector
 
     // (Foreach from 1 take max).m,
-  def usCollections = List[IntView](
-    (1 to max).toPolicyList.m,
-    (1 to max).toPolicyList.m sized PreciseSize(max),
-    (1 to max).toPolicyVector.m,
-    (1 until max / 2).toPolicyVector.m ++ (max / 2 to max).toPolicyList.m
+  def usCollections = newMap[String, IntView](
+    "plist"      -> policyList.m,
+    "plist+size" -> (policyList.m sized newSize(max)),
+    "pvec"       -> policyVector.m,
+    "pmixed"     -> policyMixed
   )
-  def themCollections = List[IntView](
-    ScalaNative(scalaIntRange.toScalaList.view),
-    ScalaNative(scalaIntRange.toStream),
-    ScalaNative(scalaIntRange.toStream.view),
-    ScalaNative(scalaIntRange.view),
-    ScalaNative(scalaIntRange.toScalaVector.view)
+  def themCollections = newMap[String, IntView](
+    "slist"        -> ScalaNative(scalaIntList.view),
+    "sstream"      -> ScalaNative(scalaIntStream),
+    "sstream.view" -> ScalaNative(scalaIntStream.view),
+    "srange.view"  -> ScalaNative(scalaIntRange.view),
+    "svector.view" -> ScalaNative(scalaIntVector.view)
   )
-  def rootCollections = usCollections ++ themCollections
+  def rootCollections: pMap[String, IntView] = usCollections ++ themCollections
 
   def compositesOfN(n: Int): List[IntViewFun] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
@@ -92,10 +99,10 @@ class OperationCounts(scalaVersion: String) extends Bundle {
   }
 
   class CompositeOp(viewFn: IntViewFun) {
-    val us: List[CollectionResult]   = usCollections map (xs => new CollectionResult(viewFn, xs))
-    val control: CollectionResult    = new CollectionResult(viewFn, ScalaNative(scalaIntRange.toList))
-    val them: List[CollectionResult] = themCollections map (xs => new CollectionResult(viewFn, xs))
-    val all: List[CollectionResult]  = us ++ (control +: them)
+    val control: CollectionResult       = new CollectionResult(viewFn, ScalaNative(scalaIntList))
+    val us: pVector[CollectionResult]   = usCollections.values map (xs => new CollectionResult(viewFn, xs))
+    val them: pVector[CollectionResult] = themCollections.values map (xs => new CollectionResult(viewFn, xs))
+    val all: pVector[CollectionResult]  = us ++ newVector(control) ++ them
 
     def usCounts   = us map (_.count)
     def themCounts = them map (_.count)
@@ -113,8 +120,8 @@ class OperationCounts(scalaVersion: String) extends Bundle {
       case -1  => "%-15s" format description
       case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
     }
-    def headView      = us.head.toString
-    def isAgreement   = allResults.distinct.size == 1
+    def headView      = headResult.toString
+    def isAgreement   = allResults.distinct.size == PreciseSize(1)
     def display       = (
          isTestDebug
       || !isAgreement
@@ -125,7 +132,7 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     def countsString  = allCounts map ("%7s" format _) mkString " "
     def resultsString = if (isAgreement) headResult.result else "!!! " + failedString
     def failedString   = {
-      val grouped = all.zipWithIndex groupBy { case (x, i) => x.result }
+      val grouped = all.toScalaVector.zipWithIndex groupBy { case (x, i) => x.result }
       val lines = grouped.toList map { case (res, pairs) => "%20s:  %s".format(pairs.map(_._2).mkString(" "), res) }
       lines.mkString("\n  ", "\n  ", "\n")
     }

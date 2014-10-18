@@ -11,8 +11,8 @@ import api._
 // When in MULTILINE mode $ matches just before a line terminator or the end of the input sequence.
 //
 // The regular expression . matches any character except a line terminator unless the DOTALL flag is specified.
-final class Regex(val pattern: Pattern) extends AnyVal { //with ShowDirectNow {
-  def matcher(input: CharSequence) = pattern matcher input
+final class Regex(val pattern: Pattern) extends AnyVal {
+  def matcher(input: CharSequence): Matcher = pattern matcher input useAnchoringBounds false
   def to_s = pattern.toString
 
   def flags: Int        = pattern.flags
@@ -27,10 +27,12 @@ final class Regex(val pattern: Pattern) extends AnyVal { //with ShowDirectNow {
   def noAnchors         = mapRegex(_ stripPrefix "^" stripSuffix "$")
   def zeroOrMore        = mapRegex(_ + "*")
   def oneOrMore         = mapRegex(_ + "+")
+  def characterClass    = mapRegex("[" + _ + "]")
   def capturingGroup    = mapRegex("(" + _ + ")")
   def nonCapturingGroup = mapRegex("(?:" + _ + ")")
 
   def |(that: Regex): Regex = mapRegex(_ + "|" + that.pattern)
+  def ~(that: Regex): Regex = mapRegex(_ + that.pattern)
 
   def setFlag(flag: Int): Regex         = Regex(to_s, flags | flag)
   def mapRegex(f: Unary[String]): Regex = Regex(f(to_s), flags)
@@ -39,6 +41,8 @@ final class Regex(val pattern: Pattern) extends AnyVal { //with ShowDirectNow {
   def all(input: CharSequence)        = matcher(input) |> (m => option(m.matches(), 1 to m.groupCount map m.group))
   def first(input: CharSequence)      = matcher(input) |> (m => option(m.find, m.group()))
   def unapplySeq(input: CharSequence) = all(input) map (_.seq)
+
+  override def toString = s"$pattern"
 }
 
 object Regex extends (String => Regex) {

@@ -5,6 +5,17 @@ import SizeInfo._, api._
 import lowlevel.CircularBuffer
 import psp.std.StdShow._
 
+final case class SplitView[+A, Repr](left: BaseView[A, Repr], right: BaseView[A, Repr]) extends View.Split[A] {
+  type Single[+X] = BaseView[X, Repr]
+
+  def mapLeft[A1 >: A](f: Unary[Single[A1]]): SplitView[A1, Repr]  = SplitView(f(left), right)
+  def mapRight[A1 >: A](f: Unary[Single[A1]]): SplitView[A1, Repr] = SplitView(left, f(right))
+  def join: Single[A]                                              = Joined(left, right)
+  def intersperse: Single[A]                                       = Interspersed(left, right)
+  def zipped: Single[(A, A)]                                       = Zipped(left, right)
+  def force[That](implicit z: Builds[A, That]): That               = z build join
+}
+
 object FlattenIndexedSlice {
   def foreachTakeWhile[A](xs: Foreach[A], f: A => Unit, p: Predicate[A]): Int = {
     var taken = 0
@@ -27,8 +38,8 @@ object FlattenIndexedSlice {
     dropped
   }
 
-  def unapply[A](xs: View[A]): Option[(View[A], IndexRange)] = xs match {
-    case xs: IndexedView[_,_]         => Some(xs -> xs.indices)
+  def unapply[A, Repr](xs: BaseView[A, Repr]): Option[(BaseView[A, Repr], IndexRange)] = xs match {
+    case xs: IndexedView[_, _]        => Some(xs -> xs.indices)
     case LabeledView(xs, _)           => unapply(xs)
     case Sized(xs, n)                 => Some(xs -> n.indices)
     case Mapped(xs, f)                => unapply(xs) map { case (xs, range) => (xs map f, range) }
@@ -83,7 +94,9 @@ final case class LabeledView[+A, Repr](prev: BaseView[A, Repr], label: String) e
 }
 
 sealed trait BaseView[+A, Repr] extends Any with View[A] with RearSliceable[BaseView[A, Repr]] {
-  type MapTo[+X] = BaseView[X, Repr]
+  type MapTo[+X]   = BaseView[X, Repr]
+  type SplitTo[+X] = SplitView[X, Repr]
+
   def isAtomic: Boolean
   def viewRange: IndexRange
 
@@ -103,6 +116,12 @@ sealed trait BaseView[+A, Repr] extends Any with View[A] with RearSliceable[Base
   final def takeRight(n: PreciseSize): MapTo[A]      = TakenR(this, n)
   final def takeWhile(p: Predicate[A]): MapTo[A]     = TakenWhile(this, p)
   final def withFilter(p: Predicate[A]): MapTo[A]    = Filtered(this, p)
+  final def zip[B](that: View[B]): MapTo[(A, B)]     = Zipped(this, that)
+
+  final def dropIndex(index: Index): MapTo[A]      = index.toSize |> (s => SplitView(take(s), drop(s.increment)).join)
+  final def splitAt(index: Index): SplitTo[A]      = index.toSize |> (s => SplitView(take(s), drop(s)))
+  final def span(p: Predicate[A]): SplitTo[A]      = SplitView(takeWhile(p), dropWhile(p))
+  final def partition(p: Predicate[A]): SplitTo[A] = SplitView(filter(p), filterNot(p))
 
   final def force[That](implicit z: Builds[A, That]): That = z build this
   final def build(implicit z: Builds[A, Repr]): Repr       = force[Repr]
@@ -111,8 +130,8 @@ sealed trait BaseView[+A, Repr] extends Any with View[A] with RearSliceable[Base
 }
 
 sealed abstract class AtomicView[A0, Repr] extends View.Atomic[A0] with BaseView[A0, Repr] with CountCalls {
-  val tc: Walkable[Repr]
   type A = tc.A
+  val tc: Walkable[Repr]
   val counter = new RecorderCounter()
 
   def viewRange: IndexRange
@@ -157,6 +176,8 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
       case Dropped(xs, PreciseSize(n))     => foreachSlice(xs, f, Index(n) until MaxIndex)
       case Taken(xs, n: PreciseSize)       => foreachSlice(xs, f, n.indices)
       case Sliced(xs, range)               => foreachSlice(xs, f, range)
+      case Zipped(_, _)                    => foreachSlice(xs, f, viewRange)
+      case Interspersed(xs, ys)            => foreachSlice(xs, f, viewRange)
       case xs: View[_]                     => xs foreach f
       case xs                              => abort(pp"Unexpected view class ${xs.shortClass}")
     }
@@ -165,29 +186,36 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
       loop(this)(f)
   }
 
-  private def foreachSlice[A](xs: View[A], f: A => Unit, range: IndexRange): Unit = {
+  private def runThrough[A](f: A => Unit, range: IndexRange, xs: Foreach[A], others: Foreach[A]*): Unit = {
+    var foreaches: List[Foreach[A]] = xs :: others.toList
     var i = Index.zero
     def isDone = range.end <= i
-    def runThrough(xs: Foreach[A]): Unit = {
-      xs foreach { x =>
+    while (foreaches.nonEmpty) {
+      val current = foreaches.head
+      foreaches = foreaches.tail
+      current foreach { x =>
         if (range contains i) f(x)
         i = i.next
         if (isDone) return
       }
     }
-
-    xs match {
-      case xs: AtomicView[_, _] => xs.foreachSlice(range)(f.castTo[xs.A => Unit])
-      case m: Mapped[a, _, _]   => foreachSlice[a](m.prev, m.f andThen f, range)
-      case xs: Direct[A]        => range foreach (i => f(xs elemAt i))
-      case Joined(ys1, ys2) =>
-        ys1.sizeInfo match {
-          case n: PreciseSize if n.intSize < range.startInt     => ys2 slice (range << n.intSize) foreach f
-          case n: PreciseSize if n.lastIndex >= range.lastIndex => ys1 slice range foreach f
-          case _                                                => runThrough(ys1) ; if (!isDone) runThrough(ys2)
-        }
-
-      case _              => runThrough(xs)
+  }
+  private def foreachInterspersed[A](f: A => Unit, range: IndexRange, xs: Foreach[A], ys: Foreach[A]): Unit = {
+    var i = Index.zero
+    val it1 = xs.biIterator
+    val it2 = ys.biIterator
+    while (it1.hasNext && it2.hasNext && i < range.start) {
+      it1.next
+      it2.next
+    }
+    while (it1.hasNext && it2.hasNext && i < range.end) {
+      f(it1.next)
+      f(it2.next)
+      i += 1
+    }
+    while ((it1.hasNext || it2.hasNext) && i < range.end) {
+      f( if (it1.hasNext) it1.next else it2.next )
+      i += 1
     }
   }
 
@@ -197,22 +225,42 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
   private def foreachDropRight[A](xs: Foreach[A], f: A => Unit, n: PreciseSize): Unit =
     xs.foldl(CircularBuffer[A](n))((buf, x) => if (buf.isFull) try buf finally f(buf push x) else buf += x)
 
+  private def foreachSlice[A](xs: View[A], f: A => Unit, range: IndexRange): Unit = xs match {
+    case Zipped(xs, ys)       => xs.biIterator zip ys.biIterator drop range.startInt take range.size.intSize foreach f
+    case Interspersed(xs, ys) => foreachInterspersed(f, range, xs, ys)
+    case xs: AtomicView[_, _] => xs.foreachSlice(range)(f.castTo[xs.A => Unit])
+    // case xs: AtomicView[_, _] => runThrough(f, range, xs)
+    case m: Mapped[a, _, _]   => foreachSlice[a](m.prev, m.f andThen f, range)
+    case xs: Direct[A]        => range foreach (i => f(xs elemAt i))
+    case Joined(ys1, ys2) =>
+      ys1.sizeInfo match {
+        case n: PreciseSize if n.intSize < range.startInt     => ys2 slice (range << n.intSize) foreach f
+        case n: PreciseSize if n.lastIndex >= range.lastIndex => ys1 slice range foreach f
+        case _                                                => runThrough(f, range, ys1, ys2)
+      }
+
+    case _              => runThrough(f, range, xs)
+  }
+
   def calls = this match {
     case Joined(xs, ys) => xs.calls + ys.calls
     case _              => prev.calls
   }
 }
 
-final case class Sized      [A   , Repr](prev: View[A], size: PreciseSize)  extends CompositeView[A, A, Repr](pp"sized $size",  _ => size)
-final case class Joined     [A   , Repr](prev: View[A], ys: View[A])        extends CompositeView[A, A, Repr](pp"++ $ys",       _ + ys.sizeInfo)
-final case class Filtered   [A   , Repr](prev: View[A], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"filter $p",    _.atMost)
-final case class Sliced     [A   , Repr](prev: View[A], range: IndexRange)  extends CompositeView[A, A, Repr](pp"slice $range", _ slice range)
-final case class Dropped    [A   , Repr](prev: View[A], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"drop $n",      _ - n)
-final case class DroppedR   [A   , Repr](prev: View[A], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"dropR $n",     _ - n)
-final case class Taken      [A   , Repr](prev: View[A], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"take $n",      _ min n)
-final case class TakenR     [A   , Repr](prev: View[A], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"takeR $n",     _ min n)
-final case class TakenWhile [A   , Repr](prev: View[A], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"takeW $p",     _.atMost)
-final case class DropWhile  [A   , Repr](prev: View[A], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"dropW $p",     _.atMost)
-final case class Mapped     [A, B, Repr](prev: View[A], f: A => B)          extends CompositeView[A, B, Repr](pp"map $f",       x => x)
-final case class FlatMapped [A, B, Repr](prev: View[A], f: A => Foreach[B]) extends CompositeView[A, B, Repr](pp"flatMap $f",   x => if (x.isZero) x else Unknown)
-final case class Collected  [A, B, Repr](prev: View[A], pf: A ?=> B)        extends CompositeView[A, B, Repr](pp"collect $pf",  _.atMost)
+final case class Zipped[A, B, Repr](prev: BaseView[A, Repr], ys: View[B]) extends CompositeView[A, (A, B), Repr](pp"zip $ys", _ min ys.sizeInfo)
+final case class Joined[A, B >: A, Repr](prev: BaseView[A, Repr], ys: View[B])   extends CompositeView[A, B, Repr](pp"++ $ys", _ + ys.sizeInfo)
+
+final case class Interspersed[A   , Repr](prev: BaseView[A, Repr], ys: View[A])        extends CompositeView[A, A, Repr](pp"intersperse $ys", _ + ys.sizeInfo)
+final case class Sized       [A   , Repr](prev: BaseView[A, Repr], size: PreciseSize)  extends CompositeView[A, A, Repr](pp"sized $size",  _ => size)
+final case class Filtered    [A   , Repr](prev: BaseView[A, Repr], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"filter $p",    _.atMost)
+final case class Sliced      [A   , Repr](prev: BaseView[A, Repr], range: IndexRange)  extends CompositeView[A, A, Repr](pp"slice $range", _ slice range)
+final case class Dropped     [A   , Repr](prev: BaseView[A, Repr], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"drop $n",      _ - n)
+final case class DroppedR    [A   , Repr](prev: BaseView[A, Repr], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"dropR $n",     _ - n)
+final case class Taken       [A   , Repr](prev: BaseView[A, Repr], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"take $n",      _ min n)
+final case class TakenR      [A   , Repr](prev: BaseView[A, Repr], n: PreciseSize)     extends CompositeView[A, A, Repr](pp"takeR $n",     _ min n)
+final case class TakenWhile  [A   , Repr](prev: BaseView[A, Repr], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"takeW $p",     _.atMost)
+final case class DropWhile   [A   , Repr](prev: BaseView[A, Repr], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"dropW $p",     _.atMost)
+final case class Mapped      [A, B, Repr](prev: BaseView[A, Repr], f: A => B)          extends CompositeView[A, B, Repr](pp"map $f",       x => x)
+final case class FlatMapped  [A, B, Repr](prev: BaseView[A, Repr], f: A => Foreach[B]) extends CompositeView[A, B, Repr](pp"flatMap $f",   x => if (x.isZero) x else Unknown)
+final case class Collected   [A, B, Repr](prev: BaseView[A, Repr], pf: A ?=> B)        extends CompositeView[A, B, Repr](pp"collect $pf",  _.atMost)

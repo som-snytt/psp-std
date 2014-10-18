@@ -5,6 +5,7 @@ package ansi
 import api._
 import RGB._
 import StdShow._
+import StdEq._
 
 final case class ColorName(name: String)
 
@@ -35,7 +36,7 @@ final class RgbMap(val keys: pVector[ColorName], val lookup: ColorName => RGB, v
 object RgbMap {
   implicit def ShowRgbMap: Show[RgbMap] = Show[RgbMap] { x =>
     import x._
-    val toShow = palette.indices mapToMapPairs { idx =>
+    val pairs = palette.indices map { idx =>
       val rgb = palette(idx)
       def dist(key: ColorName) = lookup(key) distanceTo rgb
       val k = "%3s %s".format(idx, rgb.hex_s.to_s)
@@ -45,12 +46,12 @@ object RgbMap {
       }
       k -> (v mkString "  ")
     }
-    toShow.to_s
+    newMap(pairs).to_s
   }
 
   def ShowRgbMap2: Show[RgbMap] = Show[RgbMap] { x =>
     import x._
-    val toShow = keys sortOrder nearestIndex mapToMapPairs { k =>
+    val pairs = keys sortOrder nearestIndex map { k =>
       val v1       = lookup(k)
       val v2       = nearest(v1)
       val distance = "%.3f" format (v1 distanceTo v2)
@@ -58,7 +59,7 @@ object RgbMap {
 
       k -> show"#$v1 => $index $v2 ($distance)"
     }
-    toShow.to_s
+    newMap(pairs).to_s
   }
 }
 

@@ -25,13 +25,16 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
   def filter(p: A => Boolean): exSet[A]    = ExtensionalSet.Filtered(xs, p)
   def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
   def isSubsetOf(ys: inSet[A]): Boolean    = xs.m forall ys
+
+  def mapContained(f: pSeq[A] => pSeq[A]): exSet[A] = PolicySet.direct(f(xs.contained))(xs.equiv, xs.hash)
 }
 
 trait HasPreciseSizeMethods extends Any {
   def size: PreciseSize
 
   def longSize: Long      = size.value
-  def intSize: Int        = longSize.safeToInt
+  def intSize: Int        = longSize.safeToInt.zeroPlus
+
   def isZero: Boolean     = longSize == 0L
   def isPositive: Boolean = longSize > 0L
   def indices: IndexRange = indexRange(0, intSize)
@@ -49,8 +52,8 @@ final class HasPreciseSizeOps(val x: HasPreciseSize) extends HasPreciseSizeMetho
 }
 
 final class PreciseSizeOps(val size: PreciseSize) extends AnyRef with HasPreciseSizeMethods {
-  def get: Long   = longSize
-  def getInt: Int = intSize
+  def get: Long = longSize
+  def toDouble: Double = get.toDouble
 
   def + (n: Int): PreciseSize = newSize(longSize + n)
   def - (n: Int): PreciseSize = newSize(longSize - n)
@@ -76,16 +79,6 @@ final class PreciseSizeOps(val size: PreciseSize) extends AnyRef with HasPrecise
   def containsRange(range: IndexRange): Boolean = range.endInt <= intSize
 
   override def toString = s"$longSize"
-}
-
-final class Map[K, V](val map: scMap[K, V]) extends AnyVal {
-  def sortedKeys(implicit ord: Order[K])                    = map.keys.sorted
-  def orderByKey(implicit ord: Order[K]): PolicyMap[K, V]   = newMap(sortedKeys, map.toMap)
-  def orderByValue(implicit ord: Order[V]): PolicyMap[K, V] = newMap(sortedKeys(ord on map), map.toMap)
-}
-final class SortedMap[K, V](val map: scSortedMap[K, V]) extends AnyVal {
-  private def ord: Order[K]     = Order create map.ordering
-  def reverse: PolicyMap[K, V] = map orderByKey ord.reverse
 }
 
 final class BooleanAlgebraOps[A](val algebra: BooleanAlgebra[A]) extends AnyVal {
@@ -124,7 +117,7 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   protected def underlying = xs
   protected def rebuild[B](xs: pSeq[B]): pVector[B] = xs.pvec
 
-  override def head: A              = apply(0.index)
+  override def head: A = apply(0.index)
 
   // Foreach from 0
   // 1 to 100 splitSeq (_ splitAt 3.index) take 3 foreach println
@@ -163,9 +156,9 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
   protected def rebuild[B](xs: Foreach[B]): CC[B]
 
-  def take(n: PreciseSize)     = xs.m take n
-  def drop(n: PreciseSize)     = xs.m drop n
-  def slice(range: IndexRange) = this drop range.precedingSize take range.size
+  def take(n: PreciseSize): View[A]     = xs.m take n
+  def drop(n: PreciseSize): View[A]     = xs.m drop n
+  def slice(range: IndexRange): View[A] = this drop range.precedingSize take range.size
 
   def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.contained)
   def flatten[B](implicit ev: A <:< Foreach[B]): CC[B]                              = rebuild(Foreach[B](f => xs foreach (x => ev(x) foreach f)))
@@ -194,12 +187,6 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def reducel(f: (A, A) => A): A     = drop(1.size).foldl(head)(f)
   def max(implicit ord: Order[A]): A = reducel(_ max2 _)
   def min(implicit ord: Order[A]): A = reducel(_ min2 _)
-
-  def foldr[B](zero: B)(f: (A, B) => B): B = {
-    var result = zero
-    xs.pvec.reverse foreach(x => result = f(x, result))
-    result
-  }
 }
 
 final class StdOptOps[A](val x: Opt[A]) extends AnyVal {

@@ -25,10 +25,10 @@ trait StdGateways extends Any
 //   Vector("a", "b", "cd", "ef").m filter (_.length == 1) build
 // Returns a Vector[String].
 trait StdBuilds0 extends Any                 { implicit def implicitBuildsFromCBF[A, That](implicit z: CanBuild[A, That]): Builds[A, That] = Builds wrap z          }
-trait StdBuilds1 extends Any with StdBuilds0 { implicit def implicitBuildsList[A] : Builds[A, pSeq[A]]                                     = PolicyList.builder[A]  }
-trait StdBuilds2 extends Any with StdBuilds1 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, exSet[A]]                             = PolicySet.builder[A]   }
-trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsDirect[A] : Builds[A, pVector[A]]                                = Direct.builder[A]      }
-trait StdBuilds4 extends Any with StdBuilds3 { implicit def implicitBuildsArray[A: CTag] : Builds[A, Array[A]]                             = Direct.arrayBuilder[A] }
+trait StdBuilds1 extends Any with StdBuilds0 { implicit def implicitBuildsArray[A: CTag] : Builds[A, Array[A]]                             = Direct.arrayBuilder[A] }
+trait StdBuilds2 extends Any with StdBuilds1 { implicit def implicitBuildsList[A] : Builds[A, pSeq[A]]                                     = PolicyList.builder[A]  }
+trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, exSet[A]]                             = PolicySet.builder[A]   }
+trait StdBuilds4 extends Any with StdBuilds3 { implicit def implicitBuildsDirect[A] : Builds[A, pVector[A]]                                = Direct.builder[A]      }
 trait StdBuilds  extends Any with StdBuilds4 { implicit def implicitBuildsString: Builds[Char, String]                                     = Direct.stringBuilder() }
 
 trait StdWalks0 extends Any {
@@ -85,11 +85,9 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsInputStream(x: InputStream): ops.InputStreamOps                     = new ops.InputStreamOps(x)
   implicit def opsInt(x: Int): ops.IntOps                                             = new ops.IntOps(x)
   implicit def opsLong(x: Long): ops.LongOps                                          = new ops.LongOps(x)
-  implicit def opsMap[K, V](xs: scMap[K, V]): ops.Map[K, V]                           = new ops.Map[K, V](xs)
   implicit def opsOption[A](x: Option[A]): ops.OptionOps[A]                           = new ops.OptionOps[A](x)
   implicit def opsPreciseSize(x: PreciseSize): ops.PreciseSizeOps                     = new ops.PreciseSizeOps(x)
   implicit def opsSizeInfo(x: SizeInfo): SizeInfo.Ops                                 = new SizeInfo.Ops(x)
-  implicit def opsSortedMap[K, V](xs: sc.SortedMap[K, V]): ops.SortedMap[K, V]        = new ops.SortedMap[K, V](xs)
   implicit def opsStdOpt[A](x: Opt[A]): ops.StdOptOps[A]                              = new ops.StdOptOps[A](x)
   implicit def opsTry[A](x: Try[A]): ops.TryOps[A]                                    = new ops.TryOps[A](x)
 }

@@ -22,6 +22,7 @@ final class AnyOps[A](val x: A) extends AnyVal {
   @inline def |>[B](f: A => B): B       = f(x)
   @inline def doto(f: A => Unit): A     = sideEffect(f(x))
   @inline def sideEffect(body: Unit): A = x
+  @inline def isOr(p: A => Boolean)(alt: => A): A = if (p(x)) x else alt
 
   // Calling eq on Anys.
   def id_==(y: Any): Boolean = toRef eq y.toRef
@@ -30,11 +31,7 @@ final class AnyOps[A](val x: A) extends AnyVal {
   def requiring(p: Predicate[A]): Option[A] = if (p(x)) Some(x) else None
   def matchOr[B](alt: => B)(pf: A ?=> B): B = if (pf isDefinedAt x) pf(x) else alt
   def try_s(implicit z: TryShow[A]): String = z show x
-  def any_s: String = x match {
-    case null          => "null"
-    case x: ShowDirect => x.to_s
-    case _             => x.toString
-  }
+  def any_s: String = "" + x
 }
 
 final class AnyRefOps[A <: AnyRef](val x: A) extends AnyVal {
@@ -44,6 +41,7 @@ final class AnyRefOps[A <: AnyRef](val x: A) extends AnyVal {
 }
 
 final class CharOps(val ch: Char) extends AnyVal {
+  def to_s: String                = ch.toString
   def prev: Char                  = (ch - 1).toChar
   def next: Char                  = (ch + 1).toChar
   def isAlphabetic                = jl.Character isAlphabetic ch
@@ -72,8 +70,9 @@ final class IntOps(val self: Int) extends AnyVal {
   def min(that: This): This   = scala.math.min(self, that)
   def signum: This            = scala.math.signum(self)
   def lowerBound(n: Int): Int = max(n)
-  def nonNegative: Int        = lowerBound(0)
+  def zeroPlus: Int           = lowerBound(0)
 
+  def isOr(p: Int => Boolean)(alt: => Int): Int = if (p(self)) self else alt
   def until(end: Int): ExclusiveIntRange = intRange(self, end)
   def to(end: Int): ExclusiveIntRange    = nthRange(self, end)
 
@@ -89,14 +88,14 @@ final class LongOps(val self: Long) extends AnyVal {
 
   def nth: Nth          = Nth(self)
   def index: Index      = Index(self)
-  def size: PreciseSize = PreciseSize(self)
+  def size: PreciseSize = newSize(self)
 
   def abs: This                 = scala.math.abs(self)
   def max(that: This): This     = scala.math.max(self, that)
   def min(that: This): This     = scala.math.min(self, that)
   def signum: This              = scala.math.signum(self)
   def lowerBound(n: Long): Long = max(n)
-  def nonNegative: Long         = lowerBound(0)
+  def zeroPlus: Long            = lowerBound(0)
 
   def left32: Int  = (self >>> 32).toInt
   def right32: Int = self.toInt

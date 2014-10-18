@@ -3,6 +3,7 @@ package std
 
 import api._
 import linear._
+import StdShow._
 
 /** Classes which implement both the java and scala interfaces.
  */
@@ -64,6 +65,7 @@ object BiIterator {
 
 object BiIterable {
   private class StreamBased[A](xs: Leaf[A]) extends BiIterable[A] {
+    // println(s"new StreamBased(${xs.shortClass})")
     def iterator(): BiIterator[A] = BiIterator stream xs
   }
   private class ArrayBased[A](xs: Array[A]) extends BiIterable[A] {
@@ -79,9 +81,14 @@ object BiIterable {
     def hasNext   = hasNextFn
     def next(): A = nextFn
   }
-  def apply[A](xs: Foreach[A]): BiIterable[A]    = new StreamBased(xs.toPolicyStream)
+  def apply[A](xs: Foreach[A]): BiIterable[A]    = {
+    // implicit def z: Show[pSeq[A]] = implicitly[pSeq[Show[Any]]](Show[Any]("" + _))
+    // println("BiIterable: " + xs.shortClass + " size: " + xs.sizeInfo + " [ " + xs.mkString(" ") + " ]")
+    // xs foreach println
+    new StreamBased(xs.toPolicyList)
+  }
   def apply[A](xs: Array[A]): BiIterable[A]      = new ArrayBased(xs)
   def apply[A](xs: jIterable[A]): BiIterable[A]  = new JavaBased(xs)
-  def apply[A](xs: scIterable[A]): BiIterable[A] = new StreamBased(xs.toScalaStream.toPolicyStream)
-  def elems[A](xs: A*): BiIterable[A]            = apply(xs.m.toScalaVector)
+  def apply[A](xs: scIterable[A]): BiIterable[A] = new ScalaBased(xs)
+  def elems[A](xs: A*): BiIterable[A]            = new ScalaBased(xs.m.toScalaVector)
 }

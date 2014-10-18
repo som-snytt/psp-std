@@ -2,11 +2,13 @@ package psp
 package tests
 
 import psp.std._
+import Unsafe.universalEq
 
 abstract class TestRunnerCommon {
   def scalaVersion: String
 
   def bundles: Seq[Bundle] = Seq(
+    new StringExtensions,
     new ValuesSpec,
     new SizeInfoSpec,
     new InferenceSpec,
@@ -16,9 +18,9 @@ abstract class TestRunnerCommon {
   )
   def main(args: Array[String]): Unit = {
     val results = bundles mapOnto (_.run)
-    results.keys.toScalaList filterNot (x => results(x)) match {
-      case Nil => println("\nAll tests passed.")
-      case ks  => println("Some tests failed in bundles: " + ks.mkString(", ")) ; throw new Exception
+    results filterValues (x => !x) match {
+      case PolicyMap()        => println("\nAll tests passed.")
+      case PolicyMap(ks @ _*) => println("Some tests failed in bundles: " + ks.mkString(", ")) ; throw new Exception
     }
   }
 }

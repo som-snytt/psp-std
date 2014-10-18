@@ -29,18 +29,18 @@ object PolicySet {
   }
 }
 
-sealed trait IntensionalSet[A] extends Any with Intensional[A, Boolean] {
+sealed trait IntensionalSet[A] extends AnyRef with Intensional[A, Boolean] with (A => Boolean) {
   def apply(elem: A): Boolean = contains(elem)
   def contains(elem: A): Boolean
   def equiv(x: A, y: A): Boolean
   def hash(x: A): Int
 }
-sealed trait ExtensionalSet[A] extends Any with IntensionalSet[A] with Extensional[A] with HasSizeInfo {
+sealed trait ExtensionalSet[A] extends AnyRef with IntensionalSet[A] with Extensional[A] with HasSizeInfo {
   def contained: Foreach[A]
 }
 
 object ExtensionalSet {
-  sealed trait Derived[A] extends Any with ExtensionalSet[A] with IntensionalSet.Derived[A] {
+  sealed trait Derived[A] extends AnyRef with ExtensionalSet[A] with IntensionalSet.Derived[A] {
     protected def underlying: exSet[A]
   }
   final case class Filtered[A](lhs: exSet[A], rhs: A => Boolean) extends Derived[A] {
@@ -86,7 +86,7 @@ object ExtensionalSet {
   }
 }
 object IntensionalSet {
-  sealed trait Derived[A] extends Any with inSet[A] {
+  sealed trait Derived[A] extends AnyRef with inSet[A] {
     protected def underlying: inSet[A]
     def equiv(x: A, y: A) = underlying.equiv(x, y)
     def hash(x: A)        = underlying.hash(x)

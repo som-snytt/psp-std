@@ -75,15 +75,15 @@ object DirectAccess {
     type A     = AIn
   }
   object StringIs extends Impl[Char, String, Direct] {
-    def length(repr: String): PreciseSize    = PreciseSize(repr.length)
+    def length(repr: String): PreciseSize    = newSize(repr.length)
     def elemAt(repr: String)(i: Index): Char = repr charAt i.safeToInt
   }
   final class ArrayIs[A] extends Impl[A, Array[A], Direct] {
-    def length(repr: Array[A]): PreciseSize = PreciseSize(repr.length)
+    def length(repr: Array[A]): PreciseSize = newSize(repr.length)
     def elemAt(repr: Array[A])(i: Index): A = repr(i.safeToInt)
   }
   final class ScalaIndexedIs[A] extends Impl[A, scIndexedSeq[A], scIndexedSeq] {
-    def length(repr: CC[A]): PreciseSize = PreciseSize(repr.length)
+    def length(repr: CC[A]): PreciseSize = newSize(repr.length)
     def elemAt(repr: CC[A])(i: Index): A = repr(i.safeToInt)
   }
   final class IndexedIs[A] extends Impl[A, Direct[A], Direct] {

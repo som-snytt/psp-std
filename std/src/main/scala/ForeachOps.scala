@@ -26,6 +26,11 @@ trait ConversionOps[A] extends Any {
     runForeach(x => res = f(res, x))
     res
   }
+  def foldr[B](zero: B)(f: (A, B) => B): B = {
+    var result = zero
+    underlying.pvec.reverse foreach(x => result = f(x, result))
+    result
+  }
   def force[That](implicit z: Builds[A, That]): That        = z(runForeach)
   def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z(runForeach)
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
@@ -33,12 +38,13 @@ trait ConversionOps[A] extends Any {
   def mapWithIndex[B](f: (A, Index) => B): pVector[B] = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(x, Index(i)) ).pvec
   def mapWithNth[B](f: (A, Nth) => B): pVector[B]     = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(x, Nth(i + 1)) ).pvec
 
-  def toPolicySet(implicit z: HashEq[A]): exSet[A]             = PolicySet.builder[A].apply(runForeach)
-  def toPolicyMap[K, V](implicit ev: A <:< (K, V)): pMap[K, V] = PolicyMap.builder[K, V] build (Foreach(runForeach) map ev)
-  def toPolicyList: pList[A]                                   = PolicyList.builder[A](runForeach)
-  def toPolicyVector: pVector[A]                               = Direct.builder[A](runForeach)
-  def toPolicySeq: pSeq[A]                                     = Foreach.builder[A](runForeach)
-  def toPolicyStream                                           = foldl(Stream.empty[A])((x, y) => Stream.cons(y, x))
+  def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): pMap[K, V]        = toPolicyMap[K, V]
+  def toPolicyMap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): pMap[K, V] = PolicyMap.builder[K, V] build (underlying map ev)
+
+  def toPolicySet(implicit z: HashEq[A]): exSet[A] = PolicySet.builder[A] build underlying
+  def toPolicyList: pList[A]                       = PolicyList.builder[A] build underlying
+  def toPolicyVector: pVector[A]                   = Direct.builder[A] build underlying
+  def toPolicySeq: pSeq[A]                         = Foreach.builder[A] build underlying
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
   def toScalaList: sList[A]                                     = toScala[sciList]
@@ -59,7 +65,6 @@ trait ConversionOps[A] extends Any {
   def pvec: pVector[A]                                  = toPolicyVector
   def pseq: pSeq[A]                                     = toPolicySeq
   def pset(implicit z: HashEq[A]): pSet[A]              = toPolicySet
-  def pmap[K, V](implicit ev: A <:< (K, V)): pMap[K, V] = toPolicyMap[K, V]
   def naturalSet: pSet[A]                               = pset(HashEq.natural())
 
   def seq: sciSeq[A] = toScala[sciSeq] // varargs
@@ -98,27 +103,16 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   final def findOrZero(p: A => Boolean)(implicit z: Zero[A]): A = find(p) | z.zero
 
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): sciVector[C] = toScalaVector map (f => ev(f)(x))
+  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): pMap[A, B]        = newMap(underlying.pvec map (x => x -> f(x)))
+  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): pMap[B, A]        = newMap(underlying.pvec map (x => f(x) -> x))
 
-  def ascendingFrequency: pMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
-  def descendingFrequency: pMap[A, Int]                    = ascendingFrequency.reverse
-  def findOr(p: A => Boolean, alt: => A): A                = find(p) | alt
-  def mapFrom[B](f: A => B): pMap[B, A]                    = newMap(toScalaVector map (x => f(x) -> x): _*)
-  def mapOnto[B](f: A => B): pMap[A, B]                    = newMap(toScalaVector map (x => x -> f(x)): _*)
-  def mapToAndOnto[B, C](k: A => B, v: A => C): pMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
-  def mapToMapPairs[B, C](f: A => (B, C)): pMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
-  def sortDistinct(implicit ord: Order[A]): pVector[A]     = toScalaVector.distinct sorted ord.toScalaOrdering
-  def sortByShow(implicit z: Show[A]): pVector[A]          = toScalaVector sorted orderBy[A](_.to_s).toScalaOrdering
-  def sortOrder[B: Order](f: A => B): pVector[A]           = toScalaVector sorted orderBy[A](f).toScalaOrdering
-  def sorted(implicit ord: Order[A]): pVector[A]           = toScalaVector sorted ord.toScalaOrdering
-  def unsortedFrequencyMap: Map[A, Int]                    = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
+  def findOr(p: A => Boolean, alt: => A): A            = find(p) | alt
+  def sortDistinct(implicit ord: Order[A]): pVector[A] = toScalaVector.distinct sorted ord.toScalaOrdering
+  def sortByShow(implicit z: Show[A]): pVector[A]      = toScalaVector sorted orderBy[A](_.to_s).toScalaOrdering
+  def sortOrder[B: Order](f: A => B): pVector[A]       = toScalaVector sorted orderBy[A](f).toScalaOrdering
+  def sorted(implicit ord: Order[A]): pVector[A]       = toScalaVector sorted ord.toScalaOrdering
 
   def foreachCounted(f: (Index, A) => Unit): Unit   = foldl(0.index)((idx, x) => try idx.next finally f(idx, x))
-
-  def groupBy[B, C](f: A => B)(g: pSeq[A] => C): pMap[B, C] = {
-    val buf = scmMap[B, pList[A]]() withDefaultValue newList[A]()
-    pseq foreach (x => buf(f(x)) ::= x)
-    newMap((buf.toMap mapValues g).toSeq: _*)
-  }
 
   def tabular(columns: (A => String)*): String = tabularLines(columns: _*) mkString EOL
   def tabularLines(columns: (A => String)*): pVector[String] = {
@@ -142,6 +136,8 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
     each(toScalaVector filter toScalaVector.foldLeft(sciSet[A]())((seen, x) => if (f(seen, x)) seen + x else seen))
 
   def distinctBy[B: Eq](f: A => B): Foreach[A] = scanFilter((res, x) => !(res exists (y => f(x) === f(y))))
+  // def groupBy[B: HashEq](f: A => B): pMap[B, pSeq[A]]
+  // def frequencyMap[B: HashEq](f: A => B): pMap[B, PreciseSize]
 }
 
 final class jIterableOps[A](val xs: jIterable[A]) extends AnyVal with CombinedOps[A] {
