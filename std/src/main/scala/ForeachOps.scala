@@ -3,7 +3,6 @@ package std
 package ops
 
 import api._, StdShow._
-import linear._
 
 final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPreciseSizeMethods {
   def size = newSize(xs.length)
@@ -38,7 +37,7 @@ trait ConversionOps[A] extends Any {
   def toPolicyList: pList[A]                                   = PolicyList.builder[A](runForeach)
   def toPolicyVector: pVector[A]                               = Direct.builder[A](runForeach)
   def toPolicySeq: pSeq[A]                                     = Foreach.builder[A](runForeach)
-  def toPolicyStream                                           = foldl(Stream.empty[A])((x, y) => Stream.cons(y, x))
+  // def toPolicyStream                                           = foldl(Stream.empty[A])((x, y) => Stream.cons(y, x))
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
   def toScalaList: sList[A]                                     = toScala[sciList]

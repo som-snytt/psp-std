@@ -26,6 +26,8 @@ object IntViews {
 import IntViews._
 
 class OperationCounts(scalaVersion: String) extends Bundle {
+  def bundle = "Operation Counts"
+
   def is211 = scalaVersion == "2.11"
   def run(): Boolean = {
     results foreach (r => assert(r.isAgreement, r))

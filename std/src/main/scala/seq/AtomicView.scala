@@ -107,7 +107,7 @@ sealed trait BaseView[+A, Repr] extends Any with View[A] with RearSliceable[Base
   final def force[That](implicit z: Builds[A, That]): That = z build this
   final def build(implicit z: Builds[A, Repr]): Repr       = force[Repr]
 
-  override def toString = viewChain.pvec.reverse map (_.description) mkString " "
+  // override def toString = viewChain.pvec.reverse map (_.description) mkString " "
 }
 
 sealed abstract class AtomicView[A0, Repr] extends View.Atomic[A0] with BaseView[A0, Repr] with CountCalls {

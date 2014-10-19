@@ -1,7 +1,27 @@
 package psp
 package tests
 
-import psp.std._
+import psp.std._, api._
+import org.scalacheck.Prop._
+
+class PolicyBasic extends ScalacheckBundle {
+  def bundle = "Policy, Basic Collections Operations"
+
+  import StdShow._
+
+  def plist   = PolicyList(1, 2, 3)
+  def pvector = Direct(1, 2, 3)
+  def parray  = Array(1, 2, 3)
+  def pseq    = Foreach[Int](parray foreach _)
+
+  // def shown[A](xs: Foreach[A]): String = xs.to_s
+
+  def props: Seq[NamedProp] = Seq(
+    // "plist"    -> ("::(1,::(2,::(3,Nil)))" =? shown(plist)),
+    // "pvector"  -> ("[1, 2, 3]" =? shown(pvector)),
+    // "array"    -> ("[ 1, 2, 3 ]" =? parray.to_s)
+  )
+}
 
 class Collections extends ScalacheckBundle {
   def bundle = "Type Inference, General"

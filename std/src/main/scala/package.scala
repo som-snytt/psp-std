@@ -62,7 +62,6 @@ package object std extends psp.std.StdPackage {
   final val Nil             = sci.Nil
   final val None            = scala.None
   final val Ordering        = scala.math.Ordering
-  final val PolicyList      = psp.std.linear.List
   final val StringContext   = scala.StringContext
   final val sConsole        = scala.Console
   final val scBitSet        = sc.BitSet
@@ -103,7 +102,6 @@ package object std extends psp.std.StdPackage {
   final val NoIndex              = Index.undefined
   final val NoNth                = Nth.undefined
 
-  type PolicyList[A]                      = psp.std.linear.List[A]
   type Walks[A0, Repr]                    = Walkable[Repr] { type A = A0 }
   type ForeachableType[A0, Repr, CC0[X]]  = Foreachable[Repr]  { type A = A0 ; type CC[B] = CC0[B] }
   type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] { type A = A0 ; type CC[B] = CC0[B] }
