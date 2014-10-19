@@ -17,7 +17,7 @@ object List {
     def tail    = new FromScala(xs.tail)
   }
 
-  def builder[A] : Builds[A, List[A]]      = Builds(xs => xs.foldr(empty[A])(_ :: _).reverse)
+  def builder[A] : Builds[A, List[A]]      = Builds(xs => xs.foldr(empty[A])(_ :: _))
   def empty[A]                             = Nil.castTo[List[A]]
   def fill[A](n: Int)(body: => A): List[A] = if (n <= 0) Nil() else body :: fill(n - 1)(body)
   def apply[A](xs: A*): List[A]            = xs.foldRight(Nil[A]())(_ :: _)

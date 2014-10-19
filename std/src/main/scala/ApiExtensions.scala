@@ -197,7 +197,7 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
 
   def foldr[B](zero: B)(f: (A, B) => B): B = {
     var result = zero
-    xs.foreach(x => result = f(x, result))
+    xs.pvec.reverse foreach(x => result = f(x, result))
     result
   }
 }
