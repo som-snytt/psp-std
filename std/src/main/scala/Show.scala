@@ -90,6 +90,20 @@ trait StdShow extends StdShowLow {
   implicit def seqShow[A: Show] : Show[Seq[A]]            = Show(xs => inBrackets(xs: _*))
   implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
 
+  implicit def intensionalSetShow[A: Show] : Show[IntensionalSet[A]] = {
+    import IntensionalSet._
+    Show[IntensionalSet[A]] {
+      case xs: ExtensionalSet[A] => show"${xs.contained}"
+      case Filtered(lhs, rhs)    => show"Filtered($lhs, ${rhs.toString})"
+      case Complement(xs)        => show"Not($xs)"
+      case Intersect(lhs, rhs)   => show"Intersect($lhs, $rhs)"
+      case Union(lhs, rhs)       => show"Union($lhs, $rhs)"
+      case Diff(lhs, rhs)        => show"Diff($lhs, $rhs)"
+      case Impl(member, heq)     => pp"Impl($member, $heq)"
+    }
+  }
+
+
   //  Show {
   //   case null                  => "<null>"
   //   case _: jWildcardType      => "_"

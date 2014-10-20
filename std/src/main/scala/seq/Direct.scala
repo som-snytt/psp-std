@@ -2,7 +2,6 @@ package psp
 package std
 
 import api._
-// , StdShow._
 
 object Direct {
   final val Empty: Direct[Nothing] = new Impl[Nothing](newSize(0), i => abort(s"Empty($i)"))
@@ -31,7 +30,6 @@ object Direct {
   }
   abstract class Leaf[+A](val sizeInfo: PreciseSize) extends DirectImpl[A] {
     @inline final def foreach(f: A => Unit): Unit = this foreachIndex (i => f(elemAt(i)))
-    // override def toString = if (this.isEmpty) "[ ]" else "$this"
   }
   final class Impl[A](size: PreciseSize, f: Index => A) extends Leaf[A](size) {
     def elemAt(i: Index): A = f(i)

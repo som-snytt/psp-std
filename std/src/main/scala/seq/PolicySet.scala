@@ -86,6 +86,9 @@ object ExtensionalSet {
   }
 }
 object IntensionalSet {
+  val Zero = Impl[Any](ConstantFalse, HashEq((x, y) => true, _ => 0))
+  val One  = Impl[Any](ConstantTrue, HashEq((x, y) => true, _ => 0))
+
   sealed trait Derived[A] extends AnyRef with inSet[A] {
     protected def underlying: inSet[A]
     def equiv(x: A, y: A) = underlying.equiv(x, y)

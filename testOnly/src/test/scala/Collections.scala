@@ -37,11 +37,9 @@ class StringExtensions extends ScalacheckBundle {
     "dropRight"   -> newProp2[Int](_ dropRight _)(_ dropRight _)(mostInts, ?),
     "toInt"       -> newProp[Int](_.toInt, _.toInt),
     "tail"        -> newProp[String](_.tail, _.tail.force),
+    "head"        -> newProp(_.head, _.head),
     "drop"        -> newProp[Char](_.head, _.head),
     "reverse"     -> newProp[String](_.reverse, _.reverse.force)
-
-    // "tail"     -> newProp(_.tail, _.m.tail),
-    // "head"     -> newProp(_.head, _.head)
   )
 }
 
@@ -54,8 +52,6 @@ class PolicyBasic extends ScalacheckBundle {
   def parray  = Array(1, 2, 3)
   def pseq    = Foreach[Int](parray foreach _)
   def punfold = Foreach from 1
-
-  // def shown[A](xs: Foreach[A]): String = xs.to_s
 
   def showsAs[A: Show](expected: String, x: A): NamedProp = expected -> (expected =? show"$x")
 
@@ -130,17 +126,10 @@ class Collections extends ScalacheckBundle {
 
   def policyProps: Seq[NamedProp] = {
     import StdEq._
-    // val pmap = newMap("a" -> 1, "b" -> 2, "c" -> 3)
     val pset = newSet("a" -> 1, "b" -> 2, "c" -> 3)
     val pseq = newSeq("a" -> 1, "b" -> 2, "c" -> 3)
 
     Seq(
-      // expectTypes[Object, pMap[_, _]](
-      //   pmap map identity,
-      //   pmap.m.build,
-      //   pmap.m map identity build,
-      //   pmap.m.map(_._1).map(paired).force[pMap[_, _]]
-      // ),
       expectTypes[pSet[_]](
         pset.m map identity build,
         pset.m.build,

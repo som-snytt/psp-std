@@ -20,6 +20,11 @@ package object tests {
   type Failed             = org.scalacheck.Test.Failed
   type Buildable[A, C[X]] = org.scalacheck.util.Buildable[A, C]
 
+  def arb[A](implicit z: Arbitrary[A]): Arbitrary[A] = z
+
+  implicit def arbitraryIntensionalSet[A : Arbitrary : HashEq] : Arbitrary[inSet[A]] = arb[sciSet[A]] map (_.toPolicySet)
+  implicit def arbitraryPint: Arbitrary[Pint]                                        = Arbitrary(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
+
   def expectType(expected: jClass, found: jClass): NamedProp           = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
   def expectTypes(expected: jClass, found: pVector[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
 
@@ -103,4 +108,8 @@ package object tests {
   }
 
   def genRegex: Gen[Regex] = genregex.regex
+}
+
+package tests {
+  final case class Pint(x: Int) { override def toString = s"$x" }
 }

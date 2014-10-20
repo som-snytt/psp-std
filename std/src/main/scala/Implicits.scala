@@ -89,11 +89,10 @@ trait StdLabel extends StdLabel0 {
 }
 
 trait StdAlgebra {
-  implicit def identityAlgebra : BooleanAlgebra[Boolean]          = Algebras.Identity
-  implicit def scalaLabelAlgebra : BooleanAlgebra[Label]          = Algebras.LabelAlgebra
-  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]] = new Algebras.Predicate[A]
-  // TODO
-  // implicit def policySetAlgebra[A] : BooleanAlgebra[pSet[A]]   = new Algebras.PolicySet[A]
+  implicit def identityAlgebra : BooleanAlgebra[Boolean]           = Algebras.Identity
+  implicit def scalaLabelAlgebra : BooleanAlgebra[Label]           = Algebras.LabelAlgebra
+  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]]  = new Algebras.Predicate[A]
+  implicit def intensionalSetAlgebra[A] : BooleanAlgebra[inSet[A]] = new Algebras.inSetAlgebra[A]
 
   implicit def opsBooleanAlgebra[A](x: BooleanAlgebra[A]): ops.BooleanAlgebraOps[A] = new ops.BooleanAlgebraOps[A](x)
 }
@@ -131,30 +130,29 @@ trait StdOrder {
 }
 
 trait StdZero {
-  implicit def unitZero           = Zero[Unit](())
-  implicit def stringZero         = Zero[String]("")
-  implicit def booleanZero        = Zero[Boolean](false)
-  implicit def byteZero           = Zero[Byte](0.toByte)
-  implicit def shortZero          = Zero[Short](0.toShort)
-  implicit def intZero            = Zero[Int](0)
-  implicit def longZero           = Zero[Long](0l)
-  implicit def charZero           = Zero[Char](0.toChar)
-  implicit def floatZero          = Zero[Float](0f)
-  implicit def doubleZero         = Zero[Double](0d)
-  implicit def bigIntZero         = Zero[BigInt](BigInt(0))
-  implicit def bigDecimalZero     = Zero[BigDecimal](BigDecimal(0))
-  implicit def arrayZero[A: CTag] = Zero[Array[A]](Array[A]())
-  implicit def iteratorZero[A]    = Zero[sIterator[A]](scIterator.empty)
-  implicit def iterableZero[A]    = Zero[sIterable[A]](Nil)
-  implicit def listZero[A]        = Zero[sciList[A]](Nil)
-  implicit def mapZero[A,B]       = Zero[scMap[A,B]](sciMap())
-  implicit def optionZero[A]      = Zero[Option[A]](None)
-  implicit def seqZero[A]         = Zero[scSeq[A]](Nil)
-  implicit def setZero[A]         = Zero[scSet[A]](sciSet())
-  implicit def traversableZero[A] = Zero[scTraversable[A]](Nil)
-  implicit def vectorZero[A]      = Zero[sciVector[A]](Vector())
-
-  implicit def indexZero[A]      = Zero[Index](NoIndex)
+  implicit def arrayZero[A: CTag]   = Zero[Array[A]](Array[A]())
+  implicit def bigDecimalZero       = Zero[BigDecimal](BigDecimal(0))
+  implicit def bigIntZero           = Zero[BigInt](BigInt(0))
+  implicit def booleanZero          = Zero[Boolean](false)
+  implicit def byteZero             = Zero[Byte](0.toByte)
+  implicit def charZero             = Zero[Char](0.toChar)
+  implicit def doubleZero           = Zero[Double](0d)
+  implicit def floatZero            = Zero[Float](0f)
+  implicit def indexZero[A]         = Zero[Index](NoIndex)
+  implicit def intZero              = Zero[Int](0)
+  implicit def longZero             = Zero[Long](0l)
+  implicit def sOptionZero[A]       = Zero[Option[A]](None)
+  implicit def scIterableZero[A]    = Zero[scIterable[A]](Nil)
+  implicit def scIteratorZero[A]    = Zero[scIterator[A]](scIterator.empty)
+  implicit def scSeqZero[A]         = Zero[scSeq[A]](Nil)
+  implicit def scSetZero[A]         = Zero[scSet[A]](sciSet())
+  implicit def scTraversableZero[A] = Zero[scTraversable[A]](Nil)
+  implicit def sciListZero[A]       = Zero[sciList[A]](Nil)
+  implicit def sciMapZero[A, B]     = Zero[sciMap[A,B]](sciMap())
+  implicit def sciVectorZero[A]     = Zero[sciVector[A]](Vector())
+  implicit def shortZero            = Zero[Short](0.toShort)
+  implicit def stringZero           = Zero[String]("")
+  implicit def unitZero             = Zero[Unit](())
 }
 
 trait StdEq {

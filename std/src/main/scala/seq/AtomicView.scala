@@ -52,6 +52,7 @@ object FlattenIndexedSlice {
   }
 }
 
+
 final class LinearView[A0, Repr](repr: Repr, val tc: Foreachable[Repr] { type A = A0 }) extends AtomicView[A0, Repr] {
   def description = ""
   def sizeInfo    = SizeInfo(repr)

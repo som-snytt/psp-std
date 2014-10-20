@@ -73,29 +73,28 @@ object Algebras {
       case _                      => PredicateComplement(f)
     }
   }
-  // TODO - recover this logic for PolicySet.
-  //
-  // final class ScalaSet[A] extends BooleanAlgebra[sciSet[A]] {
-  //   import ScalaSet._
-  //   def and(x: sciSet[A], y: sciSet[A]): sciSet[A] = (x, y) match {
-  //     case (Complement(xs), Complement(ys)) => !(xs || ys)
-  //     case (Complement(xs), ys)             => Difference(ys, xs)
-  //     case (xs, Complement(ys))             => Difference(xs, ys)
-  //     case _                                => x intersect y
-  //   }
-  //   def or(x: sciSet[A], y: sciSet[A]): sciSet[A] = (x, y) match {
-  //     case (Complement(xs), Complement(ys)) => !(xs && ys)
-  //     case (Complement(xs), ys)             => not(Difference(xs, ys))
-  //     case (xs, Complement(ys))             => not(Difference(ys, xs))
-  //     case _                                => x union y
-  //   }
-  //   def not(x: sciSet[A]): sciSet[A] = x match {
-  //     case Zero           => one
-  //     case One            => zero
-  //     case Complement(xs) => xs            // unwrap
-  //     case _              => Complement(x) // wrap
-  //   }
-  //   def zero: sciSet[A] = Zero.castTo[sciSet[A]]
-  //   def one: sciSet[A]  = One.castTo[sciSet[A]]
-  // }
+  final class inSetAlgebra[A] extends BooleanAlgebra[inSet[A]] {
+    import IntensionalSet._
+
+    def and(x: inSet[A], y: inSet[A]): inSet[A] = (x, y) match {
+      case (Complement(xs), Complement(ys)) => not(Union(xs, ys))
+      case (Complement(xs), ys)             => Diff(ys, xs)
+      case (xs, Complement(ys))             => Diff(xs, ys)
+      case _                                => Intersect(x, y)
+    }
+    def or(x: inSet[A], y: inSet[A]): inSet[A] = (x, y) match {
+      case (Complement(xs), Complement(ys)) => not(Intersect(xs, ys))
+      case (Complement(xs), ys)             => not(Diff(xs, ys))
+      case (xs, Complement(ys))             => not(Diff(ys, xs))
+      case _                                => Union(x, y)
+    }
+    def not(x: inSet[A]): inSet[A] = x match {
+      case Zero           => one
+      case One            => zero
+      case Complement(xs) => xs            // unwrap
+      case _              => Complement(x) // wrap
+    }
+    def zero: inSet[A] = Zero.castTo
+    def one: inSet[A]  = One.castTo
+  }
 }

@@ -7,7 +7,7 @@ trait VarargsSeq[+A] { def seq: scSeq[A] }
 
 final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
   def orElse[V1 >: V](that: MapLookup[K, V1]): MapLookup[K, V1] = MapLookup(pf orElse that.pf, defaultValue orElse that.defaultValue)
-  def mapValues[V1](f: V => V1): MapLookup[K, V1]               = MapLookup(pf andThen f, defaultValue map f)
+  def map[V1](f: V => V1): MapLookup[K, V1]                     = MapLookup(pf andThen f, defaultValue map f)
   def apply(key: K): V                                          = if (pf isDefinedAt key) pf(key) else abort(s"$key does not exist")
   def get(key: K): Option[V]                                    = pf lift key orElse defaultValue
   def getOr[V1 >: V](key: K, alt: => V1): V1                    = if (pf isDefinedAt key) pf(key) else alt
@@ -20,29 +20,30 @@ final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
  */
 final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[K, V]) extends HasSizeInfo with Intensional[K, V] with Extensional[(K, V)] with VarargsSeq[(K, V)] {
   type Entry = (K, V)
+  type MapTo[V1] = pMap[K, V1]
 
-  def ++[V1 >: V](map: pMap[K, V1]): pMap[K, V1]    = new PolicyMap(keySet union map.keySet, lookup orElse map.lookup)
-  def apply(key: K): V                              = lookup(key)
-  def contained: pVector[Entry]                     = keyVector map (k => k -> lookup(k))
-  def contains(key: K): Boolean                     = keySet(key)
-  def filterKeys(p: Predicate[K]): pMap[K, V]       = new PolicyMap(keySet filter p, lookup)
-  def filterValues(p: Predicate[V]): pMap[K, V]     = filterKeys(k => p(apply(k)))
-  def foreachKey(f: K => Unit): Unit                = keyVector foreach f
-  def foreachEntry(f: (K, V) => Unit): Unit         = foreachKey(k => f(k, apply(k)))
-  def get(key: K): Option[V]                        = lookup get key
-  def getOr[V1 >: V](key: K, alt: => V1): V1        = lookup.getOr(key, alt)
-  def isEmpty                                       = contained.isEmpty
-  def iterator: BiIterator[Entry]                   = keysIterator map (k => (k, lookup(k)))
-  def keyVector: pVector[K]                         = keySet.contained.pvec
-  def keys: pVector[K]                              = keyVector
-  def keysIterator: BiIterator[K]                   = keyVector.biIterator
-  def mapValues[V1](f: V => V1)                     = new PolicyMap(keySet, lookup mapValues f)
-  def reverseKeys                                   = new PolicyMap(keySet mapContained (_.pvec.reverse), lookup)
-  def seq: scSeq[Entry]                             = contained.seq
-  def sizeInfo: PreciseSize                         = keyVector.sizeInfo
-  def values: pVector[V]                            = keyVector map (x => lookup(x))
-  def valuesIterator: BiIterator[V]                 = keysIterator map (x => lookup(x))
-  def withDefaultValue[V1 >: V](v: V1): pMap[K, V1] = new PolicyMap(keySet, lookup.copy(defaultValue = Some(v)))
+  def ++[V1 >: V](map: pMap[K, V1]): MapTo[V1]    = new PolicyMap(keySet union map.keySet, lookup orElse map.lookup)
+  def apply(key: K): V                            = lookup(key)
+  def contained: pVector[Entry]                   = keyVector map (k => k -> lookup(k))
+  def contains(key: K): Boolean                   = keySet(key)
+  def filterKeys(p: Predicate[K]): pMap[K, V]     = new PolicyMap(keySet filter p, lookup)
+  def filterValues(p: Predicate[V]): pMap[K, V]   = filterKeys(k => p(apply(k)))
+  def foreachKey(f: K => Unit): Unit              = keyVector foreach f
+  def foreachEntry(f: (K, V) => Unit): Unit       = foreachKey(k => f(k, apply(k)))
+  def get(key: K): Option[V]                      = lookup get key
+  def getOr[V1 >: V](key: K, alt: => V1): V1      = lookup.getOr(key, alt)
+  def isEmpty                                     = contained.isEmpty
+  def iterator: BiIterator[Entry]                 = keysIterator map (k => (k, lookup(k)))
+  def keyVector: pVector[K]                       = keySet.contained.pvec
+  def keys: pVector[K]                            = keyVector
+  def keysIterator: BiIterator[K]                 = keyVector.biIterator
+  def map[V1](f: V => V1): MapTo[V1]              = new PolicyMap(keySet, lookup map f)
+  def reverseKeys                                 = new PolicyMap(keySet mapContained (_.pvec.reverse), lookup)
+  def seq: scSeq[Entry]                           = contained.seq
+  def sizeInfo: PreciseSize                       = keyVector.sizeInfo
+  def values: pVector[V]                          = keyVector map (x => lookup(x))
+  def valuesIterator: BiIterator[V]               = keysIterator map (x => lookup(x))
+  def withDefaultValue[V1 >: V](v: V1): MapTo[V1] = new PolicyMap(keySet, lookup.copy(defaultValue = Some(v)))
 }
 
 object PolicyMap {
