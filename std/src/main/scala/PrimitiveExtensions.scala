@@ -6,6 +6,10 @@ import api._
 import java.{ lang => jl }
 import lowlevel._
 
+final object UnitOps {
+  @inline def thenReturn[A](value: A): A = value
+}
+
 final class AnyOps[A](val x: A) extends AnyVal {
   // Short decoded class name.
   def shortClass: String   = x.getClass.shortName
@@ -19,14 +23,15 @@ final class AnyOps[A](val x: A) extends AnyVal {
   def reflect[B](m: jMethod)(args: Any*): B = m.invoke(x, args.map(_.castTo[AnyRef]): _*).castTo[B]
 
   // The famed forward pipe.
-  @inline def |>[B](f: A => B): B       = f(x)
-  @inline def doto(f: A => Unit): A     = sideEffect(f(x))
-  @inline def sideEffect(body: Unit): A = x
+  @inline def |>[B](f: A => B): B        = f(x)
+  @inline def doto(f: A => Unit): A      = sideEffect(f(x))
+  @inline def sideEffect(body: Unit): A  = x
 
   // Calling eq on Anys.
   def id_==(y: Any): Boolean = toRef eq y.toRef
   def id_## : Int            = identityHashCode(x)
 
+  def optionally[B](pf: A ?=> B): Option[B] = if (pf isDefinedAt x) Some(pf(x)) else None
   def requiring(p: Predicate[A]): Option[A] = if (p(x)) Some(x) else None
   def matchOr[B](alt: => B)(pf: A ?=> B): B = if (pf isDefinedAt x) pf(x) else alt
   def try_s(implicit z: TryShow[A]): String = z show x
@@ -57,10 +62,16 @@ final class CharOps(val ch: Char) extends AnyVal {
   def to(end: Char): Direct[Char] = ch.toInt to end.toInt map (_.toChar)
 }
 
+final class BooleanOps(val self: Boolean) extends AnyVal {
+  def toInt: Int   = if (self) 1 else 0
+  def toLong: Long = if (self) 1L else 0L
+}
+
 final class IntOps(val self: Int) extends AnyVal {
   private type This = Int
 
   def offset: Offset = Offset(self)
+  def size: PreciseSize = newSize(self: Long)
 
   /** Make a 64-bit long by concatenating two 32-bit Ints.
    *  Retrieve the original Ints with left32 and right32.
@@ -77,7 +88,6 @@ final class IntOps(val self: Int) extends AnyVal {
   def until(end: Int): ExclusiveIntRange = intRange(self, end)
   def to(end: Int): ExclusiveIntRange    = nthRange(self, end)
 
-  def times[A](expr: => A): Direct[A] = Direct.fill(self)(expr)
   def u: UInt                         = UInt(self)
   def binary: String                  = jl.Integer.toBinaryString(self)
   def hex: String                     = jl.Integer.toHexString(self)
@@ -89,7 +99,7 @@ final class LongOps(val self: Long) extends AnyVal {
 
   def nth: Nth          = Nth(self)
   def index: Index      = Index(self)
-  def size: PreciseSize = PreciseSize(self)
+  def size: PreciseSize = newSize(self)
 
   def abs: This                 = scala.math.abs(self)
   def max(that: This): This     = scala.math.max(self, that)
@@ -97,9 +107,11 @@ final class LongOps(val self: Long) extends AnyVal {
   def signum: This              = scala.math.signum(self)
   def lowerBound(n: Long): Long = max(n)
   def nonNegative: Long         = lowerBound(0)
+  def isNonZero: Boolean        = self != 0L
 
   def left32: Int  = (self >>> 32).toInt
   def right32: Int = self.toInt
+  def <<(index: IndexLike): Long = self << index.toIndex.indexValue
 
   /** Safe in the senses that it won't silently truncate values, and
    *  will translate MaxLong to MaxInt instead of -1.

@@ -87,11 +87,11 @@ object DirectAccess {
     def elemAt(repr: CC[A])(i: Index): A = repr(i.safeToInt)
   }
   final class IndexedIs[A] extends Impl[A, Direct[A], Direct] {
-    def length(repr: Direct[A]): PreciseSize = repr.size
+    def length(repr: Direct[A]): PreciseSize = repr.sizeInfo
     def elemAt(repr: Direct[A])(i: Index): A = repr(i)
   }
   final class IndexedViewIs[A, Repr] extends Impl[A, IndexedView[A, Repr], Direct] {
-    def length(repr: IndexedView[A, Repr]): PreciseSize = repr.size
+    def length(repr: IndexedView[A, Repr]): PreciseSize = repr.sizeInfo
     def elemAt(repr: IndexedView[A, Repr])(i: Index): A = repr elemAt i
   }
 }

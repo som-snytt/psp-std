@@ -5,6 +5,10 @@ package ops
 import api._
 import java.{ lang => jl }
 
+final class IndexRangeOps(xs: IndexRange) {
+  def *(n: Int): IndexRange = indexRange(xs.startInt * n, xs.endInt * n)
+}
+
 final class IntensionalSetOps[A](xs: inSet[A]) {
   def diff(that: inSet[A]): inSet[A]      = this filter that
   def filter(p: A => Boolean): inSet[A]   = IntensionalSet.Filtered(xs, p)
@@ -28,9 +32,9 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
 }
 
 trait HasPreciseSizeMethods extends Any {
-  def size: PreciseSize
+  def sizeInfo: PreciseSize
 
-  def longSize: Long      = size.value
+  def longSize: Long      = sizeInfo.value
   def intSize: Int        = longSize.safeToInt
   def isZero: Boolean     = longSize == 0L
   def isPositive: Boolean = longSize > 0L
@@ -45,10 +49,10 @@ trait HasPreciseSizeMethods extends Any {
 }
 
 final class HasPreciseSizeOps(val x: HasPreciseSize) extends HasPreciseSizeMethods {
-  def size = x.size
+  def sizeInfo = x.sizeInfo
 }
 
-final class PreciseSizeOps(val size: PreciseSize) extends AnyRef with HasPreciseSizeMethods {
+final class PreciseSizeOps(val sizeInfo: PreciseSize) extends AnyRef with HasPreciseSizeMethods {
   def get: Long   = longSize
   def getInt: Int = intSize
 
@@ -57,6 +61,8 @@ final class PreciseSizeOps(val size: PreciseSize) extends AnyRef with HasPrecise
   def * (n: Int): PreciseSize = newSize(longSize * n)
   def / (n: Int): PreciseSize = newSize(longSize / n)
   def % (n: Int): PreciseSize = newSize(longSize % n)
+
+  def /+ (n: Int): PreciseSize = (this / n) + ( if ((this % n).isZero) 0 else 1 )
 
   def + (n: PreciseSize): PreciseSize = newSize(longSize + n.longSize)
   def - (n: PreciseSize): PreciseSize = newSize(longSize - n.longSize)
@@ -69,9 +75,13 @@ final class PreciseSizeOps(val size: PreciseSize) extends AnyRef with HasPrecise
   def increment: PreciseSize              = newSize(longSize + 1L)
   def decrement: PreciseSize              = newSize(longSize - 1L)
 
+  def timesConst[A](elem: A): pSeq[A]   = Foreach.times(sizeInfo, elem)
+  def timesEval[A](body: => A): pSeq[A] = Foreach continually body take sizeInfo
+
   def toIntRange          = intRange(0, intSize)
   def leftFormat: String  = "%%-%ds" format intSize
   def rightFormat: String = "%%%ds" format intSize
+  def padLeft(s: String, ch: Char): String = if (s.length >= longSize) s else (this - s.length timesConst ch mkString "") ~ s
 
   def containsRange(range: IndexRange): Boolean = range.endInt <= intSize
 
@@ -124,12 +134,15 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   protected def underlying = xs
   protected def rebuild[B](xs: pSeq[B]): pVector[B] = xs.pvec
 
-  override def head: A              = apply(0.index)
+  override def head: A          = apply(0.index)
+  private def size: PreciseSize = xs.sizeInfo
 
   // Foreach from 0
   // 1 to 100 splitSeq (_ splitAt 3.index) take 3 foreach println
   def apply(i: Index): A                              = xs elemAt i
   def exclusiveEnd: Index                             = Index(length)
+  def isNoLargerThan(that: SizeInfo): Boolean         = (xs: HasSizeInfo).sizeInfo p_<= that
+  def isNoLargerThan(that: HasSizeInfo): Boolean      = isNoLargerThan(that.sizeInfo)
   def hasSameSize(that: HasSizeInfo): Boolean         = (xs: HasSizeInfo).sizeInfo p_== that.sizeInfo
   def indicesAtWhich(p: Predicate[A]): pVector[Index] = xs.indices filter (i => p(apply(i)))
   def init: pVector[A]                                = xs.m dropRight 1.size force
@@ -139,7 +152,6 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   def nths: pVector[Nth]                              = xs mapIndices (_.toNth)
   def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
   def runForeach(f: A => Unit): Unit                  = xs foreach f
-  def size: PreciseSize                               = xs.size
   def takeRight(n: PreciseSize): pVector[A]           = xs takeRight n
 
   def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
@@ -165,7 +177,7 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
 
   def take(n: PreciseSize)     = xs.m take n
   def drop(n: PreciseSize)     = xs.m drop n
-  def slice(range: IndexRange) = this drop range.precedingSize take range.size
+  def slice(range: IndexRange) = this drop range.precedingSize take range.sizeInfo
 
   def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.contained)
   def flatten[B](implicit ev: A <:< Foreach[B]): CC[B]                              = rebuild(Foreach[B](f => xs foreach (x => ev(x) foreach f)))

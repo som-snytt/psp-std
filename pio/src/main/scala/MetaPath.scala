@@ -15,7 +15,8 @@ final case class SinglePath(path: Path) extends AnyVal {
   override def toString = path.toString
 }
 final case class SinglePaths(singles: pVector[SinglePath]) extends Direct[SinglePath] {
-  def size                           = singles.size
+  def isEmpty                        = singles.isEmpty
+  def sizeInfo                       = singles.sizeInfo
   def foreach(f: SinglePath => Unit) = singles foreach f
   def elemAt(idx: Index)             = singles(idx)
   def length                         = singles.length

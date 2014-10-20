@@ -44,7 +44,8 @@ final class PspStringOps(val xs: String) extends AnyVal {
   def capitalize: String = mapNonEmpty(s => "" + s.head.toUpper + s.tail)
 
   def length                      = xs.length
-  def * (n: Int): String          = n times xs mkString ""
+  def * (n: Int): String          = this * newSize(n)
+  def * (n: PreciseSize): String  = n timesConst xs mkString ""
   def format(args : Any*): String = java.lang.String.format(xs, args map unwrapArg: _*)
 
   def bytes: Array[Byte]              = xs.getBytes
@@ -60,6 +61,8 @@ final class PspStringOps(val xs: String) extends AnyVal {
   def splitRegex(r: Regex): pVector[String] = r.pattern split xs pvec
   def words: pVector[String]                = splitRegex(whitespace)
 
+  def ~ (that: String): String = xs + that
+
   def mapNonEmpty(f: Unary[String]): String        = if (isEmpty) "" else f(xs)
   def mapSplit(ch: Char)(f: Unary[String]): String = splitChar(ch) map f mkString ch.toString
   def mapLines(f: Unary[String]): String           = mapSplit('\n')(f)
@@ -73,8 +76,8 @@ final class PspStringOps(val xs: String) extends AnyVal {
 
   def readAs[A](implicit reads: Read[A]): A = reads read xs
 
-  def foldPrefix[A](prefix: String)(none: => A, some: String => A): A = if (xs startsWith prefix) some(xs drop prefix.size) else none
-  def foldSuffix[A](suffix: String)(none: => A, some: String => A): A = if (xs endsWith suffix) some(xs dropRight suffix.size) else none
+  def foldPrefix[A](prefix: String)(none: => A, some: String => A): A = if (xs startsWith prefix) some(xs drop prefix.length) else none
+  def foldSuffix[A](suffix: String)(none: => A, some: String => A): A = if (xs endsWith suffix) some(xs dropRight suffix.length) else none
 
   def trimTrailing: String        = mapLines(_ remove whitespace.ends)
   def trimLeading: String         = mapLines(_ remove whitespace.starts)
@@ -85,7 +88,7 @@ final class PspStringOps(val xs: String) extends AnyVal {
   def sanitize: String            = mapChars { case x if x.isControl => '?' }
 
   def truncateAndLeftJustifyTo(max: PreciseSize) = max.leftFormat format (normalizeSpace truncateTo max)
-  def truncateTo(max: PreciseSize)               = if (xs.size <= max) xs else (xs take max - 3) + "..."
+  def truncateTo(max: PreciseSize)               = if (newSize(xs.length) <= max) xs else (xs take max - 3) + "..."
 
   def normalizeSpace: String = xs.trim.replacePattern(
     "\\n+"      -> "\n",

@@ -6,14 +6,14 @@ import Index.zero
 import IndexRange.{ undefined, empty }
 import lowlevel.ExclusiveIntRange
 
-final class IntIndexRange private[std] (val bits: Long) extends AnyVal with IndexRange with RearSliceable[IndexRange] {
+final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange with RearSliceable[IndexRange] {
   def startInt      = intRange.start
   def endInt        = intRange.end
   def intRange      = ExclusiveIntRange create bits
   def start         = Index(startInt)
   def end           = Index(endInt)
   def endInclusive  = if (end <= start) NoIndex else end.prev
-  def size          = intRange.size
+  def sizeInfo      = intRange.sizeInfo
   def precedingSize = newSize(startInt)
 
   @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(Index(i)))

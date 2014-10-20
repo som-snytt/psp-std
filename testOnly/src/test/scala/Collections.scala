@@ -13,13 +13,20 @@ class PolicyBasic extends ScalacheckBundle {
   def pvector = Direct(1, 2, 3)
   def parray  = Array(1, 2, 3)
   def pseq    = Foreach[Int](parray foreach _)
+  def punfold = Foreach from 1
 
   // def shown[A](xs: Foreach[A]): String = xs.to_s
 
+  def showsAs[A: Show](expected: String, x: A): NamedProp = expected -> (expected =? show"$x")
+
   def props: Seq[NamedProp] = Seq(
-    // "plist"    -> ("::(1,::(2,::(3,Nil)))" =? shown(plist)),
-    // "pvector"  -> ("[1, 2, 3]" =? shown(pvector)),
-    // "array"    -> ("[ 1, 2, 3 ]" =? parray.to_s)
+    showsAs("[ 1, 2, 3 ]", plist),
+    showsAs("[ 1, 2, 3 ]", pvector),
+    showsAs("[ 1, 2, 3 ]", parray),
+    showsAs("[ 1, 2, 3 ] ++ [ 1, 2, 3 ]", plist ++ plist),
+    showsAs("[ 1, 2, 3, 1, 2, 3 ]", pvector ++ pvector),
+    showsAs("[ 1, 2, 3, 1, 2, 3 ]", parray ++ parray),
+    showsAs("[ 1, 2, 3, ... ]", punfold)
   )
 }
 

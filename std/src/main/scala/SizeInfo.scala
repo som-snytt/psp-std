@@ -82,7 +82,7 @@ object SizeInfo {
     def intersect(rhs: SizeInfo): SizeInfo = bounded(0.size, lhs min rhs)
     def diff(rhs: SizeInfo): SizeInfo      = bounded(lhs - rhs, lhs)
 
-    def slice(range: IndexRange): SizeInfo = (lhs - range.precedingSize) min range.size
+    def slice(range: IndexRange): SizeInfo = (lhs - range.precedingSize) min range.sizeInfo
 
     def * (m: Long): SizeInfo = lhs match {
       case PreciseSize(n)                            => newSize(n * m)

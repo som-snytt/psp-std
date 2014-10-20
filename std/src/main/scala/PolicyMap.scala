@@ -15,13 +15,14 @@ final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) extends (
  *  Maybe that will seem like a good idea at some point.
  */
 final class PolicyMap[K, +V](val contained: pVector[K], lookup: MapLookup[K, V]) extends HasPreciseSize { //extends Foreach[K] with HasPreciseSize with Intensional[K, V] with Extensional[K] {
+  def isEmpty                                       = contained.isEmpty
   def keys: pVector[K]                              = contained
   def values: pVector[V]                            = keys map lookup
   def contains(key: K)                              = keys containsByEquals key
   def apply(key: K): V                              = lookup(key)
   def withDefaultValue[V1 >: V](v: V1): pMap[K, V1] = new PolicyMap(keys, lookup.copy(defaultValue = Some(v)))
   def foreach(f: K => Unit): Unit                   = keys foreach f
-  def size                                          = keys.size
+  def sizeInfo                                      = keys.sizeInfo
   def reverse                                       = new PolicyMap(keys.reverse, lookup)
   def get(key: K): Option[V]                        = lookup get key
 

@@ -45,7 +45,7 @@ final class PolicyLoader(val classMap: pMap[String, Bytes]) extends ClassLoader 
     case _                       => false
   }
 
-  def totalClasses = classMap.size
+  def totalClasses = classMap.sizeInfo
   def names        = keys
   def classes      = names map findClass
   def errors       = errorMap.toMap

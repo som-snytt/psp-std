@@ -58,14 +58,14 @@ final class LinearView[A0, Repr](repr: Repr, val tc: Foreachable[Repr] { type A 
   }
 }
 
-final class IndexedView[A0, Repr](repr: Repr, val tc: DirectAccess[Repr] { type A = A0 }, val viewRange: IndexRange) extends AtomicView[A0, Repr] with Direct[A0] with HasPreciseSize with ops.HasPreciseSizeMethods {
-  def size: PreciseSize           = SizeInfo.min(tc length repr, viewRange.size)
+final class IndexedView[A0, Repr](repr: Repr, val tc: DirectAccess[Repr] { type A = A0 }, val viewRange: IndexRange) extends AtomicView[A0, Repr] with Direct.DirectImpl[A0] with ops.HasPreciseSizeMethods {
+  def sizeInfo: PreciseSize       = SizeInfo.min(tc length repr, viewRange.sizeInfo)
   def elemAt(i: Index): A         = recordCall(tc.elemAt(repr)(i))
   def contains(x: A): Boolean     = this exists (_ == x)
-  def foreach(f: A => Unit): Unit = foreachSlice(size.indices)(f)
+  def foreach(f: A => Unit): Unit = foreachSlice(sizeInfo.indices)(f)
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit = {
     val combined = viewRange slice range
-    assert(size containsRange combined, s"($repr/size=$size).foreachSlice($range)($f)")
+    assert(sizeInfo containsRange combined, s"($repr/size=$sizeInfo).foreachSlice($range)($f)")
     combined foreach (i => f(elemAt(i)))
   }
   def description                                         = ""
@@ -84,12 +84,13 @@ final case class LabeledView[+A, Repr](prev: BaseView[A, Repr], label: String) e
 
 sealed trait BaseView[+A, Repr] extends Any with View[A] with RearSliceable[BaseView[A, Repr]] {
   type MapTo[+X] = BaseView[X, Repr]
+  type SizedTo[+X] = MapTo[X] with HasPreciseSize
   def isAtomic: Boolean
   def viewRange: IndexRange
 
   final def ++[A1 >: A](that: View[A1]): MapTo[A1]   = Joined(this, that)
   final def collect[B](pf: A ?=> B): MapTo[B]        = Collected(this, pf)
-  final def count(p: Predicate[A]): PreciseSize      = takeWhile(p) |> (v => v.sizeInfo match { case x: PreciseSize => x ; case _ => v.force[pVector[A]].size })
+  final def count(p: Predicate[A]): PreciseSize      = takeWhile(p) match { case Foreach.KnownSize(n: PreciseSize) => n ; case v => v.force[pVector[A]].sizeInfo }
   final def drop(n: PreciseSize): MapTo[A]           = Dropped(this, n)
   final def dropRight(n: PreciseSize): MapTo[A]      = DroppedR(this, n)
   final def dropWhile(p: Predicate[A]): MapTo[A]     = DropWhile(this, p)
@@ -97,7 +98,7 @@ sealed trait BaseView[+A, Repr] extends Any with View[A] with RearSliceable[Base
   final def filterNot(p: Predicate[A]): MapTo[A]     = Filtered(this, (x: A) => !p(x))
   final def flatMap[B](f: A => Foreach[B]): MapTo[B] = FlatMapped(this, f)
   final def map[B](f: A => B): MapTo[B]              = Mapped(this, f)
-  final def sized(size: PreciseSize): MapTo[A]       = Sized(this, size)
+  final def sized(size: PreciseSize): SizedTo[A]     = Sized(this, size)
   final def slice(range: IndexRange): MapTo[A]       = Sliced(this, range)
   final def take(n: PreciseSize): MapTo[A]           = Taken(this, n)
   final def takeRight(n: PreciseSize): MapTo[A]      = TakenR(this, n)
@@ -203,7 +204,7 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
   }
 }
 
-final case class Sized      [A   , Repr](prev: View[A], size: PreciseSize)  extends CompositeView[A, A, Repr](pp"sized $size",  _ => size)
+final case class Sized      [A   , Repr](prev: View[A], override val sizeInfo: PreciseSize)  extends CompositeView[A, A, Repr](pp"sized $sizeInfo",  _ => sizeInfo) with HasPreciseSize { def isEmpty = sizeInfo.value == 0L }
 final case class Joined     [A   , Repr](prev: View[A], ys: View[A])        extends CompositeView[A, A, Repr](pp"++ $ys",       _ + ys.sizeInfo)
 final case class Filtered   [A   , Repr](prev: View[A], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"filter $p",    _.atMost)
 final case class Sliced     [A   , Repr](prev: View[A], range: IndexRange)  extends CompositeView[A, A, Repr](pp"slice $range", _ slice range)

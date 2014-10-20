@@ -161,7 +161,7 @@ trait StdEq {
 
   implicit def exSetEq[A] : Eq[exSet[A]]        = Eq((xs, ys) => (xs isSubsetOf ys) && (ys isSubsetOf xs))
   implicit def seqEq[A: Eq] : HashEq[scSeq[A]]  = HashEq[scSeq[A]]((x, y) => (x corresponds y)(_ === _), _.##)
-  implicit def directEq[A: Eq] : Eq[pVector[A]] = Eq((xs, ys) => (xs.size == ys.size) && (xs.indices forall (i => xs(i) === ys(i))))
+  implicit def directEq[A: Eq] : Eq[pVector[A]] = Eq((xs, ys) => (xs hasSameSize ys) && (xs.indices forall (i => xs(i) === ys(i))))
   implicit def arrayEq[A: Eq] : Eq[Array[A]]    = eqBy[Array[A]](_.pvec)
 
   // implicit def mapEq[K: HashEq, V: Eq] : Eq[sciMap[K, V]] = Eq((xs, ys) => (xs.keys sameMembers ys.keys) && (xs.keys forall (xs sameAt ys)))

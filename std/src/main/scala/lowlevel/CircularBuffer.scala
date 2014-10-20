@@ -4,7 +4,7 @@ package lowlevel
 
 import api._
 
-final class CircularBuffer[A](capacity: PreciseSize) extends Direct[A] with AndThis {
+final class CircularBuffer[A](capacity: PreciseSize) extends Direct.DirectImpl[A] with AndThis {
   assert(!capacity.isZero, capacity)
 
   private[this] def cap                 = capacity.intSize
@@ -19,12 +19,12 @@ final class CircularBuffer[A](capacity: PreciseSize) extends Direct[A] with AndT
   def head: A                        = elemAt(0.index)
   def isFull                         = seen >= cap
   def elemAt(index: Index): A        = buffer((readPointer + index.safeToInt) % cap).castTo[A]
-  def size: PreciseSize              = capacity min SizeInfo(seen)
+  def sizeInfo: PreciseSize          = capacity min SizeInfo(seen)
   def ++=(xs: Foreach[A]): this.type = andThis(xs foreach setHead)
   def += (x: A): this.type           = andThis(this setHead x)
   def push(x: A): A                  = if (isFull) head sideEffect setHead(x) else abort("push on non-full buffer")
 
-  override def toString = s"CircularBuffer($size/$capacity)"
+  override def toString = s"CircularBuffer($sizeInfo/$capacity)"
 }
 
 object CircularBuffer {
