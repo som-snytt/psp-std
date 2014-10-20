@@ -62,10 +62,11 @@ trait ConversionOps[A] extends Any {
   def biIterator: BiIterator[A] = biIterable.iterator
   def biIterable: BiIterable[A] = BiIterable(toScalaIterable)
 
-  def pvec: pVector[A]                                  = toPolicyVector
-  def pseq: pSeq[A]                                     = toPolicySeq
-  def pset(implicit z: HashEq[A]): pSet[A]              = toPolicySet
-  def naturalSet: pSet[A]                               = pset(HashEq.natural())
+  def plist: pList[A]                      = toPolicyList
+  def pvec: pVector[A]                     = toPolicyVector
+  def pseq: pSeq[A]                        = toPolicySeq
+  def pset(implicit z: HashEq[A]): pSet[A] = toPolicySet
+  def naturalSet: pSet[A]                  = pset(HashEq.natural())
 
   def seq: sciSeq[A] = toScala[sciSeq] // varargs
 
@@ -79,12 +80,6 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   private def stringed(sep: String)(f: A => String): String =
     foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
 
-  def joinEOL(implicit z: Show[A]): String           = stringed(EOL)(_.to_s)
-  def join(sep: String)(implicit z: Show[A]): String = stringed(sep)(_.to_s)
-
-  // def joinLines(implicit shows: Show[A]): String      = join(EOL)
-  // def joinComma(implicit shows: Show[A]): String      = join(", ")
-  def joinSpace(implicit shows: Show[A]): String         = join(" ")
   def mkString(sep: String): String                      = stringed(sep)(_.any_s)
   def find(p: Predicate[A]): Option[A]                   = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
   def forall(p: Predicate[A]): Boolean                   = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
@@ -108,28 +103,15 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
 
   def findOr(p: A => Boolean, alt: => A): A            = find(p) | alt
   def sortDistinct(implicit ord: Order[A]): pVector[A] = toScalaVector.distinct sorted ord.toScalaOrdering
-  def sortByShow(implicit z: Show[A]): pVector[A]      = toScalaVector sorted orderBy[A](_.to_s).toScalaOrdering
   def sortOrder[B: Order](f: A => B): pVector[A]       = toScalaVector sorted orderBy[A](f).toScalaOrdering
   def sorted(implicit ord: Order[A]): pVector[A]       = toScalaVector sorted ord.toScalaOrdering
 
   def foreachCounted(f: (Index, A) => Unit): Unit   = foldl(0.index)((idx, x) => try idx.next finally f(idx, x))
 
-  def tabular(columns: (A => String)*): String = tabularLines(columns: _*) mkString EOL
-  def tabularLines(columns: (A => String)*): pVector[String] = {
-    val rows: pVector[A]           = pvec
-    val cols: pVector[A => String] = columns.m.pvec
-    if (rows.isEmpty || cols.isEmpty) return newVector()
-    val coords: pVector[pVector[Coordinate[A]]] =
-      rows mapWithNth ((value, row) =>
-        cols mapWithNth ((fn, col) =>
-          Coordinate(row, col, value, fn(value))
-        )
-      )
-
-    val widths = coords.indices map (i => coords map (c => c(i).width) max)
-    val fmt    = widths map (_.leftFormat) mkString " "
-
-    coords map (xs => fmt.format(xs.seq: _*))
+  def tabular(columns: (A => String)*): String = {
+    val rows = pvec
+    val cols = columns.m.pvec
+    if (rows.isEmpty || cols.isEmpty) "" else FunctionGrid(rows, cols).render
   }
 
   def scanFilter(f: (sciSet[A], A) => Boolean): Foreach[A] =
@@ -154,6 +136,6 @@ final class sCollectionOps[A, CC[A] <: sCollection[A]](val xs: CC[A]) extends An
 
 case class Coordinate[A](row: Nth, column: Nth, value: A, to_s: String) {
   def width = newSize(to_s.length)
-  def fmt   = width.leftFormat
+  def fmt   = width.leftFormatString
   override def toString = to_s
 }

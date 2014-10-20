@@ -25,6 +25,8 @@ package object std extends psp.std.StdPackage {
   type inSet[A] = IntensionalSet[A]
   type exSet[A] = ExtensionalSet[A]
 
+  type DocSeq = pSeq[Doc]
+
   // Inlinable.
   final val InputStreamBufferSize = 8192
   final val MaxInt                = scala.Int.MaxValue
@@ -256,11 +258,10 @@ package object std extends psp.std.StdPackage {
   def newMap[K : HashEq, V](kvs: pSeq[(K, V)]): pMap[K, V]     = newMap(kvs.seq: _*)
   def newList[A](xs: A*): pList[A]                             = PolicyList(xs: _*)
   def newSet[A: HashEq](xs: A*): exSet[A]                      = PolicySet.elems[A](xs: _*)
-  def newVector[A](xs: A*): pVector[A]                         = Direct[A](xs: _*)
-  def newSeq[A](xs: A*): pSeq[A]                               = newVector[A](xs: _*)
+  def newSeq[A](xs: A*): pSeq[A]                               = Direct[A](xs: _*)
   def newPredicate[A](f: Predicate[A]): Predicate[A]           = f
-
-  def newCmp(difference: Long): Cmp                               = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
+  def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V    = { case x if p(x) => f(x) }
+  def newCmp(difference: Long): Cmp                            = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
 
   def newArray[A: CTag](size: PreciseSize): Array[A] = new Array[A](size.intSize)
   def newSize(n: Long): PreciseSize                  = PreciseSize create n.zeroPlus

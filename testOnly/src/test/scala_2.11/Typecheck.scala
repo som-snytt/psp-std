@@ -21,7 +21,7 @@ class Typecheck extends ScalacheckBundle {
 
   def divide(what: String, xs: sciVector[Typechecked], expectedTypecheck: Int): NamedProp = {
     val (good, bad) = xs partition (_.typechecks)
-    s"$expectedTypecheck/${xs.size} expressions from $what should typecheck" -> Prop(expectedTypecheck == good.size) :| pp"good:\n$good\nbad:\n$bad"
+    s"$expectedTypecheck/${xs.size} expressions from $what should typecheck" -> (Prop(expectedTypecheck == good.size) :| pp"good:\n$good\nbad:\n$bad")
   }
 
   def props = Seq[NamedProp](

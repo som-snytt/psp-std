@@ -47,6 +47,9 @@ trait StdWalks extends Any with StdWalks1 {
 }
 
 trait StdOps0 extends Any {
+  implicit class ShowableToDocShown[A: Show](x: A) {
+    def doc: Doc = Doc.Shown(x, ?[Show[A]])
+  }
   implicit def opsForeach[A](xs: Foreach[A]): ops.ForeachOps[A]                     = new ops.ForeachOps(xs)
   implicit def opsJavaIterable[A](x: jIterable[A]): ops.jIterableOps[A]             = new ops.jIterableOps[A](x)
   implicit def opsIntensionalSet[A](x: IntensionalSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps[A](x)
@@ -68,31 +71,34 @@ trait StdOps2 extends Any with StdOps1 {
 trait StdOps3 extends Any with StdOps2 {
   implicit def infixOpsPartialOrder[A: PartialOrder](x: A): infix.PartialOrderOps[A] = new infix.PartialOrderOps[A](x)
   implicit def infixOpsOrder[A: Order](x: A): infix.OrderOps[A]                      = new infix.OrderOps[A](x)
-  implicit def infixOpsLabelable[A: Labelable](x: A): infix.LabelableOps[A]          = new infix.LabelableOps[A](x)
   implicit def infixOpsAlgebra[A: BooleanAlgebra](x: A): infix.AlgebraOps[A]         = new infix.AlgebraOps[A](x)
   implicit def infixOpsEq[A: Eq](x: A): infix.EqOps[A]                               = new infix.EqOps[A](x)
   implicit def infixOpsHash[A: Hash](x: A): infix.HashOps[A]                         = new infix.HashOps[A](x)
 
   implicit def opsBiFunction[T, R](f: (T, T) => R): ops.BiFunctionOps[T, R]           = new ops.BiFunctionOps(f)
+  implicit def opsBoolean(x: Boolean): ops.BooleanOps                                 = new ops.BooleanOps(x)
   implicit def opsChar(x: Char): ops.CharOps                                          = new ops.CharOps(x)
   implicit def opsClass(x: jClass): ops.ClassOps                                      = new ops.ClassOps(x)
   implicit def opsClassLoader(x: jClassLoader): ops.ClassLoaderOps                    = new ops.ClassLoaderOps(x)
+  implicit def opsDocSeq(x: DocSeq): ops.DocSeqOps                                    = new ops.DocSeqOps(x)
+  implicit def opsDoc(x: Doc): ops.DocOps                                             = new ops.DocOps(x)
+  implicit def opsShowableSeq[A: Show](x: pSeq[A]): ops.ShowableSeqOps[A]             = new ops.ShowableSeqOps(x)
   implicit def opsFileTime(x: jFileTime): ops.FileTimeOps                             = new ops.FileTimeOps(x)
   implicit def opsFunction1[T, R](f: T => R): ops.Function1Ops[T, R]                  = new ops.Function1Ops(f)
   implicit def opsFunction2[T1, T2, R](f: (T1, T2) => R): ops.Function2Ops[T1, T2, R] = new ops.Function2Ops(f)
   implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]                  = new ops.GeneratorOps(x)
-  implicit def opsIndexRange(x: IndexRange): ops.IndexRangeOps                        = new ops.IndexRangeOps(x)
   implicit def opsHasPreciseSize(x: HasPreciseSize): ops.HasPreciseSizeOps            = new ops.HasPreciseSizeOps(x)
+  implicit def opsIndexRange(x: IndexRange): ops.IndexRangeOps                        = new ops.IndexRangeOps(x)
   implicit def opsInputStream(x: InputStream): ops.InputStreamOps                     = new ops.InputStreamOps(x)
   implicit def opsInt(x: Int): ops.IntOps                                             = new ops.IntOps(x)
-  implicit def opsUnit(x: Unit): ops.UnitOps.type                                     = ops.UnitOps
-  implicit def opsBoolean(x: Boolean): ops.BooleanOps                                 = new ops.BooleanOps(x)
   implicit def opsLong(x: Long): ops.LongOps                                          = new ops.LongOps(x)
   implicit def opsOption[A](x: Option[A]): ops.OptionOps[A]                           = new ops.OptionOps[A](x)
   implicit def opsPreciseSize(x: PreciseSize): ops.PreciseSizeOps                     = new ops.PreciseSizeOps(x)
   implicit def opsSizeInfo(x: SizeInfo): SizeInfo.Ops                                 = new SizeInfo.Ops(x)
   implicit def opsStdOpt[A](x: Opt[A]): ops.StdOptOps[A]                              = new ops.StdOptOps[A](x)
   implicit def opsTry[A](x: Try[A]): ops.TryOps[A]                                    = new ops.TryOps[A](x)
+  implicit def opsUnit(x: Unit): ops.UnitOps.type                                     = ops.UnitOps
+  implicit def opsView[A](x: View[A]): ops.ApiViewOps[A]                              = new ops.ApiViewOps[A](x)
 }
 trait StdOps extends Any with StdOps3 {
   implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator              = new ShowInterpolator(sc)

@@ -2,8 +2,8 @@ package psp
 package std
 package ops
 
-import api._
 import java.{ lang => jl }
+import api._, StdShow._
 import lowlevel._
 
 final object UnitOps {
@@ -43,6 +43,10 @@ final class AnyRefOps[A <: AnyRef](val x: A) extends AnyVal {
   @inline def foldNull[B](zero: => B)(f: A => B): B = if (x eq null) zero else f(x)
   @inline def doto(f: A => Unit): x.type     = sideEffect(f(x))
   @inline def sideEffect(body: Unit): x.type = x
+
+  def debug(implicit z: Show[A]): x.type = sideEffect(echoErr(z show x))
+  def this_s(implicit z: Show[A]): Doc   = "[".asis <> x.shortClass.asis <> "]".asis <+> x.doc
+  def debug_s(implicit z: Show[A]): Doc  = x.shortClass.asis <+> "id=".asis <> x.id_##.doc <+> x.doc
 }
 
 final class CharOps(val ch: Char) extends AnyVal {

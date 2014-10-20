@@ -3,6 +3,7 @@ package std
 
 import api._
 import StdEq.stringEq
+import psp.std.scalac.token.Keyword
 
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
@@ -50,17 +51,6 @@ trait StdShow1 extends StdShow0 {
 trait StdShowLow extends StdShow1 {
   implicit def stringShow: Show[String]                                                 = Show(x => x)
   implicit def charShow: Show[Char]                                                     = Show.natural()
-  // implicit def inSetShow[A](implicit dummy: scala.Predef.DummyImplicit): Show[inSet[A]] = Show.natural()
-
-  implicit class seqShowOps[A: Show](xs: Foreach[A]) {
-    private def mkstr(sep: String): String = xs map (_.to_s) mkString sep
-    def mk_s(sep: String): Shown           = Shown(mkstr(sep))
-
-    def joinWith: Shown     = mk_s(" with ")
-    def joinComma: Shown    = mk_s(", ")
-    def joinInParens: Shown = Shown("(", joinComma, ")")
-    def optBrackets: Shown  = Shown(mkstr(", ") mapNonEmpty ("[" + _ + "]"))
-  }
 }
 
 /** An incomplete selection of show compositors.
@@ -71,8 +61,8 @@ trait StdShow extends StdShowLow {
   implicit def attrNameShow : Show[java.util.jar.Attributes.Name] = Show.natural()
   implicit def exSetShow[A: Show] : Show[exSet[A]]                = showBy(_.contained)
   implicit def pMapShow[K: Show, V: Show] : Show[pMap[K, V]]      = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
-  implicit def pViewShow[A] : Show[View[A]]                       = Show(_.viewChain.pvec.reverse map (_.description) joinSpace)
-  implicit def pListShow[A: Show] : Show[pList[A]]                = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
+  implicit def pViewShow[A] : Show[View[A]]                       = Show(_.viewChain.reverse.map(_.description).joinWords.render) // map (_.description) joinWords)
+  implicit def pListShow[A: Show] : Show[pList[A]]                = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ".asis) <> " :: nil" render)
   implicit def pVectorShow[A: Show] : Show[pVector[A]]            = Show(xs => if (xs.isEmpty) "[]" else inBrackets(xs.seq: _*)) // "[ " + ( xs map (_.to_s) mkString " " ) + " ]")
 
   implicit def booleanShow: Show[Boolean]               = Show.natural()
@@ -90,6 +80,8 @@ trait StdShow extends StdShowLow {
   implicit def seqShow[A: Show] : Show[Seq[A]]            = Show(xs => inBrackets(xs: _*))
   implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
 
+  implicit def stackTraceElementShow: Show[StackTraceElement] = Show("\tat" + _ + "\n")
+
   implicit def intensionalSetShow[A: Show] : Show[IntensionalSet[A]] = {
     import IntensionalSet._
     Show[IntensionalSet[A]] {
@@ -103,6 +95,17 @@ trait StdShow extends StdShowLow {
     }
   }
 
+  implicit def keywordShow: Show[Keyword] = Show[Keyword] {
+    case Keyword.Empty            => ""
+    case Keyword.ClassConstructor => ""
+    case Keyword.ValueParameter   => ""
+    case Keyword.TypeParameter    => ""
+    case Keyword.Constructor      => "def this"
+    case Keyword.PackageObject    => "package object"
+    case Keyword.CaseObject       => "case object"
+    case Keyword.CaseClass        => "case class"
+    case k                        => k.toString.toLowerCase
+  }
 
   //  Show {
   //   case null                  => "<null>"
@@ -139,8 +142,8 @@ trait StdShow extends StdShowLow {
 
   private def showElems[A: Show](small: PreciseSize, large: Int, xs: sciList[A]): String = xs splitAt large match {
     case (Nil, _)  => "[]"
-    case (xs, Nil) => show"[ ${xs.m.joinComma} ]"
-    case (xs, _)   => show"[ ${xs.m take small joinComma}, ... ]"
+    case (xs, Nil) => xs.m.joinComma.surround("[ ", " ]").render
+    case (xs, _)   => (xs.m take small joinComma).surround("[ ", ", ... ]").render
   }
   implicit def pSeqShow[A: Show] : Show[pSeq[A]] = Show[pSeq[A]] { xs =>
     val small = 3.size
@@ -165,6 +168,7 @@ final class ShowInterpolator(val x: StringContext) extends AnyVal {
   def show(args: Shown*): String  = StringContext(x.parts: _*).raw(args: _*)
   def pp(args: TryShown*): String = StringContext(x.parts: _*).raw(args: _*)
   def shown(args: Shown*): Shown  = Shown(show(args: _*))
+  def doc(args: Doc*): Doc        = (x.parts.m.map(_.asis) intersperse args.seq.m).joinChars
 
   /** Can't see any way to reuse the standard (type-safe) f-interpolator, will
    *  apparently have to reimplement it entirely.

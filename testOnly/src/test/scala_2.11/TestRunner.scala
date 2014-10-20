@@ -28,7 +28,7 @@ object TestRunner_211 extends TestRunnerCommon {
   implicit def predicateEq[A : Arbitrary] : Eq[InvariantPredicate[A]] = observationalEq[InvariantPredicate, A, Boolean](_ apply _)
   implicit def intensionalEq[A : Arbitrary : HashEq] : Eq[inSet[A]]   = observationalEq[inSet, A, Boolean](_ apply _)
 
-  override def bundles = Direct(
+  override def bundles = Direct[Bundle](
     new Typecheck,
     new AlgebraPoliceman[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
     new AlgebraPoliceman[InvariantPredicate[Pint]]("InvariantPredicate[Pint]"),

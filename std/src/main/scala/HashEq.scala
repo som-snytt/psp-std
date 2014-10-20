@@ -5,6 +5,10 @@ import api._, StdShow._
 
 trait HashEq[-A] extends Any with Hash[A] with Eq[A]
 
+/** A bad idea in general, but so much less ceremony for limted-use classes.
+ */
+trait NaturalHashEq
+
 object Hash {
   final class Impl[-A](val f: A => Int) extends AnyVal with Hash[A] { def hash(x: A): Int = f(x) }
 
@@ -21,7 +25,11 @@ object Eq {
   def apply[A](f: (A, A) => Boolean): Impl[A] = new Impl[A](f)
 }
 
-object HashEq {
+trait HashEqLow {
+  implicit def universalEq[A <: NaturalHashEq] : HashEq[A] = HashEq.natural()
+}
+
+object HashEq extends HashEqLow {
   implicit def composeHashEq[A](implicit eqs: Eq[A], hash: Hash[A]): HashEq[A] = new Impl[A](eqs.equiv, hash.hash)
 
   def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): Impl[A] = new Impl[A](cmp, hashFn)

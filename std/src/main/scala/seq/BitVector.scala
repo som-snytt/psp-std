@@ -12,9 +12,9 @@ final class BitVector(longs: Array[Long], val sizeInfo: PreciseSize) extends Dir
   def elemAt(index: Index): Boolean     = apply64(index / 64)(index % 64)
 
   override def toString = if (isEmpty) "" else {
-    val xs: pSeq[String] = longs.m dropRight 1 map (l => 64.size.padLeft(l.binary, '0'))
-    val ys: String       = longs.last.binary take lastSize
-    xs ++ newSeq(ys) mkString "\n"
+    val xs: pVector[String] = longs.pvec.init map (l => 64.size.padLeft(l.binary, '0'))
+    val ys: String          = longs.last.binary take lastSize
+    (xs :+ ys).mkString("\n")
   }
 }
 

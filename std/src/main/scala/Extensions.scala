@@ -10,6 +10,9 @@ import api.Eq
  *  "Ops" classes, where we control the underlying class.
  */
 final class Function1Ops[T, R](val f: T => R) extends AnyVal {
+  def |:(label: String): LabeledFunction[T, R] = new LabeledFunction(f, label)
+  def :|(label: String): LabeledFunction[T, R] = new LabeledFunction(f, label)
+
   def map[S](g: R => S): T => S                          = f andThen g
   def comap[S](g: S => T): S => R                        = g andThen f
   def sameAt(g: T => R)(implicit z: Eq[R]): Predicate[T] = x => f(x) === g(x)
@@ -31,7 +34,7 @@ final class OptionOps[A](val x: Option[A]) extends AnyVal {
   def |?[A1 >: A](alt: => A1): A1                  = x getOrElse alt
   def ||?[A1 >: A](alt: => Option[A1]): Option[A1] = x orElse alt
 
-  def pvec: pVector[A] = if (x.isEmpty) newVector() else newVector(x.get)
+  def pvec: pVector[A] = if (x.isEmpty) Direct() else Direct(x.get)
 }
 
 final class TryOps[A](val x: Try[A]) extends AnyVal {
@@ -78,7 +81,7 @@ final class ClassOps(val clazz: jClass) extends AnyVal {
   def methods: pVector[jMethod]         = clazz.getMethods.pvec
   def nameSegments: pVector[String]     = rawName.dottedSegments
   def parentInterfaces: pVector[jClass] = clazz.getInterfaces.pvec
-  def parents: pVector[jClass]          = superClass.toList.pvec ++ parentInterfaces
+  def parents: pVector[jClass]          = superClass.pvec ++ parentInterfaces
   def qualifiedName: String             = rawName.mapSplit('.')(decodeName)
   def rawName: String                   = clazz.getName
   def shortName: String                 = unqualifiedName

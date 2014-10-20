@@ -10,7 +10,7 @@ import java.util.regex.{ Pattern, Matcher }
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll
  *  bury it and reimplement what we want.
  */
-final class PspStringOps(val self: String) extends AnyVal {
+final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps {
   def r: Regex = Regex(self)
   def u: jUrl  = jUrl(self)
 
@@ -20,7 +20,8 @@ final class PspStringOps(val self: String) extends AnyVal {
   }
   private def isEmpty = onull == ""
   private def onull   = if (self eq null) "" else self
-  private def size    = newSize(self.length)
+
+  def size: PreciseSize = newSize(self.length)
 
   def retain(regex: Regex): String       = regex all self mkString ""
   def remove(regex: Regex): String       = regex matcher self replaceFirst ""
@@ -96,7 +97,7 @@ final class PspStringOps(val self: String) extends AnyVal {
   def stripMargin: String = stripMargin('|')
   def sanitize: String    = mapChars { case x if x.isControl => '?' }
 
-  def truncateAndLeftJustifyTo(max: PreciseSize) = max.leftFormat format (normalizeSpace truncateTo max)
+  def truncateAndLeftJustifyTo(max: PreciseSize) = max leftFormat (normalizeSpace truncateTo max).asis
   def truncateTo(max: PreciseSize)               = if (size <= max) self else (self take max - 3) + "..."
 
   def normalizeSpace: String = self.trim.replacePattern(

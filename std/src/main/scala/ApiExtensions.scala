@@ -3,8 +3,137 @@ package std
 package ops
 
 import api._
-import java.{ lang => jl }
+import Doc._
 
+trait DocStringOps extends Any {
+  def self: String
+
+  def <>(that: Doc): Doc  = self.asis <> that
+  def <+>(that: Doc): Doc = self.asis <+> that
+  def </>(that: Doc): Doc = self.asis </> that
+
+  def doc: Doc           = asis
+  def asis: Doc          = Text(self)
+  def backticked: Doc    = Text("`" + self + "`")
+  def %(args: Doc*): Doc = FormatString(self) % (args: _*)
+}
+
+class Renderer(indentSize: Int) {
+  var indentLevel: Int = 0
+  // var openGroups: pList[Doc]
+  def sp: String = " " * (indentLevel * indentSize)
+
+  private def indentedBy[A](n: Int)(body: => A): A = {
+    indentLevel += n
+    try body finally indentLevel -= n
+  }
+
+  def apply(doc: Doc): String = doc match {
+    case WordBreak                       => " "
+    case LineBreak                       => "\n"
+    case Group(doc)                      => apply(doc)
+    case Line(alt)                       => alt
+    case Nest(doc, Indent(n))            => indentedBy(n)(apply(doc))
+    case Text(value)                     => value
+    case Shown(value, z)                 => z show value
+    case Cat(left, right)                => apply(left) ~ apply(right)
+    case Format(FormatString(fmt), args) => fmt.format(args.seq map apply: _*)
+  }
+}
+
+class ApiViewOps[A](xs: View[A]) {
+  def chainDescriptions: pVector[String] = xs.viewChain.reverse collect { case x: BaseView[_,_] => x } map (_.description)
+}
+
+class DocOps(val lhs: Doc) extends AnyVal {
+  def <>(rhs: String): Doc  = lhs <> rhs.asis
+  def <+>(rhs: String): Doc = lhs <+> rhs.asis
+
+  def <>(rhs: Doc): Doc   = Cat(lhs, rhs)
+  def <+>(rhs: Doc): Doc  = lhs <> space <> rhs
+  def </>(rhs: Doc): Doc  = lhs <> softline <> rhs
+  def <@>(rhs: Doc): Doc  = lhs <> line <> rhs
+  def <@@>(rhs: Doc): Doc = lhs <> linebreak <> rhs
+  def <\>(rhs: Doc): Doc  = lhs <> softbreak <> rhs
+
+  def render: String = new Renderer(2) apply lhs
+
+  def to_str: String = lhs.render
+  def length: Int    = to_str.length
+
+  def last: Doc = lhs match {
+    case Cat(left, right) => if (right.isEmpty) left.last else right.last
+    case Group(x)         => x.last
+    case _                => lhs
+  }
+  def first: Doc = lhs match {
+    case Cat(left, right) => if (left.isEmpty) right.first else left.first
+    case Group(x)         => x.first
+    case _                => lhs
+  }
+  def isSpace: Boolean = lhs match {
+    case WordBreak => true
+    case Text(" ") => true
+    case Group(x)  => x.isSpace
+    case _         => false
+  }
+  def isEmpty: Boolean = lhs match {
+    case Text("")  => true
+    case Group(x)  => x.isEmpty
+    case Cat(x, y) => x.isEmpty && y.isEmpty
+    case _         => false
+  }
+  def endsSpace: Boolean = last.isSpace
+  def endsLine: Boolean = last.isLine
+  def isLine = lhs match {
+    case Line(_) => true
+    case _       => false
+  }
+  def isWhitespace: Boolean = isSpace || isLine
+  def isNotWhitespace: Boolean = !isEmpty && !isWhitespace
+  def indent(j: Int): Doc = Nest(linebreak <> lhs, Indent(j))
+  def indent(): Doc       = indent(2)
+
+  def surround(left: Doc, right: Doc): Doc       = left <> lhs <> right
+  def surround(left: String, right: String): Doc = left.asis <> lhs <> right.asis
+
+  def inParens: Doc       = surround(lparen, rparen)
+  def inBraces: Doc       = surround(lbrace, rbrace)
+  def inBrackets: Doc     = surround(lbracket, rbracket)
+  def inDoubleQuotes: Doc = surround(dquote, dquote)
+  def grouped: Doc        = Group(lhs)
+}
+
+trait DocSeqCommonOps extends Any {
+  def docs: DocSeq
+
+  import Doc._
+
+  private def nonEmpties    = docs filterNot (_.isEmpty)
+  private def isOnlyEmpties = nonEmpties.isEmpty
+
+  // Empty if the seq is empty, otherwise apply the function.
+  def opt(f: DocSeq => Doc): Doc = if (docs.isEmpty) empty else f(docs)
+
+  def join(sep: Doc): Doc       = if (docs.isEmpty) empty else docs reducel (_ <> sep <> _)
+  def joinSpaced(sep: Doc): Doc = if (docs.isEmpty) empty else docs reducel (_ <+> sep <+> _)
+
+  def inBracesBlock: Doc = if (isOnlyEmpties) lbrace <> space <> rbrace else joinLines.indent() surround (lbrace, line <> rbrace)
+  def inBracesList: Doc  = joinComma surround (lbrace <> space, space <> rbrace)
+  def inParens: Doc      = joinComma.inParens
+  def joinChars: Doc     = this join empty
+  def joinComma: Doc     = nonEmpties join comma <> space
+  def joinDotted: Doc    = this join dot
+  def joinLines: Doc     = this join line
+  def joinParents: Doc   = this joinSpaced "with".asis
+  def joinWords: Doc     = nonEmpties join space
+  def optBrackets: Doc   = if (isOnlyEmpties) empty else joinComma.inBrackets
+}
+
+final class DocSeqOps(val docs: DocSeq) extends AnyVal with DocSeqCommonOps
+final class ShowableSeqOps[A: Show](xs: pSeq[A]) extends AnyRef with DocSeqCommonOps {
+  def docs: DocSeq = xs map (_.doc)
+}
 final class IndexRangeOps(xs: IndexRange) {
   def *(n: Int): IndexRange = indexRange(xs.startInt * n, xs.endInt * n)
 }
@@ -81,10 +210,13 @@ final class PreciseSizeOps(val sizeInfo: PreciseSize) extends AnyRef with HasPre
   def timesConst[A](elem: A): pSeq[A]   = Foreach constant elem take sizeInfo
   def timesEval[A](body: => A): pSeq[A] = Foreach continually body take sizeInfo
 
-  def toIntRange          = intRange(0, intSize)
-  def leftFormat: String  = "%%-%ds" format intSize
-  def rightFormat: String = "%%%ds" format intSize
+  def toIntRange                           = intRange(0, intSize)
   def padLeft(s: String, ch: Char): String = if (s.length >= longSize) s else (this - s.length timesConst ch mkString "") ~ s
+
+  def leftFormatString  = if (sizeInfo.isZero) "%s" else "%%-%ds" format intSize
+  def rightFormatString = if (sizeInfo.isZero) "%s" else "%%%ds" format intSize
+  def leftFormat(arg: Doc): String  = leftFormatString format arg
+  def rightFormat(arg: Doc): String = rightFormatString format arg
 
   def containsRange(range: IndexRange): Boolean = range.endInt <= intSize
 
@@ -144,6 +276,7 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
   def runForeach(f: A => Unit): Unit                  = xs foreach f
   def takeRight(n: PreciseSize): pVector[A]           = xs takeRight n
+  def ++(ys: Direct[A]): Direct[A]                    = new Direct.Joined(xs, ys)
 
   def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
   def reverse: Direct[A]  = xs match {
@@ -154,6 +287,7 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
 
 final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, Foreach] {
   protected def underlying = xs
+  def ++[A1 >: A](ys: Foreach[A1]): Foreach[A1] = Foreach.join(xs, ys)
   // def +: (elem: A): Foreach[A] = Foreach.join(direct(elem), xs)
   // def :+ (elem: A): Foreach[A] = Foreach.join(xs, direct(elem))
   def toRefs: pSeq[AnyRef] = xs map (_.toRef)
@@ -182,7 +316,6 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def filterNot(p: Predicate[A]): CC[A]    = withFilter(!p)
   def sum(implicit num: Numeric[A]): A     = foldl(num.zero)(num.plus)
   def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
-  def ++[A1 >: A](ys: Foreach[A1]): CC[A1] = rebuild(Foreach.join(xs, ys))
 
   def +:(elem: A): CC[A] = rebuild(Foreach.join(fromElems(elem), xs))
   def :+(elem: A): CC[A] = rebuild(Foreach.join(xs, fromElems(elem)))

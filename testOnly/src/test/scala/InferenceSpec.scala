@@ -19,7 +19,7 @@ class InferenceSpec extends ScalacheckBundle {
   def bundle = "Type Inference, Views"
 
   val as: Array[Int]     = Array(1, 2, 3)
-  val ds: pVector[Int]   = newVector(1, 2, 3)
+  val ds: pVector[Int]   = Direct(1, 2, 3)
   val fs: pSeq[Int]      = Foreach(ds foreach _)
   val ls: sciList[Int]   = sciList(1, 2, 3)
   val ss: String         = "123"

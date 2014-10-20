@@ -1,13 +1,32 @@
 package psp
 package std
 
-import api._
+import api._, StdShow._
+
+final case class FunctionGrid[A, B](values: pVector[A], functions: pVector[A => B]) {
+  def rows: pVector[pVector[B]]                         = values map (v => functions map (f => f(v)))
+  def columns: pVector[pVector[B]]                      = functions map (f => values map (v => f(v)))
+  def renderLines(implicit z: Show[B]): pVector[String]               = {
+    val widths = columns map (col => col map (x => (z show x).length) max)
+    val rowFormat = widths map (_.size.leftFormatString) mkString " "
+    rows map (row => rowFormat.format(row.seq: _*))
+  }
+  def render(implicit z: Show[B]): String = renderLines.joinLines.render
+}
 
 object Direct {
   final val Empty: Direct[Nothing] = new Impl[Nothing](newSize(0), i => abort(s"Empty($i)"))
 
   trait DirectImpl[+A] extends Any with api.Direct[A] with api.HasPreciseSize {
     def isEmpty = sizeInfo.value == 0L
+  }
+  trait Forwarder[A] extends Direct[A] {
+    protected def underlying: Direct[A]
+
+    def elemAt(i: Index): A         = underlying(i)
+    def foreach(f: A => Unit): Unit = underlying foreach f
+    def sizeInfo                    = underlying.sizeInfo
+    def isEmpty                     = underlying.isEmpty
   }
 
   def builder[A] : Builds[A, Direct[A]] = arrayBuilder[Any] map (res => new WrapArray[A](res))

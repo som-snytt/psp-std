@@ -11,7 +11,7 @@ abstract class TestRunnerCommon {
     case _       => true
   }
 
-  def bundles: pVector[Bundle] = Direct(
+  def bundles = Direct[Bundle](
     new StringExtensions,
     new PolicyBasic,
     new ValuesSpec,

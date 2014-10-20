@@ -58,7 +58,7 @@ object ExtensionalSet {
   final case class Union[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
     protected def underlying = lhs
     def contains(elem: A)    = lhs(elem) || rhs(elem)
-    def contained            = lhs.contained ++ (rhs.contained filterNot lhs)
+    def contained            = Foreach.join(lhs.contained, rhs.contained filterNot lhs)
     def sizeInfo             = lhs.sizeInfo union rhs.sizeInfo
   }
   final case class Diff[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {

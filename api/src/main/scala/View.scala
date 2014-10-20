@@ -20,6 +20,7 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   def filter(p: Predicate[A]): MapTo[A]
   def filterNot(p: Predicate[A]): MapTo[A]
   def flatMap[B](f: A => Foreach[B]): MapTo[B]
+  def intersperse[A1 >: A](that: View[A1]): MapTo[A1]
   def map[B](f: A => B): MapTo[B]
   def partition(p: Predicate[A]): SplitTo[A]
   def sized(size: PreciseSize): MapTo[A]
@@ -29,7 +30,7 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   def take(n: PreciseSize): MapTo[A]
   def takeRight(n: PreciseSize): MapTo[A]
   def takeWhile(p: Predicate[A]): MapTo[A]
-  def viewChain: Foreach[View[_]]
+  def viewChain: Direct[View[_]]
   def viewRange: IndexRange
   def withFilter(p: Predicate[A]): MapTo[A]
 }

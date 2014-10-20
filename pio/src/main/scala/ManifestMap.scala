@@ -7,7 +7,7 @@ import scala.util.Properties._
 import Unsafe.universalEq
 
 object ManifestMap {
-  def initialMainAttrs: pVector[(Name, String)] = newVector(
+  def initialMainAttrs: pVector[(Name, String)] = Direct(
     Name.MANIFEST_VERSION -> "1.0",
     ScalaCompilerVersion  -> versionNumberString
   )

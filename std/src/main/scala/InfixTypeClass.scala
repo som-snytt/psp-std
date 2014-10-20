@@ -5,12 +5,6 @@ package infix
 import api._
 import java.{ lang => jl }
 
-final class LabelableOps[A](val lhs: A) extends AnyVal {
-  def |:(msg: String)(implicit z: Labelable[A]): A        = z.label(lhs, msg)
-  def :|(msg: String)(implicit z: Labelable[A]): A        = z.label(lhs, msg)
-  def labeledAs(msg: String)(implicit z: Labelable[A]): A = z.label(lhs, msg)
-}
-
 final class OrderOps[A](val lhs: A) extends AnyVal {
   import Cmp._
   def compare(rhs: A)(implicit ord: Order[A]): Cmp = ord.compare(lhs, rhs)

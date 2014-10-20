@@ -59,7 +59,7 @@ object MetaPath {
     else mp.style match {
       case Expand     => mp.path.entries map SinglePath
       case ExpandStar => mp.path.parent.entries map SinglePath
-      case Literal    => newVector(SinglePath(mp.path))
+      case Literal    => Direct(SinglePath(mp.path))
     }
   )
 

@@ -102,6 +102,6 @@ trait ScalaLibrary extends Any with ApiAliases {
   type PathDirStream             = jnf.DirectoryStream[jnf.Path]
   type PathPredicate             = jnf.Path => Boolean
   type Predicate2[-A1, -A2]      = (A1, A2) => Boolean
-  type Unary[A]                  = A => A
   type UShort                    = Char
+  type Unary[A]                  = A => A
 }

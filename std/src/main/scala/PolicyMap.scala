@@ -44,6 +44,7 @@ final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[
   def values: pVector[V]                          = keyVector map (x => lookup(x))
   def valuesIterator: BiIterator[V]               = keysIterator map (x => lookup(x))
   def withDefaultValue[V1 >: V](v: V1): MapTo[V1] = new PolicyMap(keySet, lookup.copy(defaultValue = Some(v)))
+  def toPartial: K ?=> V                          = newPartial(contains, apply)
 }
 
 object PolicyMap {

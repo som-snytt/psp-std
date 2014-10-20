@@ -5,16 +5,17 @@ import StdEq._
 
 object +: {
   def unapply[A](xs: Array[A])       = if (xs.length == 0) None else Some(xs(0) -> (xs drop 1))
-  def unapply[A](xs: api.Foreach[A])     = if (xs.isEmpty) None else Some(xs.head -> xs.drop(1))
+  def unapply[A](xs: pSeq[A])        = if (xs.isEmpty) None else Some(xs.head -> xs.drop(1))
   def unapply[A](xs: sCollection[A]) = if (xs.isEmpty) None else Some(xs.head -> xs.tail)
 }
 
-final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T => R) with ShowDirect {
+final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T ?=> R) with ShowDirect {
+  def isDefinedAt(x: T) = f match {
+    case f: PartialFunction[_, _] => f isDefinedAt x
+    case _                        => true
+  }
   def apply(x: T): R = f(x)
-}
-final class LabeledPartialFunction[-T, +R](pf: T ?=> R, val to_s: String) extends (T ?=> R) with ShowDirect {
-  def isDefinedAt(x: T) = pf isDefinedAt x
-  def apply(x: T): R    = pf(x)
+  override def toString = to_s
 }
 final class Utf8(val bytes: Array[Byte]) extends AnyVal {
   def chars: Chars = scala.io.Codec fromUTF8 bytes

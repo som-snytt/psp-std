@@ -16,8 +16,7 @@ import psp.dmz.PolicyDmz
  *  like inheritance, specificity, method dispatch, and so forth.
  */
 abstract class StdPackage
-      extends StdLabel
-         with StdOrder
+      extends StdOrder
          with StdZipped
          with StdProperties
          with StdAlgebra
@@ -72,20 +71,6 @@ abstract class StdPackage
   implicit def conforms[A] : (A <:< A) = new conformance[A]
 
   // implicit def intensionalToFunction1[T, R](f: Intensional[T, R]): T => R = x => f(x)
-}
-
-trait StdLabel0 {
-  implicit def functionIsLabelable[T, R] : Labelable[T => R] = new Labelable[T => R] {
-    def label(f: T => R, label: String) = new LabeledFunction(f, label)
-  }
-}
-trait StdLabel extends StdLabel0 {
-  implicit def partialFunctionIsLabelable[T, R] : Labelable[T ?=> R] = new Labelable[T ?=> R] {
-    def label(f: T ?=> R, label: String) = new LabeledPartialFunction(f, label)
-  }
-  implicit def viewIsLabelable[A, Repr] = new api.Labelable[BaseView[A, Repr]] {
-    def label(x: BaseView[A, Repr], label: String): LabeledView[A, Repr] = new LabeledView[A, Repr](x, label)
-  }
 }
 
 trait StdAlgebra {
@@ -198,6 +183,6 @@ object StdZero extends StdZero
 object StdEq extends StdEq
 
 object Unsafe {
-  implicit def universalEq[A] : HashEq[A] = HashEq.natural()
-  implicit def universalShow[A] : Show[A] = Show.natural()
+  implicit def universalEq[A] : HashEq[A]       = HashEq.natural()
+  implicit def universalShow[A] : Show[A]       = Show.natural()
 }
