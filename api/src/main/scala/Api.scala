@@ -50,9 +50,8 @@ trait Intensional[-K, +V] extends Any with Contains[K]                    { def 
 trait Extensional[+A]     extends Any                                     { def contained: Foreach[A]       }
 
 trait Linear[+A] extends Any with Foreach[A] with IsEmpty {
-  type Tail <: Linear[A]
   def head: A
-  def tail: Tail
+  def tail: Linear[A]
 }
 
 trait DerivedLongConversions extends Any {

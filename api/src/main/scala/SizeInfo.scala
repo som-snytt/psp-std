@@ -25,12 +25,9 @@ final case class Bounded(lo: PreciseSize, hi: Atomic) extends SizeInfo
 final case class PreciseSize private (value: Long) extends AnyVal with Atomic { override def toString = s"$value" }
 final case object Infinite extends Atomic
 
-trait HasSizeInfo extends Any { def sizeInfo: SizeInfo }
-trait HasPreciseSize extends Any with HasSizeInfo with IsEmpty {
-  def size: PreciseSize
-  def sizeInfo = size
-  def isEmpty  = size.value == 0L
-}
+trait HasSizeInfo extends Any                      { def sizeInfo: SizeInfo    }
+trait HasKnownSize extends Any with IsEmpty        { def sizeInfo: Atomic      }
+trait HasPreciseSize extends Any with HasKnownSize { def sizeInfo: PreciseSize }
 
 object PreciseSize {
   def create(size: Long): PreciseSize = PreciseSize( if (size < 0L) 0L else size )

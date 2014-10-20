@@ -18,30 +18,31 @@ final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
  *  It's true one could say its ordering is Ordering[Int] on indexOf.
  *  Maybe that will seem like a good idea at some point.
  */
-final class PolicyMap[K, V](val keys: exSet[K], private val lookup: MapLookup[K, V]) extends HasSizeInfo with Intensional[K, V] with Extensional[(K, V)] with VarargsSeq[(K, V)] {
+final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[K, V]) extends HasSizeInfo with Intensional[K, V] with Extensional[(K, V)] with VarargsSeq[(K, V)] {
   type Entry = (K, V)
 
-  def ++[V1 >: V](map: pMap[K, V1]): pMap[K, V1]    = new PolicyMap(keys union map.keys, lookup orElse map.lookup)
+  def ++[V1 >: V](map: pMap[K, V1]): pMap[K, V1]    = new PolicyMap(keySet union map.keySet, lookup orElse map.lookup)
   def apply(key: K): V                              = lookup(key)
-  def contained: pSeq[Entry]                        = pairSeq
-  def contains(key: K): Boolean                     = keys(key)
-  def filterKeys(p: Predicate[K]): pMap[K, V]       = new PolicyMap(keys filter p, lookup)
+  def contained: pVector[Entry]                     = keyVector map (k => k -> lookup(k))
+  def contains(key: K): Boolean                     = keySet(key)
+  def filterKeys(p: Predicate[K]): pMap[K, V]       = new PolicyMap(keySet filter p, lookup)
   def filterValues(p: Predicate[V]): pMap[K, V]     = filterKeys(k => p(apply(k)))
-  def foreach(f: K => Unit): Unit                   = keys.contained foreach f
+  def foreachKey(f: K => Unit): Unit                = keyVector foreach f
+  def foreachEntry(f: (K, V) => Unit): Unit         = foreachKey(k => f(k, apply(k)))
   def get(key: K): Option[V]                        = lookup get key
   def getOr[V1 >: V](key: K, alt: => V1): V1        = lookup.getOr(key, alt)
+  def isEmpty                                       = contained.isEmpty
   def iterator: BiIterator[Entry]                   = keysIterator map (k => (k, lookup(k)))
-  def keyVector: pVector[K]                         = keys.contained.pvec
+  def keyVector: pVector[K]                         = keySet.contained.pvec
+  def keys: pVector[K]                              = keyVector
   def keysIterator: BiIterator[K]                   = keyVector.biIterator
-  def mapValues[V1](f: V => V1)                     = new PolicyMap(keys, lookup mapValues f)
-  def pairSeq: pVector[Entry]                       = keyVector map (k => k -> lookup(k))
-  def reverseKeys                                   = new PolicyMap(keys mapContained (_.pvec.reverse), lookup)
-  def seq: scSeq[Entry]                             = pairSeq.toScalaSeq
-  def sizeInfo                                      = keys.sizeInfo
-  def size: PreciseSize                             = sizeInfo match { case x: PreciseSize => x } // XXX
+  def mapValues[V1](f: V => V1)                     = new PolicyMap(keySet, lookup mapValues f)
+  def reverseKeys                                   = new PolicyMap(keySet mapContained (_.pvec.reverse), lookup)
+  def seq: scSeq[Entry]                             = contained.seq
+  def sizeInfo: PreciseSize                         = keyVector.sizeInfo
   def values: pVector[V]                            = keyVector map (x => lookup(x))
   def valuesIterator: BiIterator[V]                 = keysIterator map (x => lookup(x))
-  def withDefaultValue[V1 >: V](v: V1): pMap[K, V1] = new PolicyMap(keys, lookup.copy(defaultValue = Some(v)))
+  def withDefaultValue[V1 >: V](v: V1): pMap[K, V1] = new PolicyMap(keySet, lookup.copy(defaultValue = Some(v)))
 }
 
 object PolicyMap {

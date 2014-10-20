@@ -15,7 +15,7 @@ object TestRunner_211 extends TestRunnerCommon {
   implicit def Fun[A : Arbitrary : Eq] : Eq[Predicate[A]] =
     Eq[Predicate[A]]((f, g) => Test.check(forAll((x: A) => f(x) === g(x)))(identity).passed)
 
-  override def bundles = Seq(
+  override def bundles = Direct(
     new Typecheck,
     new AlgebraPoliceman[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
     new AlgebraPoliceman[Predicate[Int]]("Int => Boolean")(?, ?, Fun[Int])

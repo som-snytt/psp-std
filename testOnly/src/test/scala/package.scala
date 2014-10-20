@@ -20,11 +20,11 @@ package object tests {
   type Failed             = org.scalacheck.Test.Failed
   type Buildable[A, C[X]] = org.scalacheck.util.Buildable[A, C]
 
-  def expectType(expected: jClass, found: jClass): NamedProp        = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
-  def expectTypes(expected: jClass, found: pSeq[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
+  def expectType(expected: jClass, found: jClass): NamedProp           = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
+  def expectTypes(expected: jClass, found: pVector[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
 
   def expectType[A: CTag](result: A): NamedProp                     = expectType(classOf[A], result.getClass)
-  def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], results.toSeq.pseq map (_.getClass))
+  def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], results.seq.pvec map (_.getClass))
 
   implicit def buildsToBuildable[A, CC[X]](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
     new Buildable[A, CC] { def builder: Builder[A, CC[A]] = Vector.newBuilder[A] mapResult (xs => z(xs foreach _)) }

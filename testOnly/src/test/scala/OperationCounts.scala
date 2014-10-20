@@ -26,6 +26,8 @@ object IntViews {
 import IntViews._
 
 class OperationCounts(scalaVersion: String) extends Bundle {
+  def bundle = "Operation Counts"
+
   def is211 = scalaVersion == "2.11"
   def run(): Boolean = {
     results foreach (r => assert(r.isAgreement, r))
@@ -109,8 +111,8 @@ class OperationCounts(scalaVersion: String) extends Bundle {
     def allResults = all map (_.result)
     def allCounts  = all map (_.count)
 
-    def usAverage   = usCounts.sum / us.size.toDouble
-    def themAverage = themCounts.sum / them.size.toDouble
+    def usAverage   = usCounts.sum / us.sizeInfo.toDouble
+    def themAverage = themCounts.sum / them.sizeInfo.toDouble
     def ratioDouble = themAverage / usAverage
     def ratio       = if (ratioDouble == PositiveInfinity) "Inf" else "%.2f" format ratioDouble
 
@@ -121,11 +123,11 @@ class OperationCounts(scalaVersion: String) extends Bundle {
       case idx => "%-7s %-7s".format(description.substring(0, idx), description.substring(idx + 1))
     }
     def headView      = headResult.toString
-    def isAgreement   = allResults.distinct.size == PreciseSize(1)
+    def isAgreement   = allResults.distinct.sizeInfo == 1.size
     def display       = (
          isTestDebug
       || !isAgreement
-      || usCounts.distinct.size == usCollections.size
+      || usCounts.distinct.sizeInfo == usCollections.sizeInfo
       || ratio == "Inf"
       || ratioDouble < 1   // horrors!
     )

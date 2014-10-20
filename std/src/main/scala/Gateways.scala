@@ -81,9 +81,12 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsFunction1[T, R](f: T => R): ops.Function1Ops[T, R]                  = new ops.Function1Ops(f)
   implicit def opsFunction2[T1, T2, R](f: (T1, T2) => R): ops.Function2Ops[T1, T2, R] = new ops.Function2Ops(f)
   implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]                  = new ops.GeneratorOps(x)
+  implicit def opsIndexRange(x: IndexRange): ops.IndexRangeOps                        = new ops.IndexRangeOps(x)
   implicit def opsHasPreciseSize(x: HasPreciseSize): ops.HasPreciseSizeOps            = new ops.HasPreciseSizeOps(x)
   implicit def opsInputStream(x: InputStream): ops.InputStreamOps                     = new ops.InputStreamOps(x)
   implicit def opsInt(x: Int): ops.IntOps                                             = new ops.IntOps(x)
+  implicit def opsUnit(x: Unit): ops.UnitOps.type                                     = ops.UnitOps
+  implicit def opsBoolean(x: Boolean): ops.BooleanOps                                 = new ops.BooleanOps(x)
   implicit def opsLong(x: Long): ops.LongOps                                          = new ops.LongOps(x)
   implicit def opsOption[A](x: Option[A]): ops.OptionOps[A]                           = new ops.OptionOps[A](x)
   implicit def opsPreciseSize(x: PreciseSize): ops.PreciseSizeOps                     = new ops.PreciseSizeOps(x)

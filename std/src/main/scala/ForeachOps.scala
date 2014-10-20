@@ -3,10 +3,10 @@ package std
 package ops
 
 import api._, StdShow._
-import linear._
 
 final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPreciseSizeMethods {
-  def size = newSize(xs.length)
+  def size: PreciseSize = sizeInfo
+  def sizeInfo = newSize(xs.length)
   private def andThis(op: Unit): xs.type = xs
 
   def apply(idx: Index): A                   = xs(idx.safeToInt)
@@ -127,7 +127,7 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
       )
 
     val widths = coords.indices map (i => coords map (c => c(i).width) max)
-    val fmt    = widths map (_.size.leftFormat) mkString " "
+    val fmt    = widths map (_.leftFormat) mkString " "
 
     coords map (xs => fmt.format(xs.seq: _*))
   }

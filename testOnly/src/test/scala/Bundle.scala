@@ -8,6 +8,7 @@ import scala.Console.{ println => _, _ }
 trait Bundle {
   private var count = 0
   private var passed = 0
+  def bundle: String
 
   def assert(body: => Boolean, msg: => Any): Unit = {
     count += 1
@@ -31,6 +32,8 @@ trait Bundle {
   def finish(): Boolean = finish(this.shortClass stripSuffix "$")
 
   def run(): Boolean
+
+  override def toString = bundle
 }
 
 /** Needed because scalacheck doesn't expose the label if you add
@@ -46,7 +49,6 @@ object NamedProp {
 }
 
 trait ScalacheckBundle extends Bundle {
-  def bundle: String
   def props: Seq[NamedProp]
 
   def pass = GREEN + "pass" + RESET

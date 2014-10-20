@@ -187,10 +187,9 @@ trait StdEq {
   // Since Sets are created with their own notion of equality, you can't pass
   // an Eq instance. Map keys are also a set.
   implicit def exSetEq[A] : Eq[exSet[A]]         = Eq((xs, ys) => (xs isSubsetOf ys) && (ys isSubsetOf xs))
-  implicit def pMapEq[K, V: Eq] : Eq[pMap[K, V]] = Eq((xs, ys) => (xs.keys === ys.keys) && (xs.keys.contained forall (k => xs(k) === ys(k))))
-
+  implicit def pMapEq[K, V: Eq] : Eq[pMap[K, V]] = Eq((xs, ys) => (xs.keySet === ys.keySet) && (xs.keyVector forall (k => xs(k) === ys(k))))
+  implicit def pVectorEq[A: Eq] : Eq[pVector[A]] = Eq((xs, ys) => (xs hasSameSize ys) && (xs.indices forall (i => xs(i) === ys(i))))
   implicit def scalaSeqEq[A: Eq] : Eq[scSeq[A]]  = Eq[scSeq[A]]((x, y) => (x corresponds y)(_ === _))
-  implicit def pVectorEq[A: Eq] : Eq[pVector[A]] = Eq((xs, ys) => (xs.size == ys.size) && (xs.indices forall (i => xs(i) === ys(i))))
   implicit def arrayEq[A: Eq] : Eq[Array[A]]     = eqBy[Array[A]](_.pvec)
 
   implicit def equivFromOrder[A: Order] : Eq[A]                = Eq[A]((x, y) => (x compare y) eq Cmp.EQ)
@@ -199,7 +198,6 @@ trait StdEq {
 
 object StdZero extends StdZero
 object StdEq extends StdEq
-
 
 object Unsafe {
   implicit def universalEq[A] : HashEq[A] = HashEq.natural()

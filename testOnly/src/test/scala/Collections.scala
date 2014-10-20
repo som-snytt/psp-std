@@ -2,11 +2,10 @@ package psp
 package tests
 
 import psp.std._, api._
-import scala.collection.immutable.StringOps
-import psp.std.PspStringOps
 import org.scalacheck._, Prop._
 
 class StringExtensions extends ScalacheckBundle {
+  import scala.collection.immutable.StringOps
   import StdEq._
 
   def bundle = "String Extensions"
@@ -43,6 +42,31 @@ class StringExtensions extends ScalacheckBundle {
 
     // "tail"     -> newProp(_.tail, _.m.tail),
     // "head"     -> newProp(_.head, _.head)
+  )
+}
+
+class PolicyBasic extends ScalacheckBundle {
+  def bundle = "Policy, Basic Collections Operations"
+  import StdShow._
+
+  def plist   = PolicyList(1, 2, 3)
+  def pvector = Direct(1, 2, 3)
+  def parray  = Array(1, 2, 3)
+  def pseq    = Foreach[Int](parray foreach _)
+  def punfold = Foreach from 1
+
+  // def shown[A](xs: Foreach[A]): String = xs.to_s
+
+  def showsAs[A: Show](expected: String, x: A): NamedProp = expected -> (expected =? show"$x")
+
+  def props: Seq[NamedProp] = Seq(
+    showsAs("[ 1, 2, 3 ]", plist),
+    showsAs("[ 1, 2, 3 ]", pvector),
+    showsAs("[ 1, 2, 3 ]", parray),
+    showsAs("[ 1, 2, 3 ] ++ [ 1, 2, 3 ]", plist ++ plist),
+    showsAs("[ 1, 2, 3, 1, 2, 3 ]", pvector ++ pvector),
+    showsAs("[ 1, 2, 3, 1, 2, 3 ]", parray ++ parray),
+    showsAs("[ 1, 2, 3, ... ]", punfold)
   )
 }
 

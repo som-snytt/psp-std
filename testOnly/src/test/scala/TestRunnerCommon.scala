@@ -6,9 +6,14 @@ import Unsafe.universalEq
 
 abstract class TestRunnerCommon {
   def scalaVersion: String
+  def shouldRun(b: Bundle) = sys.props get "psp.bundles" match {
+    case Some(s) => b.bundle contains s
+    case _       => true
+  }
 
-  def bundles: Seq[Bundle] = Seq(
+  def bundles: pVector[Bundle] = Direct(
     new StringExtensions,
+    new PolicyBasic,
     new ValuesSpec,
     new SizeInfoSpec,
     new InferenceSpec,
@@ -16,9 +21,16 @@ abstract class TestRunnerCommon {
     new SliceSpec,
     new OperationCounts(scalaVersion)
   )
+
+  def Try[A](expr: => A): Try[A] = try scala.util.Success(expr) catch {
+    case t: ControlThrowable => throw t
+    case t: Throwable        => scala.util.Failure(t)
+  }
+
+  def wrapRun(b: Bundle): Boolean = Try(b.run).fold(x => x, t => andFalse(println(s"Caught $t running $b")))
+
   def main(args: Array[String]): Unit = {
-    val results = bundles mapOnto (_.run)
-    results filterValues (x => !x) match {
+    bundles filter shouldRun mapOnto wrapRun filterValues (x => !x) match {
       case PolicyMap()        => println("\nAll tests passed.")
       case PolicyMap(ks @ _*) => println("Some tests failed in bundles: " + ks.mkString(", ")) ; throw new Exception
     }

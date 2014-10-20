@@ -70,7 +70,7 @@ trait StdShow extends StdShowLow {
   def inBrackets[A](xs: A*)(implicit shows: Show[A]): String      = xs map shows.show mkString ("[ ", ", ", " ]")
   implicit def attrNameShow : Show[java.util.jar.Attributes.Name] = Show.natural()
   implicit def exSetShow[A: Show] : Show[exSet[A]]                = showBy(_.contained)
-  implicit def pMapShow[K: Show, V: Show] : Show[pMap[K, V]]      = Show(m => m.pairSeq.tabular(_._1.to_s, _ => "->", _._2.to_s))
+  implicit def pMapShow[K: Show, V: Show] : Show[pMap[K, V]]      = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
   implicit def pViewShow[A] : Show[View[A]]                       = Show(_.viewChain.pvec.reverse map (_.description) joinSpace)
   implicit def pListShow[A: Show] : Show[pList[A]]                = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ") + " :: nil")
   implicit def pVectorShow[A: Show] : Show[pVector[A]]            = Show(xs => if (xs.isEmpty) "[]" else inBrackets(xs.seq: _*)) // "[ " + ( xs map (_.to_s) mkString " " ) + " ]")
@@ -114,23 +114,32 @@ trait StdShow extends StdShowLow {
     case Infinite              => "<inf>"
   }
 
-  private def stringify[A: Show](xs: Foreach[A], max: Int = 10): String = {
-    def base = xs.m take max joinComma;
-    xs.sizeInfo match {
-      case PreciseSize(0)             => pp"[ ]"
-      case PreciseSize(n) if n <= max => pp"[ $base ]"
-      case _                          => pp"[ $base ... ]"
-    }
-  }
+  // case Foreach.Unfold(zero)              => show"unfold from $zero"
+  // case Foreach.Joined(xs, ys)            => show"$xs ++ $ys"
+  // case Foreach.Constant(elem)            => show"Constant($elem)"
+  // case Foreach.Continually(fn)           => show"Continually(<fn>)"
+  // case Foreach.KnownSize(Infinite)       => "<inf>"
+  // case Foreach.KnownSize(PreciseSize(0)) => "[]"
+  // case xs @ Foreach.KnownSize(size: PreciseSize) =>
+    // case xs: IndexRange                    => xs.toString
 
-  implicit def pSeqShow[A: Show] : Show[pSeq[A]] = Show[pSeq[A]] {
-    case xs: IndexRange            => xs.toString
-    case Foreach.Unfold(zero)      => show"unfold from $zero"
-    case Foreach.Joined(xs, ys)    => show"$xs ++ $ys"
-    case Foreach.Constant(elem)    => show"Constant($elem)"
-    case Foreach.Continually(fn)   => show"Continually(<fn>)"
-    case Foreach.Times(size, elem) => show"$elem x$size"
-    case xs                        => stringify[A](xs)
+  private def showElems[A: Show](small: PreciseSize, large: Int, xs: sciList[A]): String = xs splitAt large match {
+    case (Nil, _)  => "[]"
+    case (xs, Nil) => show"[ ${xs.m.joinComma} ]"
+    case (xs, _)   => show"[ ${xs.m take small joinComma}, ... ]"
+  }
+  implicit def pSeqShow[A: Show] : Show[pSeq[A]] = Show[pSeq[A]] { xs =>
+    val small = 3.size
+    val large = 10
+    def elems() = showElems[A](small, large - 2, xs.m take large toScalaList)
+    (xs, xs.sizeInfo) match {
+      case ( xs: IndexRange, _)                                => s"$xs"
+      case ( _: Direct[_] | _: Linear[_], _)                   => elems()
+      case (Foreach.Joined(xs, ys), _)                         => show"$xs ++ $ys"
+      case (_, Bounded(PreciseSize(0L), Infinite))             => show"${xs.shortClass}"
+      case (_, Bounded(PreciseSize(n), Infinite)) if n < large => show"${xs.shortClass} (size $n+)"
+      case _                                                   => elems()
+    }
   }
 }
 

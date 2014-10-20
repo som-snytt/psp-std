@@ -27,7 +27,14 @@ object Foreach {
       ys foreach f
     }
   }
-  trait InfiniteForeach[+A] extends Any with Foreach[A] { def sizeInfo = Infinite }
+  trait ForeachHasSize[+A] extends Any with Foreach[A] with HasKnownSize
+  trait InfiniteForeach[+A] extends Any with ForeachHasSize[A] {
+    def isEmpty  = false
+    def sizeInfo = Infinite
+  }
+  object KnownSize {
+    def unapply[A](xs: Foreach[A]) = xs.sizeInfo optionally { case x: Atomic => x }
+  }
 
   final case class Constant[A](elem: A) extends InfiniteForeach[A] {
     @inline def foreach(f: A => Unit): Unit = while (true) f(elem)
@@ -44,22 +51,23 @@ object Foreach {
       }
     }
   }
-  final case class Times[A](size: PreciseSize, elem: A) extends Foreach[A] with HasPreciseSize {
-    @inline def foreach(f: A => Unit): Unit = size foreachNth (_ => f(elem))
-  }
+
+  // final case class Times[A](size: PreciseSize, elem: A) extends Foreach[A] with HasPreciseSize {
+  //   @inline def foreach(f: A => Unit): Unit = size foreachNth (_ => f(elem))
+  // }
 
   def from(n: Int): Foreach[Int]                          = unfold(n)(_ + 1)
   def from(n: Long): Foreach[Long]                        = unfold(n)(_ + 1)
   def from(n: BigInt): Foreach[BigInt]                    = unfold(n)(_ + 1)
 
-  def empty[A] : Foreach[A]                                       = Direct.Empty
-  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]         = Joined[A](xs, ys)
-  def constant[A](elem: A): Constant[A]                           = Constant[A](elem)
-  def continually[A](elem: => A): Continually[A]                  = Continually[A](() => elem)
-  def continuallySpan[A](p: A => Boolean)(expr: => A): Foreach[A] = continually(expr).m takeWhile p
-  def unfold[A](start: A)(next: A => A): Unfold[A]                = Unfold[A](start)(next)
-  def times[A](size: PreciseSize, elem: A): Times[A]              = Times[A](size, elem)
+  def empty[A] : Foreach[A]                                                = Direct.Empty
+  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]                  = Joined[A](xs, ys)
+  def constant[A](elem: A): Constant[A]                                    = Constant[A](elem)
+  def continually[A](elem: => A): Continually[A]                           = Continually[A](() => elem)
+  def continuallySpan[A](p: A => Boolean)(expr: => A): Foreach[A]          = continually(expr).m takeWhile p
+  def unfold[A](start: A)(next: A => A): Unfold[A]                         = Unfold[A](start)(next)
+  // def times[A](size: PreciseSize, elem: A): Foreach[A] with HasPreciseSize = constant(elem) take size.getInt sized size
 
   def sized[A](sizeInfo: SizeInfo)(mf: Suspended[A]): Foreach[A] = new Impl[A](sizeInfo, mf)
-  def apply[A](mf: Suspended[A]): Foreach[A]                     = sized(SizeInfo.unknown)(mf)
+  def apply[A](mf: Suspended[A]): Foreach[A]                     = new Impl[A](SizeInfo.unknown, mf)
 }

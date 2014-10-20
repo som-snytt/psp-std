@@ -20,6 +20,7 @@ final class PspStringOps(val self: String) extends AnyVal {
   }
   private def isEmpty = onull == ""
   private def onull   = if (self eq null) "" else self
+  private def size    = newSize(self.length)
 
   def retain(regex: Regex): String       = regex all self mkString ""
   def remove(regex: Regex): String       = regex matcher self replaceFirst ""
@@ -44,9 +45,11 @@ final class PspStringOps(val self: String) extends AnyVal {
   def nonEmpty: Boolean  = onull.length > 0
   def capitalize: String = mapNonEmpty(x => x.head.toUpper.to_s + x.tail.force[String])
 
-  def length                      = self.length
-  def * (n: Int): String          = n times self mkString ""
+  def ~ (that: String): String    = self + that
+  def * (n: Int): String          = this * n.size
+  def * (n: PreciseSize): String  = n timesConst self mkString ""
   def format(args : Any*): String = java.lang.String.format(self, args map unwrapArg: _*)
+  def length                      = self.length
 
   def bytes: Array[Byte]              = self.getBytes
   def chars: Array[Char]              = self.toCharArray
@@ -61,10 +64,10 @@ final class PspStringOps(val self: String) extends AnyVal {
   def splitRegex(r: Regex): pVector[String] = r.pattern split self pvec
   def words: pVector[String]                = splitRegex(whitespace)
 
+  def mapChars(pf: Char ?=> Char): String          = self map (c => if (pf isDefinedAt c) pf(c) else c)
+  def mapLines(f: Unary[String]): String           = mapSplit('\n')(f)
   def mapNonEmpty(f: Unary[String]): String        = if (isEmpty) "" else f(self)
   def mapSplit(ch: Char)(f: Unary[String]): String = splitChar(ch) map f mkString ch.toString
-  def mapLines(f: Unary[String]): String           = mapSplit('\n')(f)
-  def mapChars(pf: Char ?=> Char): String          = self map (c => if (pf isDefinedAt c) pf(c) else c)
   def stripMargin(marginChar: Char): String        = mapLines(_ remove ("""^\s*[""" + marginChar + "]").r)
 
   private def dropSuffix(s: String, drop: String) = s remove drop.r.characterClass.ends
@@ -78,9 +81,9 @@ final class PspStringOps(val self: String) extends AnyVal {
 
   def readAs[A](implicit reads: Read[A]): A = reads read self
 
-  def foldRemove[A](r: Regex)(none: => A, some: String => A): A       = remove(r) match { case `self` => none ; case s => some(s) }
   def foldMatch[A](r: Regex)(none: => A, some: String => A): A        = (r first self).fold(none)(some)
   def foldPrefix[A](prefix: String)(none: => A, some: String => A): A = foldRemove(prefix.r.literal.starts)(none, some)
+  def foldRemove[A](r: Regex)(none: => A, some: String => A): A       = remove(r) match { case `self` => none ; case s => some(s) }
   def foldSuffix[A](suffix: String)(none: => A, some: String => A): A = foldRemove(suffix.r.literal.ends)(none, some)
   def stripPrefix(prefix: String): String                             = foldPrefix(prefix)(self, s => s)
   def stripSuffix(suffix: String): String                             = foldSuffix(suffix)(self, s => s)
@@ -94,7 +97,7 @@ final class PspStringOps(val self: String) extends AnyVal {
   def sanitize: String    = mapChars { case x if x.isControl => '?' }
 
   def truncateAndLeftJustifyTo(max: PreciseSize) = max.leftFormat format (normalizeSpace truncateTo max)
-  def truncateTo(max: PreciseSize)               = if (self.size <= max) self else (self take max - 3) + "..."
+  def truncateTo(max: PreciseSize)               = if (size <= max) self else (self take max - 3) + "..."
 
   def normalizeSpace: String = self.trim.replacePattern(
     "\\n+"      -> "\n",

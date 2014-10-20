@@ -16,15 +16,20 @@ import api._
  *  Manipulations of undefined values remain undefined, like NaN.
  */
 final class IntIndex private[std] (val indexValue: Long) extends AnyVal with Index {
-  def %(size: PreciseSize): Index   = if (isEmpty) this else Index(indexValue % size.value)
-  def +(n: Long): Index             = if (isEmpty) this else Index(indexValue + n)
+  def /(size: Int): Index           = this / newSize(size)
+  def %(size: Int): Index           = this % newSize(size)
+  def /(size: PreciseSize): Index   = if (isUndefined) this else Index(indexValue / size.value)
+  def %(size: PreciseSize): Index   = if (isUndefined) this else Index(indexValue % size.value)
+  def +(n: Long): Index             = if (isUndefined) this else Index(indexValue + n)
   def until(end: Index): IndexRange = indexRange(safeToInt, end.safeToInt)
   def toSize: PreciseSize           = newSize(indexValue)
+  def toBit1: Bit1                  = Bit1(this)
   def toIndex: Index                = this
   def toNth: Nth                    = Nth(indexValue + 1)
-  def toOffset: Offset              = if (isEmpty) abort("undefined") else Offset(safeToInt)
+  def toOffset: Offset              = if (isUndefined) abort("undefined") else Offset(safeToInt)
   def safeToInt: Int                = indexValue.safeToInt
-  override def toString             = if (isEmpty) "undefined" else s"$indexValue"
+  def isUndefined                   = indexValue < 0
+  override def toString             = if (isUndefined) "undefined" else s"$indexValue"
 }
 
 /** Nth is a 1-based index. The recorded indexValue is 0-based as with Index.
