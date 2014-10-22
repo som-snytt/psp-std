@@ -109,7 +109,7 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
     val description    = "%s  %s  // %s".format(viewFn(Direct[Int]().m).chainDescriptions.filterNot(_ == "<xs>").map("%-15s" format _).joinWords.render, counts, expected)
     def passed         = outcomes.map(_.result).distinct.size == 1.size
     def distinctCounts = outcomes.map(_.count).distinct
-    def isInteresting  = distinctCounts.size >= 4.size
+    def isInteresting  = distinctCounts.size >= 5.size
 
     override def toString = (
       description.asis <@> indices.tabular(

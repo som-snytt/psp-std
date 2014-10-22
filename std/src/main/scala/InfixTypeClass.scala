@@ -9,10 +9,10 @@ final class OrderOps[A](val lhs: A) extends AnyVal {
   import Cmp._
   def compare(rhs: A)(implicit ord: Order[A]): Cmp = ord.compare(lhs, rhs)
 
-  def < (rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) == LT
-  def <=(rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) != GT
-  def > (rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) == GT
-  def >=(rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) != LT
+  def < (rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) eq LT
+  def <=(rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) ne GT
+  def > (rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) eq GT
+  def >=(rhs: A)(implicit ord: Order[A]): Boolean = compare(rhs) ne LT
 
   // Having implicit infix max and min interferes with having implicit
   // postfix max and min on collections.
@@ -28,11 +28,11 @@ final class PartialOrderOps[A](val lhs: A) extends AnyVal {
     case _       => None
   }
 
-  def p_==(rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.EQ
-  def p_< (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.LT
-  def p_<=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ != Cmp.GT)
-  def p_> (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) == PCmp.GT
-  def p_>=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ != Cmp.LT)
+  def p_==(rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) eq PCmp.EQ
+  def p_< (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) eq PCmp.LT
+  def p_<=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ ne Cmp.GT)
+  def p_> (rhs: A)(implicit ord: PartialOrder[A]): Boolean = partialCompare(rhs) eq PCmp.GT
+  def p_>=(rhs: A)(implicit ord: PartialOrder[A]): Boolean = tryCompare(rhs) exists (_ ne Cmp.LT)
 
   def pmin(rhs: A)(implicit ord: PartialOrder[A]): Option[A] = tryCompare(rhs) map { case Cmp.GT => rhs ; case _ => lhs }
   def pmax(rhs: A)(implicit ord: PartialOrder[A]): Option[A] = tryCompare(rhs) map { case Cmp.LT => rhs ; case _ => lhs }

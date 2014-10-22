@@ -45,8 +45,7 @@ trait Builds[-Elem, +To] extends Any {
  */
 trait Foreach[+A]         extends Any with HasSize                        { def foreach(f: A => Unit): Unit }
 trait Direct[+A]          extends Any with Foreach[A] with HasPreciseSize { def elemAt(i: Index): A         }
-trait Contains[-A]        extends Any                                     { def contains(x: A): Boolean     }
-trait Intensional[-K, +V] extends Any with Contains[K]                    { def apply(x: K): V              }
+trait Intensional[-K, +V] extends Any                                     { def apply(x: K): V              }
 trait Extensional[+A]     extends Any                                     { def contained: Foreach[A]       }
 
 trait Linear[+A] extends Any with Foreach[A] with IsEmpty {

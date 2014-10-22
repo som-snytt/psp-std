@@ -4,6 +4,15 @@ package api
 
 import ApiAliases._
 
+trait MapView[-K, +V] extends Any with Intensional[K, V] {
+  type CoMapTo[-X] <: MapView[X, V]
+  type MapTo[+X] <: MapView[K, X]
+
+  def map[V1](f: V => V1): MapTo[V1]
+  def comap[K1](f: K1 => K): CoMapTo[K1]
+  def filter(p: Predicate[V]): MapTo[V]
+}
+
 trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   type   MapTo[+X] <: View[X]
   type SplitTo[+X] <: View.Split[X]
