@@ -29,8 +29,9 @@ object Direct {
     def isEmpty                     = underlying.isEmpty
   }
 
-  def builder[A] : Builds[A, Direct[A]] = arrayBuilder[Any] map (res => new WrapArray[A](res))
-  def stringBuilder(): Builds[Char, String] = arrayBuilder[Char] map (cs => new String(cs))
+  def build[A](f: Suspended[A]): Direct[A]       = builder[A] direct f
+  def builder[A] : Builds[A, Direct[A]]          = arrayBuilder[Any] map (res => new WrapArray[A](res))
+  def stringBuilder(): Builds[Char, String]      = arrayBuilder[Char] map (cs => new String(cs))
   def arrayBuilder[A: CTag]: Builds[A, Array[A]] = Builds[A, Array[A]](xs =>
     xs.size match {
       case size: Precise => newArray[A](size) doto (xs foreachCounted _.updated)

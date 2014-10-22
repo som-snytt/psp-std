@@ -28,10 +28,10 @@ package object pio {
     def manifestMainClass = noNull(jar.manifestMap(Name.MAIN_CLASS), "")
     def manifestClassPath = noNull(jar.manifestMap(Name.CLASS_PATH), "")
 
-    def mapNames[A, That](f: String => A)(implicit z: Builds[A, That]): That                   = z(g => jar  foreachEntry(e => g(f(e.getName))))
-    def mapEntries[A, That](f: JarEntry => A)(implicit z: Builds[A, That]): That               = z(g => jar  foreachEntry(f map g))
-    def mapBytes[A, That](f: (JarEntry, Bytes) => A)(implicit z: Builds[A, That]): That        = z(g => jar  foreachBytes(f map g))
-    def mapStream[A, That](f: (JarEntry, InputStream) => A)(implicit z: Builds[A, That]): That = z(g => jar foreachStream(f map g))
+    def mapNames[A, That](f: String => A)(implicit z: Builds[A, That]): That                   = z direct (g => jar  foreachEntry(e => g(f(e.getName))))
+    def mapEntries[A, That](f: JarEntry => A)(implicit z: Builds[A, That]): That               = z direct (g => jar  foreachEntry(f map g))
+    def mapBytes[A, That](f: (JarEntry, Bytes) => A)(implicit z: Builds[A, That]): That        = z direct (g => jar  foreachBytes(f map g))
+    def mapStream[A, That](f: (JarEntry, InputStream) => A)(implicit z: Builds[A, That]): That = z direct (g => jar foreachStream(f map g))
 
     def newLoader: PolicyLoader                = new PolicyLoader(newClassMap)
     def paths: pVector[Path]                   = mapEntries(e => path(e.getName))

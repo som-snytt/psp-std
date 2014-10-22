@@ -30,8 +30,8 @@ trait ConversionOps[A] extends Any {
     underlying.pvec.reverse foreach(x => result = f(x, result))
     result
   }
-  def force[That](implicit z: Builds[A, That]): That        = z(runForeach)
-  def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z(runForeach)
+  def force[That](implicit z: Builds[A, That]): That        = z direct runForeach
+  def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z direct runForeach
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
   def mapWithIndex[B](f: (A, Index) => B): pVector[B] = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(x, Index(i)) ).pvec

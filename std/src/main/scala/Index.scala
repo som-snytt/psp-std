@@ -15,12 +15,16 @@ import api._
  *
  *  Manipulations of undefined values remain undefined, like NaN.
  */
-final class IntIndex private[std] (val indexValue: Long) extends AnyVal with Index {
+final class IndexImpl private[std] (val indexValue: Long) extends AnyVal with Index {
+  def get: Long                     = indexValue
   def /(size: Int): Index           = this / Precise(size: Long)
   def %(size: Int): Index           = this % Precise(size: Long)
   def /(size: LongSize): Index      = if (isUndefined) this else Index(indexValue / size.value)
   def %(size: LongSize): Index      = if (isUndefined) this else Index(indexValue % size.value)
   def +(n: Long): Index             = if (isUndefined) this else Index(indexValue + n)
+  def -(n: Long): Index             = if (isUndefined) this else Index(indexValue - n)
+  def prev: Index                   = this - 1
+  def next: Index                   = this + 1
   def until(end: Index): IndexRange = indexRange(safeToInt, end.safeToInt)
   def toSize: Precise               = newSize(indexValue)
   def toBit1: Bit1                  = Bit1(this)
@@ -29,24 +33,26 @@ final class IntIndex private[std] (val indexValue: Long) extends AnyVal with Ind
   def toOffset: Offset              = if (isUndefined) abort("undefined") else Offset(safeToInt)
   def safeToInt: Int                = indexValue.safeToInt
   def isUndefined                   = indexValue < 0
+  def isEmpty                       = isUndefined
   override def toString             = if (isUndefined) "undefined" else s"$indexValue"
 }
 
 /** Nth is a 1-based index. The recorded indexValue is 0-based as with Index.
  */
-final class IntNth private[std] (val nthValue: Long) extends AnyVal with Nth {
-  def +(n: Long): Nth   = if (isEmpty) this else Nth(nthValue + n)
+final class Nth private[std] (val nthValue: Long) extends AnyVal {
+  def +(n: Long): Nth   = if (isUndefined) this else Nth(nthValue + n)
   def toIndex: Index    = Index(nthValue - 1)
   def toNth: Nth        = this
   def toOffset: Offset  = toIndex.toOffset
   def safeToInt: Int    = nthValue.safeToInt
-  override def toString = if (isEmpty) "undefined" else s"#$nthValue"
+  def isUndefined       = nthValue <= 0
+  override def toString = if (isUndefined) "undefined" else s"#$nthValue"
 }
 
 /** Unlike an Index, an Offset can have any integer value.
  *  A negative offset is a positive offset from the other reference point.
  */
-final class IntOffset private[std] (val offsetValue: Int) extends AnyVal with Offset {
+final class Offset private[std] (val offsetValue: Int) extends AnyVal {
   def get                            = offsetValue
   def until(end: Offset): IndexRange = indexRange(offsetValue, end.offsetValue)
   def +(n: Int): Offset              = Offset(offsetValue + n)
@@ -60,20 +66,18 @@ final class IntOffset private[std] (val offsetValue: Int) extends AnyVal with Of
 }
 
 object Index extends (Long => Index) {
-  def undefined: Index             = new IntIndex(-1)
-  def zero: Index                  = new IntIndex(0)
-  def apply(value: Long): Index    = if (value < 0) undefined else new IntIndex(value)
-  def unapply(x: IndexLike): Index = x.toIndex
-  def impl(x: Index): IntIndex     = new IntIndex(x.get)
+  def undefined: Index              = new IndexImpl(-1)
+  def zero: Index                   = new IndexImpl(0)
+  def apply(value: Long): Index     = if (value < 0) undefined else new IndexImpl(value)
+  def unapply(x: api.Index): Index  = x
+  def impl(x: api.Index): IndexImpl = new IndexImpl(x.get)
 }
 object Nth extends (Long => Nth) {
-  def undefined: Nth             = new IntNth(-1)
-  def apply(value: Long): Nth    = if (value <= 0) undefined else new IntNth(value)
-  def unapply(x: IndexLike): Nth = x.toNth
-  def impl(x: Nth): IntNth       = new IntNth(x.indexValue)
+  def undefined: Nth          = new Nth(-1)
+  def apply(value: Long): Nth = if (value <= 0) undefined else new Nth(value)
+  def unapply(x: Nth): Nth    = x
 }
 object Offset extends (Int => Offset) {
-  def apply(value: Int): Offset  = new IntOffset(value)
+  def apply(value: Int): Offset  = new Offset(value)
   def unapply(x: Offset): Offset = x
-  def impl(x: Offset): IntOffset = new IntOffset(x.offsetValue)
 }

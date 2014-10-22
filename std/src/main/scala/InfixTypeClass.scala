@@ -53,6 +53,3 @@ final class EqOps[A](val lhs: A) extends AnyVal {
 final class HashOps[A](val lhs: A) extends AnyVal {
   def hash(implicit z: Hash[A]): Int = z hash lhs
 }
-final class BuildsOps[A, That](z: Builds[A, That]) {
-  def map[Next](f: That => Next): Builds[A, Next] = Builds(xs => f(z build xs))
-}

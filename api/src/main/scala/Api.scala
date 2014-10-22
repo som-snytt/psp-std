@@ -18,6 +18,10 @@ trait Eq[-A] extends Any { def equiv(x: A, y: A): Boolean }
  */
 trait Read[A] extends Any { def read(x: String): A }
 
+/** The collections builder type class. Not especially classic in this presentation.
+ */
+trait Builds[-Elem, +To] extends Any { def build(xs: Foreach[Elem]): To }
+
 /** Contravariance vs. implicits, the endless battle.
  *  We return a java three-value enum from compare in preference
  *  to a wild stab into the 2^32 states of an Int. This is a
@@ -29,65 +33,42 @@ trait Order[-A] extends Any { def compare(x: A, y: A): Cmp }
  */
 trait PartialOrder[-A] extends Any { def partialCompare(x: A, y: A): PCmp }
 
-trait IsEmpty extends Any              { def isEmpty: Boolean }
-trait Opt[+A] extends Any with IsEmpty { def get: A           }
-trait OptInt extends Any with Opt[Int]
-trait OptLong extends Any with Opt[Long]
-
-/** The builder type class.
+/** Name-based extractor methods.
  */
-trait Builds[-Elem, +To] extends Any {
-  def apply(mf: Suspended[Elem]): To
-  def build(xs: Foreach[Elem]): To
-}
+trait IsEmpty extends Any                { def isEmpty: Boolean }
+trait Opt[+A] extends Any with IsEmpty   { def get: A           }
+trait OptInt extends Any with Opt[Int]   { def get: Int         }
+trait OptLong extends Any with Opt[Long] { def get: Long        }
 
-/** Collections classes.
+/** Collections interfaces.
  */
 trait Foreach[+A]         extends Any with HasSize                        { def foreach(f: A => Unit): Unit }
 trait Direct[+A]          extends Any with Foreach[A] with HasPreciseSize { def elemAt(i: Index): A         }
 trait Intensional[-K, +V] extends Any                                     { def apply(x: K): V              }
-trait Extensional[+A]     extends Any                                     { def contained: Foreach[A]       }
+trait Extensional[+A]     extends Any with HasSize                        { def contained: Foreach[A]       }
 
 trait Linear[+A] extends Any with Foreach[A] with IsEmpty {
   def head: A
   def tail: Linear[A]
 }
 
-trait DerivedLongConversions extends Any {
-  def toIndex: Index
-  def toNth: Nth
-  def toOffset: Offset
-}
-
+/** Ennhanced value representations.
+ */
 trait IndexRange extends Any with Direct[Index] {
   def start: Index
   def end: Index
 }
-trait Offset extends Any with DerivedLongConversions {
-  def offsetValue: Int
-  def +(n: Int): Offset
-}
-trait Index extends Any with IndexLike {
-  type This = Index
+trait Index extends Any with OptLong {
   def indexValue: Long
-  def get     = indexValue
-  def isEmpty = indexValue < 0
-}
-trait Nth extends Any with IndexLike {
-  type This = Nth
-  def nthValue: Long
-  def get     = nthValue
-  def isEmpty = nthValue <= 0
 }
 
-sealed trait IndexLike extends Any with OptLong with DerivedLongConversions {
-  type This <: IndexLike
-  def +(n: Long): This
-}
-
+/** Convenience.
+ */
 trait AndThis {
   def andThis(x: Unit): this.type = this
 }
 
+/** Generalized type constraint.
+ */
 sealed abstract class <:<[-From, +To] extends (From => To)
 final class conformance[A] extends <:<[A, A] { def apply(x: A): A = x }

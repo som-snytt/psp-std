@@ -106,8 +106,7 @@ trait StdOps extends Any with StdOps3 {
 
   // Promotion of the api type (which has as few methods as possible) to the
   // concrete type which has all the other ones.
-  implicit def apiOffsetPromote(x: Offset): IntOffset                            = Offset impl x
-  implicit def apiIndexLikePromote(x: IndexLike): IntIndex                       = Index impl x.toIndex
+  implicit def apiIndexPromote(x: Index): IndexImpl                              = Index impl x
   implicit def apiIndexRangePromote(x: IndexRange): IntIndexRange                = IndexRange impl x
   implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]                  = Order(ord.compare)
   implicit def directoryStreamToIterable[A](stream: DirectoryStream[A]): pSeq[A] = BiIterable(stream).pseq

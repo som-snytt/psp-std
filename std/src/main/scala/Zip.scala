@@ -34,7 +34,7 @@ trait StdZipped {
     def mapLeft[B1](g: A1 => B1)  = new MappedZip2Ops(this, g, identity[A2])
     def mapRight[B2](g: A2 => B2) = new MappedZip2Ops(this, identity[A1], g)
 
-    def map[C, That](g: (A1, A2) => C)(implicit z: Builds[C, That]): That = z(f => foreach((x, y) => f(g(x, y))))
+    def map[C, That](g: (A1, A2) => C)(implicit z: Builds[C, That]): That = z direct (f => foreach((x, y) => f(g(x, y))))
     def toMap: sciMap[A1, A2]                                             = map[(A1, A2), sciMap[A1, A2]](_ -> _)
 
     def corresponds(f: (A1, A2) => Boolean): Boolean = map(f) forall (_ == true)
@@ -50,7 +50,7 @@ trait StdZipped {
   }
 
   final class Zip3Ops[A1, R1, A2, R2, A3, R3](xs: R1, ys: R2, zs: R3)(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2], tc3: Walks[A3, R3]) {
-    def map[C, That](g: (A1, A2, A3) => C)(implicit z: Builds[C, That]): That = z(f =>
+    def map[C, That](g: (A1, A2, A3) => C)(implicit z: Builds[C, That]): That = z direct (f =>
       xs.m.biIterator doto (itX =>
         ys.m.biIterator doto (itY =>
           zs.m foreach (z =>

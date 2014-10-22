@@ -21,7 +21,7 @@ trait JavaPathMethods extends Any {
   def toPioJar(): Jar          = PathJars(path)
 
   def foreach(f: Path => Unit): Unit   = walk(PathVisitor(f))
-  def map[A](f: Path => A): pVector[A] = Direct.builder[Path](foreach) map f
+  def map[A](f: Path => A): pVector[A] = Direct build foreach map f
   def indices: IndexRange              = indexRange(0, path.getNameCount)
   def to_s: String                     = path.toString
 

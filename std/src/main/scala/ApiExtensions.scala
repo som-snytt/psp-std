@@ -309,8 +309,8 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def map[B](g: A => B): CC[B]                                                      = rebuild(Foreach[B](f => xs foreach (x => f(g(x)))))
   def flatMap[B](g: A => Foreach[B]): CC[B]                                         = rebuild(Foreach[B](f => xs foreach (x => g(x) foreach f)))
   def withFilter(p: Predicate[A]): CC[A]                                            = rebuild(Foreach[A](f => xs foreach (x => if (p(x)) f(x))))
-  def collect[B, That](pf: A ?=> B)(implicit z: Builds[B, That]): That              = z(f => xs foreach (x => if (pf isDefinedAt x) f(pf(x))))
-  def flatCollect[B, That](pf: A ?=> Foreach[B])(implicit z: Builds[B, That]): That = z(f => xs foreach (x => if (pf isDefinedAt x) pf(x) foreach f))
+  def collect[B, That](pf: A ?=> B)(implicit z: Builds[B, That]): That              = z direct (f => xs foreach (x => if (pf isDefinedAt x) f(pf(x))))
+  def flatCollect[B, That](pf: A ?=> Foreach[B])(implicit z: Builds[B, That]): That = z direct (f => xs foreach (x => if (pf isDefinedAt x) pf(x) foreach f))
 
   def filter(p: Predicate[A]): CC[A]       = withFilter(p)
   def filterNot(p: Predicate[A]): CC[A]    = withFilter(!p)

@@ -31,11 +31,7 @@ abstract class StdPackage
   implicit class BuildsOps[Elem, To](z: Builds[Elem, To]) {
     def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))
     def map[Next](f: To => Next): Builds[Elem, Next]   = Builds(xs => f(z build xs))
-  }
-  implicit class IndexLikeOps[A](val x: IndexLike { type This = A }) {
-    def -(n: Int): A = x + (-n)
-    def prev: A      = x + (-1)
-    def next: A      = x + 1
+    def direct: Suspended[Elem] => To                  = mf => z build Foreach(mf)
   }
   implicit class JavaEnumerationOps[A](it: jEnumeration[A]) {
     def toIterator = BiIterator enumeration it

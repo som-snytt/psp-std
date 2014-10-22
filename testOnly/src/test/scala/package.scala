@@ -32,7 +32,7 @@ package object tests {
   def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], results.seq.pvec map (_.getClass))
 
   implicit def buildsToBuildable[A, CC[X]](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
-    new Buildable[A, CC] { def builder: Builder[A, CC[A]] = Vector.newBuilder[A] mapResult (xs => z(xs foreach _)) }
+    new Buildable[A, CC] { def builder: Builder[A, CC[A]] = Vector.newBuilder[A] mapResult (xs => z direct (f => xs foreach f)) }
 
   def pvectorOf[A: Arbitrary](g: Gen[A]): Gen[pVector[A]]          = containerOf[pVector, A](g)(?, _.toScalaTraversable)
   def pseqOf[A: Arbitrary](g: Gen[A]): Gen[pSeq[A]]                = containerOf[pSeq, A](g)(?, _.toScalaTraversable)
