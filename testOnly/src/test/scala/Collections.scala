@@ -3,6 +3,7 @@ package tests
 
 import psp.std._, api._
 import org.scalacheck._, Prop._
+import StdEq._
 
 class StringExtensions extends ScalacheckBundle {
   import scala.collection.immutable.StringOps
@@ -36,7 +37,7 @@ class StringExtensions extends ScalacheckBundle {
     "takeRight"   -> newProp2[Int](_ takeRight _)(_ takeRight _)(mostInts, ?),
     "dropRight"   -> newProp2[Int](_ dropRight _)(_ dropRight _)(mostInts, ?),
     "toInt"       -> newProp[Int](_.toInt, _.toInt),
-    "tail"        -> newProp[String](_.tail, _.tail.force),
+    "tail"        -> newProp[String](_.tail, _.m.tail.force),
     "head"        -> newProp(_.head, _.head),
     "drop"        -> newProp[Char](_.head, _.head),
     "reverse"     -> newProp[String](_.reverse, _.reverse.force)
@@ -55,6 +56,8 @@ class PolicyBasic extends ScalacheckBundle {
 
   def showsAs[A: Show](expected: String, x: A): NamedProp = expected -> (expected =? show"$x")
 
+  def closure = parray transitiveClosure (x => Direct(x.m.init, x.m.tail)) mk_s ", "
+
   def props: Seq[NamedProp] = Seq(
     showsAs("[ 1, 2, 3 ]", plist),
     showsAs("[ 1, 2, 3 ]", pvector),
@@ -62,7 +65,8 @@ class PolicyBasic extends ScalacheckBundle {
     showsAs("[ 1, 2, 3 ] ++ [ 1, 2, 3 ]", plist ++ plist),
     showsAs("[ 1, 2, 3, 1, 2, 3 ]", pvector ++ pvector),
     showsAs("[ 1, 2, 3, 1, 2, 3 ]", parray ++ parray),
-    showsAs("[ 1, 2, 3, ... ]", punfold)
+    showsAs("[ 1, 2, 3, ... ]", punfold),
+    showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure)
   )
 }
 
@@ -130,11 +134,11 @@ class Collections extends ScalacheckBundle {
     val pseq = newSeq("a" -> 1, "b" -> 2, "c" -> 3)
 
     Seq(
-      expectTypes[pSet[_]](
+      expectTypes[exSet[_]](
         pset.m map identity build,
         pset.m.build,
         pset.m map identity build,
-        pset.m.map(_._1).map(paired).force[pSet[_]]
+        pset.m.map(_._1).map(paired).force[exSet[_]]
       ),
       expectTypes[pSeq[_]](
         pseq map identity,

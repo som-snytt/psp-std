@@ -43,6 +43,8 @@ class Renderer(indentSize: Int) {
 
 class ApiViewOps[A](xs: View[A]) {
   def chainDescriptions: pVector[String] = xs.viewChain.reverse collect { case x: BaseView[_,_] => x } map (_.description)
+  def tail: View[A] = xs drop 1
+  def init: View[A] = xs dropRight 1
 }
 
 class DocOps(val lhs: Doc) extends AnyVal {
@@ -140,7 +142,7 @@ final class IndexRangeOps(xs: IndexRange) {
 
 final class IntensionalSetOps[A](xs: inSet[A]) {
   def diff(that: inSet[A]): inSet[A]      = this filter that
-  def filter(p: A => Boolean): inSet[A]   = IntensionalSet.Filtered(xs, p)
+  def filter(p: Predicate[A]): inSet[A]   = IntensionalSet.Filtered(xs, p)
   def union(that: inSet[A]): inSet[A]     = IntensionalSet.Union(xs, that)
   def intersect(that: inSet[A]): inSet[A] = IntensionalSet.Intersect(xs, that)
   def complement: inSet[A] = (xs: inSet[A]) match {
@@ -154,8 +156,8 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
   def intersect(that: inSet[A]): exSet[A] = filter(that)
   def diff(that: inSet[A]): exSet[A]      = filterNot(that)
 
-  def filterNot(p: A => Boolean): exSet[A] = ExtensionalSet.Filtered(xs, !p)
-  def filter(p: A => Boolean): exSet[A]    = ExtensionalSet.Filtered(xs, p)
+  def filterNot(p: Predicate[A]): exSet[A] = ExtensionalSet.Filtered(xs, !p)
+  def filter(p: Predicate[A]): exSet[A]    = ExtensionalSet.Filtered(xs, p)
   def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
   def isSubsetOf(ys: inSet[A]): Boolean    = xs.m forall ys
 
@@ -268,8 +270,6 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   def isNoLargerThan(that: HasSize): Boolean          = isNoLargerThan(that.size)
   def hasSameSize(that: HasSize): Boolean             = (xs: HasSize).size p_== that.size
   def indicesAtWhich(p: Predicate[A]): pVector[Index] = xs.indices filter (i => p(apply(i)))
-  def init: pVector[A]                                = xs.m dropRight 1.size force
-  def tail: pVector[A]                                = xs drop 1.size force
   def last: A                                         = apply(xs.size.lastIndex)
   def length: Int                                     = xs.size.intSize
   def nths: pVector[Nth]                              = xs mapIndices (_.toNth)
@@ -323,7 +323,7 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def without(x: A) = filterNot(_ id_== x)
 
   def head: A = {
-    take(1.size).force.foreach(x => return x)
+    xs.m take 1 foreach (x => return x)
     abort("empty.head")
   }
 

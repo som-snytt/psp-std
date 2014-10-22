@@ -74,6 +74,7 @@ trait StdShow extends StdShowLow {
   implicit def showClass: Show[jClass]                  = Show(_.shortName)
   implicit def indexShow: Show[Index]                   = showBy[Index](_.indexValue)
   implicit def nthShow: Show[Nth]                       = showBy[Nth](_.nthValue)
+  implicit def showPath: Show[Path]                     = showBy[Path](_.toString)
 
   implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
   implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(?[Show[A]].show))

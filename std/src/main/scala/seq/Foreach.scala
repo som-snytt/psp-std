@@ -54,7 +54,7 @@ object Foreach {
 
   def apply[A](mf: Suspended[A]): Foreach[A]                      = new Impl[A](Size.unknown, mf)
   def constant[A](elem: A): Constant[A]                           = Constant[A](elem)
-  def continuallySpan[A](p: A => Boolean)(expr: => A): Foreach[A] = continually(expr).m takeWhile p
+  def continuallySpan[A](p: Predicate[A])(expr: => A): Foreach[A] = continually(expr).m takeWhile p
   def continually[A](elem: => A): Continually[A]                  = Continually[A](() => elem)
   def empty[A] : Foreach[A]                                       = Direct.Empty
   def from(n: BigInt): Foreach[BigInt]                            = unfold(n)(_ + 1)

@@ -8,7 +8,6 @@ import scala.Unit
 import scala.Int
 import scala.Long
 import java.lang.String
-import ApiAliases.Suspended
 
 /** The classic type class for encoding value equivalence.
  */
@@ -58,14 +57,9 @@ trait IndexRange extends Any with Direct[Index] {
   def start: Index
   def end: Index
 }
+
 trait Index extends Any with OptLong {
   def indexValue: Long
-}
-
-/** Convenience.
- */
-trait AndThis {
-  def andThis(x: Unit): this.type = this
 }
 
 /** Generalized type constraint.

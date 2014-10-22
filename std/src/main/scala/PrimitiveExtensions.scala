@@ -24,7 +24,7 @@ final class AnyOps[A](val x: A) extends AnyVal {
 
   // The famed forward pipe.
   @inline def doto(f: A => Unit): A               = sideEffect(f(x))
-  @inline def isOr(p: A => Boolean)(alt: => A): A = if (p(x)) x else alt
+  @inline def isOr(p: Predicate[A])(alt: => A): A = if (p(x)) x else alt
   @inline def sideEffect(body: Unit): A           = x
   @inline def |>[B](f: A => B): B                 = f(x)
 

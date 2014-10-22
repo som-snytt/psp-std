@@ -2,7 +2,7 @@ package psp
 package std
 package pio
 
-import java.nio.file.{ Files, FileSystems, FileVisitResult, StandardOpenOption }
+import java.nio.file.{ Files, FileSystems, FileVisitResult, StandardOpenOption, FileSystemException }
 import StandardOpenOption._
 import api.IndexRange
 
@@ -29,6 +29,7 @@ trait JavaPathMethods extends Any {
    */
   def / (segment: String): Path        = path resolve segment
   def absolute: Path                   = path.toAbsolutePath
+  def children: Paths                  = entries()
   def extension: String                = if (filename containsChar '.') filename.dottedSegments.last.toLowerCase else ""
   def filename: String                 = pathname.toString
   def nearestDirectory: Path           = if (isDir) path else parent
@@ -86,11 +87,9 @@ trait JavaPathMethods extends Any {
   def walk(visitor: PathVisitor): Unit                              = Files.walkFileTree(path, visitor)
   def lines(codec: Codec): pVector[String] = Files.readAllLines(path, codec.charSet).pvec
 
-  def filterDeepFiles(p: PathPredicate): Paths = {
-    val buf = sciVector.newBuilder[Path] mapResult (_.pvec)
-    def loop(path: Path): Unit = if (path.isDir) path.entries() foreach loop else if (p(path)) buf += path
+  def filterDeepFiles(p: PathPredicate): Paths = Direct build { f =>
+    def loop(path: Path): Unit = if (path.isDir) path.entries() foreach loop else if (p(path)) f(path)
     loop(path)
-    buf.result
   }
 
   def readNBytes(toRead: Int): Bytes = {

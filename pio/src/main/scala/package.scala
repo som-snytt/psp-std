@@ -12,7 +12,7 @@ package object pio {
   implicit def opsFilesStatics(path: Path): JnfFilesStatics                        = new JnfFilesStatics(path)
   implicit def opsJarEntry(entry: JarEntry): JioJarEntryOps                        = new JioJarEntryOps(entry)
   implicit def opsManifestMap(m: jManifest): ManifestMap                           = ManifestMap(m)
-  implicit def opsSeqString(xs: sSeq[String]): JioSeqStringOps                     = new JioSeqStringOps(xs)
+  implicit def opsSeqString(xs: scSeq[String]): JioSeqStringOps                    = new JioSeqStringOps(xs)
   implicit def opsUri(uri: jUri): JioUriOps                                        = new JioUriOps(uri)
   implicit def opsFile(file: jFile): JioPathOps[Path]                              = opsPath(file.toURI.fs)
   implicit def opsPath[A <: Path](path: A): JioPathOps[A]                          = new JioPathOps[A](path)

@@ -90,7 +90,7 @@ final case class LabeledView[+A, Repr](prev: BaseView[A, Repr], label: String) e
   def isAtomic    = prev.isAtomic
   def size    = prev.size
   def calls       = prev.calls
-  def viewChain   = Direct[View[_]](this) ++ prev.viewChain.tail
+  def viewChain   = Direct[View[_]](this).m ++ prev.viewChain.m.tail force
   def viewRange   = prev.viewRange
 }
 

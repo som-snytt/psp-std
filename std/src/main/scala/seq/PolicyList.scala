@@ -31,11 +31,18 @@ object PolicyList {
   implicit class PolicyListOps[A](val xs: PolicyList[A]) extends AnyVal {
     def ::(x: A): pCons[A] = new pCons(x, xs)
   }
-  final class FromScala[A](val xs: sciLinearSeq[A]) extends AnyVal with Linear[A] {
-    def size = Size(xs)
-    def isEmpty  = xs.isEmpty
-    def head     = xs.head
-    def tail     = new FromScala(xs.tail)
+  /** FIXME - This should be a value class but in 2.10 it's our friend Mr. Bug again.
+      [error] (run-main-0) java.lang.ClassCastException: psp.std.PolicyList$FromScala cannot be cast to scala.collection.immutable.LinearSeq
+      java.lang.ClassCastException: psp.std.PolicyList$FromScala cannot be cast to scala.collection.immutable.LinearSeq
+        at psp.std.package$.fromScala(package.scala:210)
+        at psp.std.package$.fromElems(package.scala:221)
+        at psp.std.PolicySet$.elems(PolicySet.scala:13)
+   */
+  final class FromScala[A](val xs: sciLinearSeq[A]) extends AnyRef with Linear[A] {
+    def size    = Size(xs)
+    def isEmpty = xs.isEmpty
+    def head    = xs.head
+    def tail    = new FromScala(xs.tail)
     def foreach(f: A => Unit) = xs foreach f
   }
 

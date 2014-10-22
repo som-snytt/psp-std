@@ -15,7 +15,7 @@ object ManifestMap {
   def apply(manifest: jManifest): ManifestMap        = new ManifestMap(manifest) ++= initialMainAttrs
 }
 
-class ManifestMap private (val manifest: jManifest) extends AnyRef with api.AndThis {
+class ManifestMap private (val manifest: jManifest) extends AndThis {
   def +=(kv: (Name, String))         = andThis(javaAttrs.put(kv._1, kv._2))
   def ++=(kvs: pSeq[(Name, String)]) = andThis(kvs foreach +=)
 

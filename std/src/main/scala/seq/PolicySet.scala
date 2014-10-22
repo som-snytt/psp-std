@@ -16,22 +16,21 @@ object PolicySet {
   class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
     def size: IntSize     = Precise(xs.size)
     def contained         = Foreach[A](xs foreach _)
-    def contains(elem: A) = xs(elem)
+    def apply(elem: A)    = xs(elem)
     def equiv(x: A, y: A) = x == y
     def hash(x: A)        = x.##
   }
   class FromJava[A](xs: jSet[A]) extends ExtensionalSet[A] {
     def size: IntSize     = Precise(xs.size)
     def contained         = Foreach[A](BiIterable(xs) foreach _)
-    def contains(elem: A) = xs contains elem
+    def apply(elem: A)    = xs contains elem
     def equiv(x: A, y: A) = x == y
     def hash(x: A)        = x.##
   }
 }
 
-sealed trait IntensionalSet[A] extends AnyRef with Intensional[A, Boolean] with (A => Boolean) {
-  def apply(elem: A): Boolean = contains(elem)
-  def contains(elem: A): Boolean
+sealed trait IntensionalSet[A] extends AnyRef with Intensional[A, Boolean] with Predicate[A] {
+  def apply(elem: A): Boolean
   def equiv(x: A, y: A): Boolean
   def hash(x: A): Int
 }
@@ -43,27 +42,27 @@ object ExtensionalSet {
   sealed trait Derived[A] extends AnyRef with ExtensionalSet[A] with IntensionalSet.Derived[A] {
     protected def underlying: exSet[A]
   }
-  final case class Filtered[A](lhs: exSet[A], rhs: A => Boolean) extends Derived[A] {
+  final case class Filtered[A](lhs: exSet[A], rhs: Predicate[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+    def apply(elem: A)       = lhs(elem) && !rhs(elem)
     def contained            = lhs.contained filter rhs
     def size                 = lhs.size.atMost
   }
   final case class Intersect[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) && rhs(elem)
+    def apply(elem: A)       = lhs(elem) && rhs(elem)
     def contained            = lhs.contained filter rhs
     def size                 = lhs.size intersect rhs.size
   }
   final case class Union[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) || rhs(elem)
+    def apply(elem: A)       = lhs(elem) || rhs(elem)
     def contained            = Foreach.join(lhs.contained, rhs.contained filterNot lhs)
     def size                 = lhs.size union rhs.size
   }
   final case class Diff[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+    def apply(elem: A)       = lhs(elem) && !rhs(elem)
     def contained            = lhs.contained filterNot rhs
     def size                 = lhs.size diff rhs.size
   }
@@ -80,7 +79,7 @@ object ExtensionalSet {
     }
     def equiv(x: A, y: A)     = heq.equiv(x, y)
     def hash(x: A): Int       = heq.hash(x)
-    def contains(elem: A)     = wrapSet contains wrap(elem)
+    def apply(elem: A)        = wrapSet contains wrap(elem)
     def size: Precise         = newSize(wrapSet.size)
     def contained: Foreach[A] = wrapSet.m map (_.unwrap)
   }
@@ -94,30 +93,30 @@ object IntensionalSet {
     def equiv(x: A, y: A) = underlying.equiv(x, y)
     def hash(x: A)        = underlying.hash(x)
   }
-  final case class Filtered[A](lhs: inSet[A], rhs: A => Boolean) extends Derived[A] {
+  final case class Filtered[A](lhs: inSet[A], rhs: Predicate[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+    def apply(elem: A)       = lhs(elem) && !rhs(elem)
   }
   final case class Complement[A](xs: inSet[A]) extends Derived[A] {
     protected def underlying = xs
-    def contains(elem: A)    = !xs(elem)
+    def apply(elem: A)       = !xs(elem)
   }
   final case class Intersect[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) && rhs(elem)
+    def apply(elem: A)       = lhs(elem) && rhs(elem)
   }
   final case class Union[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+    def apply(elem: A)       = lhs(elem) && !rhs(elem)
   }
   final case class Diff[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
     protected def underlying = lhs
-    def contains(elem: A)    = lhs(elem) && !rhs(elem)
+    def apply(elem: A)       = lhs(elem) && !rhs(elem)
   }
-  final case class Impl[A](member: A => Boolean, heq: HashEq[A]) extends IntensionalSet[A] {
+  final case class Impl[A](member: Predicate[A], heq: HashEq[A]) extends IntensionalSet[A] {
     def equiv(x: A, y: A) = heq.equiv(x, y)
     def hash(x: A): Int   = heq.hash(x)
-    def contains(elem: A) = member(elem)
+    def apply(elem: A)    = member(elem)
   }
 }
 

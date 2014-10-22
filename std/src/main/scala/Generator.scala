@@ -21,7 +21,7 @@ object Generator {
 
   def unfold[A](zero: A)(f: A => A): Gen[A] = new UnfoldGenerator(zero, f)
 
-  @tailrec private def filterer[A](xs: Gen[A], p: A => Boolean, f: A => Unit): Gen[A] = {
+  @tailrec private def filterer[A](xs: Gen[A], p: Predicate[A], f: A => Unit): Gen[A] = {
     if (xs.isEmpty) Empty else {
       var done = false
       val next = xs(x => if (p(x)) try f(x) finally done = true)
@@ -41,7 +41,7 @@ object Generator {
   def flatten[A](xss: Gen[Gen[A]]): Gen[A]             = xss.fold(empty[A])(_ ++ _)
   def taken[A](xs: Gen[A], n: Int): Gen[A]             = create[A](f => if (xs.isEmpty || n <= 0) Empty else taken(xs(f), n - 1))
   def dropped[A](xs: Gen[A], n: Int): Gen[A]           = create[A](dropper(xs, n, _))
-  def filtered[A](xs: Gen[A], p: A => Boolean): Gen[A] = create[A](filterer(xs, p, _))
+  def filtered[A](xs: Gen[A], p: Predicate[A]): Gen[A] = create[A](filterer(xs, p, _))
 
   class Impl[A](val mf: Susp[A]) extends AnyVal with Gen[A] {
     def apply(f: A => Unit): Gen[A] = Try(mf(f)) | empty[A]
@@ -127,7 +127,7 @@ package ops {
       }
       loop(g, zero)
     }
-    @inline def withFilter(p: A => Boolean): Gen[A] = filtered(g, p)
-    @inline def filter(p: A => Boolean): Gen[A]     = filtered(g, p)
+    @inline def withFilter(p: Predicate[A]): Gen[A] = filtered(g, p)
+    @inline def filter(p: Predicate[A]): Gen[A]     = filtered(g, p)
   }
 }

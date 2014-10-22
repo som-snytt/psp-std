@@ -12,7 +12,7 @@ final class BitVector(longs: Array[Long], val size: Precise) extends Direct.Dire
   def elemAt(index: Index): Boolean     = apply64(index / 64)(index % 64)
 
   override def toString = if (isEmpty) "" else {
-    val xs: pVector[String] = longs.pvec.init map (l => 64.size.padLeft(l.binary, '0'))
+    val xs: pVector[String] = longs.m.init map (l => 64.size.padLeft(l.binary, '0')) force
     val ys: String          = longs.last.binary take lastSize
     (xs :+ ys).mkString("\n")
   }

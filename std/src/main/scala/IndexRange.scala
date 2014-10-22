@@ -29,9 +29,9 @@ final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Dire
   def takeRight(n: Precise): IndexRange    = IndexRange(intRange takeRight n)
   def slice(range: IndexRange): IndexRange = IndexRange(intRange slice range)
 
-  def prefixLength(p: Index => Boolean): Long    = intRange prefixLength (i => p(Index(i)))
-  def dropWhile(p: Index => Boolean): IndexRange = IndexRange(intRange dropWhile (i => p(Index(i))))
-  def takeWhile(p: Index => Boolean): IndexRange = IndexRange(intRange takeWhile (i => p(Index(i))))
+  def prefixLength(p: Predicate[Index]): Long    = intRange prefixLength (i => p(Index(i)))
+  def dropWhile(p: Predicate[Index]): IndexRange = IndexRange(intRange dropWhile (i => p(Index(i))))
+  def takeWhile(p: Predicate[Index]): IndexRange = IndexRange(intRange takeWhile (i => p(Index(i))))
 
   override def toString = s"[$start,$end)"
 }

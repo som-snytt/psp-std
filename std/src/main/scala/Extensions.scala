@@ -61,30 +61,3 @@ final class FileTimeOps(val time: jFileTime) extends AnyVal {
 }
 
 final class ClassLoaderOps(val loader: jClassLoader) extends ClassLoaderTrait
-
-final class ClassOps(val clazz: jClass) extends AnyVal {
-  private def transitiveClosure[A: Eq](root: A)(f: A => pVector[A]): pVector[A] = {
-    val buf  = vectorBuilder[A]()
-    val seen = scmSet[A]()
-    def loop(root: A): Unit = if (!seen(root)) {
-      seen += root
-      buf += root
-      f(root) foreach loop
-    }
-    loop(root)
-    buf.result.pvec
-  }
-  def ancestorNames: pVector[String]    = ancestors map (_.rawName)
-  def ancestors: pVector[jClass]        = transitiveClosure[jClass](clazz)(_.parents)(Eq.natural())
-  def fields: pVector[jField]           = clazz.getFields.pvec
-  def hasModuleName: Boolean            = rawName endsWith "$"
-  def methods: pVector[jMethod]         = clazz.getMethods.pvec
-  def nameSegments: pVector[String]     = rawName.dottedSegments
-  def parentInterfaces: pVector[jClass] = clazz.getInterfaces.pvec
-  def parents: pVector[jClass]          = superClass.pvec ++ parentInterfaces
-  def qualifiedName: String             = rawName.mapSplit('.')(decodeName)
-  def rawName: String                   = clazz.getName
-  def shortName: String                 = unqualifiedName
-  def superClass: Option[jClass]        = Option(clazz.getSuperclass)
-  def unqualifiedName: String           = decodeName(nameSegments.last)
-}

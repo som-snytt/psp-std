@@ -8,9 +8,9 @@ trait MapView[-K, +V] extends Any with Intensional[K, V] {
   type CoMapTo[-X] <: MapView[X, V]
   type MapTo[+X] <: MapView[K, X]
 
-  def map[V1](f: V => V1): MapTo[V1]
   def comap[K1](f: K1 => K): CoMapTo[K1]
   def filter(p: Predicate[V]): MapTo[V]
+  def map[V1](f: V => V1): MapTo[V1]
 }
 
 trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
@@ -18,7 +18,6 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   type SplitTo[+X] <: View.Split[X]
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]
-  def zip[B](that: View[B]): MapTo[(A, B)]
   def calls: Int
   def collect[B](pf: A ?=> B): MapTo[B]
   def description: String
@@ -42,6 +41,7 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   def viewChain: Direct[View[_]]
   def viewRange: IndexRange
   def withFilter(p: Predicate[A]): MapTo[A]
+  def zip[B](that: View[B]): MapTo[(A, B)]
 }
 
 trait FrontSliceable[+A] extends Any {

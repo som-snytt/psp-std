@@ -16,10 +16,10 @@ import psp.dmz.PolicyDmz
  *  like inheritance, specificity, method dispatch, and so forth.
  */
 abstract class StdPackage
-      extends StdOrder
+      extends OrderInstances
          with StdZipped
          with StdProperties
-         with StdAlgebra
+         with AlgebraInstances
          with StdGateways
          with StdArrowAssoc
          with PolicyDmz {
@@ -32,65 +32,57 @@ abstract class StdPackage
     def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))
     def map[Next](f: To => Next): Builds[Elem, Next]   = Builds(xs => f(z build xs))
     def direct: Suspended[Elem] => To                  = mf => z build Foreach(mf)
+    def scalaBuilder: Builder[Elem, To]                = Vector.newBuilder[Elem] mapResult (xs => z build xs)
   }
   implicit class JavaEnumerationOps[A](it: jEnumeration[A]) {
     def toIterator = BiIterator enumeration it
   }
-
-  // type WalkablePair[+T0, +T1, Repr, +M[+X]] = Walkable[Repr] {
-  //   type A     = (T0, T1)
-  //   type CC[X] = M[X]
-  // }
-
-  // implicit def tuple2SeqOps[T0, T1, Repr, M[X]](xs: Repr)(implicit tc: WalkablePair[T0, T1, Repr, M]): Tuple2SeqOps[T0, T1, Repr, M] =
-  //   new Tuple2SeqOps[T0, T1, Repr, M](xs, tc)
-
-  // class Tuple2SeqOps[T0, T1, Repr, M[X]](xs: Repr, val tc: WalkablePair[T0, T1, Repr, M]) {
-  //   def lefts(implicit z: Builds[T0, M[T0]]): M[T0]  = z build (tc wrap xs map (_._1))
-  //   def rights(implicit z: Builds[T1, M[T1]]): M[T1] = z build (tc wrap xs map (_._2))
-  //   // def comap[Prev](f: Prev => Elem): Builds[Prev, To]   = Builds(xs => z build (xs map f))
-  //   // def map[Next](f: To => Next): Builds[Elem, Next]     = Builds(xs => f(z build xs))
-  //   // def lefts[That](implicit z: Builds[T0, That]): That  = z build (tc wrap xs).map(_._1)
-  //   // def rights[That](implicit z: Builds[T1, That]): That = z build (tc wrap xs).map(_._2)
-  // }
-
   implicit class TupleViewOps[A, B](val xs: View[(A, B)]) {
     def filterLeft(p: Predicate[A])  = xs withFilter (x => p(x._1))
     def filterRight(p: Predicate[B]) = xs withFilter (x => p(x._2))
-    def lefts                        = xs map (_._1)
-    def rights                       = xs map (_._2)
-
-    // def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))
-    // def map[Next](f: To => Next): Builds[Elem, Next]   = Builds(xs => f(z build xs))
+    def lefts: View[A]               = xs map (_._1)
+    def rights: View[B]              = xs map (_._2)
   }
+  implicit class Tuple2Ops[A, B](val lhs: (A, B)) {
+    def fold[C, D](rhs: (A, B))(f: (A, A) => C, g: (B, B) => C)(h: (C, C) => D): D =
+      h(f(lhs._1, rhs._1), g(lhs._2, rhs._2))
+  }
+  implicit class AnyTargetSeqOps[A: HashEq](root: A) {
+    def transitiveClosure(expand: A => pSeq[A]): pSeq[A] = {
+      var seen = PolicySet.elems[A]()
+      def loop(root: A, f: A => Unit): Unit = if (!seen(root)) {
+        seen = seen union newSet(root)
+        f(root)
+        expand(root) |> (xs => if (xs != null) xs foreach (x => loop(x, f)))
+      }
+      Foreach(f => loop(root, f))
+    }
+  }
+  implicit def booleanToPredicate(value: Boolean): Predicate[Any] = if (value) ConstantTrue else ConstantFalse
+  implicit def jClassToPolicyClass(x: jClass): PolicyClass        = new PolicyClass(x)
 
   implicit def conforms[A] : (A <:< A) = new conformance[A]
-
-  // implicit def intensionalToFunction1[T, R](f: Intensional[T, R]): T => R = x => f(x)
 }
 
-trait StdAlgebra {
+trait AlgebraInstances {
   implicit def identityAlgebra : BooleanAlgebra[Boolean]           = Algebras.Identity
-  implicit def scalaLabelAlgebra : BooleanAlgebra[Label]           = Algebras.LabelAlgebra
   implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]]  = new Algebras.Predicate[A]
   implicit def intensionalSetAlgebra[A] : BooleanAlgebra[inSet[A]] = new Algebras.inSetAlgebra[A]
-
-  implicit def opsBooleanAlgebra[A](x: BooleanAlgebra[A]): ops.BooleanAlgebraOps[A] = new ops.BooleanAlgebraOps[A](x)
 }
 
-trait StdRead {
+trait ReadInstances {
   implicit def bigDecRead: Read[BigDecimal] = Read(s => BigDecimal(s))
   implicit def bigIntRead: Read[BigInt]     = Read(s => BigInt(s))
   implicit def doubleRead: Read[Double]     = Read(_.toDouble)
   implicit def floatRead: Read[Float]       = Read(_.toFloat)
   implicit def intRead: Read[Int]           = Read(_.toInt)
   implicit def longRead: Read[Long]         = Read(_.toLong)
+  implicit def regexRead: Read[Regex]       = Read(Regex)
   implicit def stringRead: Read[String]     = Read(s => s)
   implicit def uriRead: Read[jUri]          = Read(jUri)
-  implicit def regexRead: Read[Regex]       = Read(Regex)
 }
 
-trait StdOrder {
+trait OrderInstances {
   implicit def booleanOrder: Order[Boolean] = orderBy[Boolean](x => if (x) 1 else 0)
   implicit def byteOrder: Order[Byte]       = Order.fromInt[Byte](_ - _)
   implicit def charOrder: Order[Char]       = Order.fromInt[Char](_ - _)
@@ -107,10 +99,10 @@ trait StdOrder {
   implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
   implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
 
-  implicit def sizeInfoPartialOrder: PartialOrder[Size] = PartialOrder(Size.partialCompare)
+  implicit def sizePartialOrder: PartialOrder[Size] = PartialOrder(Size.partialCompare)
 }
 
-trait StdZero {
+trait ZeroInstances {
   implicit def arrayZero[A: CTag]   = Zero[Array[A]](Array[A]())
   implicit def bigDecimalZero       = Zero[BigDecimal](BigDecimal(0))
   implicit def bigIntZero           = Zero[BigInt](BigInt(0))
@@ -122,7 +114,7 @@ trait StdZero {
   implicit def indexZero[A]         = Zero[Index](NoIndex)
   implicit def intZero              = Zero[Int](0)
   implicit def longZero             = Zero[Long](0l)
-  implicit def sOptionZero[A]       = Zero[Option[A]](None)
+  implicit def scalaOptionZero[A]   = Zero[Option[A]](None)
   implicit def scIterableZero[A]    = Zero[scIterable[A]](Nil)
   implicit def scIteratorZero[A]    = Zero[scIterator[A]](scIterator.empty)
   implicit def scSeqZero[A]         = Zero[scSeq[A]](Nil)
@@ -136,22 +128,25 @@ trait StdZero {
   implicit def unitZero             = Zero[Unit](())
 }
 
-trait StdEq {
-  implicit def booleanEq: HashEq[Boolean]   = HashEq.natural()
-  implicit def byteEq: HashEq[Byte]         = HashEq.natural()
-  implicit def charEq: HashEq[Char]         = HashEq.natural()
-  implicit def doubleEq: HashEq[Double]     = HashEq.natural()
-  implicit def floatEq: HashEq[Float]       = HashEq.natural()
-  implicit def intEq: HashEq[Int]           = HashEq.natural()
-  implicit def longEq: HashEq[Long]         = HashEq.natural()
-  implicit def shortEq: HashEq[Short]       = HashEq.natural()
-  implicit def unitHash: HashEq[Unit]       = HashEq.natural()
+trait EqInstances {
+  import HashEq.natural
 
-  implicit def indexEq: HashEq[Index]     = HashEq.natural()
-  implicit def jTypeEq: HashEq[jType]     = HashEq.natural()
-  implicit def nthEq: HashEq[Nth]         = HashEq.natural()
-  implicit def offsetEq: HashEq[Offset]   = HashEq.natural()
-  implicit def stringEq: HashEq[String]   = HashEq.natural()
+  implicit def booleanEq: HashEq[Boolean] = natural()
+  implicit def byteEq: HashEq[Byte]       = natural()
+  implicit def charEq: HashEq[Char]       = natural()
+  implicit def doubleEq: HashEq[Double]   = natural()
+  implicit def floatEq: HashEq[Float]     = natural()
+  implicit def intEq: HashEq[Int]         = natural()
+  implicit def longEq: HashEq[Long]       = natural()
+  implicit def shortEq: HashEq[Short]     = natural()
+  implicit def unitHash: HashEq[Unit]     = natural()
+
+  implicit def indexEq: HashEq[Index]             = natural()
+  implicit def jTypeEq: HashEq[jType]             = natural()
+  implicit def nthEq: HashEq[Nth]                 = natural()
+  implicit def offsetEq: HashEq[Offset]           = natural()
+  implicit def stringEq: HashEq[String]           = natural()
+  implicit def policyClassEq: HashEq[PolicyClass] = natural()
 
   implicit def sizeEq: HashEq[Size] = HashEq(Size.equiv, Size.hash)
   implicit def pathEq: HashEq[Path] = hashEqBy[Path](_.toString)
@@ -164,20 +159,13 @@ trait StdEq {
 
   // Since Sets are created with their own notion of equality, you can't pass
   // an Eq instance. Map keys are also a set.
-  implicit def exSetEq[A] : Eq[exSet[A]]         = Eq((xs, ys) => (xs isSubsetOf ys) && (ys isSubsetOf xs))
-  implicit def pMapEq[K, V: Eq] : Eq[pMap[K, V]] = Eq((xs, ys) => (xs.keySet === ys.keySet) && (xs.keyVector forall (k => xs(k) === ys(k))))
-  implicit def pVectorEq[A: Eq] : Eq[pVector[A]] = Eq((xs, ys) => (xs hasSameSize ys) && (xs.indices forall (i => xs(i) === ys(i))))
-  implicit def scalaSeqEq[A: Eq] : Eq[scSeq[A]]  = Eq[scSeq[A]]((x, y) => (x corresponds y)(_ === _))
-  implicit def arrayEq[A: Eq] : Eq[Array[A]]     = eqBy[Array[A]](_.pvec)
+  implicit def arrayHashEq[A: HashEq] : HashEq[Array[A]]       = hashEqBy[Array[A]](_.pvec)
+  implicit def vectorHashEq[A: Eq] : HashEq[pVector[A]]        = HashEq(corresponds[A], _.toScalaVector.##)
+  implicit def exSetEq[A] : Eq[exSet[A]]                       = Eq(symmetrically[exSet[A]](_ isSubsetOf _))
+  implicit def pMapEq[K, V: Eq] : Eq[pMap[K, V]]               = Eq((xs, ys) => (xs.keySet === ys.keySet) && (xs.keyVector forall (k => xs(k) === ys(k))))
+  implicit def tuple2Eq[A: HashEq, B: HashEq] : HashEq[(A, B)] = HashEq[(A, B)]({ case ((x1, y1), (x2, y2)) => x1 === x2 && y1 === y2 }, x => x._1.hash + x._2.hash)
 
-  implicit def equivFromOrder[A: Order] : Eq[A]                = Eq[A]((x, y) => (x compare y) eq Cmp.EQ)
-  implicit def tuple2Eq[A: HashEq, B: HashEq] : HashEq[(A, B)] = HashEq[(A, B)]((x, y) => (x._1 === y._1) && (x._2 === y._2), x => x._1.hash + x._2.hash)
-}
+  implicit def equivFromOrder[A: Order] : Eq[A] = Eq[A](_ compare _ eq Cmp.EQ)
 
-object StdZero extends StdZero
-object StdEq extends StdEq
-
-object Unsafe {
-  implicit def universalEq[A] : HashEq[A]       = HashEq.natural()
-  implicit def universalShow[A] : Show[A]       = Show.natural()
+  def symmetrically[A](f: Relation[A]): Relation[A] = (x, y) => f(x, y) && f(y, x)
 }

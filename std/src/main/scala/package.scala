@@ -10,22 +10,17 @@ import psp.std.lowlevel._
 import psp.std.StdShow._
 
 package object std extends psp.std.StdPackage {
-  type sMap[K, +V] = sciMap[K, V]
-  type sList[+A]   = sciList[A]
-  type sSet[A]     = sciSet[A]
-  type sVector[+A] = sciVector[A]
-  type sSeq[+A]    = scSeq[A]
-
   type pSeq[+A]    = Foreach[A]
   type pVector[+A] = Direct[A]
   type pMap[K, V]  = PolicyMap[K, V]
   type pList[A]    = PolicyList[A]
 
-  type pSet[A]  = ExtensionalSet[A]
   type inSet[A] = IntensionalSet[A]
   type exSet[A] = ExtensionalSet[A]
+  // type inMap[A] = IntensionalMap[A]
+  // type exMap[A] = ExtensionalMap[A]
 
-  type DocSeq = pSeq[Doc]
+  type DocSeq      = pSeq[Doc]
 
   // Inlinable.
   final val InputStreamBufferSize = 8192
@@ -108,6 +103,7 @@ package object std extends psp.std.StdPackage {
   type ForeachableType[A0, Repr, CC0[X]]  = Foreachable[Repr]  { type A = A0 ; type CC[B] = CC0[B] }
   type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] { type A = A0 ; type CC[B] = CC0[B] }
 
+  def pClassOf[A: CTag](): PolicyClass      = new PolicyClass(classOf[A])
   def classOf[A: CTag](): Class[_ <: A]     = classTag[A].runtimeClass.castTo[Class[_ <: A]]
   def classLoaderOf[A: CTag](): ClassLoader = classOf[A].getClassLoader
   def nullLoader(): ClassLoader             = NullClassLoader
@@ -209,8 +205,6 @@ package object std extends psp.std.StdPackage {
   def ordering[A: Order] : Ordering[A]          = ?[Order[A]].toScalaOrdering
   def regex(re: String): Regex                  = Regex(re)
 
-  // implicit def nilToSeq[A](x: scala.Nil.type): pSeq[A] = Nil.pseq
-
   def fromScala[A](xs: sCollection[A]): Foreach[A] = xs match {
     case xs: scIndexedSeq[_] => new Direct.FromScala(xs.toIndexedSeq)
     case xs: sciLinearSeq[_] => new PolicyList.FromScala(xs)
@@ -228,19 +222,20 @@ package object std extends psp.std.StdPackage {
     case _                      => fromScala(xs.toVector)
   }
 
-  def convertSeq[A, B](xs: sList[A])(implicit conversion: A => B): sList[B]     = xs map conversion
-  def convertSeq[A, B](xs: sVector[A])(implicit conversion: A => B): sVector[B] = xs map conversion
-  def convertSeq[A, B](xs: sSeq[A])(implicit conversion: A => B): sSeq[B]       = xs map conversion
+  def convertSeq[A, B](xs: sciList[A])(implicit conversion: A => B): sciList[B]     = xs map conversion
+  def convertSeq[A, B](xs: sciVector[A])(implicit conversion: A => B): sciVector[B] = xs map conversion
+  def convertSeq[A, B](xs: scSeq[A])(implicit conversion: A => B): scSeq[B]         = xs map conversion
+  def convertSeq[A, B](xs: pVector[A])(implicit conversion: A => B): pVector[B]     = xs map conversion
+  def convertSeq[A, B](xs: Array[A])(implicit conversion: A => B): pVector[B]       = xs.pvec map conversion
 
-  def mapBuilder[K, V](xs: (K, V)*): Builder[(K, V), sMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
-  def setBuilder[A](xs: A*): Builder[A, sSet[A]]                 = sciSet.newBuilder[A] ++= xs
-  def listBuilder[A](xs: A*): Builder[A, sList[A]]               = sciList.newBuilder[A] ++= xs
-  def arrayBuilder[A: CTag](xs: A*): Builder[A, Array[A]]        = scala.Array.newBuilder[A] ++= xs
-  def vectorBuilder[A](xs: A*): Builder[A, sVector[A]]           = sciVector.newBuilder[A] ++= xs
-  def mapToList[K, V](): scmMap[K, sList[V]]                     = scmMap[K, sciList[V]]() withDefaultValue Nil
+  def mapBuilder[K, V](xs: (K, V)*): Builder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
+  def setBuilder[A](xs: A*): Builder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
+  def listBuilder[A](xs: A*): Builder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
+  def arrayBuilder[A: CTag](xs: A*): Builder[A, Array[A]]         = scala.Array.newBuilder[A] ++= xs
+  def vectorBuilder[A](xs: A*): Builder[A, sciVector[A]]          = sciVector.newBuilder[A] ++= xs
+  def mapToList[K, V](): scmMap[K, sciList[V]]                    = scmMap[K, sciList[V]]() withDefaultValue Nil
 
   // Java.
-  // def jIterable[A](body: => jIterator[A]): BiIterable[A] = BiIterable[A](body)
   def jMap[K, V](xs: (K, V)*): jMap[K, V]                = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
   def jSet[A](xs: A*): jSet[A]                           = new jHashSet[A] doto (b => xs foreach b.add)
   def jList[A](xs: A*): jList[A]                         = java.util.Arrays.asList(xs: _* )
@@ -253,15 +248,15 @@ package object std extends psp.std.StdPackage {
 
   // PolicyMap is our own creation since SortedMap is way overspecified
   // and LinkedHashMap is too slow and only comes in a mutable variety.
-  def newMap[K : HashEq, V](kvs: (K, V)*): pMap[K, V]          = PolicyMap[K, V](PolicySet(kvs.m.toPolicyVector.map(_._1)), kvs.toMap)
-  def newMap[K, V](keys: pSet[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
-  def newMap[K : HashEq, V](kvs: pSeq[(K, V)]): pMap[K, V]     = newMap(kvs.seq: _*)
-  def newList[A](xs: A*): pList[A]                             = PolicyList(xs: _*)
-  def newSet[A: HashEq](xs: A*): exSet[A]                      = PolicySet.elems[A](xs: _*)
-  def newSeq[A](xs: A*): pSeq[A]                               = Direct[A](xs: _*)
-  def newPredicate[A](f: Predicate[A]): Predicate[A]           = f
-  def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V    = { case x if p(x) => f(x) }
-  def newCmp(difference: Long): Cmp                            = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
+  def newMap[K : HashEq, V](kvs: (K, V)*): pMap[K, V]           = PolicyMap[K, V](PolicySet(kvs.m.toPolicyVector.map(_._1)), kvs.toMap)
+  def newMap[K, V](keys: exSet[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
+  def newMap[K : HashEq, V](kvs: pSeq[(K, V)]): pMap[K, V]      = newMap(kvs.seq: _*)
+  def newList[A](xs: A*): pList[A]                              = PolicyList(xs: _*)
+  def newSet[A: HashEq](xs: A*): exSet[A]                       = PolicySet.elems[A](xs: _*)
+  def newSeq[A](xs: A*): pSeq[A]                                = Direct[A](xs: _*)
+  def newPredicate[A](f: Predicate[A]): Predicate[A]            = f
+  def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V     = { case x if p(x) => f(x) }
+  def newCmp(difference: Long): Cmp                             = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
 
   def newArray[A: CTag](size: Precise): Array[A] = new Array[A](size.intSize)
   def newSize(n: Long): Precise = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)

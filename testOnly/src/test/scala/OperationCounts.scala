@@ -3,7 +3,6 @@ package tests
 
 import compat.ScalaNative
 import psp.std._, api._, StdShow._, StdEq._
-import org.scalacheck._
 
 object IntViews {
   type IntView    = View[Int]

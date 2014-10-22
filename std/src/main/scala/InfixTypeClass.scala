@@ -47,8 +47,9 @@ final class AlgebraOps[A](val lhs: A) extends AnyVal {
   def isOne(implicit z: BooleanAlgebra[A]): Boolean     = z.one id_== lhs
 }
 final class EqOps[A](val lhs: A) extends AnyVal {
-  def ===(rhs: A)(implicit eq: Eq[A]): Boolean = eq.equiv(lhs, rhs)
-  def !==(rhs: A)(implicit eq: Eq[A]): Boolean = !eq.equiv(lhs, rhs)
+  def isEqualBy[B: Eq](f: A => B)(rhs: A): Boolean = f(lhs) === f(rhs)
+  def ===(rhs: A)(implicit eq: Eq[A]): Boolean     = eq.equiv(lhs, rhs)
+  def !==(rhs: A)(implicit eq: Eq[A]): Boolean     = !eq.equiv(lhs, rhs)
 }
 final class HashOps[A](val lhs: A) extends AnyVal {
   def hash(implicit z: Hash[A]): Int = z hash lhs

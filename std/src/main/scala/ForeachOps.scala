@@ -46,10 +46,10 @@ trait ConversionOps[A] extends Any {
   def toPolicySeq: pSeq[A]                         = Foreach.builder[A] build underlying
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
-  def toScalaList: sList[A]                                     = toScala[sciList]
-  def toScalaSet: sSet[A]                                       = toScala[sciSet]
-  def toScalaVector: sVector[A]                                 = toScala[sciVector]
-  def toScalaSeq: sSeq[A]                                       = toScala[sciSeq]
+  def toScalaList: sciList[A]                                   = toScala[sciList]
+  def toScalaSet: sciSet[A]                                     = toScala[sciSet]
+  def toScalaVector: sciVector[A]                               = toScala[sciVector]
+  def toScalaSeq: sciSeq[A]                                     = toScala[sciSeq]
   def toScalaStream: sciStream[A]                               = toScala[sciStream]
   def toScalaTraversable: scTraversable[A]                      = toScala[scTraversable]
   def toScalaMap[K, V](implicit ev: A <:< (K, V)): sciMap[K, V] = toScalaVector map ev toMap
@@ -61,11 +61,11 @@ trait ConversionOps[A] extends Any {
   def biIterator: BiIterator[A] = biIterable.iterator
   def biIterable: BiIterable[A] = BiIterable(toScalaIterable)
 
-  def plist: pList[A]                      = toPolicyList
-  def pvec: pVector[A]                     = toPolicyVector
-  def pseq: pSeq[A]                        = toPolicySeq
-  def pset(implicit z: HashEq[A]): pSet[A] = toPolicySet
-  def naturalSet: pSet[A]                  = pset(HashEq.natural())
+  def plist: pList[A]                       = toPolicyList
+  def pvec: pVector[A]                      = toPolicyVector
+  def pseq: pSeq[A]                         = toPolicySeq
+  def pset(implicit z: HashEq[A]): exSet[A] = toPolicySet
+  def naturalSet: exSet[A]                  = pset(HashEq.natural())
 
   def seq: sciSeq[A] = toScala[sciSeq] // varargs
 
@@ -79,13 +79,15 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   private def stringed(sep: String)(f: A => String): String =
     foldl(new StringBuilder)((sb, x) => if (sb.isEmpty) sb append f(x) else sb append sep append f(x) ).result
 
-  def mkString(sep: String): String                      = stringed(sep)(_.any_s)
-  def find(p: Predicate[A]): Option[A]                   = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
-  def forall(p: Predicate[A]): Boolean                   = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
-  def exists(p: Predicate[A]): Boolean                   = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
-  def count(p: A => Boolean): Int                        = foldl[Int](0)((res, x) => if (p(x)) res + 1 else res)
+  def mkString(sep: String): String                  = stringed(sep)(_.any_s)
+  def mk_s(sep: String)(implicit z: Show[A]): String = stringed(sep)(_.to_s)
 
-  def indexAtWhich(p: A => Boolean): Index = zipIndex(Foreach(runForeach)).find((x, i) => p(x)).fold(NoIndex)(_._2)
+  def find(p: Predicate[A]): Option[A] = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
+  def forall(p: Predicate[A]): Boolean = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
+  def exists(p: Predicate[A]): Boolean = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
+  def count(p: Predicate[A]): Int      = foldl[Int](0)((res, x) => if (p(x)) res + 1 else res)
+
+  def indexAtWhich(p: Predicate[A]): Index = zipIndex(Foreach(runForeach)).find((x, i) => p(x)).fold(NoIndex)(_._2)
   def indexByEquals(x: A): Index           = indexAtWhich(_ == x)
   def containsByEquals(x: A): Boolean      = exists (_ == x)
 
@@ -94,13 +96,13 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
 
   final def collectFirst[B](pf: A ?=> B): Option[B]             = find(pf isDefinedAt _) map pf
   final def firstOrZero[B](pf: A ?=> B)(implicit z: Zero[B]): B = collectFirst(pf) | z.zero
-  final def findOrZero(p: A => Boolean)(implicit z: Zero[A]): A = find(p) | z.zero
+  final def findOrZero(p: Predicate[A])(implicit z: Zero[A]): A = find(p) | z.zero
 
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): sciVector[C] = toScalaVector map (f => ev(f)(x))
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): pMap[A, B]        = newMap(underlying.pvec map (x => x -> f(x)))
   def mapFrom[B](f: A => B)(implicit z: HashEq[B]): pMap[B, A]        = newMap(underlying.pvec map (x => f(x) -> x))
 
-  def findOr(p: A => Boolean, alt: => A): A            = find(p) | alt
+  def findOr(p: Predicate[A], alt: => A): A            = find(p) | alt
   def sortDistinct(implicit ord: Order[A]): pVector[A] = toScalaVector.distinct sorted ord.toScalaOrdering
   def sortOrder[B: Order](f: A => B): pVector[A]       = toScalaVector sorted orderBy[A](f).toScalaOrdering
   def sorted(implicit ord: Order[A]): pVector[A]       = toScalaVector sorted ord.toScalaOrdering

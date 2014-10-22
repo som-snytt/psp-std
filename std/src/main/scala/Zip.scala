@@ -1,7 +1,7 @@
 package psp
 package std
 
-import api._
+import api._, StdEq._
 
 trait StdZipped {
   // There's a great deal of pain associated with trying to make this appear as an instance method.
@@ -11,6 +11,9 @@ trait StdZipped {
   def zipIndex[A1, R1](xs: R1)(implicit tc1: Walks[A1, R1]): Zip2Ops[A1, Index] = zip2(xs, Foreach from 0 map (i => Index(i)))
 
   def zip2[A1, R1, A2, R2](xs: R1, ys: R2)(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2]): Zip2Ops[A1, A2] = new Zip2Ops(tc1 wrap xs, tc2 wrap ys, (x, y) => true)
+
+  def corresponds[A: Eq](xs: pVector[A], ys: pVector[A]): Boolean =
+    (xs.size === ys.size) && (xs.indices forall (i => xs(i) === ys(i)))
 
   def zip3[A1, R1, A2, R2, A3, R3](xs: R1, ys: R2, zs: R3)(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2], tc3: Walks[A3, R3]): Zip3Ops[A1, R1, A2, R2, A3, R3] = new Zip3Ops(xs, ys, zs)
 
@@ -61,6 +64,7 @@ trait StdZipped {
       )
     )
   }
+
   // Implicit approach - works on 2.11, not on 2.10, ugly as hell in all lands.
   //
   // implicit class Tuple2WalkableOps[R1, A1, R2, A2](val xy: (R1, R2))(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2]) {
