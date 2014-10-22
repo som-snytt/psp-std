@@ -163,10 +163,10 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
 }
 
 trait HasPreciseSizeMethods extends Any {
-  def sizeInfo: PreciseSize
+  def size: Precise
 
-  def longSize: Long      = sizeInfo.value
-  def intSize: Int        = longSize.safeToInt.zeroPlus
+  def longSize: Long      = size.value
+  def intSize: Int        = longSize.safeToInt
   def isZero: Boolean     = longSize == 0L
   def isPositive: Boolean = longSize > 0L
   def indices: IndexRange = indexRange(0, intSize)
@@ -180,41 +180,41 @@ trait HasPreciseSizeMethods extends Any {
 }
 
 final class HasPreciseSizeOps(val x: HasPreciseSize) extends HasPreciseSizeMethods {
-  def sizeInfo = x.sizeInfo
+  def size: Precise = x.size
 }
 
-final class PreciseSizeOps(val sizeInfo: PreciseSize) extends AnyRef with HasPreciseSizeMethods {
+final class PreciseOps(val size: Precise) extends AnyRef with HasPreciseSizeMethods {
   def get: Long   = longSize
   def getInt: Int = intSize
   def toDouble: Double = get.toDouble
 
-  def + (n: Int): PreciseSize = newSize(longSize + n)
-  def - (n: Int): PreciseSize = newSize(longSize - n)
-  def * (n: Int): PreciseSize = newSize(longSize * n)
-  def / (n: Int): PreciseSize = newSize(longSize / n)
-  def % (n: Int): PreciseSize = newSize(longSize % n)
+  def + (n: Int): Precise = newSize(longSize + n)
+  def - (n: Int): Precise = newSize(longSize - n)
+  def * (n: Int): Precise = newSize(longSize * n)
+  def / (n: Int): Precise = newSize(longSize / n)
+  def % (n: Int): Precise = newSize(longSize % n)
 
-  def /+ (n: Int): PreciseSize = (this / n) + ( if ((this % n).isZero) 0 else 1 )
+  def /+ (n: Int): Precise = (this / n) + ( if ((this % n).isZero) 0 else 1 )
 
-  def + (n: PreciseSize): PreciseSize = newSize(longSize + n.longSize)
-  def - (n: PreciseSize): PreciseSize = newSize(longSize - n.longSize)
-  def * (n: PreciseSize): PreciseSize = newSize(longSize * n.longSize)
-  def / (n: PreciseSize): PreciseSize = newSize(longSize / n.longSize)
-  def % (n: PreciseSize): PreciseSize = newSize(longSize % n.longSize)
+  def + (n: Precise): Precise = newSize(longSize + n.longSize)
+  def - (n: Precise): Precise = newSize(longSize - n.longSize)
+  def * (n: Precise): Precise = newSize(longSize * n.longSize)
+  def / (n: Precise): Precise = newSize(longSize / n.longSize)
+  def % (n: Precise): Precise = newSize(longSize % n.longSize)
 
-  def min(that: PreciseSize): PreciseSize = newSize(longSize min that.longSize)
-  def max(that: PreciseSize): PreciseSize = newSize(longSize max that.longSize)
-  def increment: PreciseSize              = newSize(longSize + 1L)
-  def decrement: PreciseSize              = newSize(longSize - 1L)
+  def min(that: Precise): Precise = newSize(longSize min that.longSize)
+  def max(that: Precise): Precise = newSize(longSize max that.longSize)
+  def increment: Precise          = newSize(longSize + 1L)
+  def decrement: Precise          = newSize(longSize - 1L)
 
-  def timesConst[A](elem: A): pSeq[A]   = Foreach constant elem take sizeInfo
-  def timesEval[A](body: => A): pSeq[A] = Foreach continually body take sizeInfo
+  def timesConst[A](elem: A): pSeq[A]   = Foreach constant elem take size
+  def timesEval[A](body: => A): pSeq[A] = Foreach continually body take size
 
   def toIntRange                           = intRange(0, intSize)
   def padLeft(s: String, ch: Char): String = if (s.length >= longSize) s else (this - s.length timesConst ch mkString "") ~ s
 
-  def leftFormatString  = if (sizeInfo.isZero) "%s" else "%%-%ds" format intSize
-  def rightFormatString = if (sizeInfo.isZero) "%s" else "%%%ds" format intSize
+  def leftFormatString  = if (size.isZero) "%s" else "%%-%ds" format intSize
+  def rightFormatString = if (size.isZero) "%s" else "%%%ds" format intSize
   def leftFormat(arg: Doc): String  = leftFormatString format arg
   def rightFormat(arg: Doc): String = rightFormatString format arg
 
@@ -264,18 +264,18 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   // 1 to 100 splitSeq (_ splitAt 3.index) take 3 foreach println
   def apply(i: Index): A                              = xs elemAt i
   def exclusiveEnd: Index                             = Index(length)
-  def isNoLargerThan(that: SizeInfo): Boolean         = (xs: HasSizeInfo).sizeInfo p_<= that
-  def isNoLargerThan(that: HasSizeInfo): Boolean      = isNoLargerThan(that.sizeInfo)
-  def hasSameSize(that: HasSizeInfo): Boolean         = (xs: HasSizeInfo).sizeInfo p_== that.sizeInfo
+  def isNoLargerThan(that: Size): Boolean             = (xs: HasSize).size p_<= that
+  def isNoLargerThan(that: HasSize): Boolean          = isNoLargerThan(that.size)
+  def hasSameSize(that: HasSize): Boolean             = (xs: HasSize).size p_== that.size
   def indicesAtWhich(p: Predicate[A]): pVector[Index] = xs.indices filter (i => p(apply(i)))
   def init: pVector[A]                                = xs.m dropRight 1.size force
   def tail: pVector[A]                                = xs drop 1.size force
-  def last: A                                         = apply(xs.sizeInfo.lastIndex)
-  def length: Int                                     = xs.sizeInfo.intSize
+  def last: A                                         = apply(xs.size.lastIndex)
+  def length: Int                                     = xs.size.intSize
   def nths: pVector[Nth]                              = xs mapIndices (_.toNth)
   def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
   def runForeach(f: A => Unit): Unit                  = xs foreach f
-  def takeRight(n: PreciseSize): pVector[A]           = xs takeRight n
+  def takeRight(n: Precise): pVector[A]               = xs takeRight n
   def ++(ys: Direct[A]): Direct[A]                    = new Direct.Joined(xs, ys)
 
   def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
@@ -300,9 +300,9 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
   protected def rebuild[B](xs: Foreach[B]): CC[B]
 
-  def take(n: PreciseSize): View[A]     = xs.m take n
-  def drop(n: PreciseSize): View[A]     = xs.m drop n
-  def slice(range: IndexRange): View[A] = this drop range.precedingSize take range.sizeInfo
+  def take(n: Precise): View[A]     = xs.m take n
+  def drop(n: Precise): View[A]     = xs.m drop n
+  def slice(range: IndexRange): View[A] = this drop range.precedingSize take range.size
 
   def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.contained)
   def flatten[B](implicit ev: A <:< Foreach[B]): CC[B]                              = rebuild(Foreach[B](f => xs foreach (x => ev(x) foreach f)))

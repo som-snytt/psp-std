@@ -12,8 +12,7 @@ object Has {
   trait Tail[R]      extends Any with ElemType    { def hasTail(xs: R): R                                   }
   trait Head[-R]     extends Any with ElemType    { def hasHead(xs: R): Elem                                }
   trait IsEmpty[-R]  extends Any                  { def hasIsEmpty(xs: R): Boolean                          }
-  trait SizeInfo[-R] extends Any with ElemType    { def hasSizeInfo(xs: R): api.SizeInfo                    }
-  trait Size[-R]     extends Any with ElemType    { def hasSize(xs: R): api.PreciseSize                     }
+  trait Size[-R]     extends Any with ElemType    { def hasSize(xs: R): api.Size                            }
   trait Contains[-R] extends Any with ElemType    { def hasContains(xs: R)(x: Elem): Boolean                }
   trait Foreach[-R]  extends Any with ElemType    { def hasForeach(xs: R)(f: Elem => Unit): Unit            }
   trait Filter[R]    extends Any with ElemType    { def hasFilter(xs: R)(p: Predicate[Elem]): R             }
@@ -30,8 +29,8 @@ object Is {
   trait Container[M[X], A]       extends Any with Has.CcParam[M]     with Has.ElemParam[A]
   trait IndexContainer[M[X], A]  extends Any with Is.Container[M, A] with Is.Index[M[A]]
   trait LinearContainer[M[X], A] extends Any with Is.Container[M, A] with Is.Linear[M[A]]
-  trait ForeachView[M[X], A]     extends Any with Has.Foreach[M[A]]  with Has.View[M[A]] with Has.SizeInfo[M[A]]
-  trait Iterable[-R]             extends Any with Has.Foreach[R]     with Has.SizeInfo[R]
+  trait ForeachView[M[X], A]     extends Any with Has.Foreach[M[A]]  with Has.View[M[A]] with Has.Size[M[A]]
+  trait Iterable[-R]             extends Any with Has.Foreach[R]     with Has.Size[R]
   trait Seq[-R]                  extends Any with Has.Foreach[R]
   trait Set[-R]                  extends Any with Has.Foreach[R]     with Has.Contains[R]
   trait Map[-R]                  extends Any with Has.Foreach[R]     with Has.Contains[R]  with Has.Apply[R]  { type Elem = In }

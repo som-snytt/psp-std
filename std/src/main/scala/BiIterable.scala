@@ -57,7 +57,7 @@ object BiIterator {
   }
   private class VectorIterator[A](xs: pVector[A]) extends BiIterator[A] {
     private[this] var index: Index = 0.index
-    def hasNext   = xs.sizeInfo containsIndex index
+    def hasNext   = xs.size containsIndex index
     def next(): A = try xs(index) finally index += 1
   }
   private class Single[A](x: A) extends BiIterator[A] {

@@ -124,10 +124,11 @@ trait StdShow extends StdShowLow {
   //   show"def ${m.name}$ts($ps): $rs"
   // }
 
-  implicit def sizeInfoShow: Show[SizeInfo] = Show[SizeInfo] {
-    case PreciseSize(size)     => show"$size"
+  implicit def showSize: Show[Size] = Show[Size] {
+    case IntSize(size)         => show"$size"
+    case LongSize(size)        => show"$size"
     case Bounded(lo, Infinite) => show"$lo+"
-    case Bounded(lo, hi)       => "[%s,%s]".format(lo.toString, hi.toString)
+    case Bounded(lo, hi)       => show"[$lo, $hi]"
     case Infinite              => "<inf>"
   }
 
@@ -136,11 +137,11 @@ trait StdShow extends StdShowLow {
   // case Foreach.Constant(elem)            => show"Constant($elem)"
   // case Foreach.Continually(fn)           => show"Continually(<fn>)"
   // case Foreach.KnownSize(Infinite)       => "<inf>"
-  // case Foreach.KnownSize(PreciseSize(0)) => "[]"
-  // case xs @ Foreach.KnownSize(size: PreciseSize) =>
+  // case Foreach.KnownSize(LongSize(0)) => "[]"
+  // case xs @ Foreach.KnownSize(size: LongSize) =>
     // case xs: IndexRange                    => xs.toString
 
-  private def showElems[A: Show](small: PreciseSize, large: Int, xs: sciList[A]): String = xs splitAt large match {
+  private def showElems[A: Show](small: Precise, large: Int, xs: sciList[A]): String = xs splitAt large match {
     case (Nil, _)  => "[]"
     case (xs, Nil) => xs.m.joinComma.surround("[ ", " ]").render
     case (xs, _)   => (xs.m take small joinComma).surround("[ ", ", ... ]").render
@@ -149,13 +150,13 @@ trait StdShow extends StdShowLow {
     val small = 3.size
     val large = 10
     def elems() = showElems[A](small, large - 2, xs.m take large toScalaList)
-    (xs, xs.sizeInfo) match {
-      case ( xs: IndexRange, _)                                => s"$xs"
-      case ( _: Direct[_] | _: Linear[_], _)                   => elems()
-      case (Foreach.Joined(xs, ys), _)                         => show"$xs ++ $ys"
-      case (_, Bounded(PreciseSize(0L), Infinite))             => show"${xs.shortClass}"
-      case (_, Bounded(PreciseSize(n), Infinite)) if n < large => show"${xs.shortClass} (size $n+)"
-      case _                                                   => elems()
+    (xs, xs.size) match {
+      case ( xs: IndexRange, _)                            => s"$xs"
+      case ( _: Direct[_] | _: Linear[_], _)               => elems()
+      case (Foreach.Joined(xs, ys), _)                     => show"$xs ++ $ys"
+      case (_, Bounded(Precise(0L), Infinite))             => show"${xs.shortClass}"
+      case (_, Bounded(Precise(n), Infinite)) if n < large => show"${xs.shortClass} (size $n+)"
+      case _                                               => elems()
     }
   }
 }

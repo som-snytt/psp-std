@@ -31,7 +31,7 @@ class CollectionResult(viewFn: IntViewFun, nxs: NamedView) {
   val name        = nxs.name
   val xs          = nxs.view
   val description = xs.description
-  val size        = xs.sizeInfo
+  val size        = xs.size
   val applied     = viewFn(xs)
   val front3      = (applied take 3).force.pvec
   val result      = front3.to_s
@@ -107,9 +107,9 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
     val outcomes       = collections map (xs => new CollectionResult(viewFn, xs))
     val counts         = outcomes map (r => "%-3s".format(r.count)) mkString " "
     val description    = "%s  %s  // %s".format(viewFn(Direct[Int]().m).chainDescriptions.filterNot(_ == "<xs>").map("%-15s" format _).joinWords.render, counts, expected)
-    def passed         = outcomes.map(_.result).distinct.sizeInfo == 1.size
+    def passed         = outcomes.map(_.result).distinct.size == 1.size
     def distinctCounts = outcomes.map(_.count).distinct
-    def isInteresting  = distinctCounts.sizeInfo >= 4.size
+    def isInteresting  = distinctCounts.size >= 4.size
 
     override def toString = (
       description.asis <@> indices.tabular(

@@ -4,14 +4,14 @@ package tests
 import org.scalacheck._, Prop._, Gen._
 import psp.std._, api._
 
-trait PspArb1                 { implicit def arbSizeInfo: Arbitrary[SizeInfo]= Arbitrary(genSizeInfo) }
-trait PspArb2 extends PspArb1 { implicit def arbAtomic: Arbitrary[Atomic]    = Arbitrary(genAtomic)   }
-trait PspArb3 extends PspArb2 { implicit def arbSize: Arbitrary[PreciseSize] = Arbitrary(genPrecise)  }
+trait PspArb1                 { implicit def arbSize: Arbitrary[Size]       = Arbitrary(genSize)     }
+trait PspArb2 extends PspArb1 { implicit def arbAtomic: Arbitrary[Atomic]   = Arbitrary(genAtomic)   }
+trait PspArb3 extends PspArb2 { implicit def arbPrecise: Arbitrary[Precise] = Arbitrary(genPrecise)  }
 
-class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
-  def bundle = "SizeInfo laws"
+class SizeSpec extends ScalacheckBundle with PspArb3 {
+  def bundle = "Size laws"
 
-  type SI = SizeInfo
+  type SI = Size
   type BinOp[T] = (T, T) => T
   type Tried[T] = scala.Either[Throwable, T]
 
@@ -43,7 +43,7 @@ class SizeInfoSpec extends ScalacheckBundle with PspArb3 {
     "s1 <= (s1 max s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 max s2)),
     "s1 >= (s1 min s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_>= (s1 min s2)),
     "s1 <= (s1 + s2)"                 -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 + s2)),
-    "s1 >= (s1 - s2)"                 -> certain[Atomic, PreciseSize]((s1, s2) => (s1: SI) p_>= (s1 - s2)),
+    "s1 >= (s1 - s2)"                 -> certain[Atomic, Precise]((s1, s2) => (s1: SI) p_>= (s1 - s2)),
     "<inf> + n"                       -> forAll((s1: SI) => ((Infinite + s1) partialCompare Infinite) == PCmp.EQ),
     "max, min, and + are associative" -> associatives[SI](_ + _, _ max _, _ min _),
     "max, min, and + are commutative" -> commutatives[SI](_ + _, _ max _, _ min _)

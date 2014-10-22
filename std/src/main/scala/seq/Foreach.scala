@@ -7,21 +7,21 @@ object Foreach {
   def builder[A] : Builds[A, Foreach[A]] = Builds(identity)
 
   final class FromJava[A](xs: jIterable[A]) extends Foreach[A] {
-    def sizeInfo = SizeInfo(xs)
+    def size = Size(xs)
     @inline def foreach(f: A => Unit): Unit = BiIterable(xs) foreach f
   }
   final class FromScala[A](xs: sCollection[A]) extends Foreach[A] {
-    def sizeInfo = SizeInfo(xs)
+    def size = Size(xs)
     @inline def foreach(f: A => Unit): Unit = xs foreach f
   }
   final class ToScala[A](xs: Foreach[A]) extends sciTraversable[A] {
     def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
-  final class Impl[A](val sizeInfo: SizeInfo, mf: Suspended[A]) extends Foreach[A] {
+  final class Impl[A](val size: Size, mf: Suspended[A]) extends Foreach[A] {
     @inline def foreach(f: A => Unit): Unit = mf(f)
   }
   final case class Joined[A](xs: Foreach[A], ys: Foreach[A]) extends Foreach[A] {
-    def sizeInfo = xs.sizeInfo + ys.sizeInfo
+    def size = xs.size + ys.size
     @inline def foreach(f: A => Unit): Unit = {
       xs foreach f
       ys foreach f
@@ -30,10 +30,10 @@ object Foreach {
   trait AtomicSize[+A] extends Any with Foreach[A] with HasAtomicSize
   trait InfiniteSize[+A] extends Any with AtomicSize[A] {
     def isEmpty  = false
-    def sizeInfo = Infinite
+    def size = Infinite
   }
   object KnownSize {
-    def unapply[A](xs: Foreach[A]) = xs.sizeInfo optionally { case x: Atomic => x }
+    def unapply[A](xs: Foreach[A]) = xs.size optionally { case x: Atomic => x }
   }
 
   final case class Constant[A](elem: A) extends InfiniteSize[A] {
@@ -52,7 +52,7 @@ object Foreach {
     }
   }
 
-  def apply[A](mf: Suspended[A]): Foreach[A]                      = new Impl[A](SizeInfo.unknown, mf)
+  def apply[A](mf: Suspended[A]): Foreach[A]                      = new Impl[A](Size.unknown, mf)
   def constant[A](elem: A): Constant[A]                           = Constant[A](elem)
   def continuallySpan[A](p: A => Boolean)(expr: => A): Foreach[A] = continually(expr).m takeWhile p
   def continually[A](elem: => A): Continually[A]                  = Continually[A](() => elem)
@@ -61,6 +61,6 @@ object Foreach {
   def from(n: Int): Foreach[Int]                                  = unfold(n)(_ + 1)
   def from(n: Long): Foreach[Long]                                = unfold(n)(_ + 1)
   def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]         = Joined[A](xs, ys)
-  def sized[A](sizeInfo: SizeInfo)(mf: Suspended[A]): Foreach[A]  = new Impl[A](sizeInfo, mf)
+  def sized[A](size: Size)(mf: Suspended[A]): Foreach[A]  = new Impl[A](size, mf)
   def unfold[A](start: A)(next: A => A): Unfold[A]                = Unfold[A](start)(next)
 }

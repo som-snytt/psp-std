@@ -18,23 +18,23 @@ object Direct {
   final val Empty: Direct[Nothing] = new Impl[Nothing](newSize(0), i => abort(s"Empty($i)"))
 
   trait DirectImpl[+A] extends Any with api.Direct[A] with api.HasPreciseSize {
-    def isEmpty = sizeInfo.value == 0L
+    def isEmpty = size.value == 0L
   }
   trait Forwarder[A] extends Direct[A] {
     protected def underlying: Direct[A]
 
     def elemAt(i: Index): A         = underlying(i)
     def foreach(f: A => Unit): Unit = underlying foreach f
-    def sizeInfo                    = underlying.sizeInfo
+    def size                        = underlying.size
     def isEmpty                     = underlying.isEmpty
   }
 
   def builder[A] : Builds[A, Direct[A]] = arrayBuilder[Any] map (res => new WrapArray[A](res))
   def stringBuilder(): Builds[Char, String] = arrayBuilder[Char] map (cs => new String(cs))
   def arrayBuilder[A: CTag]: Builds[A, Array[A]] = Builds[A, Array[A]](xs =>
-    xs.sizeInfo match {
-      case size: PreciseSize => newArray[A](size) doto (xs foreachCounted _.updated)
-      case _                 => psp.std.arrayBuilder[A]() doto (b => xs foreach b.+=) result
+    xs.size match {
+      case size: Precise => newArray[A](size) doto (xs foreachCounted _.updated)
+      case _             => psp.std.arrayBuilder[A]() doto (b => xs foreach b.+=) result
     }
   )
   final class FromJava[A](xs: jList[A]) extends Leaf[A](newSize(xs.size)) {
@@ -47,10 +47,10 @@ object Direct {
     def apply(idx: Int): A = xs elemAt Index(idx)
     def length: Int        = xs.intSize
   }
-  abstract class Leaf[+A](val sizeInfo: PreciseSize) extends DirectImpl[A] {
+  abstract class Leaf[+A](val size: Precise) extends DirectImpl[A] {
     @inline final def foreach(f: A => Unit): Unit = this foreachIndex (i => f(elemAt(i)))
   }
-  final class Impl[A](size: PreciseSize, f: Index => A) extends Leaf[A](size) {
+  final class Impl[A](size: Precise, f: Index => A) extends Leaf[A](size) {
     def elemAt(i: Index): A = f(i)
   }
   private class WrapString(xs: String) extends Leaf[Char](newSize(xs.length)) {
@@ -61,13 +61,13 @@ object Direct {
   }
   final case class Joined[A](xs: Direct[A], ys: Direct[A]) extends DirectImpl[A] {
     def elemAt(i: Index): A = if (xs containsIndex i) xs elemAt i else ys elemAt (i - xs.intSize)
-    def sizeInfo            = xs.sizeInfo + ys.sizeInfo
+    def size            = xs.size + ys.size
     @inline final def foreach(f: A => Unit): Unit = {
       xs foreach f
       ys foreach f
     }
   }
-  class TransformIndices[A](xs: Direct[A], f: Index => Index) extends Leaf[A](xs.sizeInfo) {
+  class TransformIndices[A](xs: Direct[A], f: Index => Index) extends Leaf[A](xs.size) {
     def elemAt(i: Index): A = xs elemAt f(i)
   }
   final case class Reversed[A](xs: Direct[A]) extends TransformIndices(xs, xs.lastIndex - _.safeToInt)

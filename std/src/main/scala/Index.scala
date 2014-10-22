@@ -16,13 +16,13 @@ import api._
  *  Manipulations of undefined values remain undefined, like NaN.
  */
 final class IntIndex private[std] (val indexValue: Long) extends AnyVal with Index {
-  def /(size: Int): Index           = this / newSize(size)
-  def %(size: Int): Index           = this % newSize(size)
-  def /(size: PreciseSize): Index   = if (isUndefined) this else Index(indexValue / size.value)
-  def %(size: PreciseSize): Index   = if (isUndefined) this else Index(indexValue % size.value)
+  def /(size: Int): Index           = this / Precise(size: Long)
+  def %(size: Int): Index           = this % Precise(size: Long)
+  def /(size: LongSize): Index      = if (isUndefined) this else Index(indexValue / size.value)
+  def %(size: LongSize): Index      = if (isUndefined) this else Index(indexValue % size.value)
   def +(n: Long): Index             = if (isUndefined) this else Index(indexValue + n)
   def until(end: Index): IndexRange = indexRange(safeToInt, end.safeToInt)
-  def toSize: PreciseSize           = newSize(indexValue)
+  def toSize: Precise               = newSize(indexValue)
   def toBit1: Bit1                  = Bit1(this)
   def toIndex: Index                = this
   def toNth: Nth                    = Nth(indexValue + 1)

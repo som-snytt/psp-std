@@ -5,8 +5,7 @@ package ops
 import api._, StdShow._
 
 final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPreciseSizeMethods {
-  def size: PreciseSize = sizeInfo
-  def sizeInfo = newSize(xs.length)
+  def size: IntSize = Precise(xs.length)
   private def andThis(op: Unit): xs.type = xs
 
   def apply(idx: Index): A                   = xs(idx.safeToInt)
@@ -119,7 +118,7 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
 
   def distinctBy[B: Eq](f: A => B): Foreach[A] = scanFilter((res, x) => !(res exists (y => f(x) === f(y))))
   // def groupBy[B: HashEq](f: A => B): pMap[B, pSeq[A]]
-  // def frequencyMap[B: HashEq](f: A => B): pMap[B, PreciseSize]
+  // def frequencyMap[B: HashEq](f: A => B): pMap[B, LongSize]
 }
 
 final class jIterableOps[A](val xs: jIterable[A]) extends AnyVal with CombinedOps[A] {

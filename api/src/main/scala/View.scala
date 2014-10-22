@@ -13,9 +13,9 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   def calls: Int
   def collect[B](pf: A ?=> B): MapTo[B]
   def description: String
-  def drop(n: PreciseSize): MapTo[A]
+  def drop(n: Precise): MapTo[A]
   def dropIndex(index: Index): MapTo[A]
-  def dropRight(n: PreciseSize): MapTo[A]
+  def dropRight(n: Precise): MapTo[A]
   def dropWhile(p: Predicate[A]): MapTo[A]
   def filter(p: Predicate[A]): MapTo[A]
   def filterNot(p: Predicate[A]): MapTo[A]
@@ -23,12 +23,12 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   def intersperse[A1 >: A](that: View[A1]): MapTo[A1]
   def map[B](f: A => B): MapTo[B]
   def partition(p: Predicate[A]): SplitTo[A]
-  def sized(size: PreciseSize): MapTo[A]
+  def sized(size: Precise): MapTo[A]
   def slice(range: IndexRange): MapTo[A]
   def span(p: Predicate[A]): SplitTo[A]
   def splitAt(index: Index): SplitTo[A]
-  def take(n: PreciseSize): MapTo[A]
-  def takeRight(n: PreciseSize): MapTo[A]
+  def take(n: Precise): MapTo[A]
+  def takeRight(n: Precise): MapTo[A]
   def takeWhile(p: Predicate[A]): MapTo[A]
   def viewChain: Direct[View[_]]
   def viewRange: IndexRange
@@ -36,18 +36,18 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
 }
 
 trait FrontSliceable[+A] extends Any {
-  def drop(n: PreciseSize): A
-  def take(n: PreciseSize): A
+  def drop(n: Precise): A
+  def take(n: Precise): A
   def slice(range: IndexRange): A
-  def drop(n: Int): A = drop(PreciseSize create n)
-  def take(n: Int): A = take(PreciseSize create n)
+  def drop(n: Int): A = drop(Precise(n))
+  def take(n: Int): A = take(Precise(n))
 }
 
 trait RearSliceable[+A] extends Any with FrontSliceable[A] {
-  def dropRight(n: PreciseSize): A
-  def takeRight(n: PreciseSize): A
-  def dropRight(n: Int): A = dropRight(PreciseSize create n)
-  def takeRight(n: Int): A = takeRight(PreciseSize create n)
+  def dropRight(n: Precise): A
+  def takeRight(n: Precise): A
+  def dropRight(n: Int): A = dropRight(Precise(n))
+  def takeRight(n: Int): A = takeRight(Precise(n))
 }
 
 object View {

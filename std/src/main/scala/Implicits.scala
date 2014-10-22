@@ -103,15 +103,15 @@ trait StdOrder {
   implicit def shortOrder: Order[Short]     = Order.fromInt[Short](_ - _)
   implicit def stringOrder: Order[String]   = Order.fromLong[String](_ compareTo _)
 
-  implicit def indexOrder: Order[Index]      = orderBy[Index](_.indexValue)
-  implicit def nthOrder: Order[Nth]          = orderBy[Nth](_.nthValue)
-  implicit def offsetOrder: Order[Offset]    = orderBy[Offset](_.offsetValue)
-  implicit def sizeOrder: Order[PreciseSize] = orderBy[PreciseSize](_.value)
+  implicit def indexOrder: Order[Index]              = orderBy[Index](_.indexValue)
+  implicit def nthOrder: Order[Nth]                  = orderBy[Nth](_.nthValue)
+  implicit def offsetOrder: Order[Offset]            = orderBy[Offset](_.offsetValue)
+  implicit def preciseOrder[A <: Precise] : Order[A] = orderBy[A](_.value)
 
   implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = Order[(A, B)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2))
   implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = Order[(A, B, C)]((x, y) => Order.fold(x._1 compare y._1, x._2 compare y._2, x._3 compare y._3))
 
-  implicit def sizeInfoPartialOrder: PartialOrder[SizeInfo] = PartialOrder(SizeInfo.partialCompare)
+  implicit def sizeInfoPartialOrder: PartialOrder[Size] = PartialOrder(Size.partialCompare)
 }
 
 trait StdZero {
@@ -151,15 +151,14 @@ trait StdEq {
   implicit def shortEq: HashEq[Short]       = HashEq.natural()
   implicit def unitHash: HashEq[Unit]       = HashEq.natural()
 
-  implicit def indexEq: HashEq[Index]       = HashEq.natural()
-  implicit def jTypeEq: HashEq[jType]       = HashEq.natural()
-  implicit def nthEq: HashEq[Nth]           = HashEq.natural()
-  implicit def offsetEq: HashEq[Offset]     = HashEq.natural()
-  implicit def sizeEq: HashEq[PreciseSize]  = HashEq.natural()
-  implicit def sizeInfoEq: HashEq[SizeInfo] = HashEq.natural()
-  implicit def stringEq: HashEq[String]     = HashEq.natural()
+  implicit def indexEq: HashEq[Index]     = HashEq.natural()
+  implicit def jTypeEq: HashEq[jType]     = HashEq.natural()
+  implicit def nthEq: HashEq[Nth]         = HashEq.natural()
+  implicit def offsetEq: HashEq[Offset]   = HashEq.natural()
+  implicit def stringEq: HashEq[String]   = HashEq.natural()
 
-  implicit def pathEq: HashEq[Path]         = hashEqBy[Path](_.toString)
+  implicit def sizeEq: HashEq[Size] = HashEq(Size.equiv, Size.hash)
+  implicit def pathEq: HashEq[Path] = hashEqBy[Path](_.toString)
 
   implicit def tryEq[A](implicit z1: Eq[A], z2: Eq[Throwable]): Eq[Try[A]] = Eq {
     case (Success(x), Success(y)) => x === y

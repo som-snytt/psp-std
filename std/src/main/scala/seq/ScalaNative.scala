@@ -17,8 +17,8 @@ final class ScalaNative[+A](val xs: sIterable[A], val counter: RecorderCounter) 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]          = xs ++ that
   def collect[B](pf: A ?=> B): MapTo[B]               = xs collect pf
   def description: String                             = xs.shortClass
-  def drop(n: PreciseSize): MapTo[A]                  = xs drop n.intSize
-  def dropRight(n: PreciseSize): MapTo[A]             = xs dropRight n.intSize
+  def drop(n: Precise): MapTo[A]                      = xs drop n.intSize
+  def dropRight(n: Precise): MapTo[A]                 = xs dropRight n.intSize
   def dropWhile(p: Predicate[A]): MapTo[A]            = xs dropWhile p
   def filter(p: Predicate[A]): MapTo[A]               = xs filter p
   def filterNot(p: Predicate[A]): MapTo[A]            = xs filterNot p
@@ -26,11 +26,11 @@ final class ScalaNative[+A](val xs: sIterable[A], val counter: RecorderCounter) 
   def foreach(f: A => Unit): Unit                     = xs foreach f
   def intersperse[A1 >: A](that: View[A1]): MapTo[A1] = ??? // TODO
   def map[B](f: A => B): MapTo[B]                     = xs map f
-  def sizeInfo: SizeInfo                              = SizeInfo(xs)
-  def sized(size: PreciseSize): MapTo[A]              = this
+  def size: IntSize                                   = Precise(xs.size)
+  def sized(size: Precise): MapTo[A]                  = this
   def slice(range: IndexRange): MapTo[A]              = xs.slice(range.startInt, range.endInt)
-  def take(n: PreciseSize): MapTo[A]                  = xs take n.intSize
-  def takeRight(n: PreciseSize): MapTo[A]             = xs takeRight n.intSize
+  def take(n: Precise): MapTo[A]                      = xs take n.intSize
+  def takeRight(n: Precise): MapTo[A]                 = xs takeRight n.intSize
   def takeWhile(p: Predicate[A]): MapTo[A]            = xs takeWhile p
   def viewChain: pVector[View[_]]                     = Direct(this)
   def viewRange: IndexRange                           = indexRange(0, xs.size)

@@ -263,6 +263,6 @@ package object std extends psp.std.StdPackage {
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V    = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                            = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
 
-  def newArray[A: CTag](size: PreciseSize): Array[A] = new Array[A](size.intSize)
-  def newSize(n: Long): PreciseSize                  = PreciseSize create n.zeroPlus
+  def newArray[A: CTag](size: Precise): Array[A] = new Array[A](size.intSize)
+  def newSize(n: Long): Precise = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
 }

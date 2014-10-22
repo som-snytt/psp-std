@@ -2,7 +2,7 @@ package psp
 
 import org.scalacheck._, Gen._, Prop._
 import psp.std._, api._
-import SizeInfo._
+import Size._
 import StdShow._
 
 package object tests {
@@ -71,17 +71,17 @@ package object tests {
   def charToString(g: Gen[Char]): Gen[String]  = g map (_.to_s)
   def indexRangeGen(r: IndexRange): Gen[Index] = Gen.choose(r.start, r.endInclusive)
 
-  implicit def chooseIndex: Choose[Index]      = Choose.xmap[Long, Index](_.index, _.indexValue)
-  implicit def chooseSize: Choose[PreciseSize] = Choose.xmap[Long, PreciseSize](newSize, _.value)
-  implicit def chooseNth: Choose[Nth]          = Choose.xmap[Long, Nth](_.nth, _.nthValue)
+  implicit def chooseIndex: Choose[Index]  = Choose.xmap[Long, Index](_.index, _.indexValue)
+  implicit def chooseSize: Choose[Precise] = Choose.xmap[Long, Precise](newSize, _.value)
+  implicit def chooseNth: Choose[Nth]      = Choose.xmap[Long, Nth](_.nth, _.nthValue)
 
   def randomGen[A](xs: pVector[Gen[A]]): Gen[A] = indexRangeGen(xs.indices) flatMap xs.elemAt
   def randomGen[A](xs: Gen[A]*): Gen[A]         = randomGen(xs.seq.pvec)
 
-  def genPrecise: Gen[PreciseSize]           = chooseNum(1, MaxInt / 2) map (x => newSize(x))
+  def genPrecise: Gen[Precise]               = chooseNum(1, MaxInt / 2) map (x => newSize(x))
   def genBounded: Gen[Bounded]               = genPrecise flatMap (lo => genAtomic map (hi => bounded(lo, hi))) collect { case b: Bounded => b }
   def genAtomic: Gen[Atomic]                 = frequency(10 -> genPrecise, 1 -> Empty, 1 -> Infinite)
-  def genSizeInfo: Gen[SizeInfo]             = oneOf(genAtomic, genBounded)
+  def genSize: Gen[Size]                     = oneOf(genAtomic, genBounded)
   def genLong: Gen[Long]                     = Gen.choose(MinLong, MaxLong)
   def genInt: Gen[Int]                       = Gen.choose(MinInt, MaxInt)
   def genPosInt: Gen[Int]                    = Gen.choose(0, MaxInt)

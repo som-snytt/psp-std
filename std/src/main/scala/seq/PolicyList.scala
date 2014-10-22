@@ -6,14 +6,14 @@ import api._
 sealed trait PolicyList[A] extends Linear[A]
 final case object pNil extends PolicyList[Nothing] {
   def foreach(f: Nothing => Unit): Unit = ()
-  def sizeInfo = SizeInfo.Empty
+  def size = Size.Empty
   def isEmpty  = true
   def head     = abort("pNil.head")
   def tail     = abort("pNil.tail")
 }
 final case class pCons[A](head: A, tail: PolicyList[A]) extends PolicyList[A] {
   def foreach(f: A => Unit): Unit = { f(head) ; tail foreach f }
-  def sizeInfo = SizeInfo.NonEmpty
+  def size = Size.NonEmpty
   def isEmpty  = false
 }
 
@@ -23,7 +23,7 @@ final class pChunked[A](private val chunks: Linear[Linear[A]]) extends Linear[A]
   def isEmpty  = nonEmptyHead.chunks.isEmpty
   def head     = nonEmptyHead.head
   def tail     = nonEmptyHead.tail
-  def sizeInfo = if (isEmpty) SizeInfo.Empty else SizeInfo.NonEmpty
+  def size = if (isEmpty) Size.Empty else Size.NonEmpty
   def foreach(f: A => Unit): Unit = { f(head) ; tail foreach f }
 }
 
@@ -32,7 +32,7 @@ object PolicyList {
     def ::(x: A): pCons[A] = new pCons(x, xs)
   }
   final class FromScala[A](val xs: sciLinearSeq[A]) extends AnyVal with Linear[A] {
-    def sizeInfo = SizeInfo(xs)
+    def size = Size(xs)
     def isEmpty  = xs.isEmpty
     def head     = xs.head
     def tail     = new FromScala(xs.tail)
@@ -51,7 +51,7 @@ object PolicyList {
 final class Linearized[A](xs: pVector[A], startIndex: Index) extends Linear[A] with HasPreciseSize {
   def foreach(f: A => Unit): Unit = xs.indices drop startIndex.indexValue.size foreach (i => f(xs(i)))
 
-  def sizeInfo = xs.sizeInfo - startIndex.indexValue.size
+  def size = xs.size - startIndex.indexValue.size
   def isEmpty  = startIndex.isUndefined || xs.lastIndex < startIndex
   def head     = xs(startIndex)
   def tail     = new Linearized(xs, startIndex.next)

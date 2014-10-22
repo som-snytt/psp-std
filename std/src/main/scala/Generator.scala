@@ -91,10 +91,10 @@ package ops {
   import Generator._
 
   final class GeneratorOps[A](val g: Generator.Gen[A]) extends AnyVal {
-    def nonEmpty          = !isEmpty
-    def isEmpty           = g id_== Empty
-    def size: PreciseSize = fold(0.size)((res, _) => res + 1.size)
-    def tail: Gen[A]      = if (g.isEmpty) Empty else g(_ => ())
+    def nonEmpty      = !isEmpty
+    def isEmpty       = g id_== Empty
+    def size: Precise = newSize(fold(0L)((res, x) => res + 1))
+    def tail: Gen[A]  = if (g.isEmpty) Empty else g(_ => ())
 
     def take(n: Int): Gen[A]               = taken(g, n)
     def drop(n: Int): Gen[A]               = dropped(g, n)

@@ -18,7 +18,7 @@ final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
  *  It's true one could say its ordering is Ordering[Int] on indexOf.
  *  Maybe that will seem like a good idea at some point.
  */
-final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[K, V]) extends HasSizeInfo with Intensional[K, V] with Extensional[(K, V)] with VarargsSeq[(K, V)] {
+final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[K, V]) extends HasSize with Intensional[K, V] with Extensional[(K, V)] with VarargsSeq[(K, V)] {
   type Entry = (K, V)
   type MapTo[V1] = pMap[K, V1]
 
@@ -40,7 +40,7 @@ final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[
   def map[V1](f: V => V1): MapTo[V1]              = new PolicyMap(keySet, lookup map f)
   def reverseKeys                                 = new PolicyMap(keySet mapContained (_.pvec.reverse), lookup)
   def seq: scSeq[Entry]                           = contained.seq
-  def sizeInfo: PreciseSize                       = keyVector.sizeInfo
+  def size: Precise                               = keyVector.size
   def values: pVector[V]                          = keyVector map (x => lookup(x))
   def valuesIterator: BiIterator[V]               = keysIterator map (x => lookup(x))
   def withDefaultValue[V1 >: V](v: V1): MapTo[V1] = new PolicyMap(keySet, lookup.copy(defaultValue = Some(v)))
@@ -96,11 +96,11 @@ object PolicyMap {
         case _                     => this
       }
 
-    def drop(n: PreciseSize): Us       = new Us(keys drop n.intSize, values drop n.intSize)
-    def take(n: PreciseSize): Us       = new Us(keys take n.intSize, values take n.intSize)
-    def slice(range: IndexRange): Us   = new Us(keys.slice(range.startInt, range.endInt), values.slice(range.startInt, range.endInt))
-    def dropRight(n: PreciseSize): Us  = new Us(keys dropRight n.intSize, values dropRight n.intSize)
-    def takeRight(n: PreciseSize): Us  = new Us(keys takeRight n.intSize, values takeRight n.intSize)
+    def drop(n: Precise): Us         = new Us(keys drop n.intSize, values drop n.intSize)
+    def take(n: Precise): Us         = new Us(keys take n.intSize, values take n.intSize)
+    def slice(range: IndexRange): Us = new Us(keys.slice(range.startInt, range.endInt), values.slice(range.startInt, range.endInt))
+    def dropRight(n: Precise): Us    = new Us(keys dropRight n.intSize, values dropRight n.intSize)
+    def takeRight(n: Precise): Us    = new Us(keys takeRight n.intSize, values takeRight n.intSize)
 
     override def drop(n: Int): Us      = drop(newSize(n))
     override def take(n: Int): Us      = take(newSize(n))

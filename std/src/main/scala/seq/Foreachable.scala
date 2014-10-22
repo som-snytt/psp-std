@@ -10,23 +10,22 @@ sealed trait Walkable[-Repr] {
   type VC[R] <: AtomicView[A, R]  // VC == view class
 
   def foreach(repr: Repr)(f: A => Unit): Unit
-  def sizeInfo(repr: Repr): SizeInfo
+  def size(repr: Repr): Size
   def wrap[R <: Repr](repr: R): VC[R]
 }
 
 trait Foreachable[-Repr] extends Walkable[Repr] {
   type VC[R] = AtomicView[A, R]
 
-  def sizeInfo(repr: Repr): SizeInfo  = SizeInfo.unknown
+  def size(repr: Repr): Size          = Size.unknown
   def wrap[R <: Repr](repr: R): VC[R] = new LinearView(repr, this)
 }
 trait DirectAccess[-Repr] extends Walkable[Repr] {
   type VC[R] = IndexedView[A, R]
 
-  def length(repr: Repr): PreciseSize
+  def size(repr: Repr): Precise
   def elemAt(repr: Repr)(i: Index): A
-  def wrap[R <: Repr](repr: R): VC[R] = new IndexedView(repr, this, length(repr).indices)
-  def sizeInfo(repr: Repr): SizeInfo  = length(repr)
+  def wrap[R <: Repr](repr: R): VC[R] = new IndexedView(repr, this, size(repr).indices)
 }
 
 object Foreachable {
@@ -75,23 +74,23 @@ object DirectAccess {
     type A     = AIn
   }
   object StringIs extends Impl[Char, String, Direct] {
-    def length(repr: String): PreciseSize    = newSize(repr.length)
+    def size(repr: String): Precise          = newSize(repr.length)
     def elemAt(repr: String)(i: Index): Char = repr charAt i.safeToInt
   }
   final class ArrayIs[A] extends Impl[A, Array[A], Direct] {
-    def length(repr: Array[A]): PreciseSize = newSize(repr.length)
+    def size(repr: Array[A]): Precise       = newSize(repr.length)
     def elemAt(repr: Array[A])(i: Index): A = repr(i.safeToInt)
   }
   final class ScalaIndexedIs[A] extends Impl[A, scIndexedSeq[A], scIndexedSeq] {
-    def length(repr: CC[A]): PreciseSize = newSize(repr.length)
+    def size(repr: CC[A]): Precise       = newSize(repr.length)
     def elemAt(repr: CC[A])(i: Index): A = repr(i.safeToInt)
   }
   final class IndexedIs[A] extends Impl[A, Direct[A], Direct] {
-    def length(repr: Direct[A]): PreciseSize = repr.sizeInfo
+    def size(repr: Direct[A]): Precise       = repr.size
     def elemAt(repr: Direct[A])(i: Index): A = repr(i)
   }
   final class IndexedViewIs[A, Repr] extends Impl[A, IndexedView[A, Repr], Direct] {
-    def length(repr: IndexedView[A, Repr]): PreciseSize = repr.sizeInfo
+    def size(repr: IndexedView[A, Repr]): Precise       = repr.size
     def elemAt(repr: IndexedView[A, Repr])(i: Index): A = repr elemAt i
   }
 }

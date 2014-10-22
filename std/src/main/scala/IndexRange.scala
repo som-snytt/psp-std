@@ -13,7 +13,7 @@ final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Dire
   def start         = Index(startInt)
   def end           = Index(endInt)
   def endInclusive  = if (end <= start) NoIndex else end.prev
-  def sizeInfo      = intRange.sizeInfo
+  def size          = intRange.size
   def precedingSize = newSize(startInt)
 
   @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(Index(i)))
@@ -21,13 +21,13 @@ final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Dire
   def elemAt(index: Index): Index = index + intRange.start
   def contains(i: Index): Boolean = intRange contains i.safeToInt
 
-  def >> (n: Int): IndexRange               = IndexRange(intRange >> n)
-  def << (n: Int): IndexRange               = IndexRange(intRange << n)
-  def drop(n: PreciseSize): IndexRange      = IndexRange(intRange drop n)
-  def dropRight(n: PreciseSize): IndexRange = IndexRange(intRange dropRight n)
-  def take(n: PreciseSize): IndexRange      = IndexRange(intRange take n)
-  def takeRight(n: PreciseSize): IndexRange = IndexRange(intRange takeRight n)
-  def slice(range: IndexRange): IndexRange  = IndexRange(intRange slice range)
+  def >> (n: Int): IndexRange              = IndexRange(intRange >> n)
+  def << (n: Int): IndexRange              = IndexRange(intRange << n)
+  def drop(n: Precise): IndexRange         = IndexRange(intRange drop n)
+  def dropRight(n: Precise): IndexRange    = IndexRange(intRange dropRight n)
+  def take(n: Precise): IndexRange         = IndexRange(intRange take n)
+  def takeRight(n: Precise): IndexRange    = IndexRange(intRange takeRight n)
+  def slice(range: IndexRange): IndexRange = IndexRange(intRange slice range)
 
   def prefixLength(p: Index => Boolean): Long    = intRange prefixLength (i => p(Index(i)))
   def dropWhile(p: Index => Boolean): IndexRange = IndexRange(intRange dropWhile (i => p(Index(i))))

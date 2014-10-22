@@ -6,24 +6,24 @@ import api._
 import ExclusiveIntRange._
 
 final class ExclusiveIntRange private (val bits: Long) extends AnyVal with Direct.DirectImpl[Int] with RearSliceable[ExclusiveIntRange] {
-  def start: Int   = bits.left32
-  def end: Int     = bits.right32
-  def last: Int    = end - step
-  def step: Int    = math.signum(end - start)
-  def length: Int  = math.abs(end - start)
-  def sizeInfo     = length.size
-  def isDescending = end < start
-  def isAscending  = start < end
+  def start: Int    = bits.left32
+  def end: Int      = bits.right32
+  def last: Int     = end - step
+  def step: Int     = math.signum(end - start)
+  def length: Int   = math.abs(end - start)
+  def size: IntSize = Precise(length)
+  def isDescending  = end < start
+  def isAscending   = start < end
 
-  private def nSteps(n: PreciseSize): Int = (n * step).intSize
+  private def nSteps(n: Precise): Int = (n * step).intSize
 
-  def reverse: ExclusiveIntRange                   = create(end - step, start - step)
-  def drop(n: PreciseSize): ExclusiveIntRange      = if (n.isZero) this else if (n >=  sizeInfo) empty else create(start + nSteps(n), end)
-  def dropRight(n: PreciseSize): ExclusiveIntRange = if (n.isZero) this else if (n >=  sizeInfo) empty else create(start, end - nSteps(n))
-  def take(n: PreciseSize): ExclusiveIntRange      = if (n.isZero) empty else if (n >= sizeInfo) this else create(start, start + nSteps(n))
-  def takeRight(n: PreciseSize): ExclusiveIntRange = if (n.isZero) empty else if (n >= sizeInfo) this else create(end - nSteps(n), end)
-  def slice(s: Int, e: Int): ExclusiveIntRange     = if (e <= 0 || e <= s) empty else drop(s) take (e - s)
-  def slice(r: IndexRange): ExclusiveIntRange      = slice(r.startInt, r.endInt)
+  def reverse: ExclusiveIntRange               = create(end - step, start - step)
+  def drop(n: Precise): ExclusiveIntRange      = if (n.isZero) this else if (n >=  size) empty else create(start + nSteps(n), end)
+  def dropRight(n: Precise): ExclusiveIntRange = if (n.isZero) this else if (n >=  size) empty else create(start, end - nSteps(n))
+  def take(n: Precise): ExclusiveIntRange      = if (n.isZero) empty else if (n >= size) this else create(start, start + nSteps(n))
+  def takeRight(n: Precise): ExclusiveIntRange = if (n.isZero) empty else if (n >= size) this else create(end - nSteps(n), end)
+  def slice(s: Int, e: Int): ExclusiveIntRange = if (e <= 0 || e <= s) empty else drop(s) take (e - s)
+  def slice(r: IndexRange): ExclusiveIntRange  = slice(r.startInt, r.endInt)
 
   def suffixLength(p: Predicate[Int]): Int = reverse prefixLength p
   def prefixLength(p: Predicate[Int]): Int = {

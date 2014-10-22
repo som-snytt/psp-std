@@ -14,14 +14,14 @@ object PolicySet {
   def apply[A: HashEq](xs: Foreach[A]): exSet[A]                              = new ExtensionalSet.Impl[A](xs, implicitly)
 
   class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
-    def sizeInfo          = SizeInfo(xs)
+    def size          = Size(xs)
     def contained         = Foreach[A](xs foreach _)
     def contains(elem: A) = xs(elem)
     def equiv(x: A, y: A) = x == y
     def hash(x: A)        = x.##
   }
   class FromJava[A](xs: jSet[A]) extends ExtensionalSet[A] {
-    def sizeInfo          = SizeInfo(xs)
+    def size          = Size(xs)
     def contained         = Foreach[A](BiIterable(xs) foreach _)
     def contains(elem: A) = xs contains elem
     def equiv(x: A, y: A) = x == y
@@ -35,7 +35,7 @@ sealed trait IntensionalSet[A] extends AnyRef with Intensional[A, Boolean] with 
   def equiv(x: A, y: A): Boolean
   def hash(x: A): Int
 }
-sealed trait ExtensionalSet[A] extends AnyRef with IntensionalSet[A] with Extensional[A] with HasSizeInfo {
+sealed trait ExtensionalSet[A] extends AnyRef with IntensionalSet[A] with Extensional[A] with HasSize {
   def contained: Foreach[A]
 }
 
@@ -47,25 +47,25 @@ object ExtensionalSet {
     protected def underlying = lhs
     def contains(elem: A)    = lhs(elem) && !rhs(elem)
     def contained            = lhs.contained filter rhs
-    def sizeInfo             = lhs.sizeInfo.atMost
+    def size             = lhs.size.atMost
   }
   final case class Intersect[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
     protected def underlying = lhs
     def contains(elem: A)    = lhs(elem) && rhs(elem)
     def contained            = lhs.contained filter rhs
-    def sizeInfo             = lhs.sizeInfo intersect rhs.sizeInfo
+    def size             = lhs.size intersect rhs.size
   }
   final case class Union[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
     protected def underlying = lhs
     def contains(elem: A)    = lhs(elem) || rhs(elem)
     def contained            = Foreach.join(lhs.contained, rhs.contained filterNot lhs)
-    def sizeInfo             = lhs.sizeInfo union rhs.sizeInfo
+    def size             = lhs.size union rhs.size
   }
   final case class Diff[A](lhs: exSet[A], rhs: exSet[A]) extends Derived[A] {
     protected def underlying = lhs
     def contains(elem: A)    = lhs(elem) && !rhs(elem)
     def contained            = lhs.contained filterNot rhs
-    def sizeInfo             = lhs.sizeInfo diff rhs.sizeInfo
+    def size             = lhs.size diff rhs.size
   }
   final class Impl[A](basis: Foreach[A], heq: HashEq[A]) extends ExtensionalSet[A] {
     private[this] val wrapSet: jSet[Wrap] = basis map wrap toJavaSet
@@ -81,7 +81,7 @@ object ExtensionalSet {
     def equiv(x: A, y: A)     = heq.equiv(x, y)
     def hash(x: A): Int       = heq.hash(x)
     def contains(elem: A)     = wrapSet contains wrap(elem)
-    def sizeInfo: SizeInfo    = newSize(wrapSet.size)
+    def size: Precise         = newSize(wrapSet.size)
     def contained: Foreach[A] = wrapSet.m map (_.unwrap)
   }
 }

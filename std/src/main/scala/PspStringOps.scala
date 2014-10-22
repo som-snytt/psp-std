@@ -21,7 +21,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   private def isEmpty = onull == ""
   private def onull   = if (self eq null) "" else self
 
-  def size: PreciseSize = newSize(self.length)
+  def size: IntSize = Precise(self.length)
 
   def retain(regex: Regex): String       = regex all self mkString ""
   def remove(regex: Regex): String       = regex matcher self replaceFirst ""
@@ -48,7 +48,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
 
   def ~ (that: String): String    = self + that
   def * (n: Int): String          = this * n.size
-  def * (n: PreciseSize): String  = n timesConst self mkString ""
+  def * (n: Precise): String  = n timesConst self mkString ""
   def format(args : Any*): String = java.lang.String.format(self, args map unwrapArg: _*)
   def length                      = self.length
 
@@ -97,8 +97,8 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def stripMargin: String = stripMargin('|')
   def sanitize: String    = mapChars { case x if x.isControl => '?' }
 
-  def truncateAndLeftJustifyTo(max: PreciseSize) = max leftFormat (normalizeSpace truncateTo max).asis
-  def truncateTo(max: PreciseSize)               = if (size <= max) self else (self take max - 3) + "..."
+  def truncateAndLeftJustifyTo(max: Precise) = max leftFormat (normalizeSpace truncateTo max).asis
+  def truncateTo(max: Precise)               = if ((size: Precise) <= max) self else (self take max - 3) + "..."
 
   def normalizeSpace: String = self.trim.replacePattern(
     "\\n+"      -> "\n",
