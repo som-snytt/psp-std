@@ -22,6 +22,7 @@ object Build extends sbt.Build {
     def setup(text: String): Project = setup() also (description := text)
     def usesCompiler                 = p settings (libraryDependencies += Deps.scalaCompiler.value)
     def usesReflect                  = p settings (libraryDependencies += Deps.scalaReflect.value)
+    def usesGuava                    = p settings (libraryDependencies += "com.google.guava"% "guava" % "18.0")
     def helper(): Project            = p.noArtifacts setup "helper project" dependsOn (classpathDeps: _*)
     def noSources                    = p in file("target/helper/" + p.id)
   }
@@ -77,7 +78,7 @@ object Build extends sbt.Build {
 
   lazy val api = project setup "api for psp's non-standard standard library"
   lazy val dmz = project setup "dmz for psp's non-standard standard library" dependsOn api
-  lazy val std = project setup "psp's non-standard standard library" dependsOn dmz
+  lazy val std = project.usesGuava setup "psp's non-standard standard library" dependsOn dmz
   lazy val pio = project setup "io library for pps-std" dependsOn std
   lazy val dev = project setup "psp's even less stable code" dependsOn std
 
@@ -110,7 +111,7 @@ object Build extends sbt.Build {
     "org.scala-lang"            % "scala-compiler" % scalaVersion.value
     // "org.spire-math"           %% "spire"          %      "0.8.2",
     // "com.chuusai"              %% "shapeless"      %      "2.0.0",
-    // "com.google.guava"          % "guava"          %       "17.0"
+    // "com.google.guava"          % "guava"          %       "18.0"
     // "com.google.code.findbugs"  % "jsr305"         %       "3.0.0"
   )
 }

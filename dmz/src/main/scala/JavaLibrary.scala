@@ -10,11 +10,11 @@ import java.lang.String
 trait JavaLibrary extends Any {
   // Exceptional factories.
   def assertionError(msg: String): Nothing                = throw new AssertionError(msg)
-  def ioException(msg: String): Nothing                   = throw new IOException(msg)
   def illegalArgumentException(msg: String): Nothing      = throw new IllegalArgumentException(msg)
+  def ioException(msg: String): Nothing                   = throw new IOException(msg)
   def noSuchElementException(msg: String): Nothing        = throw new NoSuchElementException(msg)
-  def unsupportedOperationException(msg: String): Nothing = throw new UnsupportedOperationException(msg)
   def runtimeException(msg: String): Nothing              = throw new RuntimeException(msg)
+  def unsupportedOperationException(msg: String): Nothing = throw new UnsupportedOperationException(msg)
 
   // A selection of popular static methods from javaland.
   def classpathSeparator: String     = java.io.File.pathSeparator
@@ -108,8 +108,8 @@ trait JavaLibrary extends Any {
   type jReader                                 = java.io.Reader
   type jSet[A]                                 = java.util.Set[A]
   type jType                                   = java.lang.reflect.Type
-  type jTypeVariable[D <: jGenericDeclaration] = java.lang.reflect.TypeVariable[D]
   type jTypeVar                                = jTypeVariable[_] // <: jGenericDeclaration]
+  type jTypeVariable[D <: jGenericDeclaration] = java.lang.reflect.TypeVariable[D]
   type jUri                                    = java.net.URI
   type jUrl                                    = java.net.URL
   type jWildcardType                           = java.lang.reflect.WildcardType

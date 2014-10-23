@@ -37,7 +37,7 @@ trait StdWalks0 extends Any {
   implicit def atomicTraversableIs[A] : ForeachableType[A, scTraversable[A], scTraversable] = new Foreachable.TraversableIs[A]
 }
 trait StdWalks1 extends Any with StdWalks0 {
-  implicit def directScalaIndexedIs[A] : DirectAccessType[A, IndexedSeq[A], IndexedSeq] = new DirectAccess.ScalaIndexedIs[A]
+  implicit def directScalaIndexedIs[A] : DirectAccessType[A, scIndexedSeq[A], scIndexedSeq] = new DirectAccess.ScalaIndexedIs[A]
 }
 trait StdWalks extends Any with StdWalks1 {
   implicit def extensionalSetIs[A] : ForeachableType[A, exSet[A], exSet]   = new Foreachable.ExtensionalSetIs[A]

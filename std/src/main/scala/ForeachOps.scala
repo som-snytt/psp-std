@@ -129,9 +129,3 @@ final class sCollectionOps[A, CC[A] <: sCollection[A]](val xs: CC[A]) extends An
   def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
   def runForeach(f: A => Unit): Unit = xs foreach f
 }
-
-case class Coordinate[A](row: Nth, column: Nth, value: A, to_s: String) {
-  def width = newSize(to_s.length)
-  def fmt   = width.leftFormatString
-  override def toString = to_s
-}

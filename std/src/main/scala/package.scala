@@ -126,7 +126,7 @@ package object std extends psp.std.StdPackage {
   def assert(assertion: Boolean, msg: => Any): Unit    = if (!assertion) assertionError(s"assertion failed: $msg")
   def require(requirement: Boolean): Unit              = if (!requirement) illegalArgumentException("requirement failed")
   def require(requirement: Boolean, msg: => Any): Unit = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
-  def ??? : Nothing                                    = throw new NotImplementedError
+  def ??? : Nothing                                    = throw new scala.NotImplementedError
   def identity[A](x: A): A                             = x
   def implicitly[A](implicit x: A): A                  = x
   def locally[A](x: A): A                              = x

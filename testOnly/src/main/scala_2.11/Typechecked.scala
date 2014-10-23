@@ -53,13 +53,13 @@ package macros {
       c.Expr(typed().fold(good, bad))
     }
 
-    def typecheckedLines(exprs: c.Expr[String]): c.Expr[Vector[Typechecked]] = {
+    def typecheckedLines(exprs: c.Expr[String]): c.Expr[sciVector[Typechecked]] = {
       val code: String = exprs.tree match {
         case Literal(Constant(s: String)) => s.trim
         case _                            => fail("not a literal string")
       }
       val lines = code.lineVector map (_.trim) filterNot (_.length == 0) map check
-      val res = lines.foldr(q"Vector[Typechecked]()")((x, xs) => q"$x +: $xs")
+      val res = lines.foldr(q"sciVector[Typechecked]()")((x, xs) => q"$x +: $xs")
       c.Expr(res)
     }
 
@@ -73,6 +73,6 @@ package macros {
 }
 
 package object macros {
-  def typechecked(expr: String): Typechecked               = macro Typechecker.typechecked
-  def typecheckedLines(exprs: String): Vector[Typechecked] = macro Typechecker.typecheckedLines
+  def typechecked(expr: String): Typechecked                  = macro Typechecker.typechecked
+  def typecheckedLines(exprs: String): sciVector[Typechecked] = macro Typechecker.typecheckedLines
 }

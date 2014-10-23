@@ -13,7 +13,7 @@ object Generator {
   def apply[A](xs: pSeq[A]): Gen[A]              = new IteratorGenerator(xs.biIterator)
    //BiIterator(xs))
   def apply[A](xs: scTraversableOnce[A]): Gen[A] = apply[A](xs.toIterator)
-  def apply[A](it: sIterator[A]): Gen[A]         = new IteratorGenerator[A](it)
+  def apply[A](it: scIterator[A]): Gen[A]         = new IteratorGenerator[A](it)
   def apply[A](xs: sciLinearSeq[A]): Gen[A]      = new LinearGenerator[A](xs)
   def apply[A](xs: sciStream[A]): Gen[A]         = new StreamGenerator[A](xs)
   def from(n: Int): IntGenerator                 = new IntGenerator(n)
@@ -75,7 +75,7 @@ object Generator {
     )
   }
 
-  final class IteratorGenerator[A](private val it: sIterator[A]) extends Gen[A] {
+  final class IteratorGenerator[A](private val it: scIterator[A]) extends Gen[A] {
     def memo: Gen[A] = Generator[A](it.toStream)
     def apply(f: A => Unit): Gen[A] = try this finally f(it.next)
   }

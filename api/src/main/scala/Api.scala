@@ -57,7 +57,6 @@ trait IndexRange extends Any with Direct[Index] {
   def start: Index
   def end: Index
 }
-
 trait Index extends Any with OptLong {
   def indexValue: Long
 }

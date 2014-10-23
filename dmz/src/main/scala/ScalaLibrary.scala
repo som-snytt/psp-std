@@ -23,10 +23,7 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Success[+A]                 = scala.util.Success[A]
   type Failure[+A]                 = scala.util.Failure[A]
 
-  type IndexedSeq[+A]              = sc.IndexedSeq[A]
-  type Seq[+A]                     = sc.Seq[A]    // XXX
-  type TraversableLike[+A, CC[+X]] = sc.TraversableLike[A, CC[A]]
-  type Vector[+A]                  = sciVector[A] // XXX
+  type Seq[+A] = sc.Seq[A]    // XXX
 
   type ArrayBuffer[A]                  = scm.ArrayBuffer[A]
   type Builder[-Elem, +To]             = scm.Builder[Elem, To]
@@ -47,7 +44,6 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Function2[-T1, -T2, +R]         = scala.Function2[T1, T2, R]
   type Function3[-T1, -T2, -T3, +R]    = scala.Function3[T1, T2, T3, R]
   type Manifest[A]                     = scala.reflect.Manifest[A]
-  type NotImplementedError             = scala.NotImplementedError
   type StringBuilder                   = scala.StringBuilder
 
   // common annotations
@@ -59,9 +55,6 @@ trait ScalaLibrary extends Any with ApiAliases {
 
   // scala types which I won't let win.
   type sCollection[+A]       = sc.GenTraversable[A]
-  type sIterable[+A]         = sc.Iterable[A]
-  type sIterator[+A]         = sc.Iterator[A]
-  type sStream[+A]           = sciStream[A]
   type scIndexedSeq[+A]      = sc.IndexedSeq[A]
   type scIterable[+A]        = sc.Iterable[A]
   type scIterator[+A]        = sc.Iterator[A]

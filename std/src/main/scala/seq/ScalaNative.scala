@@ -6,13 +6,13 @@ import ScalaNative._
 
 /** Compatibility layer for wrapping scala views on their own terms.
  */
-final class ScalaNative[+A](val xs: sIterable[A], val counter: RecorderCounter) extends View[A] with CountCalls with RearSliceable[ScalaNative[A]] {
+final class ScalaNative[+A](val xs: scIterable[A], val counter: RecorderCounter) extends View[A] with CountCalls with RearSliceable[ScalaNative[A]] {
   type MapTo[+X]   = ScalaNative[X]
   type SplitTo[+X] = ScalaNative.Split[X]
 
-  private implicit def lift[B](result: sIterable[B]): MapTo[B]           = new ScalaNative(result, counter)
-  private implicit def liftPair[B](xs: PairOf[sIterable[B]]): SplitTo[B] = Split(lift(xs._1) -> lift(xs._2))
-  private implicit def lower[A](x: View[A]): sIterable[A]                = BiIterable(x)
+  private implicit def lift[B](result: scIterable[B]): MapTo[B]           = new ScalaNative(result, counter)
+  private implicit def liftPair[B](xs: PairOf[scIterable[B]]): SplitTo[B] = Split(lift(xs._1) -> lift(xs._2))
+  private implicit def lower[A](x: View[A]): scIterable[A]                = BiIterable(x)
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]          = xs ++ that
   def collect[B](pf: A ?=> B): MapTo[B]               = xs collect pf
@@ -57,6 +57,6 @@ object ScalaNative {
     def force[That](implicit z: Builds[A, That]): That          = z build join
   }
 
-  def apply[A](xs: sIterable[A]): ScalaNative[A] = new RecorderCounter() |> (c => new ScalaNative(xs map c.record, c))
+  def apply[A](xs: scIterable[A]): ScalaNative[A] = new RecorderCounter() |> (c => new ScalaNative(xs map c.record, c))
   def unapply[A](n: ScalaNative[A])              = Some(n.xs -> n.counter)
 }

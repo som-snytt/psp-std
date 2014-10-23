@@ -10,12 +10,11 @@ import java.lang.String
 
 trait Generator[+A] extends Any { def apply(f: A => Unit): Generator[A] }
 trait Zero[A] extends Any { def zero: A ; def isZero(x: A): Boolean }
+trait Hash[-A] extends Any { def hash(x: A): Int }
 
 /** The classic type class for encoding string representations.
  */
 trait Show[-A] extends Any { def show(x: A): String }
-
-trait Hash[-A] extends Any { def hash(x: A): Int }
 
 /** A boolean algebra abstracts across the standard boolean operations.
  *  The given laws must hold.
@@ -33,18 +32,4 @@ trait BooleanAlgebra[R] {
   def not(x: R): R
   def zero: R
   def one: R
-}
-
-trait DerivedIntCompanion extends Any {
-  type Family
-  type Derived
-
-  def intValue(x: Derived): Int
-  def apply(n: Int): Derived
-  def unapply(x: Family): Option[Int]
-
-  def zero: Zero[Derived]
-  def equiv: Eq[Derived]
-  def ordering: Order[Derived]
-  def shows: Show[Derived]
 }
