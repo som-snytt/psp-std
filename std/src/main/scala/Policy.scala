@@ -5,6 +5,7 @@ import api._
 
 object StdZero extends ZeroInstances
 object StdEq extends EqInstances
+object StdMonoid extends MonoidInstances
 
 object Unsafe {
   implicit def universalEq[A] : HashEq[A] = HashEq.natural()

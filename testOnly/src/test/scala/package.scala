@@ -8,7 +8,6 @@ import StdShow._
 package object tests {
   lazy val isTestDebug = sys.props contains "psp.test.debug"
 
-  type BinOp[A]           = (A, A) => A
   type Relation[A]        = (A, A) => Boolean
   type Forall1[-A]        = A => Boolean
   type Forall2[-A]        = (A, A) => Boolean

@@ -12,7 +12,6 @@ class SizeSpec extends ScalacheckBundle with PspArb3 {
   def bundle = "Size laws"
 
   type SI = Size
-  type BinOp[T] = (T, T) => T
   type Tried[T] = scala.Either[Throwable, T]
 
   private def tried[T](op: => T) = try scala.Right(op) catch { case t: Throwable => scala.Left(t) }

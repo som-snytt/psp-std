@@ -49,7 +49,12 @@ final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[
   def toPartial: K ?=> V                          = newPartial(contains, apply)
 
   def merge(that: pMap[K, V])(implicit z: Sums[V]): pMap[K, V] =
-    that.keySet.contained.foldl(this)((res, key) => res + (key, that(key)))
+    that.keySet.contained.foldl(this)((res, key) =>
+      if (res contains key)
+        res + (key, z.sum(res(key), that(key)))
+      else
+        res + (key, that(key))
+    )
 }
 
 object PolicyMap {

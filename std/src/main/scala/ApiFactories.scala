@@ -48,3 +48,11 @@ object Zero {
     def isZero(x: A): Boolean = zero == x
   }
 }
+
+object Sums {
+  final class Impl[A](f: BinOp[A], z: Zero[A]) extends Sums[A] {
+    def zero: A = z.zero
+    def sum(x: A, y: A): A = f(x, y)
+  }
+  def apply[A](f: BinOp[A])(implicit z: Zero[A]): Sums[A] = new Impl(f, z)
+}

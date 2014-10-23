@@ -110,30 +110,39 @@ trait OrderInstances {
   implicit def sizePartialOrder: PartialOrder[Size] = PartialOrder(Size.partialCompare)
 }
 
+trait MonoidInstances {
+  import StdZero._
+
+  implicit def seqAddition[A] : Sums[pSeq[A]]       = Sums(_ ++ _)
+  implicit def vectorAddition[A] : Sums[pVector[A]] = Sums(_ ++ _)
+}
+
 trait ZeroInstances {
-  implicit def arrayZero[A: CTag]   = Zero[Array[A]](Array[A]())
-  implicit def bigDecimalZero       = Zero[BigDecimal](BigDecimal(0))
-  implicit def bigIntZero           = Zero[BigInt](BigInt(0))
-  implicit def booleanZero          = Zero[Boolean](false)
-  implicit def byteZero             = Zero[Byte](0.toByte)
-  implicit def charZero             = Zero[Char](0.toChar)
-  implicit def doubleZero           = Zero[Double](0d)
-  implicit def floatZero            = Zero[Float](0f)
-  implicit def indexZero[A]         = Zero[Index](NoIndex)
-  implicit def intZero              = Zero[Int](0)
-  implicit def longZero             = Zero[Long](0l)
-  implicit def scalaOptionZero[A]   = Zero[Option[A]](None)
-  implicit def scIterableZero[A]    = Zero[scIterable[A]](Nil)
-  implicit def scIteratorZero[A]    = Zero[scIterator[A]](scIterator.empty)
-  implicit def scSeqZero[A]         = Zero[scSeq[A]](Nil)
-  implicit def scSetZero[A]         = Zero[scSet[A]](sciSet())
-  implicit def scTraversableZero[A] = Zero[scTraversable[A]](Nil)
-  implicit def sciListZero[A]       = Zero[sciList[A]](Nil)
-  implicit def sciMapZero[A, B]     = Zero[sciMap[A,B]](sciMap())
-  implicit def sciVectorZero[A]     = Zero[sciVector[A]](sciVector())
-  implicit def shortZero            = Zero[Short](0.toShort)
-  implicit def stringZero           = Zero[String]("")
-  implicit def unitZero             = Zero[Unit](())
+  implicit def arrayZero[A: CTag] : Zero[Array[A]]           = Zero(Array[A]())
+  implicit def bigDecimalZero: Zero[BigDecimal]              = Zero(BigDecimal(0))
+  implicit def bigIntZero: Zero[BigInt]                      = Zero(BigInt(0))
+  implicit def booleanZero: Zero[Boolean]                    = Zero(false)
+  implicit def byteZero: Zero[Byte]                          = Zero(0.toByte)
+  implicit def charZero: Zero[Char]                          = Zero(0.toChar)
+  implicit def doubleZero: Zero[Double]                      = Zero(0d)
+  implicit def floatZero: Zero[Float]                        = Zero(0f)
+  implicit def indexZero: Zero[Index]                        = Zero(NoIndex)
+  implicit def intZero: Zero[Int]                            = Zero(0)
+  implicit def longZero: Zero[Long]                          = Zero(0L)
+  implicit def pseqZero[A] : Zero[pSeq[A]]                   = Zero(Foreach.elems())
+  implicit def pVectorZero[A] : Zero[pVector[A]]             = Zero(Direct())
+  implicit def optionZero[A] : Zero[Option[A]]               = Zero(None)
+  implicit def scIterableZero[A] : Zero[scIterable[A]]       = Zero(Nil)
+  implicit def scIteratorZero[A] : Zero[scIterator[A]]       = Zero(scIterator.empty)
+  implicit def scSeqZero[A] : Zero[scSeq[A]]                 = Zero(Nil)
+  implicit def scSetZero[A] : Zero[scSet[A]]                 = Zero(sciSet())
+  implicit def scTraversableZero[A] : Zero[scTraversable[A]] = Zero(Nil)
+  implicit def sciListZero[A] : Zero[sciList[A]]             = Zero(Nil)
+  implicit def sciMapZero[A, B] : Zero[sciMap[A, B]]         = Zero(sciMap())
+  implicit def sciVectorZero[A] : Zero[sciVector[A]]         = Zero(sciVector())
+  implicit def shortZero: Zero[Short]                        = Zero(0.toShort)
+  implicit def stringZero: Zero[String]                      = Zero("")
+  implicit def unitZero: Zero[Unit]                          = Zero(())
 }
 
 trait EqInstances {
