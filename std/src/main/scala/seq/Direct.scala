@@ -83,5 +83,5 @@ object Direct {
   def fromString(xs: String): Direct[Char]             = new WrapString(xs)
   def fromArray[A](xs: Array[A]): Direct[A]            = new WrapArray[A](xs)
 
-  def unapplySeq[A](xs: Direct[A]): Some[sciIndexedSeq[A]] = Some(new ToScala(xs))
+  def unapplySeq[A](xs: Direct[A]): scala.Some[sciIndexedSeq[A]] = Some(new ToScala(xs))
 }

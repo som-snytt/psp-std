@@ -23,8 +23,8 @@ abstract class TestRunnerCommon {
   )
 
   def Try[A](expr: => A): Try[A] = try scala.util.Success(expr) catch {
-    case t: ControlThrowable => throw t
-    case t: Throwable        => scala.util.Failure(t)
+    case t: sucControlThrowable => throw t
+    case t: Throwable           => scala.util.Failure(t)
   }
 
   def wrapRun(b: Bundle): Boolean = Try(b.run).fold(x => x, t => andFalse(println(s"Caught $t running $b")))

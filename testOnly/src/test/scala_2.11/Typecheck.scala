@@ -24,7 +24,7 @@ class Typecheck extends ScalacheckBundle {
     s"$expectedTypecheck/${xs.size} expressions from $what should typecheck" -> (Prop(expectedTypecheck == good.size) :| pp"good:\n$good\nbad:\n$bad")
   }
 
-  def props = scSeq[NamedProp](
+  def props = sciSeq[NamedProp](
     divide("psp-std", typecheckedLines(pspCode), expectedTypecheck = 10),
     divide("psp-show", typecheckedLines(pspShowCode)),
     checkScala()

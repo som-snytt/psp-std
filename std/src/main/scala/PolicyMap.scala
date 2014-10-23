@@ -50,9 +50,9 @@ final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[
 object PolicyMap {
   type BuildsMap[K, V] = Builds[(K, V), pMap[K, V]]
 
-  def builder[K : HashEq, V] : BuildsMap[K, V]             = Direct.builder[(K, V)] map (kvs => new PolicyMap(kvs.m.lefts.pset, MapLookup(kvs.toScalaMap[K, V], None)))
-  def apply[K, V](keys: exSet[K], pf: K ?=> V): pMap[K, V] = new PolicyMap(keys, MapLookup(pf, None))
-  def unapplySeq[K, V](map: pMap[K, V]): Some[sciSeq[K]]   = Some(map.keyVector.seq)
+  def builder[K : HashEq, V] : BuildsMap[K, V]                 = Direct.builder[(K, V)] map (kvs => new PolicyMap(kvs.m.lefts.pset, MapLookup(kvs.toScalaMap[K, V], None)))
+  def apply[K, V](keys: exSet[K], pf: K ?=> V): pMap[K, V]     = new PolicyMap(keys, MapLookup(pf, None))
+  def unapplySeq[K, V](map: pMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
 
   /** An immutable scala Map with keys and values in parallel vectors.
    *  It is a "sorted" map in the sense that whatever order the keys are in, that's the sort.
@@ -69,7 +69,7 @@ object PolicyMap {
 
     implicit def ordering: Ordering[K]                          = Ordering[Int] on keyIndex
     override def empty: Us                                      = ToScala.empty[K, V]
-    override protected[this] def newBuilder : Builder[Pair, Us] = ToScala.newBuilder[K, V]
+    override protected[this] def newBuilder : scmBuilder[Pair, Us] = ToScala.newBuilder[K, V]
 
     private def keyIndex(key: K)          = keys indexOf key
     private def pairs                     = keys zip values
@@ -114,7 +114,7 @@ object PolicyMap {
   }
 
   object ToScala {
-    def newBuilder[K, V] : Builder[(K, V), ToScala[K, V]]    = vectorBuilder[(K, V)]() mapResult apply
+    def newBuilder[K, V] : scmBuilder[(K, V), ToScala[K, V]]    = vectorBuilder[(K, V)]() mapResult apply
     def apply[K, V](pairs: sciVector[(K, V)]): ToScala[K, V] = new ToScala[K, V](pairs map (_._1), pairs map (_._2))
     def empty[K, V] : ToScala[K, V]                          = apply(sciVector())
 

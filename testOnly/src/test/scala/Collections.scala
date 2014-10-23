@@ -77,7 +77,7 @@ class Collections extends ScalacheckBundle {
   val bits = sciBitSet(1, 2, 3)
   val arr  = Array[Int](1, 2, 3)
   val smap = sciMap("a" -> 1, "b" -> 2, "c" -> 3)
-  val sseq = scSeq("a" -> 1, "b" -> 2, "c" -> 3)
+  val sseq = sciSeq("a" -> 1, "b" -> 2, "c" -> 3)
   val svec = sciVector("a" -> 1, "b" -> 2, "c" -> 3)
   val sset = sciSet("a" -> 1, "b" -> 2, "c" -> 3)
 

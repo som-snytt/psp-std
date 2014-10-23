@@ -6,7 +6,7 @@ import api._
 object Generator {
   type Gen[+A]  = Generator[A]
   type Susp[+A] = SuspendedTo[A, Generator]
-  object EOS extends RuntimeException("end of stream") with ControlThrowable
+  object EOS extends RuntimeException("end of stream") with sucControlThrowable
 
   val Empty: Gen[Nothing] = create[Nothing](_ => throw EOS)
 

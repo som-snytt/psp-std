@@ -35,15 +35,13 @@ package object std extends psp.std.StdPackage {
   final val ::      = psp.dmz.::
   final val Array   = psp.dmz.Array
   final val Console = psp.dmz.Console
-  final val Option  = psp.dmz.Option
+  final val Failure = psp.dmz.Failure
   final val Set     = psp.dmz.Set
-  final val Some    = psp.dmz.Some
+  final val Success = psp.dmz.Success
   final val System  = psp.dmz.System
   final val Try     = psp.dmz.Try
   final val math    = psp.dmz.math
   final val sys     = psp.dmz.sys
-  final val Success = psp.dmz.Success
-  final val Failure = psp.dmz.Failure
 
   final val BigDecimal      = scala.math.BigDecimal
   final val BigInt          = scala.math.BigInt
@@ -51,18 +49,11 @@ package object std extends psp.std.StdPackage {
   final val NameTransformer = scala.reflect.NameTransformer
   final val Nil             = sci.Nil
   final val None            = scala.None
+  final val Option          = scala.Option
   final val Ordering        = scala.math.Ordering
+  final val Some            = scala.Some
   final val StringContext   = scala.StringContext
-  final val sConsole        = scala.Console
-  final val scBitSet        = sc.BitSet
-  final val scIndexedSeq    = sc.IndexedSeq
-  final val scIterable      = sc.Iterable
   final val scIterator      = sc.Iterator
-  final val scLinearSeq     = sc.LinearSeq
-  final val scMap           = sc.Map
-  final val scSeq           = sc.Seq
-  final val scSet           = sc.Set
-  final val scTraversable   = sc.Traversable
   final val sciBitSet       = sci.BitSet
   final val sciIndexedSeq   = sci.IndexedSeq
   final val sciIterable     = sci.Iterable
@@ -79,7 +70,6 @@ package object std extends psp.std.StdPackage {
   final val scmMap          = scm.Map
   final val scmSeq          = scm.Seq
   final val scmSet          = scm.Set
-  final val scmWrappedArray = scm.WrappedArray
 
   final val ConstantTrue         = newPredicate[Any](_ => true)
   final val ConstantFalse        = newPredicate[Any](_ => false)
@@ -104,13 +94,13 @@ package object std extends psp.std.StdPackage {
   def resource(name: String): Array[Byte]   = Try(noNull(currentThread.getContextClassLoader, nullLoader)) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
   def resourceString(name: String): String  = utf8(resource(name)).to_s
 
-  implicit def viewifyString(x: String): View[Char]          = x.m
-  implicit def viewifyArray[A](x: Array[A]): View[A]         = x.m[DirectAccess] // must give this type argument explicitly.
-  implicit def unViewifyString(x: View[Char]): String        = x.force[String]
-  implicit def unViewifyArray[A: CTag](x: View[A]): Array[A] = x.force[Array[A]]
+  // implicit def viewifyString(x: String): View[Char]          = x.m
+  // implicit def viewifyArray[A](x: Array[A]): View[A]         = x.m[DirectAccess] // must give this type argument explicitly.
+  // implicit def unViewifyString(x: View[Char]): String        = x.force[String]
+  // implicit def unViewifyArray[A: CTag](x: View[A]): Array[A] = x.force[Array[A]]
 
-  implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
-  implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
+  // implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
+  // implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
 
   def asserting[A](x: A)(assertion: => Boolean, msg: => String): A = x sideEffect assert(assertion, msg)
 
@@ -145,7 +135,7 @@ package object std extends psp.std.StdPackage {
   def openChrome(path: Path): Unit = open.`Google Chrome`(path)
 
   object open extends Dynamic {
-    def applyDynamic(name: String)(args: TryShown*): String = Process(scSeq("open", "-a", name) ++ args.map(_.to_s)).!!
+    def applyDynamic(name: String)(args: TryShown*): String = Process(sciList("open", "-a", name) ++ args.map(_.to_s)).!!
   }
 
   def summonZero[A](implicit z: Zero[A]): Zero[A] = z
@@ -170,8 +160,7 @@ package object std extends psp.std.StdPackage {
   def timed[A](body: => A): A                            = nanoTime |> (start => try body finally echoErr("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
 
   // Operations involving classes, classpaths, and classloaders.
-  def manifest[A: Manifest] : Manifest[A]             = implicitly[Manifest[A]]
-  def classTag[T: CTag] : CTag[T]                     = implicitly[CTag[T]]
+  def classTag[T: CTag] : CTag[T] = implicitly[CTag[T]]
 
   // Operations involving Null, Nothing, and casts.
   def abortTrace(msg: String): Nothing     = new RuntimeException(msg) |> (ex => try throw ex finally ex.printStackTrace)
@@ -220,11 +209,11 @@ package object std extends psp.std.StdPackage {
   def convertSeq[A, B](xs: pVector[A])(implicit conversion: A => B): pVector[B]     = xs map conversion
   def convertSeq[A, B](xs: Array[A])(implicit conversion: A => B): pVector[B]       = xs.pvec map conversion
 
-  def mapBuilder[K, V](xs: (K, V)*): Builder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
-  def setBuilder[A](xs: A*): Builder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
-  def listBuilder[A](xs: A*): Builder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
-  def arrayBuilder[A: CTag](xs: A*): Builder[A, Array[A]]         = scala.Array.newBuilder[A] ++= xs
-  def vectorBuilder[A](xs: A*): Builder[A, sciVector[A]]          = sciVector.newBuilder[A] ++= xs
+  def mapBuilder[K, V](xs: (K, V)*): scmBuilder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
+  def setBuilder[A](xs: A*): scmBuilder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
+  def listBuilder[A](xs: A*): scmBuilder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
+  def arrayBuilder[A: CTag](xs: A*): scmBuilder[A, Array[A]]         = scala.Array.newBuilder[A] ++= xs
+  def vectorBuilder[A](xs: A*): scmBuilder[A, sciVector[A]]          = sciVector.newBuilder[A] ++= xs
   def mapToList[K, V](): scmMap[K, sciList[V]]                    = scmMap[K, sciList[V]]() withDefaultValue Nil
 
   // Java.

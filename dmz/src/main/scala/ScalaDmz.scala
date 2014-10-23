@@ -58,15 +58,6 @@ object Failure {
     case _                     => None
   }
 }
-object Option {
-  def empty[A] : Option[A]     = scala.None
-  def apply[A](x: A)           = if (x == null) scala.None else scala.Some[A](x)
-  def unapply[A](x: Option[A]) = x
-}
-object Some {
-  def apply[A](x: A)               = scala.Some[A](x)
-  def unapply[A](x: scala.Some[A]) = x
-}
 object Set {
   def empty[A] : sci.Set[A]        = sci.Set[A]()
   def apply[A](xs: A*): sci.Set[A] = sci.Set[A](xs: _*)
