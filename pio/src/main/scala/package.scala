@@ -2,8 +2,10 @@ package psp
 package std
 
 import api._
+import java.nio.{ file => jnf }
 import java.util.jar.Attributes.Name
-import StdEq._
+import StdEq._, StdShow._
+import scala.sys.process.{ Process, ProcessBuilder }
 
 package object pio {
   type jDirStreamFilter[A] = DirectoryStreamFilter[A]
@@ -23,6 +25,22 @@ package object pio {
   def knownJars    = ivyJars ++ mavenJars
   def knownPioJars = knownJars map (_.toPioJar)
   def knownNames   = mapToList[String, Jar]() doto (b => knownPioJars foreach (jar => jar.classNames foreach (name => b(name) ::= jar))) toMap
+
+  // Operations involving external processes.
+  def newProcess(line: String): ProcessBuilder        = Process(line)
+  def newProcess(args: scSeq[String]): ProcessBuilder = Process(args)
+  def executeLine(line: String): Int                  = Process(line).!
+  def execute(args: String*): Int                     = Process(args.toSeq).!
+  def openSafari(path: Path): Unit                    = open.Safari(path)
+  def openChrome(path: Path): Unit                    = open.`Google Chrome`(path)
+
+  // Filesystem.
+  def newTempDir(prefix: String, attrs: AnyFileAttr*): Path                  = jnf.Files.createTempDirectory(prefix, attrs: _*)
+  def newTempFile(prefix: String, suffix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempFile(prefix, suffix, attrs: _*)
+
+  object open extends Dynamic {
+    def applyDynamic(name: String)(args: TryShown*): String = Process(sciList("open", "-a", name) ++ args.map(_.to_s)).!!
+  }
 
   implicit class JarOps(val jar: Jar) {
     def manifestMainClass = noNull(jar.manifestMap(Name.MAIN_CLASS), "")

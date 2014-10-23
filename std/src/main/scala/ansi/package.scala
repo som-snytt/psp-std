@@ -14,12 +14,11 @@ package object ansi extends BasicAtoms[Ansi] {
   private def actualLines(resource: String) = resourceString(resource).lineVector filterNot "#".r.starts
 
   lazy val colorMap: RgbMap = {
-    val map = newMap(
-      actualLines("xkcd-colors.txt") map { s =>
-        val sciVector(name, r, g, b) = s.words.toScalaVector
-        ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
+    val map = (
+      actualLines("xkcd-colors.txt") map (_.words) map {
+        case PSeq(name, r, g, b) => ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
       }
-    )
+    ).pmap
     val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.readAs[RGB]) pvec;
     new RgbMap(map.keyVector, x => map(x), palette)
   }

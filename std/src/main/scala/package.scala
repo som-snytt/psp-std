@@ -1,10 +1,9 @@
 package psp
 
-import java.nio.{ file => jnf }
-import jnf.{ attribute => jnfa }
+import java.nio.file.Paths
+import java.nio.file.{ attribute => jnfa }
 import scala.{ collection => sc }
 import sc.{ mutable => scm, immutable => sci }
-import scala.sys.process.{ Process, ProcessBuilder }
 import psp.std.api._
 import psp.std.lowlevel._
 import psp.std.StdShow._
@@ -19,7 +18,6 @@ package object std extends psp.std.StdPackage {
   type exSet[A] = ExtensionalSet[A]
   // type inMap[A] = IntensionalMap[A]
   // type exMap[A] = ExtensionalMap[A]
-
   type DocSeq      = pSeq[Doc]
 
   // Inlinable.
@@ -94,14 +92,6 @@ package object std extends psp.std.StdPackage {
   def resource(name: String): Array[Byte]   = Try(noNull(currentThread.getContextClassLoader, nullLoader)) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
   def resourceString(name: String): String  = utf8(resource(name)).to_s
 
-  // implicit def viewifyString(x: String): View[Char]          = x.m
-  // implicit def viewifyArray[A](x: Array[A]): View[A]         = x.m[DirectAccess] // must give this type argument explicitly.
-  // implicit def unViewifyString(x: View[Char]): String        = x.force[String]
-  // implicit def unViewifyArray[A: CTag](x: View[A]): Array[A] = x.force[Array[A]]
-
-  // implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
-  // implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
-
   def asserting[A](x: A)(assertion: => Boolean, msg: => String): A = x sideEffect assert(assertion, msg)
 
   def assert(assertion: Boolean): Unit                 = if (!assertion) assertionError("assertion failed")
@@ -121,22 +111,7 @@ package object std extends psp.std.StdPackage {
   def installedProviders: pVector[FileSystemProvider] = java.nio.file.spi.FileSystemProvider.installedProviders.m.pvec
 
   // Operations involving the filesystem.
-  def path(s: String, ss: String*): Path                                     = ss.foldLeft(jnf.Paths get s)(_ resolve _)
-  def newTempDir(prefix: String, attrs: AnyFileAttr*): Path                  = jnf.Files.createTempDirectory(prefix, attrs: _*)
-  def newTempFile(prefix: String, suffix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempFile(prefix, suffix, attrs: _*)
-
-  // Operations involving external processes.
-  def newProcess(line: String): ProcessBuilder        = Process(line)
-  def newProcess(args: scSeq[String]): ProcessBuilder = Process(args)
-  def executeLine(line: String): Int                  = Process(line).!
-  def execute(args: String*): Int                     = Process(args.toSeq).!
-
-  def openSafari(path: Path): Unit = open.Safari(path)
-  def openChrome(path: Path): Unit = open.`Google Chrome`(path)
-
-  object open extends Dynamic {
-    def applyDynamic(name: String)(args: TryShown*): String = Process(sciList("open", "-a", name) ++ args.map(_.to_s)).!!
-  }
+  def path(s: String, ss: String*): Path = ss.foldLeft(Paths get s)(_ resolve _)
 
   def summonZero[A](implicit z: Zero[A]): Zero[A] = z
 
@@ -229,16 +204,19 @@ package object std extends psp.std.StdPackage {
 
   // PolicyMap is our own creation since SortedMap is way overspecified
   // and LinkedHashMap is too slow and only comes in a mutable variety.
-  def newMap[K : HashEq, V](kvs: (K, V)*): pMap[K, V]           = PolicyMap[K, V](PolicySet(kvs.m.toPolicyVector.map(_._1)), kvs.toMap)
+
+  object PSeq {
+    def unapplySeq[A](xs: pSeq[A]): scala.Some[scSeq[A]] = Some(xs.seq)
+  }
+  def newMap[K: HashEq, V](kvs: (K, V)*): pMap[K, V]            = PolicyMap[K, V](kvs.m.lefts.pset, kvs.toMap)
   def newMap[K, V](keys: exSet[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
-  def newMap[K : HashEq, V](kvs: pSeq[(K, V)]): pMap[K, V]      = newMap(kvs.seq: _*)
-  def newList[A](xs: A*): pList[A]                              = PolicyList(xs: _*)
-  def newSet[A: HashEq](xs: A*): exSet[A]                       = PolicySet.elems[A](xs: _*)
+  def newMap[K : HashEq, V](xs: pSeq[(K, V)]): pMap[K, V]       = xs.pmap
+  def newList[A](xs: A*): pList[A]                              = xs.m.plist
+  def newSet[A: HashEq](xs: A*): exSet[A]                       = xs.m.pset
   def newSeq[A](xs: A*): pSeq[A]                                = Direct[A](xs: _*)
   def newPredicate[A](f: Predicate[A]): Predicate[A]            = f
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V     = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                             = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
-
-  def newArray[A: CTag](size: Precise): Array[A] = new Array[A](size.intSize)
-  def newSize(n: Long): Precise = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
+  def newArray[A: CTag](size: Precise): Array[A]                = new Array[A](size.intSize)
+  def newSize(n: Long): Precise                                 = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
 }

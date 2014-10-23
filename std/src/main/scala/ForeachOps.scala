@@ -65,7 +65,7 @@ trait ConversionOps[A] extends Any {
   def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): pMap[K, V] = toPolicyMap[K, V]
 
   def naturalSet: exSet[A] = pset(HashEq.natural())
-  def seq: sciSeq[A]       = toScala[sciSeq] // varargs
+  def seq: sciSeq[A]       = toScalaSeq // varargs
 }
 
 trait CombinedOps[A] extends Any with ConversionOps[A] {
@@ -94,8 +94,8 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   final def findOrZero(p: Predicate[A])(implicit z: Zero[A]): A = find(p) | z.zero
 
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): sciVector[C] = toScalaVector map (f => ev(f)(x))
-  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): pMap[A, B]        = newMap(underlying.pvec map (x => x -> f(x)))
-  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): pMap[B, A]        = newMap(underlying.pvec map (x => f(x) -> x))
+  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): pMap[A, B]        = underlying map (x => x -> f(x)) pmap
+  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): pMap[B, A]        = underlying map (x => f(x) -> x) pmap
 
   def findOr(p: Predicate[A], alt: => A): A            = find(p) | alt
   def sortDistinct(implicit ord: Order[A]): pVector[A] = toScalaVector.distinct sorted ord.toScalaOrdering

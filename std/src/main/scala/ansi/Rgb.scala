@@ -46,7 +46,7 @@ object RgbMap {
       }
       k -> (v mkString "  ")
     }
-    newMap(pairs).to_s
+    pairs.pmap.to_s
   }
 
   def ShowRgbMap2: Show[RgbMap] = Show[RgbMap] { x =>
@@ -59,7 +59,7 @@ object RgbMap {
 
       k -> show"#$v1 => $index $v2 ($distance)"
     }
-    newMap(pairs).to_s
+    pairs.pmap.to_s
   }
 }
 
