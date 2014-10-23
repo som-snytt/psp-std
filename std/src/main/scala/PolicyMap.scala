@@ -2,52 +2,47 @@ package psp
 package std
 
 import api._, StdShow._
+import PolicyMap.Lookup
 
 trait VarargsSeq[+A] { def seq: scSeq[A] }
 
-final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
-  def copmap[K1](pg: K1 ?=> K): MapLookup[K1, V]                = MapLookup(pf copmap pg, defaultValue)
-  def comap[K1](f: K1 => K): MapLookup[K1, V]                   = MapLookup(pf comap f, defaultValue)
-  def contains(key: K): Boolean                                 = pf isDefinedAt key
-  def put(key: K, value: V): MapLookup[K, V]                    = MapLookup(partial[K, V] { case `key` => value } orElse pf, defaultValue)
-  def orElse[V1 >: V](that: MapLookup[K, V1]): MapLookup[K, V1] = MapLookup(pf orElse that.pf, defaultValue orElse that.defaultValue)
-  def map[V1](f: V => V1): MapLookup[K, V1]                     = MapLookup(pf andThen f, defaultValue map f)
-  def apply(key: K): V                                          = if (pf isDefinedAt key) pf(key) else defaultValue | abort(s"$key does not exist")
-  def get(key: K): Option[V]                                    = pf lift key
-  def getOr[V1 >: V](key: K, alt: => V1): V1                    = if (pf isDefinedAt key) pf(key) else alt
+final class IntensionalMap[K, V](lookup: Lookup[K, V]) extends PolicyMap[K, V](lookup) with InMap[K, V] {
+  type This = inMap[K, V]
+
+  def contains(key: K): Boolean           = lookup contains key
+  def filterKeys(p: Predicate[K]): This   = new IntensionalMap(lookup.copmap[K] { case x if p(x) => x })
+  def filterValues(p: Predicate[V]): This = filterKeys(k => p(apply(k)))
 }
+final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](lookup) with ExMap[K, V] with VarargsSeq[(K, V)] {
+  type Entry = (K, V)
+  type This  = exMap[K, V]
 
-final class IntensionalMap[K, V](lookup: MapLookup[K, V]) extends PolicyMap[K, V](lookup) with InMap[K, V] {
-  def contains(key: K): Boolean                  = lookup contains key
-  def filterKeys(p: Predicate[K]): inMap[K, V]   = new IntensionalMap(lookup.copmap[K] { case x if p(x) => x })
-  def filterValues(p: Predicate[V]): inMap[K, V] = filterKeys(k => p(apply(k)))
-}
-final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[K, V]) extends PolicyMap[K, V](lookup) with ExMap[K, V] with VarargsSeq[(K, V)] {
-  type Entry     = (K, V)
-  type MapTo[V1] = ExtensionalMap[K, V1]
+  private[this] def newMap[V1](keySet: exSet[K], lookup: Lookup[K, V1]): exMap[K, V1] = new ExtensionalMap(keySet, lookup)
+  private[this] def newKeys(keySet: exSet[K]): This                                   = newMap(keySet, lookup)
+  private[this] def newLookup[V1](lookup: Lookup[K, V1]): exMap[K, V1]                = newMap(keySet, lookup)
 
-  def +(key: K, value: V): exMap[K, V]            = new ExtensionalMap(keySet, lookup.put(key, value))
-  def ++(map: exMap[K, V]): MapTo[V]              = new ExtensionalMap(keySet union map.keySet, map.lookup orElse lookup)
-  def contained: pVector[Entry]                   = keyVector map (k => k -> lookup(k))
-  def contains(key: K): Boolean                   = keySet(key)
-  def filterKeys(p: Predicate[K]): exMap[K, V]    = new ExtensionalMap(keySet filter p, lookup)
-  def filterValues(p: Predicate[V]): exMap[K, V]  = filterKeys(k => p(apply(k)))
-  def foreachEntry(f: (K, V) => Unit): Unit       = foreachKey(k => f(k, apply(k)))
-  def foreachKey(f: K => Unit): Unit              = keyVector foreach f
-  def isEmpty                                     = contained.isEmpty
-  def iterator: BiIterator[Entry]                 = keysIterator map (k => (k, lookup(k)))
-  def keyVector: pVector[K]                       = keySet.contained.pvec
-  def keys: pVector[K]                            = keyVector
-  def keysIterator: BiIterator[K]                 = keyVector.biIterator
-  def map[V1](f: V => V1): MapTo[V1]              = new ExtensionalMap(keySet, lookup map f)
-  def reverseKeys                                 = new ExtensionalMap(keySet mapContained (_.pvec.reverse), lookup)
-  def seq: scSeq[Entry]                           = contained.seq
-  def size: Precise                               = keyVector.size
-  def values: pVector[V]                          = keyVector map (x => lookup(x))
-  def valuesIterator: BiIterator[V]               = keysIterator map (x => lookup(x))
-  def withDefaultValue[V1 >: V](v: V1): MapTo[V1] = new ExtensionalMap(keySet, lookup.copy(defaultValue = Some(v)))
+  def +(key: K, value: V): This             = newLookup(lookup.put(key, value))
+  def ++(map: This): This                   = newMap(keySet union map.keySet, map.lookup orElse lookup)
+  def contained: pVector[Entry]             = keyVector map (k => k -> lookup(k))
+  def contains(key: K): Boolean             = keySet(key)
+  def filterKeys(p: Predicate[K]): This     = newKeys(keySet filter p)
+  def filterValues(p: Predicate[V]): This   = filterKeys(k => p(apply(k)))
+  def foreachEntry(f: (K, V) => Unit): Unit = foreachKey(k => f(k, apply(k)))
+  def foreachKey(f: K => Unit): Unit        = keyVector foreach f
+  def isEmpty: Boolean                      = contained.isEmpty
+  def iterator: BiIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
+  def keyVector: pVector[K]                 = keySet.contained.pvec
+  def keys: pVector[K]                      = keyVector
+  def keysIterator: BiIterator[K]           = keyVector.biIterator
+  def map[V1](f: V => V1): exMap[K, V1]     = newLookup(lookup map f)
+  def reverseKeys                           = newKeys(keySet mapContained (_.pvec.reverse))
+  def seq: scSeq[Entry]                     = contained.seq
+  def size: Precise                         = keyVector.size
+  def values: pVector[V]                    = keyVector map (x => lookup(x))
+  def valuesIterator: BiIterator[V]         = keysIterator map (x => lookup(x))
+  def withDefaultValue(v: V): This          = newLookup(lookup.copy(defaultValue = Some(v)))
 
-  def merge(that: exMap[K, V])(implicit z: Sums[V]): exMap[K, V] =
+  def merge(that: This)(implicit z: Sums[V]): This =
     that.keySet.contained.foldl(this)((res, key) =>
       if (res contains key)
         res + (key, z.sum(res(key), that(key)))
@@ -62,24 +57,43 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: MapLo
  *  It's true one could say its ordering is Ordering[Int] on indexOf.
  *  Maybe that will seem like a good idea at some point.
  */
-sealed abstract class PolicyMap[-K, +V](lookup: MapLookup[K, V]) extends Intensional[K, V] {
-  type MapTo[V1] <: pMap[K, V1]
+sealed abstract class PolicyMap[K, V](lookup: Lookup[K, V]) extends Intensional[K, V] {
+  type This <: pMap[K, V]
 
   def contains(key: K): Boolean
-  def filterValues(p: Predicate[V]): pMap[K, V]
+  def filterKeys(p: Predicate[K]): This
+  def filterValues(p: Predicate[V]): This
 
-  def apply(key: K): V                          = lookup(key)
-  def get(key: K): Option[V]                    = lookup get key
-  def getOr[V1 >: V](key: K, alt: => V1): V1    = lookup.getOr(key, alt)
-  def toPartial: K ?=> V                        = newPartial(contains, apply)
+  def apply(key: K): V            = lookup(key)
+  def get(key: K): Option[V]      = lookup get key
+  def getOr(key: K, alt: => V): V = lookup.getOr(key, alt)
+  def toPartial: K ?=> V          = newPartial(contains, apply)
 }
 
 object PolicyMap {
   type BuildsMap[K, V] = Builds[(K, V), exMap[K, V]]
 
-  def builder[K : HashEq, V] : BuildsMap[K, V]                  = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, MapLookup(kvs.toScalaMap[K, V], None)))
-  def apply[K, V](keys: exSet[K], pf: K ?=> V): exMap[K, V]     = new ExtensionalMap(keys, MapLookup(pf, None))
+  def builder[K : HashEq, V] : BuildsMap[K, V]                  = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, Lookup(kvs.toPartial)))
+  def apply[K, V](keys: exSet[K], pf: K ?=> V): exMap[K, V]     = new ExtensionalMap(keys, Lookup(pf))
   def unapplySeq[K, V](map: exMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
+
+  def Lookup[K, V](pf: K ?=> V): Lookup[K, V] = new Lookup[K, V](pf, None)
+
+  final case class Lookup[K, V](pf: K ?=> V, defaultValue: Option[V]) extends (K ?=> V) {
+    type This = Lookup[K, V]
+
+    def apply(key: K): V                                    = pf.applyOrElse[K, V](key, newPartial(true, _ => defaultValue | abort(s"$key does not exist")))
+    def comap[K1](f: K1 => K): Lookup[K1, V]                = Lookup(pf comap f, defaultValue)
+    def contains(key: K): Boolean                           = pf isDefinedAt key
+    def copmap[K1](pg: K1 ?=> K): Lookup[K1, V]             = Lookup(pf copmap pg, defaultValue)
+    def get(key: K): Option[V]                              = pf lift key
+    def getOr(key: K, alt: => V): V                         = pf.applyOrElse[K, V](key, newPartial(true, _ => alt))
+    def isDefinedAt(key: K): Boolean                        = pf isDefinedAt key
+    def map[V1](f: V => V1): Lookup[K, V1]                  = Lookup(pf andThen f, defaultValue map f)
+    def orElse[V1 >: V](that: Lookup[K, V1]): Lookup[K, V1] = Lookup(pf orElse that.pf, defaultValue orElse that.defaultValue)
+    def put(key: K, value: V): This                         = Lookup(partial[K, V] { case `key` => value } orElse pf, defaultValue)
+    def withDefault(value: V): This                         = Lookup(pf, Some(value))
+  }
 
   /** An immutable scala Map with keys and values in parallel vectors.
    *  It is a "sorted" map in the sense that whatever order the keys are in, that's the sort.
