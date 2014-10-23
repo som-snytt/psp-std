@@ -5,13 +5,14 @@ package ops
 import api._
 
 final class WeakApiViewOps[A](val xs: View[A]) {
+  def isEmpty: Boolean = andTrue(xs foreach (_ => return false))
+  def head: A          = xs take      1 optionally { case PSeq(x) => x } orFail "empty.head"
+  def last: A          = xs takeRight 1 optionally { case PSeq(x) => x } orFail "empty.last"
+  def tail: View[A]    = xs drop      1
+  def init: View[A]    = xs dropRight 1
+
   def chainDescriptions: pVector[String]               = xs.viewChain.reverse collect { case x: BaseView[_,_] => x } map (_.description)
   def grep(regex: Regex)(implicit z: Show[A]): View[A] = xs filter (x => regex isMatch x)
-
-  // def drop(n: Int): xs.MapTo[A]      = xs drop n.size
-  // def take(n: Int): xs.MapTo[A]      = xs take n.size
-  // def dropRight(n: Int): xs.MapTo[A] = xs dropRight n.size
-  // def takeRight(n: Int): xs.MapTo[A] = xs takeRight n.size
 }
 
 class BaseViewOps[A, Repr](xs: BaseView[A, Repr]) {

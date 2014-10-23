@@ -10,6 +10,8 @@ final object UnitOps {
   @inline def thenReturn[A](value: A): A = value
 }
 
+final class FixType[A, R](x: A) { def apply(f: A => R): R = f(x) }
+
 final class AnyOps[A](val x: A) extends AnyVal {
   // Short decoded class name.
   def shortClass: String   = x.getClass.shortName
@@ -31,6 +33,9 @@ final class AnyOps[A](val x: A) extends AnyVal {
   // Calling eq on Anys.
   def id_==(y: Any): Boolean = toRef eq y.toRef
   def id_## : Int            = identityHashCode(x)
+
+  def fix[R]: FixType[A, R] = new FixType[A, R](x)
+  def same: FixType[A, A]   = new FixType[A, A](x)
 
   def optionally[B](pf: A ?=> B): Option[B] = if (pf isDefinedAt x) Some(pf(x)) else None
   def requiring(p: Predicate[A]): Option[A] = if (p(x)) Some(x) else None

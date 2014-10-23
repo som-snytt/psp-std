@@ -48,6 +48,8 @@ object View {
   trait Composite[A, +B] extends Any with View[B] { def prev: View[A] }
   trait Split[+A] extends Any {
     type Single[+A] <: View[A]
+    def mapLeft[A1 >: A](f: Single[A1] => Single[A1]): Split[A1]
+    def mapRight[A1 >: A](f: Single[A1] => Single[A1]): Split[A1]
     def left: Single[A]
     def right: Single[A]
     def join: Single[A]

@@ -41,6 +41,7 @@ final class OptionOps[A](val x: Option[A]) extends AnyVal {
   def |?[A1 >: A](alt: => A1): A1                  = x getOrElse alt
   def ||?[A1 >: A](alt: => Option[A1]): Option[A1] = x orElse alt
 
+  def orFail(msg: String): A = x getOrElse abort(msg)
   def pvec: pVector[A] = if (x.isEmpty) Direct() else Direct(x.get)
 }
 
