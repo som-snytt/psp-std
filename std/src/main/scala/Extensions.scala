@@ -31,8 +31,8 @@ final class PredicateOps[A](val p: Predicate[A]) extends AnyVal {
   def inSet(implicit z: HashEq[A]): inSet[A] = IntensionalSet(p)
 }
 final class PartialFunctionOps[A, B](val pf: A ?=> B) extends AnyVal {
-  def copmap[A1](pg: A1 ?=> A): A1 ?=> B = newPartial(x => (pg isDefinedAt x) && (pf isDefinedAt pg(x)), x => pf(pg(x)))
   def comap[A1](f: A1 => A): A1 ?=> B    = newPartial(x => pf isDefinedAt f(x), x => pf(f(x)))
+  def copmap[A1](pg: A1 ?=> A): A1 ?=> B = newPartial(x => (pg isDefinedAt x) && (pf isDefinedAt pg(x)), x => pf(pg(x)))
 }
 
 final class OptionOps[A](val x: Option[A]) extends AnyVal {

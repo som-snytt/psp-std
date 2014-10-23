@@ -6,14 +6,11 @@ import PolicyMap.Lookup
 
 trait VarargsSeq[+A] { def seq: scSeq[A] }
 
-final class IntensionalMap[K, V](lookup: Lookup[K, V]) extends PolicyMap[K, V](lookup) with InMap[K, V] {
+final class IntensionalMap[K, V](val keySet: inSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](keySet, lookup) with InMap[K, V] {
   type This = inMap[K, V]
-
-  def contains(key: K): Boolean           = lookup contains key
-  def filterKeys(p: Predicate[K]): This   = new IntensionalMap(lookup.copmap[K] { case x if p(x) => x })
-  def filterValues(p: Predicate[V]): This = filterKeys(k => p(apply(k)))
+  def filterKeys(p: Predicate[K]): This = new IntensionalMap(keySet filter p, lookup)
 }
-final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](lookup) with ExMap[K, V] with VarargsSeq[(K, V)] {
+final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](keySet, lookup) with ExMap[K, V] with VarargsSeq[(K, V)] {
   type Entry = (K, V)
   type This  = exMap[K, V]
 
@@ -24,9 +21,7 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Looku
   def +(key: K, value: V): This             = newLookup(lookup.put(key, value))
   def ++(map: This): This                   = newMap(keySet union map.keySet, map.lookup orElse lookup)
   def contained: pVector[Entry]             = keyVector map (k => k -> lookup(k))
-  def contains(key: K): Boolean             = keySet(key)
   def filterKeys(p: Predicate[K]): This     = newKeys(keySet filter p)
-  def filterValues(p: Predicate[V]): This   = filterKeys(k => p(apply(k)))
   def foreachEntry(f: (K, V) => Unit): Unit = foreachKey(k => f(k, apply(k)))
   def foreachKey(f: K => Unit): Unit        = keyVector foreach f
   def isEmpty: Boolean                      = contained.isEmpty
@@ -51,23 +46,21 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Looku
     )
 }
 
-
 /** An immutable Map with a fixed iteration order.
  *  It's not a "sorted" map since it has no ordering.
  *  It's true one could say its ordering is Ordering[Int] on indexOf.
  *  Maybe that will seem like a good idea at some point.
  */
-sealed abstract class PolicyMap[K, V](lookup: Lookup[K, V]) extends Intensional[K, V] {
-  type This <: pMap[K, V]
+sealed abstract class PolicyMap[K, V](keySet: PolicySet[K], lookup: Lookup[K, V]) extends Intensional[K, V] {
+  type This <: PolicyMap[K, V]
 
-  def contains(key: K): Boolean
   def filterKeys(p: Predicate[K]): This
-  def filterValues(p: Predicate[V]): This
-
-  def apply(key: K): V            = lookup(key)
-  def get(key: K): Option[V]      = lookup get key
-  def getOr(key: K, alt: => V): V = lookup.getOr(key, alt)
-  def toPartial: K ?=> V          = newPartial(contains, apply)
+  def filterValues(p: Predicate[V]): This = filterKeys(k => p(apply(k)))
+  def apply(key: K): V                    = lookup(key)
+  def contains(key: K): Boolean           = keySet(key)
+  def get(key: K): Option[V]              = lookup get key
+  def getOr(key: K, alt: => V): V         = lookup.getOr(key, alt)
+  def toPartial: K ?=> V                  = newPartial(contains, apply)
 }
 
 object PolicyMap {
@@ -77,7 +70,8 @@ object PolicyMap {
   def apply[K, V](keys: exSet[K], pf: K ?=> V): exMap[K, V]     = new ExtensionalMap(keys, Lookup(pf))
   def unapplySeq[K, V](map: exMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
 
-  def Lookup[K, V](pf: K ?=> V): Lookup[K, V] = new Lookup[K, V](pf, None)
+  def LookupTotal[A, B](f: A => B): Lookup[A, B] = new Lookup[A, B]({ case x => f(x) }, None)
+  def Lookup[K, V](pf: K ?=> V): Lookup[K, V]    = new Lookup[K, V](pf, None)
 
   final case class Lookup[K, V](pf: K ?=> V, defaultValue: Option[V]) extends (K ?=> V) {
     type This = Lookup[K, V]

@@ -11,9 +11,8 @@ object Generator {
   val Empty: Gen[Nothing] = create[Nothing](_ => throw EOS)
 
   def apply[A](xs: pSeq[A]): Gen[A]              = new IteratorGenerator(xs.biIterator)
-   //BiIterator(xs))
   def apply[A](xs: scTraversableOnce[A]): Gen[A] = apply[A](xs.toIterator)
-  def apply[A](it: scIterator[A]): Gen[A]         = new IteratorGenerator[A](it)
+  def apply[A](it: scIterator[A]): Gen[A]        = new IteratorGenerator[A](it)
   def apply[A](xs: sciLinearSeq[A]): Gen[A]      = new LinearGenerator[A](xs)
   def apply[A](xs: sciStream[A]): Gen[A]         = new StreamGenerator[A](xs)
   def from(n: Int): IntGenerator                 = new IntGenerator(n)

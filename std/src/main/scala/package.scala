@@ -11,13 +11,12 @@ import psp.std.StdShow._
 package object std extends psp.std.StdPackage {
   type pSeq[+A]    = Foreach[A]
   type pVector[+A] = Direct[A]
-  type pMap[K, V]  = PolicyMap[K, V]
   type pList[A]    = PolicyList[A]
-
   type inSet[A]    = IntensionalSet[A]
   type exSet[A]    = ExtensionalSet[A]
   type inMap[K, V] = IntensionalMap[K, V]
   type exMap[K, V] = ExtensionalMap[K, V]
+
   type DocSeq      = pSeq[Doc]
 
   // Inlinable.
@@ -85,18 +84,17 @@ package object std extends psp.std.StdPackage {
   type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] { type A = A0 ; type CC[B] = CC0[B] }
 
   // Methods similar to the more useful ones in scala's Predef.
-  def asserting[A](x: A)(assertion: => Boolean, msg: => String): A = x sideEffect assert(assertion, msg)
+  def ??? : Nothing                                                = throw new scala.NotImplementedError
   def assert(assertion: Boolean): Unit                             = if (!assertion) assertionError("assertion failed")
   def assert(assertion: Boolean, msg: => Any): Unit                = if (!assertion) assertionError(s"assertion failed: $msg")
-  def require(requirement: Boolean): Unit                          = if (!requirement) illegalArgumentException("requirement failed")
-  def require(requirement: Boolean, msg: => Any): Unit             = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
-  def ??? : Nothing                                                = throw new scala.NotImplementedError
+  def asserting[A](x: A)(assertion: => Boolean, msg: => String): A = x sideEffect assert(assertion, msg)
+  def echoErr[A: TryShow](x: A): Unit                              = Console echoErr pp"$x"
   def identity[A](x: A): A                                         = x
   def implicitly[A](implicit x: A): A                              = x
-  def locally[A](x: A): A                                          = x
-  def echoErr[A: TryShow](x: A): Unit                              = Console echoErr pp"$x"
-  def println[A: TryShow](x: A): Unit                              = Console echoOut pp"$x"
   def printResult[A: TryShow](msg: String)(result: A): A           = result doto (r => println(pp"$msg: $r"))
+  def println[A: TryShow](x: A): Unit                              = Console echoOut pp"$x"
+  def require(requirement: Boolean): Unit                          = if (!requirement) illegalArgumentException("requirement failed")
+  def require(requirement: Boolean, msg: => Any): Unit             = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
   def showResult[A: TryShow](msg: String)(result: A): A            = result doto (r => println(pp"$msg: $r"))
 
   // Operations involving classes, classpaths, and classloaders.
@@ -179,12 +177,12 @@ package object std extends psp.std.StdPackage {
   def mapToList[K, V](): scmMap[K, sciList[V]]                       = scmMap[K, sciList[V]]() withDefaultValue Nil
 
   // Java.
-  def jMap[K, V](xs: (K, V)*): jMap[K, V]                = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
-  def jSet[A](xs: A*): jSet[A]                           = new jHashSet[A] doto (b => xs foreach b.add)
-  def jList[A](xs: A*): jList[A]                         = java.util.Arrays.asList(xs: _* )
-  def jFile(s: String): jFile                            = path(s).toFile
-  def jUri(x: String): jUri                              = java.net.URI create x
-  def jUrl(x: String): jUrl                              = jUri(x).toURL
+  def jMap[K, V](xs: (K, V)*): jMap[K, V] = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
+  def jSet[A](xs: A*): jSet[A]            = new jHashSet[A] doto (b => xs foreach b.add)
+  def jList[A](xs: A*): jList[A]          = java.util.Arrays.asList(xs: _* )
+  def jFile(s: String): jFile             = path(s).toFile
+  def jUri(x: String): jUri               = java.net.URI create x
+  def jUrl(x: String): jUrl               = jUri(x).toURL
 
   def concurrentMap[K, V](): ConcurrentMapWrapper[K, V]           = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], None)
   def concurrentMap[K, V](default: V): ConcurrentMapWrapper[K, V] = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], Some(default))

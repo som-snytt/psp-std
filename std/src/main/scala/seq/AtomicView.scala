@@ -133,6 +133,7 @@ sealed abstract class AtomicView[A0, Repr] extends View.Atomic[A0] with BaseView
   val tc: Walkable[Repr]
   val counter = new RecorderCounter()
 
+  def m: this.type = this
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit
   def isAtomic  = true
   def viewChain = Direct(this)

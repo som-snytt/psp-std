@@ -21,6 +21,10 @@ trait StdGateways extends Any
   implicit def walkableTypeClass[Repr](repr: Repr): WalkableTypeClass[Repr] = new WalkableTypeClass[Repr](repr)
 }
 
+final class WalkableTypeClass[Repr](val repr: Repr) {
+  def m[CC[X] <: Walkable[X]](implicit tc: CC[Repr]): AtomicView[tc.A, Repr] = tc wrap repr
+}
+
 // Adapt CanBuildFrom to Builds, since there are zillions of implicit CanBuildFroms already lying around.
 // This lets us use all our own methods yet still build the scala type at the end, e.g.
 //   Vector("a", "b", "cd", "ef").m filter (_.length == 1) build
@@ -122,10 +126,6 @@ trait StdOps extends Any with StdOps3 {
 // Prefer opsAnyRef.
 trait StdUniversal0 extends Any                   { implicit def opsAny[A](x: A): ops.AnyOps[A]                 = new ops.AnyOps[A](x)    }
 trait StdUniversal extends Any with StdUniversal0 { implicit def opsAnyRef[A <: AnyRef](x: A): ops.AnyRefOps[A] = new ops.AnyRefOps[A](x) }
-
-final class WalkableTypeClass[Repr](val repr: Repr) {
-  def m[CC[X] <: Walkable[X]](implicit tc: CC[Repr]): AtomicView[tc.A, Repr] = tc wrap repr
-}
 
 // This doesn't work if the return type is declared as tc.VC[Repr], or if it is inferred.
 // def m[CC[X] <: Walkable[X]](implicit tc: CC[Repr]): tc.VC[Repr] = tc wrap repr

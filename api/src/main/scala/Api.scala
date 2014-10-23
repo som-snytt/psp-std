@@ -41,19 +41,17 @@ trait OptLong extends Any with Opt[Long] { def get: Long        }
 
 /** Collections interfaces.
  */
-trait Foreach[+A]         extends Any with HasSize                        { def foreach(f: A => Unit): Unit }
-trait Direct[+A]          extends Any with Foreach[A] with HasPreciseSize { def elemAt(i: Index): A         }
-trait Intensional[-K, +V] extends Any                                     { def apply(x: K): V              }
-trait Extensional[+A]     extends Any with HasSize                        { def contained: Foreach[A]       }
-trait InSet[-A]           extends Any with Intensional[A, Boolean]        { def equiv(x: A, y: A): Boolean  }
-trait ExSet[+A]           extends Any with Extensional[A]
-trait InMap[-K, +V]       extends Any with Intensional[K, V]              { def contains(key: K): Boolean   }
-trait ExMap[K, +V]        extends Any with Extensional[(K, V)]            { def keySet: ExSet[K]            }
+trait Foreach[+A] extends Any with HasSize                        { def foreach(f: A => Unit): Unit   }
+trait Direct[+A]  extends Any with Foreach[A] with HasPreciseSize { def elemAt(i: Index): A           }
+trait Linear[+A]  extends Any with Foreach[A] with IsEmpty        { def head: A ; def tail: Linear[A] }
 
-trait Linear[+A] extends Any with Foreach[A] with IsEmpty {
-  def head: A
-  def tail: Linear[A]
-}
+trait Intensional[-K, +V] extends Any                              { def apply(x: K): V              }
+trait InSet[-A]           extends Any with Intensional[A, Boolean] { def equiv(x: A, y: A): Boolean  }
+trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def keySet: InSet[K]            }
+
+trait Extensional[+A]     extends Any with HasSize
+trait ExSet[+A]           extends Any with Extensional[A]      { def contained: Foreach[A]       }
+trait ExMap[K, +V]        extends Any with Extensional[(K, V)] { def keySet: ExSet[K]            }
 
 /** Ennhanced value representations.
  */

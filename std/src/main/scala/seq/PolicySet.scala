@@ -28,10 +28,9 @@ object PolicySet {
   }
 }
 
-sealed trait IntensionalSet[A] extends InSet[A] with (A => Boolean) {
-  def hash(x: A): Int
-}
-sealed trait ExtensionalSet[A] extends ExSet[A] with IntensionalSet[A]
+sealed trait PolicySet[-A] extends (A => Boolean)
+sealed trait IntensionalSet[A] extends PolicySet[A] with InSet[A] { def hash(x: A): Int }
+sealed trait ExtensionalSet[A] extends IntensionalSet[A] with ExSet[A]
 
 object ExtensionalSet {
   def apply[A: HashEq](xs: pSeq[A]): exSet[A] = new Impl[A](xs, implicitly)

@@ -95,7 +95,7 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   final def findOrZero(p: Predicate[A])(implicit z: Zero[A]): A = find(p) | z.zero
 
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): sciVector[C] = toScalaVector map (f => ev(f)(x))
-  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): exMap[A, B]       = underlying map (x => x -> f(x)) pmap
+  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): exMap[A, B]       = underlying.pset mapOnto f
   def mapFrom[B](f: A => B)(implicit z: HashEq[B]): exMap[B, A]       = underlying map (x => f(x) -> x) pmap
 
   def findOr(p: Predicate[A], alt: => A): A            = find(p) | alt

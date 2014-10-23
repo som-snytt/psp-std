@@ -135,6 +135,7 @@ final class IndexRangeOps(xs: IndexRange) {
 }
 
 final class IntensionalSetOps[A](xs: inSet[A]) {
+  def mapOnto[B](f: A => B): inMap[A, B]  = new IntensionalMap(xs, PolicyMap.Lookup[A, B]({ case x => f(x) }))
   def diff(that: inSet[A]): inSet[A]      = this filter that
   def filter(p: Predicate[A]): inSet[A]   = IntensionalSet.Filtered(xs, p)
   def union(that: inSet[A]): inSet[A]     = IntensionalSet.Union(xs, that)
@@ -145,6 +146,7 @@ final class IntensionalSetOps[A](xs: inSet[A]) {
   }
 }
 final class ExtensionalSetOps[A](xs: exSet[A]) {
+  def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, PolicyMap.LookupTotal(f))
   def intersect(that: exSet[A]): exSet[A] = ExtensionalSet.Intersect(xs, that)
   def diff(that: exSet[A]): exSet[A]      = ExtensionalSet.Diff(xs, that)
   def intersect(that: inSet[A]): exSet[A] = filter(that)
@@ -278,8 +280,6 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
 final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, Foreach] {
   protected def underlying = xs
   def ++[A1 >: A](ys: Foreach[A1]): Foreach[A1] = Foreach.join(xs, ys)
-  // def +: (elem: A): Foreach[A] = Foreach.join(direct(elem), xs)
-  // def :+ (elem: A): Foreach[A] = Foreach.join(xs, direct(elem))
   def toRefs: pSeq[AnyRef] = xs map (_.toRef)
   def runForeach(f: A => Unit): Unit = xs foreach f
   protected def rebuild[B](xs: Foreach[B]): Foreach[B] = xs
