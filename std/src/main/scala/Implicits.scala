@@ -170,10 +170,11 @@ trait EqInstances {
   implicit def arrayHashEq[A: HashEq] : HashEq[Array[A]]       = hashEqBy[Array[A]](_.pvec)
   implicit def vectorHashEq[A: Eq] : HashEq[pVector[A]]        = HashEq(corresponds[A], _.toScalaVector.##)
   implicit def exSetEq[A] : Eq[exSet[A]]                       = Eq(symmetrically[exSet[A]](_ isSubsetOf _))
-  implicit def pMapEq[K, V: Eq] : Eq[pMap[K, V]]               = Eq((xs, ys) => (xs.keySet === ys.keySet) && (xs.keyVector forall (k => xs(k) === ys(k))))
+  implicit def pMapEq[K, V: Eq] : Eq[pMap[K, V]]               = Eq((xs, ys) => xs.keySet === ys.keySet && (equalizer(xs.apply, ys.apply) forall xs.keys))
   implicit def tuple2Eq[A: HashEq, B: HashEq] : HashEq[(A, B)] = HashEq[(A, B)]({ case ((x1, y1), (x2, y2)) => x1 === x2 && y1 === y2 }, x => x._1.hash + x._2.hash)
 
   implicit def equivFromOrder[A: Order] : Eq[A] = Eq[A](_ compare _ eq Cmp.EQ)
 
-  def symmetrically[A](f: Relation[A]): Relation[A] = (x, y) => f(x, y) && f(y, x)
+  def equalizer[A, B: Eq](f: A => B, g: A => B): FunctionEqualizer[A, B] = new FunctionEqualizer(f, g)
+  def symmetrically[A](f: Relation[A]): Relation[A]                      = (x, y) => f(x, y) && f(y, x)
 }
