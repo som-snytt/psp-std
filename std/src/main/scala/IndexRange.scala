@@ -6,7 +6,7 @@ import Index.zero
 import IndexRange.{ undefined, empty }
 import lowlevel.ExclusiveIntRange
 
-final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange with RearSliceable[IndexRange] {
+final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange {
   def startInt      = intRange.start
   def endInt        = intRange.end
   def intRange      = ExclusiveIntRange create bits

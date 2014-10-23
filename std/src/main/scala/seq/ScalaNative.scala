@@ -6,7 +6,7 @@ import ScalaNative._
 
 /** Compatibility layer for wrapping scala views on their own terms.
  */
-final class ScalaNative[+A](val xs: scIterable[A], val counter: RecorderCounter) extends View[A] with CountCalls with RearSliceable[ScalaNative[A]] {
+final class ScalaNative[+A](val xs: scIterable[A], val counter: RecorderCounter) extends View[A] with CountCalls {
   type MapTo[+X]   = ScalaNative[X]
   type SplitTo[+X] = ScalaNative.Split[X]
 

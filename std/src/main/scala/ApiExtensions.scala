@@ -285,7 +285,7 @@ final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, F
   protected def rebuild[B](xs: Foreach[B]): Foreach[B] = xs
 }
 
-trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with FrontSliceable[View[A]] {
+trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] {
   def xs: CC[A]
   def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
   protected def rebuild[B](xs: Foreach[B]): CC[B]
@@ -308,7 +308,7 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def withFilter(p: Predicate[A]): CC[A]                                            = rebuild(Foreach[A](f => xs foreach (x => if (p(x)) f(x))))
   def without(x: A)                                                                 = filterNot(_ id_== x)
 
-  def reducel(f: (A, A) => A): A     = (xs take 1).force match { case PSeq(head) => (xs drop 1.size).foldl(head)(f) }
+  def reducel(f: (A, A) => A): A     = (xs take 1).force match { case PSeq(head) => (xs drop 1).foldl(head)(f) }
   def max(implicit ord: Order[A]): A = reducel(_ max2 _)
   def min(implicit ord: Order[A]): A = reducel(_ min2 _)
 }

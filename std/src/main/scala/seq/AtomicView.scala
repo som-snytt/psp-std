@@ -88,7 +88,7 @@ final case class LabeledView[+A, Repr](prev: BaseView[A, Repr], label: String) e
   def viewChain   = Direct[View[_]](this).m ++ prev.viewChain.m.tail force
 }
 
-sealed trait BaseView[+A, Repr] extends Any with View[A] with RearSliceable[BaseView[A, Repr]] {
+sealed trait BaseView[+A, Repr] extends Any with View[A] {
   type MapTo[+X]   = BaseView[X, Repr]
   type SplitTo[+X] = SplitView[X, Repr]
   type SizedTo[+X] = MapTo[X] with HasPreciseSize

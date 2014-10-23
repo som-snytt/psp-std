@@ -60,6 +60,7 @@ abstract class StdPackage
   }
   implicit def booleanToPredicate(value: Boolean): Predicate[Any] = if (value) ConstantTrue else ConstantFalse
   implicit def jClassToPolicyClass(x: jClass): PolicyClass        = new PolicyClass(x)
+  implicit def intToPreciseSize(n: Int): IntSize                  = Precise(n)
 
   implicit def viewifyString(x: String): View[Char]          = x.m
   implicit def viewifyArray[A](x: Array[A]): View[A]         = x.m[DirectAccess] // must give this type argument explicitly.

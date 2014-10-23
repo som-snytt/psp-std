@@ -83,7 +83,7 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def infixOpsEq[A: Eq](x: A): infix.EqOps[A]                               = new infix.EqOps[A](x)
   implicit def infixOpsHash[A: Hash](x: A): infix.HashOps[A]                         = new infix.HashOps[A](x)
 
-  implicit def opsApiView[A](x: View[A]): ops.WeakApiViewOps[A]                       = new ops.WeakApiViewOps(x)
+  implicit def opsApiView[A, Repr <: View[A]](x: Repr): ops.WeakApiViewOps[A, Repr]   = new ops.WeakApiViewOps(x)
   implicit def opsBaseView[A, Repr](x: BaseView[A, Repr]): ops.BaseViewOps[A, Repr]   = new ops.BaseViewOps(x)
   implicit def opsBiFunction[T, R](f: (T, T) => R): ops.BiFunctionOps[T, R]           = new ops.BiFunctionOps(f)
   implicit def opsBoolean(x: Boolean): ops.BooleanOps                                 = new ops.BooleanOps(x)

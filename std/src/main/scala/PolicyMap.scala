@@ -95,8 +95,7 @@ object PolicyMap {
   final class ToScala[K, +V](override val keys: sciVector[K], override val values: sciVector[V])
         extends scala.collection.immutable.SortedMap[K, V]
            with scala.collection.SortedMapLike[K, V, ToScala[K,V]]
-           with scala.collection.MapLike[K, V, ToScala[K,V]]
-           with RearSliceable[ToScala[K, V]] {
+           with scala.collection.MapLike[K, V, ToScala[K,V]] {
     self =>
 
     private[this] type Pair = ((K, V))
