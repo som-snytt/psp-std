@@ -5,7 +5,8 @@ package ops
 import api._
 
 class WeakApiViewOps[A](xs: View[A]) {
-  def chainDescriptions: pVector[String] = xs.viewChain.reverse collect { case x: BaseView[_,_] => x } map (_.description)
+  def chainDescriptions: pVector[String]               = xs.viewChain.reverse collect { case x: BaseView[_,_] => x } map (_.description)
+  def grep(regex: Regex)(implicit z: Show[A]): View[A] = xs filter (x => regex isMatch x)
 }
 
 class BaseViewOps[A, Repr](xs: BaseView[A, Repr]) {

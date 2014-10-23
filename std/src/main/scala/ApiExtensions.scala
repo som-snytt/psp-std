@@ -128,7 +128,7 @@ trait DocSeqCommonOps extends Any {
 
 final class DocSeqOps(val docs: DocSeq) extends AnyVal with DocSeqCommonOps
 final class ShowableSeqOps[A: Show](xs: pSeq[A]) extends AnyRef with DocSeqCommonOps {
-  def docs: DocSeq = xs map (_.doc)
+  def docs: DocSeq                = xs map (_.doc)
 }
 final class IndexRangeOps(xs: IndexRange) {
   def *(n: Int): IndexRange = indexRange(xs.startInt * n, xs.endInt * n)

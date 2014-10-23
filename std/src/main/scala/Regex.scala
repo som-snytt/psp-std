@@ -5,6 +5,7 @@ import java.util.regex.Pattern, Pattern._
 import java.util.regex.Matcher
 import java.util.regex.PatternSyntaxException
 import api._
+import StdShow._
 
 // By default, the regular expressions ^ and $ ignore line terminators and only match at the beginning and the end, respectively, of the entire input sequence.
 // If MULTILINE mode is activated then ^ matches at the beginning of input and after any line terminator except at the end of input.
@@ -37,10 +38,11 @@ final class Regex(val pattern: Pattern) extends AnyVal {
   def setFlag(flag: Int): Regex         = Regex(to_s, flags | flag)
   def mapRegex(f: Unary[String]): Regex = Regex(f(to_s), flags)
 
-  def isMatch(input: CharSequence)    = matcher(input).matches
-  def all(input: CharSequence)        = matcher(input) |> (m => option(m.matches(), 1 to m.groupCount map m.group))
-  def first(input: CharSequence)      = matcher(input) |> (m => option(m.find, m.group()))
-  def unapplySeq(input: CharSequence) = all(input) map (_.seq)
+  def isMatch[A: Show](x: A): Boolean       = isMatch(x.to_s)
+  def isMatch(input: CharSequence): Boolean = matcher(input).matches
+  def all(input: CharSequence)              = matcher(input) |> (m => option(m.matches(), 1 to m.groupCount map m.group))
+  def first(input: CharSequence)            = matcher(input) |> (m => option(m.find, m.group()))
+  def unapplySeq(input: CharSequence)       = all(input) map (_.seq)
 
   override def toString = s"$pattern"
 }

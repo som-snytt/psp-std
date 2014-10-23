@@ -54,9 +54,11 @@ class PolicyBasic extends ScalacheckBundle {
   def pseq    = Foreach[Int](parray foreach _)
   def punfold = Foreach from 1
 
-  def showsAs[A: Show](expected: String, x: A): NamedProp = expected -> (expected =? show"$x")
+  def showsAs[A: Show](expected: String, x: A): NamedProp         = expected -> (expected =? show"$x")
+  def seqShows[A: Show](expected: String, xs: pSeq[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))
 
-  def closure = parray transitiveClosure (x => Direct(x.m.init, x.m.tail)) mk_s ", "
+  def closure   = parray transitiveClosure (x => Direct(x.m.init, x.m.tail)) mk_s ", "
+  def xxNumbers = (Foreach from 0).m grep """^(.*)\1""".r
 
   def props: sciList[NamedProp] = sciList(
     showsAs("[ 1, 2, 3 ]", plist),
@@ -67,7 +69,9 @@ class PolicyBasic extends ScalacheckBundle {
     showsAs("[ 1, 2, 3, 1, 2, 3 ]", parray ++ parray),
     showsAs("[ 1, 2, 3, ... ]", punfold),
     showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure),
-    showsAs("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _) mk_s ", ")
+    seqShows("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _)),
+    seqShows("11, 22, 33, 44", indexRange(1, 50) grep """(.)\1""".r),
+    seqShows("99, 1010, 1111", xxNumbers drop 8 take 3)
   )
 }
 
