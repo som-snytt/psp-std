@@ -24,7 +24,7 @@ class InferenceSpec extends ScalacheckBundle {
   val ls: sciList[Int]   = sciList(1, 2, 3)
   val ss: String         = "123"
   val vs: sciVector[Int] = sciVector(1, 2, 3)
-  val xs: exSet[Int]     = newSet(1, 2, 3)
+  val xs: exSet[Int]     = exSet(1, 2, 3)
 
   def ptArray = expectTypes[Array[Int]](
     as.m map identity build,

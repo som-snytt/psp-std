@@ -37,6 +37,7 @@ package object pio {
   // Filesystem.
   def newTempDir(prefix: String, attrs: AnyFileAttr*): Path                  = jnf.Files.createTempDirectory(prefix, attrs: _*)
   def newTempFile(prefix: String, suffix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempFile(prefix, suffix, attrs: _*)
+  def installedProviders: pVector[FileSystemProvider]                        = java.nio.file.spi.FileSystemProvider.installedProviders.pvec
 
   object open extends Dynamic {
     def applyDynamic(name: String)(args: TryShown*): String = Process(sciList("open", "-a", name) ++ args.map(_.to_s)).!!

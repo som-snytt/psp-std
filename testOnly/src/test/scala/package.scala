@@ -48,7 +48,6 @@ package object tests {
     def collectN[B](n: Int)(pf: pSeq[A] ?=> B)(implicit z: Arbitrary[A]): Gen[B] = pseqOfN(n, gen) collect pf
     def stream: pSeq[A]                                                          = Foreach continually gen.sample flatMap (_.pvec)
     def take(n: Int): pVector[A]                                                 = stream take n pvec
-    def next(): A                                                                = stream.head
   }
   implicit class PropOps(p: Prop) {
     def unary_! : Prop = p map (r => !r)

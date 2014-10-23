@@ -6,6 +6,7 @@ import api._
 object PolicySet {
   def builder[A: HashEq] : Builds[A, exSet[A]] = Builds(apply[A](_))
 
+  def intensional[A: HashEq](p: Predicate[A]): inSet[A]                       = new IntensionalSet.Impl[A](p, ?[HashEq[A]])
   def natural[A](xs: Foreach[A]): exSet[A]                                    = apply[A](xs)(HashEq.natural[A])
   def reference[A <: AnyRef](xs: Foreach[A]): exSet[A]                        = apply[A](xs)(HashEq.reference[A])
   def shown[A: Show](xs: Foreach[A]): exSet[A]                                = apply[A](xs)(HashEq.shown[A])

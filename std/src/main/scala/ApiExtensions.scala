@@ -264,15 +264,12 @@ final class InputStreamOps(val in: InputStream) extends AnyVal {
 final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Direct] {
   protected def underlying = xs
   protected def rebuild[B](xs: pSeq[B]): pVector[B] = xs.pvec
-  override def head: A = apply(0.index)
 
-  // Foreach from 0
-  // 1 to 100 splitSeq (_ splitAt 3.index) take 3 foreach println
+  def ++(ys: Direct[A]): Direct[A]                    = new Direct.Joined(xs, ys)
   def apply(i: Index): A                              = xs elemAt i
   def exclusiveEnd: Index                             = Index(length)
-  def isNoLargerThan(that: Size): Boolean             = (xs: HasSize).size p_<= that
-  def isNoLargerThan(that: HasSize): Boolean          = isNoLargerThan(that.size)
   def hasSameSize(that: HasSize): Boolean             = (xs: HasSize).size p_== that.size
+  def head: A                                         = apply(0.index)
   def indicesAtWhich(p: Predicate[A]): pVector[Index] = xs.indices filter (i => p(apply(i)))
   def last: A                                         = apply(xs.size.lastIndex)
   def length: Int                                     = xs.size.intSize
@@ -280,7 +277,6 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
   def runForeach(f: A => Unit): Unit                  = xs foreach f
   def takeRight(n: Precise): pVector[A]               = xs takeRight n
-  def ++(ys: Direct[A]): Direct[A]                    = new Direct.Joined(xs, ys)
 
   def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
   def reverse: Direct[A]  = xs match {
@@ -304,34 +300,25 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
   protected def rebuild[B](xs: Foreach[B]): CC[B]
 
-  def take(n: Precise): View[A]     = xs.m take n
-  def drop(n: Precise): View[A]     = xs.m drop n
-  def slice(range: IndexRange): View[A] = this drop range.precedingSize take range.size
-
+  def +:(elem: A): CC[A]                                                            = rebuild(Foreach.join(fromElems(elem), xs))
+  def :+(elem: A): CC[A]                                                            = rebuild(Foreach.join(xs, fromElems(elem)))
+  def collect[B, That](pf: A ?=> B)(implicit z: Builds[B, That]): That              = z direct (f => xs foreach (x => if (pf isDefinedAt x) f(pf(x))))
   def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.contained)
+  def drop(n: Precise): View[A]                                                     = xs.m drop n
+  def filter(p: Predicate[A]): CC[A]                                                = withFilter(p)
+  def filterNot(p: Predicate[A]): CC[A]                                             = withFilter(!p)
+  def flatCollect[B, That](pf: A ?=> Foreach[B])(implicit z: Builds[B, That]): That = z direct (f => xs foreach (x => if (pf isDefinedAt x) pf(x) foreach f))
+  def flatMap[B](g: A => Foreach[B]): CC[B]                                         = rebuild(Foreach[B](f => xs foreach (x => g(x) foreach f)))
   def flatten[B](implicit ev: A <:< Foreach[B]): CC[B]                              = rebuild(Foreach[B](f => xs foreach (x => ev(x) foreach f)))
   def map[B](g: A => B): CC[B]                                                      = rebuild(Foreach[B](f => xs foreach (x => f(g(x)))))
-  def flatMap[B](g: A => Foreach[B]): CC[B]                                         = rebuild(Foreach[B](f => xs foreach (x => g(x) foreach f)))
+  def product(implicit z: Products[A]): A                                           = foldl(z.one)(z.product)
+  def slice(range: IndexRange): View[A]                                             = this drop range.precedingSize take range.size
+  def sum(implicit z: Sums[A]): A                                                   = foldl(z.zero)(z.sum)
+  def take(n: Precise): View[A]                                                     = xs.m take n
   def withFilter(p: Predicate[A]): CC[A]                                            = rebuild(Foreach[A](f => xs foreach (x => if (p(x)) f(x))))
-  def collect[B, That](pf: A ?=> B)(implicit z: Builds[B, That]): That              = z direct (f => xs foreach (x => if (pf isDefinedAt x) f(pf(x))))
-  def flatCollect[B, That](pf: A ?=> Foreach[B])(implicit z: Builds[B, That]): That = z direct (f => xs foreach (x => if (pf isDefinedAt x) pf(x) foreach f))
+  def without(x: A)                                                                 = filterNot(_ id_== x)
 
-  def filter(p: Predicate[A]): CC[A]      = withFilter(p)
-  def filterNot(p: Predicate[A]): CC[A]   = withFilter(!p)
-  def sum(implicit z: Sums[A]): A         = foldl(z.zero)(z.sum)
-  def product(implicit z: Products[A]): A = foldl(z.one)(z.product)
-
-  def +:(elem: A): CC[A] = rebuild(Foreach.join(fromElems(elem), xs))
-  def :+(elem: A): CC[A] = rebuild(Foreach.join(xs, fromElems(elem)))
-
-  def without(x: A) = filterNot(_ id_== x)
-
-  def head: A = {
-    xs.m take 1 foreach (x => return x)
-    abort("empty.head")
-  }
-
-  def reducel(f: (A, A) => A): A     = drop(1.size).foldl(head)(f)
+  def reducel(f: (A, A) => A): A     = (xs take 1).force match { case PSeq(head) => (xs drop 1.size).foldl(head)(f) }
   def max(implicit ord: Order[A]): A = reducel(_ max2 _)
   def min(implicit ord: Order[A]): A = reducel(_ min2 _)
 }

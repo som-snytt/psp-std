@@ -51,7 +51,7 @@ abstract class StdPackage
     def transitiveClosure(expand: A => pSeq[A]): pSeq[A] = {
       var seen = PolicySet.elems[A]()
       def loop(root: A, f: A => Unit): Unit = if (!seen(root)) {
-        seen = seen union newSet(root)
+        seen = seen union exSet(root)
         f(root)
         expand(root) |> (xs => if (xs != null) xs foreach (x => loop(x, f)))
       }

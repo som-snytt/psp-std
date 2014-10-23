@@ -84,38 +84,32 @@ package object std extends psp.std.StdPackage {
   type ForeachableType[A0, Repr, CC0[X]]  = Foreachable[Repr]  { type A = A0 ; type CC[B] = CC0[B] }
   type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] { type A = A0 ; type CC[B] = CC0[B] }
 
-  def pClassOf[A: CTag](): PolicyClass      = new PolicyClass(classOf[A])
-  def classOf[A: CTag](): Class[_ <: A]     = classTag[A].runtimeClass.castTo[Class[_ <: A]]
+  // Methods similar to the more useful ones in scala's Predef.
+  def asserting[A](x: A)(assertion: => Boolean, msg: => String): A = x sideEffect assert(assertion, msg)
+  def assert(assertion: Boolean): Unit                             = if (!assertion) assertionError("assertion failed")
+  def assert(assertion: Boolean, msg: => Any): Unit                = if (!assertion) assertionError(s"assertion failed: $msg")
+  def require(requirement: Boolean): Unit                          = if (!requirement) illegalArgumentException("requirement failed")
+  def require(requirement: Boolean, msg: => Any): Unit             = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
+  def ??? : Nothing                                                = throw new scala.NotImplementedError
+  def identity[A](x: A): A                                         = x
+  def implicitly[A](implicit x: A): A                              = x
+  def locally[A](x: A): A                                          = x
+  def echoErr[A: TryShow](x: A): Unit                              = Console echoErr pp"$x"
+  def println[A: TryShow](x: A): Unit                              = Console echoOut pp"$x"
+  def printResult[A: TryShow](msg: String)(result: A): A           = result doto (r => println(pp"$msg: $r"))
+  def showResult[A: TryShow](msg: String)(result: A): A            = result doto (r => println(pp"$msg: $r"))
+
+  // Operations involving classes, classpaths, and classloaders.
   def classLoaderOf[A: CTag](): ClassLoader = classOf[A].getClassLoader
-  def nullLoader(): ClassLoader             = NullClassLoader
+  def classOf[A: CTag](): Class[_ <: A]     = classTag[A].runtimeClass.castTo[Class[_ <: A]]
+  def classTag[T: CTag] : CTag[T]           = implicitly[CTag[T]]
   def loaderOf[A: CTag] : ClassLoader       = noNull(classLoaderOf[A], nullLoader)
+  def nullLoader(): ClassLoader             = NullClassLoader
+  def pClassOf[A: CTag](): PolicyClass      = new PolicyClass(classOf[A])
   def resource(name: String): Array[Byte]   = Try(noNull(currentThread.getContextClassLoader, nullLoader)) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
   def resourceString(name: String): String  = utf8(resource(name)).to_s
 
-  def asserting[A](x: A)(assertion: => Boolean, msg: => String): A = x sideEffect assert(assertion, msg)
-
-  def assert(assertion: Boolean): Unit                 = if (!assertion) assertionError("assertion failed")
-  def assert(assertion: Boolean, msg: => Any): Unit    = if (!assertion) assertionError(s"assertion failed: $msg")
-  def require(requirement: Boolean): Unit              = if (!requirement) illegalArgumentException("requirement failed")
-  def require(requirement: Boolean, msg: => Any): Unit = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
-  def ??? : Nothing                                    = throw new scala.NotImplementedError
-  def identity[A](x: A): A                             = x
-  def implicitly[A](implicit x: A): A                  = x
-  def locally[A](x: A): A                              = x
-
-  def echoErr[A: TryShow](x: A): Unit                    = Console echoErr pp"$x"
-  def println[A: TryShow](x: A): Unit                    = Console echoOut pp"$x"
-  def printResult[A: TryShow](msg: String)(result: A): A = result doto (r => println(pp"$msg: $r"))
-  def showResult[A: TryShow](msg: String)(result: A): A  = result doto (r => println(pp"$msg: $r"))
-
-  def installedProviders: pVector[FileSystemProvider] = java.nio.file.spi.FileSystemProvider.installedProviders.m.pvec
-
-  // Operations involving the filesystem.
-  def path(s: String, ss: String*): Path = ss.foldLeft(Paths get s)(_ resolve _)
-
-  def summonZero[A](implicit z: Zero[A]): Zero[A] = z
-
-  def show[A: Show] : Show[A]        = ?
+  def path(s: String, ss: String*): Path          = ss.foldLeft(Paths get s)(_ resolve _)
 
   def eqBy[A]     = new ops.EqBy[A]
   def hashBy[A]   = new ops.HashBy[A]
@@ -134,9 +128,6 @@ package object std extends psp.std.StdPackage {
   def now(): FileTime                                    = jnfa.FileTime fromMillis milliTime
   def timed[A](body: => A): A                            = nanoTime |> (start => try body finally echoErr("Elapsed: %.3f ms" format (nanoTime - start) / 1e6))
 
-  // Operations involving classes, classpaths, and classloaders.
-  def classTag[T: CTag] : CTag[T] = implicitly[CTag[T]]
-
   // Operations involving Null, Nothing, and casts.
   def abortTrace(msg: String): Nothing     = new RuntimeException(msg) |> (ex => try throw ex finally ex.printStackTrace)
   def abort(msg: String): Nothing          = runtimeException(msg)
@@ -144,22 +135,23 @@ package object std extends psp.std.StdPackage {
   def nullAs[A] : A                        = asExpected[A](null)
   def asExpected[A](body: Any): A          = body.castTo[A]
 
+  def ?[A](implicit value: A): A                        = value
+  def andFalse(x: Unit): Boolean                        = false
+  def andTrue(x: Unit): Boolean                         = true
+  def direct[A](xs: A*): Direct[A]                      = new Direct.FromScala(xs.toVector)
+  def each[A](xs: sCollection[A]): Foreach[A]           = fromScala(xs)
+  def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)
   def intRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end)
   def nthRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end + 1)
-  def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)
+  def nullStream(): InputStream                         = NullInputStream
+  def offset(x: Int): Offset                            = Offset(x)
+  def option[A](p: Boolean, x: => A): Option[A]         = if (p) Some(x) else None
+  def ordering[A: Order] : Ordering[A]                  = ?[Order[A]].toScalaOrdering
+  def regex(re: String): Regex                          = Regex(re)
+  def show[A: Show] : Show[A]                           = ?
+  def summonZero[A](implicit z: Zero[A]): Zero[A]       = z
 
   def optImplicit[A](implicit value: A = null): Option[A] = if (value == null) None else Some(value)
-
-  def ?[A](implicit value: A): A                = value
-  def andFalse(x: Unit): Boolean                = false
-  def andTrue(x: Unit): Boolean                 = true
-  def direct[A](xs: A*): Direct[A]              = new Direct.FromScala(xs.toVector)
-  def each[A](xs: sCollection[A]): Foreach[A]   = fromScala(xs)
-  def nullStream(): InputStream                 = NullInputStream
-  def offset(x: Int): Offset                    = Offset(x)
-  def option[A](p: Boolean, x: => A): Option[A] = if (p) Some(x) else None
-  def ordering[A: Order] : Ordering[A]          = ?[Order[A]].toScalaOrdering
-  def regex(re: String): Regex                  = Regex(re)
 
   def fromScala[A](xs: sCollection[A]): Foreach[A] = xs match {
     case xs: scIndexedSeq[_] => new Direct.FromScala(xs.toIndexedSeq)
@@ -189,7 +181,7 @@ package object std extends psp.std.StdPackage {
   def listBuilder[A](xs: A*): scmBuilder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
   def arrayBuilder[A: CTag](xs: A*): scmBuilder[A, Array[A]]         = scala.Array.newBuilder[A] ++= xs
   def vectorBuilder[A](xs: A*): scmBuilder[A, sciVector[A]]          = sciVector.newBuilder[A] ++= xs
-  def mapToList[K, V](): scmMap[K, sciList[V]]                    = scmMap[K, sciList[V]]() withDefaultValue Nil
+  def mapToList[K, V](): scmMap[K, sciList[V]]                       = scmMap[K, sciList[V]]() withDefaultValue Nil
 
   // Java.
   def jMap[K, V](xs: (K, V)*): jMap[K, V]                = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
@@ -202,17 +194,13 @@ package object std extends psp.std.StdPackage {
   def concurrentMap[K, V](): ConcurrentMapWrapper[K, V]           = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], None)
   def concurrentMap[K, V](default: V): ConcurrentMapWrapper[K, V] = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], Some(default))
 
-  // PolicyMap is our own creation since SortedMap is way overspecified
-  // and LinkedHashMap is too slow and only comes in a mutable variety.
-
   object PSeq {
     def unapplySeq[A](xs: pSeq[A]): scala.Some[scSeq[A]] = Some(xs.seq)
   }
-  def newMap[K: HashEq, V](kvs: (K, V)*): pMap[K, V]            = PolicyMap[K, V](kvs.m.lefts.pset, kvs.toMap)
-  def newMap[K, V](keys: exSet[K], lookup: K ?=> V): pMap[K, V] = PolicyMap[K, V](keys, lookup)
-  def newMap[K : HashEq, V](xs: pSeq[(K, V)]): pMap[K, V]       = xs.pmap
-  def newList[A](xs: A*): pList[A]                              = xs.m.plist
-  def newSet[A: HashEq](xs: A*): exSet[A]                       = xs.m.pset
+
+  def exSet[A: HashEq](xs: A*): exSet[A]          = xs.m.pset
+  def inSet[A: HashEq](p: Predicate[A]): inSet[A] = PolicySet intensional p
+
   def newSeq[A](xs: A*): pSeq[A]                                = Direct[A](xs: _*)
   def newPredicate[A](f: Predicate[A]): Predicate[A]            = f
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V     = { case x if p(x) => f(x) }
