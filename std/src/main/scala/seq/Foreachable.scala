@@ -25,7 +25,7 @@ trait DirectAccess[-Repr] extends Walkable[Repr] {
 
   def size(repr: Repr): Precise
   def elemAt(repr: Repr)(i: Index): A
-  def wrap[R <: Repr](repr: R): VC[R] = new IndexedView(repr, this, size(repr).indices)
+  def wrap[R <: Repr](repr: R): VC[R] = new IndexedView(repr, this)
 }
 
 object Foreachable {

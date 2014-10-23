@@ -41,10 +41,14 @@ class Renderer(indentSize: Int) {
   }
 }
 
-class ApiViewOps[A](xs: View[A]) {
+class WeakApiViewOps[A](xs: View[A]) {
   def chainDescriptions: pVector[String] = xs.viewChain.reverse collect { case x: BaseView[_,_] => x } map (_.description)
-  def tail: View[A] = xs drop 1
-  def init: View[A] = xs dropRight 1
+}
+
+class BaseViewOps[A, Repr](xs: BaseView[A, Repr]) {
+  def tail: BaseView[A, Repr]                      = xs drop 1
+  def init: BaseView[A, Repr]                      = xs dropRight 1
+  def mapWithIndex[B](f: (A, Index) => B): View[B] = Foreach[B](mf => xs.foldl(0)((res, x) => try res + 1 finally mf(f(x, Index(res))))).m[Foreachable]
 }
 
 class DocOps(val lhs: Doc) extends AnyVal {

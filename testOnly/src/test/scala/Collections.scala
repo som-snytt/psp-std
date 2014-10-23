@@ -66,7 +66,8 @@ class PolicyBasic extends ScalacheckBundle {
     showsAs("[ 1, 2, 3, 1, 2, 3 ]", pvector ++ pvector),
     showsAs("[ 1, 2, 3, 1, 2, 3 ]", parray ++ parray),
     showsAs("[ 1, 2, 3, ... ]", punfold),
-    showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure)
+    showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure),
+    showsAs("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _) mk_s ", ")
   )
 }
 

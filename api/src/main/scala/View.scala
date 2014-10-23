@@ -39,7 +39,6 @@ trait View[+A] extends Any with Foreach[A] with RearSliceable[View[A]] {
   def takeRight(n: Precise): MapTo[A]
   def takeWhile(p: Predicate[A]): MapTo[A]
   def viewChain: Direct[View[_]]
-  def viewRange: IndexRange
   def withFilter(p: Predicate[A]): MapTo[A]
   def zip[B](that: View[B]): MapTo[(A, B)]
 }

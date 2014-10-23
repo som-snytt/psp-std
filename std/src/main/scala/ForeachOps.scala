@@ -34,16 +34,11 @@ trait ConversionOps[A] extends Any {
   def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z direct runForeach
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
-  def mapWithIndex[B](f: (A, Index) => B): pVector[B] = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(x, Index(i)) ).pvec
-  def mapWithNth[B](f: (A, Nth) => B): pVector[B]     = ( for ((x, i) <- toScalaVector.zipWithIndex) yield f(x, Nth(i + 1)) ).pvec
-
-  def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): pMap[K, V]        = toPolicyMap[K, V]
-  def toPolicyMap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): pMap[K, V] = PolicyMap.builder[K, V] build (underlying map ev)
-
-  def toPolicySet(implicit z: HashEq[A]): exSet[A] = PolicySet.builder[A] build underlying
-  def toPolicyList: pList[A]                       = PolicyList.builder[A] build underlying
-  def toPolicyVector: pVector[A]                   = Direct.builder[A] build underlying
-  def toPolicySeq: pSeq[A]                         = Foreach.builder[A] build underlying
+  def toPolicyList: pList[A]                                           = PolicyList.builder[A] build underlying
+  def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): pMap[K, V] = PolicyMap.builder[K, V] build (underlying map ev)
+  def toPolicySeq: pSeq[A]                                             = Foreach.builder[A] build underlying
+  def toPolicySet(implicit z: HashEq[A]): exSet[A]                     = PolicySet.builder[A] build underlying
+  def toPolicyVector: pVector[A]                                       = Direct.builder[A] build underlying
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
   def toScalaList: sciList[A]                                   = toScala[sciList]
@@ -54,23 +49,23 @@ trait ConversionOps[A] extends Any {
   def toScalaTraversable: scTraversable[A]                      = toScala[scTraversable]
   def toScalaMap[K, V](implicit ev: A <:< (K, V)): sciMap[K, V] = toScalaVector map ev toMap
 
-  def toArray(implicit z: CTag[A]): Array[A] = Array.newBuilder[A] ++= trav result
-  def toJava: jList[A]                       = jList(seq: _*)
-  def toJavaSet: jSet[A]                     = jSet(seq: _*)
+  def toArray(implicit z: CTag[A]): Array[A] = Array.newBuilder[A] ++= toScalaTraversable result
+
+  def toJava: jList[A]                                       = jList(seq: _*)
+  def toJavaSet: jSet[A]                                     = jSet(seq: _*)
+  def toJavaMap[K, V](implicit ev: A <:< (K, V)): jMap[K, V] = jMap(seq map ev: _*)
 
   def biIterator: BiIterator[A] = biIterable.iterator
   def biIterable: BiIterable[A] = BiIterable(toScalaIterable)
 
-  def plist: pList[A]                       = toPolicyList
-  def pvec: pVector[A]                      = toPolicyVector
-  def pseq: pSeq[A]                         = toPolicySeq
-  def pset(implicit z: HashEq[A]): exSet[A] = toPolicySet
-  def naturalSet: exSet[A]                  = pset(HashEq.natural())
+  def plist: pList[A]                                                 = toPolicyList
+  def pvec: pVector[A]                                                = toPolicyVector
+  def pseq: pSeq[A]                                                   = toPolicySeq
+  def pset(implicit z: HashEq[A]): exSet[A]                           = toPolicySet
+  def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): pMap[K, V] = toPolicyMap[K, V]
 
-  def seq: sciSeq[A] = toScala[sciSeq] // varargs
-
-  // private def xs: Foreach[A]       = Foreach(runForeach)
-  private def trav: scTraversable[A] = toScalaTraversable
+  def naturalSet: exSet[A] = pset(HashEq.natural())
+  def seq: sciSeq[A]       = toScala[sciSeq] // varargs
 }
 
 trait CombinedOps[A] extends Any with ConversionOps[A] {

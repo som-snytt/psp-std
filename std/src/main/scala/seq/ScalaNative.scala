@@ -33,7 +33,6 @@ final class ScalaNative[+A](val xs: sIterable[A], val counter: RecorderCounter) 
   def takeRight(n: Precise): MapTo[A]                 = xs takeRight n.intSize
   def takeWhile(p: Predicate[A]): MapTo[A]            = xs takeWhile p
   def viewChain: pVector[View[_]]                     = Direct(this)
-  def viewRange: IndexRange                           = indexRange(0, xs.size)
   def withFilter(p: Predicate[A]): MapTo[A]           = xs filter p  // scala withFilter returns "FilterMonadic"
   def zip[B](that: View[B]): MapTo[(A, B)]            = xs zip that
 

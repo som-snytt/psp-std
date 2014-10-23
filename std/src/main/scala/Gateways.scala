@@ -98,7 +98,8 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsStdOpt[A](x: Opt[A]): ops.StdOptOps[A]                              = new ops.StdOptOps[A](x)
   implicit def opsTry[A](x: Try[A]): ops.TryOps[A]                                    = new ops.TryOps[A](x)
   implicit def opsUnit(x: Unit): ops.UnitOps.type                                     = ops.UnitOps
-  implicit def opsView[A](x: View[A]): ops.ApiViewOps[A]                              = new ops.ApiViewOps[A](x)
+  implicit def opsBaseView[A, Repr](x: BaseView[A, Repr]): ops.BaseViewOps[A, Repr]   = new ops.BaseViewOps(x)
+  implicit def opsApiView[A](x: View[A]): ops.WeakApiViewOps[A]                       = new ops.WeakApiViewOps(x)
 }
 trait StdOps extends Any with StdOps3 {
   implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator              = new ShowInterpolator(sc)
