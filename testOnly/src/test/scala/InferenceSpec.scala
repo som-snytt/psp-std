@@ -5,12 +5,12 @@ import psp.std._, api._, StdEq._, StdShow._
 
 class SliceSpec extends ScalacheckBundle {
   def bundle = "Slice Operations"
-  def checkSlice[A : Eq : Show](xs: pVector[A], start: Int, end: Int, expect: pVector[A]): Seq[NamedProp] = Seq(
+  def checkSlice[A : Eq : Show](xs: pVector[A], start: Int, end: Int, expect: pVector[A]): sciList[NamedProp] = sciList(
     show"$xs.slice($start, $end) === $expect"              -> Prop((xs slice indexRange(start, end) force) === expect),
     show"$xs drop $start take ($end - $start) === $expect" -> Prop((xs drop newSize(start) take newSize(end - start) force) === expect)
   )
 
-  def props = Seq(
+  def props = sciList(
     checkSlice('a' to 'g', 2, 5, 'c' to 'e')
   ).flatten
 }
@@ -52,7 +52,7 @@ class InferenceSpec extends ScalacheckBundle {
     xs.m map identity force
   )
 
-  def props: Seq[NamedProp] = Seq(ptArray, ptView, ptVector) ++ Seq(
+  def props: sciList[NamedProp] = sciList(ptArray, ptView, ptVector) ++ sciList(
     expectType[Array[Char]]   (ss.m map identity force),
     expectType[String]        (ss map identity),
     expectType[String]        (ss.m map identity force),

@@ -36,7 +36,6 @@ package object std extends psp.std.StdPackage {
   final val Array   = psp.dmz.Array
   final val Console = psp.dmz.Console
   final val Option  = psp.dmz.Option
-  final val Seq     = psp.dmz.Seq
   final val Set     = psp.dmz.Set
   final val Some    = psp.dmz.Some
   final val System  = psp.dmz.System
@@ -110,7 +109,6 @@ package object std extends psp.std.StdPackage {
   implicit def unViewifyString(x: View[Char]): String        = x.force[String]
   implicit def unViewifyArray[A: CTag](x: View[A]): Array[A] = x.force[Array[A]]
 
-  // implicit def convertIntensional[K, V](x: Intensional[K, V]): K ?=> V = { case k if x contains k => x(k) }
   implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
   implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
 
@@ -138,16 +136,16 @@ package object std extends psp.std.StdPackage {
   def newTempFile(prefix: String, suffix: String, attrs: AnyFileAttr*): Path = jnf.Files.createTempFile(prefix, suffix, attrs: _*)
 
   // Operations involving external processes.
-  def newProcess(line: String): ProcessBuilder      = Process(line)
-  def newProcess(args: Seq[String]): ProcessBuilder = Process(args)
-  def executeLine(line: String): Int                = Process(line).!
-  def execute(args: String*): Int                   = Process(args.toSeq).!
+  def newProcess(line: String): ProcessBuilder        = Process(line)
+  def newProcess(args: scSeq[String]): ProcessBuilder = Process(args)
+  def executeLine(line: String): Int                  = Process(line).!
+  def execute(args: String*): Int                     = Process(args.toSeq).!
 
   def openSafari(path: Path): Unit = open.Safari(path)
   def openChrome(path: Path): Unit = open.`Google Chrome`(path)
 
   object open extends Dynamic {
-    def applyDynamic(name: String)(args: TryShown*): String = Process(Seq("open", "-a", name) ++ args.map(_.to_s)).!!
+    def applyDynamic(name: String)(args: TryShown*): String = Process(scSeq("open", "-a", name) ++ args.map(_.to_s)).!!
   }
 
   def summonZero[A](implicit z: Zero[A]): Zero[A] = z

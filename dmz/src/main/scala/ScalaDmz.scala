@@ -67,11 +67,6 @@ object Some {
   def apply[A](x: A)               = scala.Some[A](x)
   def unapply[A](x: scala.Some[A]) = x
 }
-object Seq {
-  def empty[A] : sci.Seq[A]        = sci.Seq()
-  def apply[A](xs: A*): sci.Seq[A] = sci.Seq[A](xs: _*)
-  def unapplySeq[A](xs: sc.Seq[A]) = Some(xs)
-}
 object Set {
   def empty[A] : sci.Set[A]        = sci.Set[A]()
   def apply[A](xs: A*): sci.Set[A] = sci.Set[A](xs: _*)

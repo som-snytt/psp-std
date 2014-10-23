@@ -29,7 +29,7 @@ class StringExtensions extends ScalacheckBundle {
   // take/dropRight with values around MinInt.
   def mostInts = implicitly[Arbitrary[Int]] filter (_ > MinInt + 5000)
 
-  def props: Seq[NamedProp] = Seq(
+  def props: sciList[NamedProp] = sciList(
     "stripSuffix" -> newProp2[String](_ stripSuffix _)(_ stripSuffix _),
     "stripPrefix" -> newProp2[String](_ stripPrefix _)(_ stripPrefix _),
     "take"        -> newProp2[Int](_ take _)(_ take _),
@@ -58,7 +58,7 @@ class PolicyBasic extends ScalacheckBundle {
 
   def closure = parray transitiveClosure (x => Direct(x.m.init, x.m.tail)) mk_s ", "
 
-  def props: Seq[NamedProp] = Seq(
+  def props: sciList[NamedProp] = sciList(
     showsAs("[ 1, 2, 3 ]", plist),
     showsAs("[ 1, 2, 3 ]", pvector),
     showsAs("[ 1, 2, 3 ]", parray),
@@ -83,13 +83,13 @@ class Collections extends ScalacheckBundle {
 
   def paired[A](x: A): (A, Int) = x -> ("" + x).length
 
-  def props: Seq[NamedProp] = policyProps ++ Seq(
+  def props: sciList[NamedProp] = policyProps ++ sciList(
     expectTypes[sciBitSet](
       bits map identity,
       bits.m map (_.toString.length) build,
       bits.m map (_.toString) map (_.length) build,
-      bits.m map (x => Seq(x)) map (_.size) build,
-      bits.m map (x => Seq(x).size) build
+      bits.m map (x => sciList(x)) map (_.size) build,
+      bits.m map (x => sciList(x).size) build
     ),
     expectTypes[String](
       "abc" map identity,
@@ -129,12 +129,12 @@ class Collections extends ScalacheckBundle {
     )
   )
 
-  def policyProps: Seq[NamedProp] = {
+  def policyProps: sciList[NamedProp] = {
     import StdEq._
     val pset = newSet("a" -> 1, "b" -> 2, "c" -> 3)
     val pseq = newSeq("a" -> 1, "b" -> 2, "c" -> 3)
 
-    Seq(
+    sciList(
       expectTypes[exSet[_]](
         pset.m map identity build,
         pset.m.build,

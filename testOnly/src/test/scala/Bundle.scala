@@ -49,7 +49,7 @@ object NamedProp {
 }
 
 trait ScalacheckBundle extends Bundle {
-  def props: Seq[NamedProp]
+  def props: scSeq[NamedProp]
 
   def pass = GREEN + "pass" + RESET
   def fail = RED + "fail" + RESET

@@ -21,8 +21,6 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Success[+A] = scala.util.Success[A]
   type Failure[+A] = scala.util.Failure[A]
 
-  type Seq[+A] = sc.Seq[A]    // XXX
-
   type BigDecimal  = scala.math.BigDecimal
   type BigInt      = scala.math.BigInt
   type Ordered[A]  = scala.math.Ordered[A]

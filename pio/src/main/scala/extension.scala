@@ -5,8 +5,8 @@ package pio
 /** Purely extension methods.
  */
 
-final class JioSeqStringOps(val xs: Seq[String]) extends AnyVal {
-  def nonEmpties: Seq[String] = xs filterNot (s => (s eq null) || (s == ""))
+final class JioSeqStringOps(val xs: scSeq[String]) extends AnyVal {
+  def nonEmpties: scSeq[String] = xs filterNot (s => (s eq null) || (s == ""))
 }
 
 final class JioJarEntryOps(val entry: JarEntry) extends AnyVal {

@@ -13,7 +13,7 @@ class AlgebraPoliceman[A](name: String)(implicit algebra: BooleanAlgebra[A], arb
   def meet = "∧"
   def not  = "¬"
 
-  def props = Seq[NamedProp](
+  def props = sciList[NamedProp](
     s"  a $meet (b $meet c) = (a $meet b) $meet c"           -> forAll(associative(and)),
     s"  a $join (b $join c) = (a $join b) $join c"           -> forAll(associative(or)),
     s"  a $meet b = b $meet a"                               -> forAll(commutative(and)),

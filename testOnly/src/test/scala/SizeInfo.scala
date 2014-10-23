@@ -39,7 +39,7 @@ class SizeSpec extends ScalacheckBundle with PspArb3 {
   }
 
   // ...Aaaaand right on cue, a bunch of these tests broke until I added a type annotation.
-  def props = Seq[NamedProp](
+  def props = sciList[NamedProp](
     "s1 <= (s1 max s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 max s2)),
     "s1 >= (s1 min s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_>= (s1 min s2)),
     "s1 <= (s1 + s2)"                 -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 + s2)),

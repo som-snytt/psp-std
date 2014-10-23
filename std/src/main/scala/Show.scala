@@ -78,7 +78,7 @@ trait StdShow extends StdShowLow {
 
   implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
   implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(?[Show[A]].show))
-  implicit def seqShow[A: Show] : Show[Seq[A]]            = Show(xs => inBrackets(xs: _*))
+  implicit def seqShow[A: Show] : Show[scSeq[A]]          = Show(xs => inBrackets(xs: _*))
   implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
 
   implicit def stackTraceElementShow: Show[StackTraceElement] = Show("\tat" + _ + "\n")

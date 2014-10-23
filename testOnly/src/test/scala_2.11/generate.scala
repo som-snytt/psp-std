@@ -7,9 +7,9 @@ import psp.std._
  */
 object Generator {
   def tq    = "\"\"\""
-  def lhses = List("\"abc\"", "scala.collection.Seq(1, 2, 3)", "scala.collection.mutable.Seq('a', 'b', 'c')", "Array(true, false, true)")
-  def ops   = List("index", "indexOf", "contains", "hasElem")
-  def rhses = List("59d", "(1: Int)", "('b': Char)", "100000")
+  def lhses = sciList("\"abc\"", "scala.collection.Seq(1, 2, 3)", "scala.collection.mutable.Seq('a', 'b', 'c')", "Array(true, false, true)")
+  def ops   = sciList("index", "indexOf", "contains", "hasElem")
+  def rhses = sciList("59d", "(1: Int)", "('b': Char)", "100000")
 
   def exprs(ops: String*)     = for (lhs <- lhses ; op <- ops; rhs <- rhses) yield s"$lhs $op $rhs"
   def genScalaLibrary: String = exprs("indexOf", "contains").mkString("final val scalaLibraryCode = " + tq + "\n    ", "\n    ", "\n  " + tq)

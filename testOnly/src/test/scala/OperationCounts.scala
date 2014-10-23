@@ -122,5 +122,5 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
 
   lazy val results = compositesOfN(numOps) map (fn => new CompositeOp(fn)) filter (_.isInteresting)
 
-  def props(): Seq[NamedProp] = results map (r => NamedProp(r.description, r.passed))
+  def props(): sciList[NamedProp] = results map (r => NamedProp(r.description, r.passed))
 }
