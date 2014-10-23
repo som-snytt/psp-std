@@ -8,9 +8,11 @@ import java.lang.String
 /** Type classes I'm less certain about keeping.
  */
 
-trait Generator[+A] extends Any { def apply(f: A => Unit): Generator[A] }
-trait Zero[A] extends Any { def zero: A ; def isZero(x: A): Boolean }
-trait Hash[-A] extends Any { def hash(x: A): Int }
+trait Generator[+A] extends Any { def apply(f: A => Unit): Generator[A]   }
+trait Zero[A] extends Any       { def zero: A ; def isZero(x: A): Boolean }
+trait Hash[-A] extends Any      { def hash(x: A): Int                     }
+trait Sums[A] extends Any       { def zero: A ; def sum(x: A, y: A): A    }
+trait Products[A] extends Any   { def one: A ; def product(x: A, y: A): A }
 
 /** The classic type class for encoding string representations.
  */

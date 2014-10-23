@@ -58,7 +58,7 @@ object Regex extends (String => Regex) {
   def apply(s: String, flags: Int): Regex = new Regex(Pattern.compile(s, flags))
 }
 
-final class SplitString(s: String, where: Index) extends Product2[String, String] {
+final class SplitString(s: String, where: Index) extends scala.Product2[String, String] {
   def isEmpty             = where == NoIndex
   def get                 = (_1, _2)
   def _1                  = s.substring(0, where.safeToInt)

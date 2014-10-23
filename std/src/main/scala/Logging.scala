@@ -6,7 +6,7 @@ import java.text.DateFormat._
 
 class DelayedLog {
   val counter = Counter(1)
-  private[this] var toLog: List[Message[_]] = Nil
+  private[this] var toLog: sciList[Message[_]] = Nil
 
   def timeString(timeStyle: Int = MEDIUM): String = getTimeInstance(timeStyle) format new jDate()
   def stackString(frames: Int   = 50): String = (new Throwable).getStackTrace drop 3 take frames mkString EOL

@@ -16,7 +16,7 @@ package object ansi extends BasicAtoms[Ansi] {
   lazy val colorMap: RgbMap = {
     val map = newMap(
       actualLines("xkcd-colors.txt") map { s =>
-        val Vector(name, r, g, b) = s.words.toScalaVector
+        val sciVector(name, r, g, b) = s.words.toScalaVector
         ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
       }
     )

@@ -5,6 +5,7 @@ import api._
 import scala.{ collection => sc }
 import scala.Any
 import scala.Predef.StringCanBuildFrom
+import scala.math.Numeric
 
 /** Implicits handling the way in and the way out of policy collections.
  */
@@ -47,6 +48,9 @@ trait StdWalks extends Any with StdWalks1 {
 }
 
 trait StdOps0 extends Any {
+  implicit def numericToSums[A](implicit z: Numeric[A]): Sums[A]         = new Sums[A] { def zero = z.zero ; def sum(x: A, y: A): A = z.plus(x, y) }
+  implicit def numericToProducts[A](implicit z: Numeric[A]): Products[A] = new Products[A] { def one = z.one ; def product(x: A, y: A): A = z.times(x, y) }
+
   implicit class ShowableToDocShown[A: Show](x: A) {
     def doc: Doc = Doc.Shown(x, ?[Show[A]])
   }

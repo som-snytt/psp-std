@@ -59,7 +59,7 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
   def control = NamedView("EAGER", ScalaNative(scalaIntList))
   def basicOps = if (scalaVersion == "2.11") basicOps211 else basicOps210
 
-  private def basicOps210 = List[IntViewFun](
+  private def basicOps210 = sciList[IntViewFun](
     _ collect collectDivSix,
     _ drop 5,
     _ dropWhile lessThan(max / 3),
@@ -73,7 +73,7 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
   /** Can't use dropRight and takeRight in 2.10 without the scala library
    *  implementations going off the rails entirely.
    */
-  private def basicOps211 = basicOps210 ++ List[IntViewFun](
+  private def basicOps211 = basicOps210 ++ sciList[IntViewFun](
     _ dropRight 11,
     _ takeRight 17
   )
@@ -94,7 +94,7 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
   def scalaIntStream: sciStream[Int] = scalaIntRange.toStream
   def scalaIntVector: sciVector[Int] = scalaIntRange.toVector
 
-  def compositesOfN(n: Int): List[IntViewFun] = (
+  def compositesOfN(n: Int): sciList[IntViewFun] = (
     (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
       map (xss => xss reduceLeft (_ andThen _))
   )

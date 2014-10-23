@@ -316,10 +316,10 @@ trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] with Fro
   def collect[B, That](pf: A ?=> B)(implicit z: Builds[B, That]): That              = z direct (f => xs foreach (x => if (pf isDefinedAt x) f(pf(x))))
   def flatCollect[B, That](pf: A ?=> Foreach[B])(implicit z: Builds[B, That]): That = z direct (f => xs foreach (x => if (pf isDefinedAt x) pf(x) foreach f))
 
-  def filter(p: Predicate[A]): CC[A]       = withFilter(p)
-  def filterNot(p: Predicate[A]): CC[A]    = withFilter(!p)
-  def sum(implicit num: Numeric[A]): A     = foldl(num.zero)(num.plus)
-  def product(implicit num: Numeric[A]): A = foldl(num.one)(num.times)
+  def filter(p: Predicate[A]): CC[A]      = withFilter(p)
+  def filterNot(p: Predicate[A]): CC[A]   = withFilter(!p)
+  def sum(implicit z: Sums[A]): A         = foldl(z.zero)(z.sum)
+  def product(implicit z: Products[A]): A = foldl(z.one)(z.product)
 
   def +:(elem: A): CC[A] = rebuild(Foreach.join(fromElems(elem), xs))
   def :+(elem: A): CC[A] = rebuild(Foreach.join(xs, fromElems(elem)))

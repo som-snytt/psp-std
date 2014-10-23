@@ -11,29 +11,22 @@ import psp.std.api._
  */
 trait ScalaLibrary extends Any with ApiAliases {
   // Semi-privileged types which might be avoidable with unreasonable effort.
-  type List[+A]         = sci.List[A]
-  type Option[+A]       = scala.Option[A]
-  type Product2[+A, +B] = scala.Product2[A, B]
-  type Some[+A]         = scala.Some[A]
-  type Tuple2[+A, +B]   = scala.Tuple2[A, B]
-  type ControlThrowable = scala.util.control.ControlThrowable
+  type Option[+A]          = scala.Option[A]
+  type Some[+A]            = scala.Some[A]
+  type ControlThrowable    = scala.util.control.ControlThrowable
+  type Builder[-Elem, +To] = scm.Builder[Elem, To]
 
   // Unrenamed scala types.
-  type Try[+A]                     = scala.util.Try[A]
-  type Success[+A]                 = scala.util.Success[A]
-  type Failure[+A]                 = scala.util.Failure[A]
+  type Try[+A]     = scala.util.Try[A]
+  type Success[+A] = scala.util.Success[A]
+  type Failure[+A] = scala.util.Failure[A]
 
   type Seq[+A] = sc.Seq[A]    // XXX
 
-  type ArrayBuffer[A]                  = scm.ArrayBuffer[A]
-  type Builder[-Elem, +To]             = scm.Builder[Elem, To]
-  type ListBuffer[A]                   = scm.ListBuffer[A]
-
-  type BigDecimal                      = scala.math.BigDecimal
-  type BigInt                          = scala.math.BigInt
-  type Numeric[A]                      = scala.math.Numeric[A]
-  type Ordered[A]                      = scala.math.Ordered[A]
-  type Ordering[A]                     = scala.math.Ordering[A]
+  type BigDecimal  = scala.math.BigDecimal
+  type BigInt      = scala.math.BigInt
+  type Ordered[A]  = scala.math.Ordered[A]
+  type Ordering[A] = scala.math.Ordering[A]
 
   type CanBuildFrom[-From, -Elem, +To] = scg.CanBuildFrom[From, Elem, To]
   type ClassManifest[A]                = scala.reflect.ClassManifest[A]

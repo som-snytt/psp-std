@@ -72,13 +72,13 @@ object RGB {
   implicit def ReadRGB: Read[RGB] = Read[RGB](s => if (s.words.length == 1) ReadRGBHex1 read s else ReadRGBDec3 read s)
 
   def ReadRGBHex1: Read[RGB] = Read[RGB](s => fromBits(("0x" + s).toInt))
-  def ReadRGBDec3: Read[RGB] = Read[RGB](s => s.words.toScalaVector match { case Vector(r, g, b) => RGB(r.toInt, g.toInt, b.toInt) })
+  def ReadRGBDec3: Read[RGB] = Read[RGB](s => s.words.toScalaVector match { case sciVector(r, g, b) => RGB(r.toInt, g.toInt, b.toInt) })
 
   implicit class RGBOps(val rgb: RGB) {
     def redValue    = (rgb.bits >> 16) & 0xFF
     def greenValue  = (rgb.bits >>  8) & 0xFF
     def blueValue   = (rgb.bits >>  0) & 0xFF
-    def colorValues = Vector(redValue, greenValue, blueValue)
+    def colorValues = sciVector(redValue, greenValue, blueValue)
     def colorAtoms  = colorValues map Atom
     def distanceTo(that: RGB): Double = {
       val squares = colorValues zip that.colorValues map { case (x, y) => math.pow((x - y).abs, 2) }

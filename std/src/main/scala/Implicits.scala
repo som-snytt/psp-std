@@ -32,7 +32,7 @@ abstract class StdPackage
     def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))
     def map[Next](f: To => Next): Builds[Elem, Next]   = Builds(xs => f(z build xs))
     def direct: Suspended[Elem] => To                  = mf => z build Foreach(mf)
-    def scalaBuilder: Builder[Elem, To]                = Vector.newBuilder[Elem] mapResult (xs => z build xs)
+    def scalaBuilder: Builder[Elem, To]                = sciVector.newBuilder[Elem] mapResult (xs => z build xs)
   }
   implicit class JavaEnumerationOps[A](it: jEnumeration[A]) {
     def toIterator = BiIterator enumeration it
@@ -122,7 +122,7 @@ trait ZeroInstances {
   implicit def scTraversableZero[A] = Zero[scTraversable[A]](Nil)
   implicit def sciListZero[A]       = Zero[sciList[A]](Nil)
   implicit def sciMapZero[A, B]     = Zero[sciMap[A,B]](sciMap())
-  implicit def sciVectorZero[A]     = Zero[sciVector[A]](Vector())
+  implicit def sciVectorZero[A]     = Zero[sciVector[A]](sciVector())
   implicit def shortZero            = Zero[Short](0.toShort)
   implicit def stringZero           = Zero[String]("")
   implicit def unitZero             = Zero[Unit](())

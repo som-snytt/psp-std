@@ -1,6 +1,7 @@
 package psp
 package std
 
+import scala.Tuple2
 import ArrowAssoc.Types
 
 /** Hand specialized on the left, @specialized on the right, value classes for tuple creation.

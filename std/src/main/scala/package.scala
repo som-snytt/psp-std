@@ -32,21 +32,15 @@ package object std extends psp.std.StdPackage {
   final val PositiveInfinity      = scala.Double.PositiveInfinity
 
   // DMZ.
-  // final val +:      = psp.dmz.+:
-  final val :+      = psp.dmz.:+
   final val ::      = psp.dmz.::
   final val Array   = psp.dmz.Array
   final val Console = psp.dmz.Console
-  final val List    = psp.dmz.List
-  final val Map     = psp.dmz.Map
   final val Option  = psp.dmz.Option
   final val Seq     = psp.dmz.Seq
   final val Set     = psp.dmz.Set
   final val Some    = psp.dmz.Some
   final val System  = psp.dmz.System
   final val Try     = psp.dmz.Try
-  final val Tuple2  = psp.dmz.Tuple2
-  final val Vector  = psp.dmz.Vector
   final val math    = psp.dmz.math
   final val sys     = psp.dmz.sys
   final val Success = psp.dmz.Success
@@ -136,7 +130,7 @@ package object std extends psp.std.StdPackage {
   def printResult[A: TryShow](msg: String)(result: A): A = result doto (r => println(pp"$msg: $r"))
   def showResult[A: TryShow](msg: String)(result: A): A  = result doto (r => println(pp"$msg: $r"))
 
-  def installedProviders: List[FileSystemProvider] = java.nio.file.spi.FileSystemProvider.installedProviders.asScala.toList
+  def installedProviders: pVector[FileSystemProvider] = java.nio.file.spi.FileSystemProvider.installedProviders.m.pvec
 
   // Operations involving the filesystem.
   def path(s: String, ss: String*): Path                                     = ss.foldLeft(jnf.Paths get s)(_ resolve _)

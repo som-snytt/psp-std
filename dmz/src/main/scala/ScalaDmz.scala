@@ -43,18 +43,6 @@ object :: {
   def apply[A](hd: A, tl: sci.List[A]): sci.::[A] = sci.::(hd, tl)
   def unapply[A](xs: sci.List[A]) = if (xs.isEmpty) None else Some((xs.head, xs.tail))
 }
-object +: {
-  def unapply[T, Coll <: sc.SeqLike[T, Coll]](t: Coll with sc.SeqLike[T, Coll]): Option[(T, Coll)] =
-    if (t.isEmpty) None else Some((t.head, t.tail))
-}
-object :+ {
-  def unapply[T, Coll <: sc.SeqLike[T, Coll]](t: Coll with sc.SeqLike[T, Coll]): Option[(Coll, T)] =
-    if (t.isEmpty) None else Some((t.init , t.last))
-}
-object Tuple2 {
-  def apply[A1, A2](x: A1, y: A2): (A1, A2)          = ((x, y))
-  def unapply[A1, A2](x: (A1, A2)): Product2[A1, A2] = x
-}
 object Try {
   def apply[A](body: => A): scala.util.Try[A] = scala.util.Try[A](body)
 }
@@ -79,30 +67,14 @@ object Some {
   def apply[A](x: A)               = scala.Some[A](x)
   def unapply[A](x: scala.Some[A]) = x
 }
-object Vector {
-  def empty[A] : sci.Vector[A]                      = sci.Vector()
-  def newBuilder[A] : scm.Builder[A, sci.Vector[A]] = sci.Vector.newBuilder[A]
-  def apply[A](xs: A*): sci.Vector[A]               = sci.Vector[A](xs: _*)
-  def unapplySeq[A](xs: sci.Vector[A])              = Some(xs)
-}
 object Seq {
   def empty[A] : sci.Seq[A]        = sci.Seq()
   def apply[A](xs: A*): sci.Seq[A] = sci.Seq[A](xs: _*)
   def unapplySeq[A](xs: sc.Seq[A]) = Some(xs)
 }
-object List {
-  def empty[A] : sci.List[A]         = sci.Nil
-  def newBuilder[A]                  = sci.List.newBuilder[A]
-  def apply[A](xs: A*): sci.List[A]  = sci.List[A](xs: _*)
-  def unapplySeq[A](xs: sci.List[A]) = Some(xs)
-}
 object Set {
   def empty[A] : sci.Set[A]        = sci.Set[A]()
   def apply[A](xs: A*): sci.Set[A] = sci.Set[A](xs: _*)
-}
-object Map {
-  def empty[K, V] : sci.Map[K, V]             = sci.Map()
-  def apply[K, V](xs: (K, V)*): sci.Map[K, V] = sci.Map[K, V](xs: _ *)
 }
 
 object math {

@@ -173,7 +173,7 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
   }
 
   private def runThrough[A](f: A => Unit, range: IndexRange, xs: Foreach[A], others: Foreach[A]*): Unit = {
-    var foreaches: List[Foreach[A]] = xs :: others.toList
+    var foreaches = xs :: others.toList
     var i = Index.zero
     def isDone = range.end <= i
     while (foreaches.nonEmpty) {
@@ -221,7 +221,7 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
       ys1.size match {
         case n: Precise if n.intSize < range.startInt     => ys2 slice (range << n.intSize) foreach f
         case n: Precise if n.lastIndex >= range.lastIndex => ys1 slice range foreach f
-        case _                                                => runThrough(f, range, ys1, ys2)
+        case _                                            => runThrough(f, range, ys1, ys2)
       }
 
     case _              => runThrough(f, range, xs)

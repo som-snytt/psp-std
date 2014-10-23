@@ -116,7 +116,7 @@ object PolicyMap {
   object ToScala {
     def newBuilder[K, V] : Builder[(K, V), ToScala[K, V]]    = vectorBuilder[(K, V)]() mapResult apply
     def apply[K, V](pairs: sciVector[(K, V)]): ToScala[K, V] = new ToScala[K, V](pairs map (_._1), pairs map (_._2))
-    def empty[K, V] : ToScala[K, V]                          = apply(Vector())
+    def empty[K, V] : ToScala[K, V]                          = apply(sciVector())
 
     implicit def showToScala[K: Show, V: Show] = Show[ToScala[K, V]] { map =>
       def len(k: K) = k.to_s.stripAnsi.length
