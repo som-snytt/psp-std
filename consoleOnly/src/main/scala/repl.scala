@@ -24,10 +24,10 @@ package repl {
     implicit final class ReplArrayOps[A](val xs: Array[A])             extends TargetCommon[A] { def target = xs.pvec }
     implicit final class ReplTraversableOps[A](val xs: sCollection[A]) extends TargetCommon[A] { def target = xs.pvec }
 
-    implicit final class ReplMapOps[K, V](val target: pMap[K, V]) {
-      def >(implicit z1: Show[K], z2: Show[V]): pMap[K, V]                = target doto (m => println(show"$m"))
-      def >>(implicit z1: Show[K] = null, z2: Show[V] = null): pMap[K, V] = target doto (m => println(show"$m"))
-      def !>(implicit z1: Show[K], z2: Show[V]): pMap[K, V]               = target doto (m => m.contained !>)
+    implicit final class ReplMapOps[K, V](val target: exMap[K, V]) {
+      def >(implicit z1: Show[K], z2: Show[V]): exMap[K, V]                = target doto (m => println(show"$m"))
+      def >>(implicit z1: Show[K] = null, z2: Show[V] = null): exMap[K, V] = target doto (m => println(show"$m"))
+      def !>(implicit z1: Show[K], z2: Show[V]): exMap[K, V]               = target doto (m => m.contained !>)
     }
   }
 }

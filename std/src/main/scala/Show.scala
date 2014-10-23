@@ -60,7 +60,7 @@ trait StdShow extends StdShowLow {
   def inBrackets[A](xs: A*)(implicit shows: Show[A]): String      = xs map shows.show mkString ("[ ", ", ", " ]")
   implicit def attrNameShow : Show[java.util.jar.Attributes.Name] = Show.natural()
   implicit def exSetShow[A: Show] : Show[exSet[A]]                = showBy(_.contained)
-  implicit def pMapShow[K: Show, V: Show] : Show[pMap[K, V]]      = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
+  implicit def exMapShow[K: Show, V: Show] : Show[exMap[K, V]]    = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
   implicit def pViewShow[A] : Show[View[A]]                       = Show(_.viewChain.reverse.map(_.description).joinWords.render) // map (_.description) joinWords)
   implicit def pListShow[A: Show] : Show[pList[A]]                = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ".asis) <> " :: nil" render)
   implicit def pVectorShow[A: Show] : Show[pVector[A]]            = Show(xs => if (xs.isEmpty) "[]" else inBrackets(xs.seq: _*)) // "[ " + ( xs map (_.to_s) mkString " " ) + " ]")

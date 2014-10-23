@@ -21,6 +21,6 @@ class ManifestMap private (val manifest: jManifest) extends AndThis {
 
   def underlying                              = manifest
   def javaAttrs: jMap[jAttributeName, String] = manifest.getMainAttributes().castTo
-  def attrs: pMap[Name, String]               = javaAttrs.keySet mapOnto javaAttrs.get
+  def attrs: exMap[Name, String]              = javaAttrs.keySet mapOnto javaAttrs.get
   def apply(name: Name)                       = if (manifest eq null) null else attrs(name)
 }

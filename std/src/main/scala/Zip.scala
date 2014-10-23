@@ -18,7 +18,7 @@ trait StdZipped {
   def zip3[A1, R1, A2, R2, A3, R3](xs: R1, ys: R2, zs: R3)(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2], tc3: Walks[A3, R3]): Zip3Ops[A1, R1, A2, R2, A3, R3] = new Zip3Ops(xs, ys, zs)
 
   class MappedZip2Ops[A1, A2, B1, B2](zops: Zip2Ops[A1, A2], f: A1 => B1, g: A2 => B2) {
-    def toMap(implicit z: HashEq[B1]): pMap[B1, B2] = zops.map[(B1, B2), sciMap[B1, B2]]((k, v) => f(k) -> g(v)).toPolicyMap
+    def toMap(implicit z: HashEq[B1]): exMap[B1, B2] = zops.map[(B1, B2), sciMap[B1, B2]]((k, v) => f(k) -> g(v)).pmap
   }
 
   // final class Zip2Ops[A1, R1, A2, R2](xs: R1, ys: R2, p: Predicate2[A1, A2])(implicit tc1: Walks[A1, R1], tc2: Walks[A2, R2]) {

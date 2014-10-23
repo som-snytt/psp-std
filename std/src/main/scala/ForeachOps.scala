@@ -34,11 +34,11 @@ trait ConversionOps[A] extends Any {
   def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z direct runForeach
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
-  def toPolicyList: pList[A]                                           = PolicyList.builder[A] build underlying
-  def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): pMap[K, V] = PolicyMap.builder[K, V] build (underlying map ev)
-  def toPolicySeq: pSeq[A]                                             = Foreach.builder[A] build underlying
-  def toPolicySet(implicit z: HashEq[A]): exSet[A]                     = PolicySet.builder[A] build underlying
-  def toPolicyVector: pVector[A]                                       = Direct.builder[A] build underlying
+  def toPolicyList: pList[A]                                            = PolicyList.builder[A] build underlying
+  def toPolicySeq: pSeq[A]                                              = Foreach.builder[A] build underlying
+  def toPolicySet(implicit z: HashEq[A]): exSet[A]                      = PolicySet.builder[A] build underlying
+  def toPolicyVector: pVector[A]                                        = Direct.builder[A] build underlying
+  def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): exMap[K, V] = PolicyMap.builder[K, V] build (underlying map ev)
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
   def toScalaList: sciList[A]                                   = toScala[sciList]
@@ -58,11 +58,11 @@ trait ConversionOps[A] extends Any {
   def biIterator: BiIterator[A] = biIterable.iterator
   def biIterable: BiIterable[A] = BiIterable(toScalaIterable)
 
-  def plist: pList[A]                                                 = toPolicyList
-  def pvec: pVector[A]                                                = toPolicyVector
-  def pseq: pSeq[A]                                                   = toPolicySeq
-  def pset(implicit z: HashEq[A]): exSet[A]                           = toPolicySet
-  def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): pMap[K, V] = toPolicyMap[K, V]
+  def plist: pList[A]                                                  = toPolicyList
+  def pvec: pVector[A]                                                 = toPolicyVector
+  def pseq: pSeq[A]                                                    = toPolicySeq
+  def pset(implicit z: HashEq[A]): exSet[A]                            = toPolicySet
+  def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): exMap[K, V] = toPolicyMap[K, V]
 
   def naturalSet: exSet[A] = pset(HashEq.natural())
   def seq: sciSeq[A]       = toScalaSeq // varargs
@@ -94,8 +94,8 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   final def findOrZero(p: Predicate[A])(implicit z: Zero[A]): A = find(p) | z.zero
 
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): sciVector[C] = toScalaVector map (f => ev(f)(x))
-  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): pMap[A, B]        = underlying map (x => x -> f(x)) pmap
-  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): pMap[B, A]        = underlying map (x => f(x) -> x) pmap
+  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): exMap[A, B]       = underlying map (x => x -> f(x)) pmap
+  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): exMap[B, A]       = underlying map (x => f(x) -> x) pmap
 
   def findOr(p: Predicate[A], alt: => A): A            = find(p) | alt
   def sortDistinct(implicit ord: Order[A]): pVector[A] = toScalaVector.distinct sorted ord.toScalaOrdering

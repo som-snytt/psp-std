@@ -25,8 +25,8 @@ final case class SinglePaths(singles: pVector[SinglePath]) extends Direct[Single
   // def deepEntries                 = paths flatMap (_.deepEntries)
   // def packageNames                = deepFiles flatMap packagesIn dsort
 
-  val pathToPackage: pMap[Path, pVector[String]] = paths mapOnto (_.deepPackageNames)
-  val packageToPath: pMap[String, pVector[Path]] = pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p) containsByEquals pkg))
+  val pathToPackage: exMap[Path, pVector[String]] = paths mapOnto (_.deepPackageNames)
+  val packageToPath: exMap[String, pVector[Path]] = pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p) containsByEquals pkg))
 }
 
 /** A MetaPath encapsulates the character content of a classpath string as

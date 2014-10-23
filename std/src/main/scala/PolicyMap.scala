@@ -6,6 +6,9 @@ import api._, StdShow._
 trait VarargsSeq[+A] { def seq: scSeq[A] }
 
 final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
+  def copmap[K1](pg: K1 ?=> K): MapLookup[K1, V]                = MapLookup(pf copmap pg, defaultValue)
+  def comap[K1](f: K1 => K): MapLookup[K1, V]                   = MapLookup(pf comap f, defaultValue)
+  def contains(key: K): Boolean                                 = pf isDefinedAt key
   def put(key: K, value: V): MapLookup[K, V]                    = MapLookup(partial[K, V] { case `key` => value } orElse pf, defaultValue)
   def orElse[V1 >: V](that: MapLookup[K, V1]): MapLookup[K, V1] = MapLookup(pf orElse that.pf, defaultValue orElse that.defaultValue)
   def map[V1](f: V => V1): MapLookup[K, V1]                     = MapLookup(pf andThen f, defaultValue map f)
@@ -14,41 +17,37 @@ final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
   def getOr[V1 >: V](key: K, alt: => V1): V1                    = if (pf isDefinedAt key) pf(key) else alt
 }
 
-/** An immutable Map with a fixed iteration order.
- *  It's not a "sorted" map since it has no ordering.
- *  It's true one could say its ordering is Ordering[Int] on indexOf.
- *  Maybe that will seem like a good idea at some point.
- */
-final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[K, V]) extends HasSize with Intensional[K, V] with Extensional[(K, V)] with VarargsSeq[(K, V)] {
-  type Entry = (K, V)
-  type MapTo[V1] = pMap[K, V1]
+final class IntensionalMap[K, V](lookup: MapLookup[K, V]) extends PolicyMap[K, V](lookup) with InMap[K, V] {
+  def contains(key: K): Boolean                  = lookup contains key
+  def filterKeys(p: Predicate[K]): inMap[K, V]   = new IntensionalMap(lookup.copmap[K] { case x if p(x) => x })
+  def filterValues(p: Predicate[V]): inMap[K, V] = filterKeys(k => p(apply(k)))
+}
+final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[K, V]) extends PolicyMap[K, V](lookup) with ExMap[K, V] with VarargsSeq[(K, V)] {
+  type Entry     = (K, V)
+  type MapTo[V1] = ExtensionalMap[K, V1]
 
-  def +(key: K, value: V): pMap[K, V]             = new PolicyMap(keySet, lookup.put(key, value))
-  def ++(map: pMap[K, V]): MapTo[V]               = new PolicyMap(keySet union map.keySet, map.lookup orElse lookup)
-  def apply(key: K): V                            = lookup(key)
+  def +(key: K, value: V): exMap[K, V]            = new ExtensionalMap(keySet, lookup.put(key, value))
+  def ++(map: exMap[K, V]): MapTo[V]              = new ExtensionalMap(keySet union map.keySet, map.lookup orElse lookup)
   def contained: pVector[Entry]                   = keyVector map (k => k -> lookup(k))
   def contains(key: K): Boolean                   = keySet(key)
-  def filterKeys(p: Predicate[K]): pMap[K, V]     = new PolicyMap(keySet filter p, lookup)
-  def filterValues(p: Predicate[V]): pMap[K, V]   = filterKeys(k => p(apply(k)))
-  def foreachKey(f: K => Unit): Unit              = keyVector foreach f
+  def filterKeys(p: Predicate[K]): exMap[K, V]    = new ExtensionalMap(keySet filter p, lookup)
+  def filterValues(p: Predicate[V]): exMap[K, V]  = filterKeys(k => p(apply(k)))
   def foreachEntry(f: (K, V) => Unit): Unit       = foreachKey(k => f(k, apply(k)))
-  def get(key: K): Option[V]                      = lookup get key
-  def getOr[V1 >: V](key: K, alt: => V1): V1      = lookup.getOr(key, alt)
+  def foreachKey(f: K => Unit): Unit              = keyVector foreach f
   def isEmpty                                     = contained.isEmpty
   def iterator: BiIterator[Entry]                 = keysIterator map (k => (k, lookup(k)))
   def keyVector: pVector[K]                       = keySet.contained.pvec
   def keys: pVector[K]                            = keyVector
   def keysIterator: BiIterator[K]                 = keyVector.biIterator
-  def map[V1](f: V => V1): MapTo[V1]              = new PolicyMap(keySet, lookup map f)
-  def reverseKeys                                 = new PolicyMap(keySet mapContained (_.pvec.reverse), lookup)
+  def map[V1](f: V => V1): MapTo[V1]              = new ExtensionalMap(keySet, lookup map f)
+  def reverseKeys                                 = new ExtensionalMap(keySet mapContained (_.pvec.reverse), lookup)
   def seq: scSeq[Entry]                           = contained.seq
   def size: Precise                               = keyVector.size
   def values: pVector[V]                          = keyVector map (x => lookup(x))
   def valuesIterator: BiIterator[V]               = keysIterator map (x => lookup(x))
-  def withDefaultValue[V1 >: V](v: V1): MapTo[V1] = new PolicyMap(keySet, lookup.copy(defaultValue = Some(v)))
-  def toPartial: K ?=> V                          = newPartial(contains, apply)
+  def withDefaultValue[V1 >: V](v: V1): MapTo[V1] = new ExtensionalMap(keySet, lookup.copy(defaultValue = Some(v)))
 
-  def merge(that: pMap[K, V])(implicit z: Sums[V]): pMap[K, V] =
+  def merge(that: exMap[K, V])(implicit z: Sums[V]): exMap[K, V] =
     that.keySet.contained.foldl(this)((res, key) =>
       if (res contains key)
         res + (key, z.sum(res(key), that(key)))
@@ -57,12 +56,30 @@ final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[
     )
 }
 
-object PolicyMap {
-  type BuildsMap[K, V] = Builds[(K, V), pMap[K, V]]
 
-  def builder[K : HashEq, V] : BuildsMap[K, V]                 = Direct.builder[(K, V)] map (kvs => new PolicyMap(kvs.m.lefts.pset, MapLookup(kvs.toScalaMap[K, V], None)))
-  def apply[K, V](keys: exSet[K], pf: K ?=> V): pMap[K, V]     = new PolicyMap(keys, MapLookup(pf, None))
-  def unapplySeq[K, V](map: pMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
+/** An immutable Map with a fixed iteration order.
+ *  It's not a "sorted" map since it has no ordering.
+ *  It's true one could say its ordering is Ordering[Int] on indexOf.
+ *  Maybe that will seem like a good idea at some point.
+ */
+sealed abstract class PolicyMap[-K, +V](lookup: MapLookup[K, V]) extends Intensional[K, V] {
+  type MapTo[V1] <: pMap[K, V1]
+
+  def contains(key: K): Boolean
+  def filterValues(p: Predicate[V]): pMap[K, V]
+
+  def apply(key: K): V                          = lookup(key)
+  def get(key: K): Option[V]                    = lookup get key
+  def getOr[V1 >: V](key: K, alt: => V1): V1    = lookup.getOr(key, alt)
+  def toPartial: K ?=> V                        = newPartial(contains, apply)
+}
+
+object PolicyMap {
+  type BuildsMap[K, V] = Builds[(K, V), exMap[K, V]]
+
+  def builder[K : HashEq, V] : BuildsMap[K, V]                  = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, MapLookup(kvs.toScalaMap[K, V], None)))
+  def apply[K, V](keys: exSet[K], pf: K ?=> V): exMap[K, V]     = new ExtensionalMap(keys, MapLookup(pf, None))
+  def unapplySeq[K, V](map: exMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
 
   /** An immutable scala Map with keys and values in parallel vectors.
    *  It is a "sorted" map in the sense that whatever order the keys are in, that's the sort.
@@ -140,13 +157,13 @@ object PolicyMap {
 
 /** TODO - possible map related methods.
 
-def ascendingFrequency: pMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
-def descendingFrequency: pMap[A, Int]                    = ascendingFrequency.reverse
-def unsortedFrequencyMap: Map[A, Int]                    = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
-def mapFrom[B](f: A => B): pMap[B, A]                    = newMap(toScalaVector map (x => f(x) -> x): _*)
-def mapToAndOnto[B, C](k: A => B, v: A => C): pMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
-def mapToMapPairs[B, C](f: A => (B, C)): pMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
-def groupBy[B, C](f: A => B)(g: pSeq[A] => C): pMap[B, C] = {
+def ascendingFrequency: exMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
+def descendingFrequency: exMap[A, Int]                    = ascendingFrequency.reverse
+def unsortedFrequencyMap: Map[A, Int]                     = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
+def mapFrom[B](f: A => B): exMap[B, A]                    = newMap(toScalaVector map (x => f(x) -> x): _*)
+def mapToAndOnto[B, C](k: A => B, v: A => C): exMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
+def mapToMapPairs[B, C](f: A => (B, C)): exMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
+def groupBy[B, C](f: A => B)(g: pSeq[A] => C): exMap[B, C] = {
   val buf = scmMap[B, pList[A]]() withDefaultValue newList[A]()
   pseq foreach (x => buf(f(x)) ::= x)
   newMap((buf.toMap mapValues g).toSeq: _*)
@@ -154,8 +171,8 @@ def groupBy[B, C](f: A => B)(g: pSeq[A] => C): pMap[B, C] = {
 
 final class Map[K, V](val map: scMap[K, V]) extends AnyVal {
   def sortedKeys(implicit ord: Order[K])               = map.keys.sorted
-  // def orderByKey(implicit ord: Order[K]): pMap[K, V]   = newMap(sortedKeys, map.toMap)
-  // def orderByValue(implicit ord: Order[V]): pMap[K, V] = newMap(sortedKeys(ord on map), map.toMap)
+  // def orderByKey(implicit ord: Order[K]): exMap[K, V]   = newMap(sortedKeys, map.toMap)
+  // def orderByValue(implicit ord: Order[V]): exMap[K, V] = newMap(sortedKeys(ord on map), map.toMap)
 }
 final class SortedMap[K, V](val map: scSortedMap[K, V]) extends AnyVal {
   private def ord: Order[K]     = Order create map.ordering

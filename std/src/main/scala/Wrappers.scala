@@ -84,7 +84,7 @@ final class PolicyClass(val clazz: jClass) extends AnyVal with ShowDirect {
   override def toString = to_s
 }
 
-final class PolicyLoader(val classMap: pMap[String, Bytes]) extends ClassLoader {
+final class PolicyLoader(val classMap: exMap[String, Bytes]) extends ClassLoader {
   private val keys        = classMap.keyVector
   private val instanceMap = scmMap[String, jClass]()
   private val errorMap    = scmMap[String, LinkageError]()

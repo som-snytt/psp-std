@@ -47,6 +47,8 @@ trait Intensional[-K, +V] extends Any                                     { def 
 trait Extensional[+A]     extends Any with HasSize                        { def contained: Foreach[A]       }
 trait InSet[-A]           extends Any with Intensional[A, Boolean]        { def equiv(x: A, y: A): Boolean  }
 trait ExSet[+A]           extends Any with Extensional[A]
+trait InMap[-K, +V]       extends Any with Intensional[K, V]              { def contains(key: K): Boolean   }
+trait ExMap[K, +V]        extends Any with Extensional[(K, V)]            { def keySet: ExSet[K]            }
 
 trait Linear[+A] extends Any with Foreach[A] with IsEmpty {
   def head: A

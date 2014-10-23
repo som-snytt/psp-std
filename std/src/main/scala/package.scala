@@ -14,10 +14,10 @@ package object std extends psp.std.StdPackage {
   type pMap[K, V]  = PolicyMap[K, V]
   type pList[A]    = PolicyList[A]
 
-  type inSet[A] = IntensionalSet[A]
-  type exSet[A] = ExtensionalSet[A]
-  // type inMap[A] = IntensionalMap[A]
-  // type exMap[A] = ExtensionalMap[A]
+  type inSet[A]    = IntensionalSet[A]
+  type exSet[A]    = ExtensionalSet[A]
+  type inMap[K, V] = IntensionalMap[K, V]
+  type exMap[K, V] = ExtensionalMap[K, V]
   type DocSeq      = pSeq[Doc]
 
   // Inlinable.
@@ -193,10 +193,10 @@ package object std extends psp.std.StdPackage {
     def unapplySeq[A](xs: pSeq[A]): scala.Some[scSeq[A]] = Some(xs.seq)
   }
 
-  def exSet[A: HashEq](xs: A*): exSet[A]          = xs.m.pset
-  def inSet[A: HashEq](p: Predicate[A]): inSet[A] = p.inSet
-  def pSeq[A](xs: A*): pSeq[A]                    = Direct[A](xs: _*)
-  def pMap[K: HashEq, V](xs: (K, V)*): pMap[K, V] = xs.m.pmap
+  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V] = xs.m.pmap
+  def exSet[A: HashEq](xs: A*): exSet[A]            = xs.m.pset
+  def inSet[A: HashEq](p: Predicate[A]): inSet[A]   = p.inSet
+  def pSeq[A](xs: A*): pSeq[A]                      = Direct[A](xs: _*)
 
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ

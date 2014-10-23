@@ -89,6 +89,7 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsDoc(x: Doc): ops.DocOps                                             = new ops.DocOps(x)
   implicit def opsDocSeq(x: DocSeq): ops.DocSeqOps                                    = new ops.DocSeqOps(x)
   implicit def opsFileTime(x: jFileTime): ops.FileTimeOps                             = new ops.FileTimeOps(x)
+  implicit def opsPartialFunction[A, B](pf: A ?=> B): ops.PartialFunctionOps[A, B]    = new ops.PartialFunctionOps(pf)
   implicit def opsFunction1[T, R](f: T => R): ops.Function1Ops[T, R]                  = new ops.Function1Ops(f)
   implicit def opsFunction2[T1, T2, R](f: (T1, T2) => R): ops.Function2Ops[T1, T2, R] = new ops.Function2Ops(f)
   implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]                  = new ops.GeneratorOps(x)
