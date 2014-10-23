@@ -4,15 +4,13 @@ package std
 import api._
 
 object PolicySet {
-  def builder[A: HashEq] : Builds[A, exSet[A]] = Builds(apply[A](_))
+  def builder[A: HashEq] : Builds[A, exSet[A]] = Builds(ExtensionalSet[A](_))
 
-  def intensional[A: HashEq](p: Predicate[A]): inSet[A]                       = new IntensionalSet.Impl[A](p, ?[HashEq[A]])
-  def natural[A](xs: Foreach[A]): exSet[A]                                    = apply[A](xs)(HashEq.natural[A])
-  def reference[A <: AnyRef](xs: Foreach[A]): exSet[A]                        = apply[A](xs)(HashEq.reference[A])
-  def shown[A: Show](xs: Foreach[A]): exSet[A]                                = apply[A](xs)(HashEq.shown[A])
-  def direct[A](xs: Foreach[A])(equiv: Relation[A], hash: A => Int): exSet[A] = apply[A](xs)(HashEq(equiv, hash))
-  def elems[A: HashEq](xs: A*): exSet[A]                                      = apply[A](fromElems(xs: _*))
-  def apply[A: HashEq](xs: Foreach[A]): exSet[A]                              = new ExtensionalSet.Impl[A](xs, implicitly)
+  def natural[A](xs: pSeq[A]): exSet[A]                                    = ExtensionalSet[A](xs)(HashEq.natural[A])
+  def reference[A <: AnyRef](xs: pSeq[A]): exSet[A]                        = ExtensionalSet[A](xs)(HashEq.reference[A])
+  def shown[A: Show](xs: pSeq[A]): exSet[A]                                = ExtensionalSet[A](xs)(HashEq.shown[A])
+  def direct[A](xs: pSeq[A])(equiv: Relation[A], hash: A => Int): exSet[A] = ExtensionalSet[A](xs)(HashEq(equiv, hash))
+  def elems[A: HashEq](xs: A*): exSet[A]                                   = ExtensionalSet[A](fromElems(xs: _*))
 
   class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
     def size: IntSize     = Precise(xs.size)
@@ -30,16 +28,14 @@ object PolicySet {
   }
 }
 
-sealed trait IntensionalSet[A] extends AnyRef with Intensional[A, Boolean] with Predicate[A] {
-  def apply(elem: A): Boolean
-  def equiv(x: A, y: A): Boolean
+sealed trait IntensionalSet[A] extends InSet[A] with (A => Boolean) {
   def hash(x: A): Int
 }
-sealed trait ExtensionalSet[A] extends AnyRef with IntensionalSet[A] with Extensional[A] with HasSize {
-  def contained: Foreach[A]
-}
+sealed trait ExtensionalSet[A] extends ExSet[A] with IntensionalSet[A]
 
 object ExtensionalSet {
+  def apply[A: HashEq](xs: pSeq[A]): exSet[A] = new Impl[A](xs, implicitly)
+
   sealed trait Derived[A] extends AnyRef with ExtensionalSet[A] with IntensionalSet.Derived[A] {
     protected def underlying: exSet[A]
   }
@@ -86,6 +82,8 @@ object ExtensionalSet {
   }
 }
 object IntensionalSet {
+  def apply[A: HashEq](p: Predicate[A]): inSet[A] = new Impl[A](p, implicitly)
+
   val Zero = Impl[Any](ConstantFalse, HashEq((x, y) => true, _ => 0))
   val One  = Impl[Any](ConstantTrue, HashEq((x, y) => true, _ => 0))
 

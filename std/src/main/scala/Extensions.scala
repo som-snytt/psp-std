@@ -27,6 +27,9 @@ final class Function2Ops[T1, T2, R](val f: (T1, T2) => R) extends AnyVal {
 final class BiFunctionOps[T, R](val f: (T, T) => R) extends AnyVal {
   // def on[S](g: S => T): (S, S) => R = (x, y) => f(g(x), g(y))
 }
+final class PredicateOps[A](val p: Predicate[A]) extends AnyVal {
+  def inSet(implicit z: HashEq[A]): inSet[A] = IntensionalSet(p)
+}
 
 final class OptionOps[A](val x: Option[A]) extends AnyVal {
   def | (alt: => A): A                             = x getOrElse alt

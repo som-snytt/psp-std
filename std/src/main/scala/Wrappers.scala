@@ -40,15 +40,15 @@ trait ClassLoaderTrait {
 }
 
 final class PolicyClass(val clazz: jClass) extends AnyVal with ShowDirect {
-  def isAnnotation        = clazz.isAnnotation
-  def isAnonymousClass    = clazz.isAnonymousClass
-  def isArray             = clazz.isArray
-  def isEnum              = clazz.isEnum
-  def isInterface         = clazz.isInterface
-  def isLocalClass        = clazz.isLocalClass
-  def isMemberClass       = clazz.isMemberClass
-  def isPrimitive         = clazz.isPrimitive
-  def isSynthetic         = clazz.isSynthetic
+  def isAnnotation     = clazz.isAnnotation
+  def isAnonymousClass = clazz.isAnonymousClass
+  def isArray          = clazz.isArray
+  def isEnum           = clazz.isEnum
+  def isInterface      = clazz.isInterface
+  def isLocalClass     = clazz.isLocalClass
+  def isMemberClass    = clazz.isMemberClass
+  def isPrimitive      = clazz.isPrimitive
+  def isSynthetic      = clazz.isSynthetic
 
   def ancestorNames: pVector[String]           = ancestors map (_.rawName)
   def ancestors: pVector[PolicyClass]          = this transitiveClosure (_.parents) pvec
@@ -56,18 +56,18 @@ final class PolicyClass(val clazz: jClass) extends AnyVal with ShowDirect {
   def fields: pVector[jField]                  = clazz.getFields.pvec
   def getCanonicalName: String                 = clazz.getCanonicalName
   def getClassLoader: ClassLoader              = clazz.getClassLoader
-  def getClasses: pVector[PolicyClass]         = convertSeq(clazz.getClasses)
+  def getClasses: pVector[PolicyClass]         = clazz.getClasses.pvec map (x => x)
   def getComponentType: PolicyClass            = clazz.getComponentType
-  def getDeclaredClasses: pVector[PolicyClass] = convertSeq(clazz.getDeclaredClasses)
+  def getDeclaredClasses: pVector[PolicyClass] = clazz.getDeclaredClasses.pvec map (x => x)
   def getDeclaringClass: PolicyClass           = clazz.getDeclaringClass
   def getEnclosingClass: PolicyClass           = clazz.getEnclosingClass
-  def getInterfaces: pVector[PolicyClass]      = convertSeq(clazz.getInterfaces)
+  def getInterfaces: pVector[PolicyClass]      = clazz.getInterfaces.pvec map (x => x)
   def getSuperclass: Option[PolicyClass]       = Option(clazz.getSuperclass) map (x => new PolicyClass(x))
   def hasModuleName: Boolean                   = rawName endsWith "$"
   def methods: pVector[jMethod]                = clazz.getMethods.pvec
   def nameSegments: pVector[String]            = rawName.dottedSegments
   def pClass: PolicyClass                      = this
-  def parentInterfaces: pVector[PolicyClass]   = convertSeq(clazz.getInterfaces)
+  def parentInterfaces: pVector[PolicyClass]   = clazz.getInterfaces.pvec map (x => x)
   def parents: pVector[PolicyClass]            = getSuperclass.pvec ++ parentInterfaces
   def qualifiedName: String                    = rawName.mapSplit('.')(decodeName)
   def rawName: String                          = clazz.getName

@@ -69,8 +69,8 @@ package object std extends psp.std.StdPackage {
   final val scmSeq          = scm.Seq
   final val scmSet          = scm.Set
 
-  final val ConstantTrue         = newPredicate[Any](_ => true)
-  final val ConstantFalse        = newPredicate[Any](_ => false)
+  final val ConstantTrue         = (x: Any) => true
+  final val ConstantFalse        = (x: Any) => false
   final val CTag                 = scala.reflect.ClassTag
   final val EOL                  = sys.props.getOrElse("line.separator", "\n")
   final val NoFile: jFile        = jFile("")
@@ -135,6 +135,7 @@ package object std extends psp.std.StdPackage {
   def nullAs[A] : A                        = asExpected[A](null)
   def asExpected[A](body: Any): A          = body.castTo[A]
 
+  def partial[A, B](f: A ?=> B): A ?=> B                = f
   def ?[A](implicit value: A): A                        = value
   def andFalse(x: Unit): Boolean                        = false
   def andTrue(x: Unit): Boolean                         = true
@@ -170,12 +171,6 @@ package object std extends psp.std.StdPackage {
     case _                      => fromScala(xs.toVector)
   }
 
-  def convertSeq[A, B](xs: sciList[A])(implicit conversion: A => B): sciList[B]     = xs map conversion
-  def convertSeq[A, B](xs: sciVector[A])(implicit conversion: A => B): sciVector[B] = xs map conversion
-  def convertSeq[A, B](xs: scSeq[A])(implicit conversion: A => B): scSeq[B]         = xs map conversion
-  def convertSeq[A, B](xs: pVector[A])(implicit conversion: A => B): pVector[B]     = xs map conversion
-  def convertSeq[A, B](xs: Array[A])(implicit conversion: A => B): pVector[B]       = xs.pvec map conversion
-
   def mapBuilder[K, V](xs: (K, V)*): scmBuilder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
   def setBuilder[A](xs: A*): scmBuilder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
   def listBuilder[A](xs: A*): scmBuilder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
@@ -199,12 +194,12 @@ package object std extends psp.std.StdPackage {
   }
 
   def exSet[A: HashEq](xs: A*): exSet[A]          = xs.m.pset
-  def inSet[A: HashEq](p: Predicate[A]): inSet[A] = PolicySet intensional p
+  def inSet[A: HashEq](p: Predicate[A]): inSet[A] = p.inSet
+  def pSeq[A](xs: A*): pSeq[A]                    = Direct[A](xs: _*)
+  def pMap[K: HashEq, V](xs: (K, V)*): pMap[K, V] = xs.m.pmap
 
-  def newSeq[A](xs: A*): pSeq[A]                                = Direct[A](xs: _*)
-  def newPredicate[A](f: Predicate[A]): Predicate[A]            = f
-  def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V     = { case x if p(x) => f(x) }
-  def newCmp(difference: Long): Cmp                             = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
-  def newArray[A: CTag](size: Precise): Array[A]                = new Array[A](size.intSize)
-  def newSize(n: Long): Precise                                 = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
+  def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
+  def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
+  def newArray[A: CTag](size: Precise): Array[A]            = new Array[A](size.intSize)
+  def newSize(n: Long): Precise                             = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
 }

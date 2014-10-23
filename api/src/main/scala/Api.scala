@@ -45,6 +45,8 @@ trait Foreach[+A]         extends Any with HasSize                        { def 
 trait Direct[+A]          extends Any with Foreach[A] with HasPreciseSize { def elemAt(i: Index): A         }
 trait Intensional[-K, +V] extends Any                                     { def apply(x: K): V              }
 trait Extensional[+A]     extends Any with HasSize                        { def contained: Foreach[A]       }
+trait InSet[-A]           extends Any with Intensional[A, Boolean]        { def equiv(x: A, y: A): Boolean  }
+trait ExSet[+A]           extends Any with Extensional[A]
 
 trait Linear[+A] extends Any with Foreach[A] with IsEmpty {
   def head: A

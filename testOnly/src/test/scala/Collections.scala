@@ -132,7 +132,7 @@ class Collections extends ScalacheckBundle {
   def policyProps: sciList[NamedProp] = {
     import StdEq._
     val pset = exSet("a" -> 1, "b" -> 2, "c" -> 3)
-    val pseq = newSeq("a" -> 1, "b" -> 2, "c" -> 3)
+    val pseq = pSeq("a" -> 1, "b" -> 2, "c" -> 3)
 
     sciList(
       expectTypes[exSet[_]](

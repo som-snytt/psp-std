@@ -6,10 +6,11 @@ import api._, StdShow._
 trait VarargsSeq[+A] { def seq: scSeq[A] }
 
 final case class MapLookup[K, V](pf: K ?=> V, defaultValue: Option[V]) {
+  def put(key: K, value: V): MapLookup[K, V]                    = MapLookup(partial[K, V] { case `key` => value } orElse pf, defaultValue)
   def orElse[V1 >: V](that: MapLookup[K, V1]): MapLookup[K, V1] = MapLookup(pf orElse that.pf, defaultValue orElse that.defaultValue)
   def map[V1](f: V => V1): MapLookup[K, V1]                     = MapLookup(pf andThen f, defaultValue map f)
-  def apply(key: K): V                                          = if (pf isDefinedAt key) pf(key) else abort(s"$key does not exist")
-  def get(key: K): Option[V]                                    = pf lift key orElse defaultValue
+  def apply(key: K): V                                          = if (pf isDefinedAt key) pf(key) else defaultValue | abort(s"$key does not exist")
+  def get(key: K): Option[V]                                    = pf lift key
   def getOr[V1 >: V](key: K, alt: => V1): V1                    = if (pf isDefinedAt key) pf(key) else alt
 }
 
@@ -22,7 +23,8 @@ final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[
   type Entry = (K, V)
   type MapTo[V1] = pMap[K, V1]
 
-  def ++[V1 >: V](map: pMap[K, V1]): MapTo[V1]    = new PolicyMap(keySet union map.keySet, lookup orElse map.lookup)
+  def +(key: K, value: V): pMap[K, V]             = new PolicyMap(keySet, lookup.put(key, value))
+  def ++(map: pMap[K, V]): MapTo[V]               = new PolicyMap(keySet union map.keySet, map.lookup orElse lookup)
   def apply(key: K): V                            = lookup(key)
   def contained: pVector[Entry]                   = keyVector map (k => k -> lookup(k))
   def contains(key: K): Boolean                   = keySet(key)
@@ -45,6 +47,9 @@ final class PolicyMap[K, V](val keySet: exSet[K], private val lookup: MapLookup[
   def valuesIterator: BiIterator[V]               = keysIterator map (x => lookup(x))
   def withDefaultValue[V1 >: V](v: V1): MapTo[V1] = new PolicyMap(keySet, lookup.copy(defaultValue = Some(v)))
   def toPartial: K ?=> V                          = newPartial(contains, apply)
+
+  def merge(that: pMap[K, V])(implicit z: Sums[V]): pMap[K, V] =
+    that.keySet.contained.foldl(this)((res, key) => res + (key, that(key)))
 }
 
 object PolicyMap {

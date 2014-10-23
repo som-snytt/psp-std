@@ -20,11 +20,11 @@ package object pio {
   implicit def opsPath[A <: Path](path: A): JioPathOps[A]                          = new JioPathOps[A](path)
   implicit def predicateToDirectoryFilter[A](p: Predicate[A]): jDirStreamFilter[A] = new jDirStreamFilter[A] { def accept(entry: A) = p(entry) }
 
-  def ivyJars      = ivyHome.deepJars
-  def mavenJars    = m2Home.deepJars
-  def knownJars    = ivyJars ++ mavenJars
-  def knownPioJars = knownJars map (_.toPioJar)
-  def knownNames   = mapToList[String, Jar]() doto (b => knownPioJars foreach (jar => jar.classNames foreach (name => b(name) ::= jar))) toMap
+  def ivyJars         = ivyHome.deepJars
+  def mavenJars       = m2Home.deepJars
+  def knownJars       = ivyJars ++ mavenJars
+  def knownPioJars    = knownJars map (_.toPioJar)
+  def knownClassNames = knownPioJars flatMap (_.classNames)
 
   // Operations involving external processes.
   def newProcess(line: String): ProcessBuilder        = Process(line)

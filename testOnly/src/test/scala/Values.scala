@@ -40,7 +40,7 @@ class ValuesSpec extends ScalacheckBundle {
   // generate from the full range of uints
   def fullRangeOps: pSeq[NamedProp] = {
     implicit def arbUInt = Arbitrary(genUInt)
-    def qualities: pSeq[Quality] = newSeq(
+    def qualities: pSeq[Quality] = pSeq(
       Quality("& |   max min    ", "^ + * / -", x => forAll(idempotence(x.op)), "idempotent", "NOT idempotent"),
       Quality("& | ^ max min + *", "      / -", x => forAll(commutative(x.op)), "commutes  ", "does NOT commute"),
       Quality("& | ^ max min + *", "        -", x => forAll(associative(x.op)), "associates", "does NOT associate")
