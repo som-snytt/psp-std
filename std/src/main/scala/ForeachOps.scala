@@ -15,30 +15,29 @@ final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPrecise
 }
 
 trait ConversionOps[A] extends Any {
-  protected def underlying: Foreach[A]
+  def xs: Foreach[A]
 
   def nonEmpty = !isEmpty
-  def isEmpty: Boolean = { runForeach(_ => return false) ; true }
-  def runForeach(f: A => Unit): Unit
+  def isEmpty: Boolean = { xs foreach (_ => return false) ; true }
   def foldl[B](zero: B)(f: (B, A) => B): B = {
     var res = zero
-    runForeach(x => res = f(res, x))
+    xs foreach (x => res = f(res, x))
     res
   }
   def foldr[B](zero: B)(f: (A, B) => B): B = {
     var result = zero
-    underlying.pvec.reverse foreach(x => result = f(x, result))
+    xs.pvec.reverse foreach(x => result = f(x, result))
     result
   }
-  def force[That](implicit z: Builds[A, That]): That        = z direct runForeach
-  def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z direct runForeach
+  def force[That](implicit z: Builds[A, That]): That        = z build xs
+  def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z build xs
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
-  def toPolicyList: pList[A]                                            = PolicyList.builder[A] build underlying
-  def toPolicySeq: pSeq[A]                                              = Foreach.builder[A] build underlying
-  def toPolicySet(implicit z: HashEq[A]): exSet[A]                      = PolicySet.builder[A] build underlying
-  def toPolicyVector: pVector[A]                                        = Direct.builder[A] build underlying
-  def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): exMap[K, V] = PolicyMap.builder[K, V] build (underlying map ev)
+  def toPolicyList: pList[A]                                            = PolicyList.builder[A] build xs
+  def toPolicySeq: pSeq[A]                                              = Foreach.builder[A] build xs
+  def toPolicySet(implicit z: HashEq[A]): exSet[A]                      = PolicySet.builder[A] build xs
+  def toPolicyVector: pVector[A]                                        = Direct.builder[A] build xs
+  def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): exMap[K, V] = PolicyMap.builder[K, V] build (xs map ev)
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
   def toScalaList: sciList[A]                                   = toScala[sciList]
@@ -83,7 +82,7 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   def exists(p: Predicate[A]): Boolean = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
   def count(p: Predicate[A]): Int      = foldl[Int](0)((res, x) => if (p(x)) res + 1 else res)
 
-  def indexAtWhich(p: Predicate[A]): Index = zipIndex(Foreach(runForeach)).find((x, i) => p(x)).fold(NoIndex)(_._2)
+  def indexAtWhich(p: Predicate[A]): Index = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
   def indexByEquals(x: A): Index           = indexAtWhich(_ == x)
   def containsByEquals(x: A): Boolean      = exists (_ == x)
 
@@ -95,8 +94,8 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   final def findOrZero(p: Predicate[A])(implicit z: Zero[A]): A = find(p) | z.zero
 
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): sciVector[C] = toScalaVector map (f => ev(f)(x))
-  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): exMap[A, B]       = underlying.pset mapOnto f
-  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): exMap[B, A]       = underlying map (x => f(x) -> x) pmap
+  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): exMap[A, B]       = xs.pset mapOnto f
+  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): exMap[B, A]       = xs map (x => f(x) -> x) pmap
 
   def findOr(p: Predicate[A], alt: => A): A            = find(p) | alt
   def sortDistinct(implicit ord: Order[A]): pVector[A] = toScalaVector.distinct sorted ord.toScalaOrdering
@@ -119,14 +118,11 @@ trait CombinedOps[A] extends Any with ConversionOps[A] {
   // def frequencyMap[B: HashEq](f: A => B): pMap[B, LongSize]
 }
 
-final class jIterableOps[A](val xs: jIterable[A]) extends AnyVal with CombinedOps[A] {
-  protected def underlying: Foreach[A] = fromJava(xs)
-  override def isEmpty = !xs.iterator.hasNext
-  def runForeach(f: A => Unit): Unit = BiIterable(xs) foreach f
+final class jIterableOps[A](val jxs: jIterable[A]) extends AnyVal with CombinedOps[A] {
+  def xs = fromJava(jxs)
+  override def isEmpty = !jxs.iterator.hasNext
 }
-final class sCollectionOps[A, CC[A] <: sCollection[A]](val xs: CC[A]) extends AnyVal with CombinedOps[A] {
-  protected def underlying: Foreach[A] = fromScala(xs)
-  override def isEmpty = xs.isEmpty
-  def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
-  def runForeach(f: A => Unit): Unit = xs foreach f
+final class sCollectionOps[A, CC[A] <: sCollection[A]](val sxs: CC[A]) extends AnyVal with CombinedOps[A] {
+  def xs = fromScala(sxs)
+  override def isEmpty = sxs.isEmpty
 }

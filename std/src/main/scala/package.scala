@@ -160,7 +160,6 @@ package object std extends psp.std.StdPackage {
   }
   def fromJava[A](xs: jIterable[A]): Foreach[A] = xs match {
     case xs: jList[_] => new Direct.FromJava[A](xs)
-    case xs: jSet[_]  => (new PolicySet.FromJava[A](xs)).m[Foreachable]
     case xs           => new Foreach.FromJava[A](xs)
   }
   def fromElems[A](xs: A*): Foreach[A] = xs match {

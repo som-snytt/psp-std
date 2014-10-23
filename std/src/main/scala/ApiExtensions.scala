@@ -20,7 +20,6 @@ trait DocStringOps extends Any {
 
 class Renderer(indentSize: Int) {
   var indentLevel: Int = 0
-  // var openGroups: pList[Doc]
   def sp: String = " " * (indentLevel * indentSize)
 
   private def indentedBy[A](n: Int)(body: => A): A = {
@@ -254,7 +253,6 @@ final class InputStreamOps(val in: InputStream) extends AnyVal {
 }
 
 final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Direct] {
-  protected def underlying = xs
   protected def rebuild[B](xs: pSeq[B]): pVector[B] = xs.pvec
 
   def ++(ys: Direct[A]): Direct[A]                    = new Direct.Joined(xs, ys)
@@ -267,7 +265,6 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   def length: Int                                     = xs.size.intSize
   def nths: pVector[Nth]                              = xs mapIndices (_.toNth)
   def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
-  def runForeach(f: A => Unit): Unit                  = xs foreach f
   def takeRight(n: Precise): pVector[A]               = xs takeRight n
 
   def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
@@ -278,10 +275,8 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
 }
 
 final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, Foreach] {
-  protected def underlying = xs
   def ++[A1 >: A](ys: Foreach[A1]): Foreach[A1] = Foreach.join(xs, ys)
   def toRefs: pSeq[AnyRef] = xs map (_.toRef)
-  def runForeach(f: A => Unit): Unit = xs foreach f
   protected def rebuild[B](xs: Foreach[B]): Foreach[B] = xs
 }
 
