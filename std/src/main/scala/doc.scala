@@ -2,7 +2,6 @@ package psp
 package std
 
 import api._
-import StdShow._
 
 sealed trait Doc
 

@@ -1,7 +1,7 @@
 package psp
 package std
 
-import api._, StdShow._
+import api._
 
 trait HashEq[-A] extends Any with Hash[A] with Eq[A]
 

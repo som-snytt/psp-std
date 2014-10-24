@@ -194,6 +194,7 @@ package object std extends psp.std.StdPackage {
   def exSet[A: HashEq](xs: A*): exSet[A]            = xs.m.pset
   def inSet[A: HashEq](p: Predicate[A]): inSet[A]   = p.inSet
   def pSeq[A](xs: A*): pSeq[A]                      = Direct[A](xs: _*)
+  def view[A](xs: A*): View[A]                      = Direct[A](xs: _*).view
 
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ

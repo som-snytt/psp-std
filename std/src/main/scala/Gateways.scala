@@ -51,6 +51,14 @@ trait StdWalks extends Any with StdWalks1 {
   implicit def directStringIs: DirectAccessType[Char, String, Direct]      = DirectAccess.StringIs
 }
 
+trait GlobalShow0 {
+  // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
+  implicit def showableToTryShown[A](x: A)(implicit z: Show[A] = Show.natural()): TryShown = new TryShown(z show x)
+}
+trait GlobalShow extends GlobalShow0 {
+  implicit def showableToShown[A](x: A)(implicit z: Show[A]): Shown = Shown(z show x)
+}
+
 trait StdOps0 extends Any {
   implicit def numericToSums[A](implicit z: Numeric[A]): Sums[A]         = new Sums[A] { def zero = z.zero ; def sum(x: A, y: A): A = z.plus(x, y) }
   implicit def numericToProducts[A](implicit z: Numeric[A]): Products[A] = new Products[A] { def one = z.one ; def product(x: A, y: A): A = z.times(x, y) }
