@@ -62,6 +62,13 @@ trait IndexRange extends Any with Direct[Index] {
 trait Index extends Any with OptLong {
   def indexValue: Long
 }
+trait PairDown[-R, +A, +B] {
+  def left(x: R): A
+  def right(x: R): B
+}
+trait PairUp[+R, -A, -B] {
+  def create(x: A, y: B): R
+}
 
 /** Generalized type constraint.
  */

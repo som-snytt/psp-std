@@ -190,8 +190,15 @@ package object std extends psp.std.StdPackage {
     def unapplySeq[A](xs: pSeq[A]): scala.Some[scSeq[A]] = Some(xs.seq)
   }
 
-  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V] = xs.m.pmap
-  def exSet[A: HashEq](xs: A*): exSet[A]            = xs.m.pset
+
+  def PairDown[R, A, B](l: R => A, r: R => B): PairDown[R, A, B] = new PairDown[R, A, B] {
+    def left(x: R)  = l(x)
+    def right(x: R) = r(x)
+  }
+  def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
+
+  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V] = xs.view.pmap
+  def exSet[A: HashEq](xs: A*): exSet[A]            = xs.view.pset
   def inSet[A: HashEq](p: Predicate[A]): inSet[A]   = p.inSet
   def pSeq[A](xs: A*): pSeq[A]                      = Direct[A](xs: _*)
   def view[A](xs: A*): View[A]                      = Direct[A](xs: _*).view

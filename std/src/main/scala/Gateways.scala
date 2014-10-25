@@ -59,6 +59,14 @@ trait GlobalShow extends GlobalShow0 {
   implicit def showableToShown[A](x: A)(implicit z: Show[A]): Shown = Shown(z show x)
 }
 
+trait Typeclasses0 {
+  implicit def tupleTwoPairUp[A, B] : PairUp[(A, B), A, B]                     = PairUp(_ -> _)
+  implicit def productTwoPairDown[A, B] : PairDown[scala.Product2[A, B], A, B] = PairDown(_._1, _._2)
+}
+trait Typeclasses1 extends Typeclasses0 {
+}
+trait StdTypeclasses extends Typeclasses1
+
 trait StdOps0 extends Any {
   implicit def numericToSums[A](implicit z: Numeric[A]): Sums[A]         = new Sums[A] { def zero = z.zero ; def sum(x: A, y: A): A = z.plus(x, y) }
   implicit def numericToProducts[A](implicit z: Numeric[A]): Products[A] = new Products[A] { def one = z.one ; def product(x: A, y: A): A = z.times(x, y) }
@@ -92,6 +100,7 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def infixOpsHash[A: Hash](x: A): infix.HashOps[A]                         = new infix.HashOps[A](x)
 
   implicit def opsApiView[A](x: View[A]): ops.WeakApiViewOps[A]                       = new ops.WeakApiViewOps(x)
+  implicit def opsPairView[R, A, B](x: View[R])(implicit z: PairDown[R, A, B]): ops.PairViewOps[R, A, B] = new ops.PairViewOps(x)
   implicit def opsBaseView[A, Repr](x: BaseView[A, Repr]): ops.BaseViewOps[A, Repr]   = new ops.BaseViewOps(x)
   implicit def opsBiFunction[T, R](f: (T, T) => R): ops.BiFunctionOps[T, R]           = new ops.BiFunctionOps(f)
   implicit def opsBoolean(x: Boolean): ops.BooleanOps                                 = new ops.BooleanOps(x)

@@ -2,7 +2,7 @@ package psp
 package std
 package ops
 
-import api.Eq
+import api._
 
 /** "Extensions" are classes which only exist to add methods to
  *  built-in types from the scala standard library. As we phase
@@ -13,12 +13,15 @@ final class Function1Ops[T, R](val f: T => R) extends AnyVal {
   def |:(label: String): LabeledFunction[T, R] = new LabeledFunction(f, label)
   def :|(label: String): LabeledFunction[T, R] = new LabeledFunction(f, label)
 
+  def untupled[A, B](implicit z: PairUp[T, A, B]): (A, B) => R = (x, y) => f(z.create(x, y))
+
   def map[S](g: R => S): T => S                          = f andThen g
   def comap[S](g: S => T): S => R                        = g andThen f
   def sameAt(g: T => R)(implicit z: Eq[R]): Predicate[T] = x => f(x) === g(x)
   def on[S](g: (R, R) => S): (T, T) => S                 = (x, y) => g(f(x), f(y))
 }
 final class Function2Ops[T1, T2, R](val f: (T1, T2) => R) extends AnyVal {
+  def tupled: ((T1, T2)) => R              = xy => f(xy._1, xy._2)
   def andThen[S](g: R => S): (T1, T2) => S = (x, y) => g(f(x, y))
   def map[S](g: R => S): (T1, T2) => S     = (x, y) => g(f(x, y))
   def comap1[P](g: P => T1): (P, T2) => R  = (x, y) => f(g(x), y)
