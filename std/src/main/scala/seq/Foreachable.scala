@@ -15,17 +15,17 @@ sealed trait Walkable[-Repr] {
 }
 
 trait Foreachable[-Repr] extends Walkable[Repr] {
-  type VC[R] = AtomicView[A, R]
+  type VC[R] = LinearView[A, R]
 
   def size(repr: Repr): Size          = Size.unknown
-  def wrap[R <: Repr](repr: R): VC[R] = new LinearView(repr, this)
+  def wrap[R <: Repr](repr: R): VC[R] = new VC[R](new Foreach.Impl(size(repr), foreach(repr)))
 }
 trait DirectAccess[-Repr] extends Walkable[Repr] {
   type VC[R] = IndexedView[A, R]
 
   def size(repr: Repr): Precise
   def elemAt(repr: Repr)(i: Index): A
-  def wrap[R <: Repr](repr: R): VC[R] = new IndexedView(repr, this)
+  def wrap[R <: Repr](repr: R): VC[R] = new VC[R](new Direct.Impl(size(repr), elemAt(repr)))
 }
 
 object Foreachable {

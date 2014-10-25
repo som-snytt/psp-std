@@ -267,7 +267,7 @@ final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Dir
   def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
   def takeRight(n: Precise): pVector[A]               = xs takeRight n
 
-  def view: IndexedView[A, Direct[A]] = new IndexedView(xs, ?)
+  def view: IndexedView[A, Direct[A]] = new IndexedView[A, Direct[A]](xs)
   def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
   def reverse: Direct[A]  = xs match {
     case Direct.Reversed(xs) => xs
@@ -279,7 +279,7 @@ final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, F
   def ++[A1 >: A](ys: Foreach[A1]): Foreach[A1] = Foreach.join(xs, ys)
   def toRefs: pSeq[AnyRef] = xs map (_.toRef)
 
-  def view: LinearView[A, Foreach[A]] = new LinearView(xs, ?)
+  def view: LinearView[A, Foreach[A]] = new LinearView[A, Foreach[A]](xs)
   protected def rebuild[B](xs: Foreach[B]): Foreach[B] = xs
 }
 

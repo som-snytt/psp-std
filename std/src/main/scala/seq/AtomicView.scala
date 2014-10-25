@@ -53,14 +53,14 @@ object FlattenIndexedSlice {
 }
 
 
-final class LinearView[A0, Repr](repr: Repr, val tc: Foreachable[Repr] { type A = A0 }) extends AtomicView[A0, Repr] {
+final class LinearView[A, Repr](xs: Foreach[A]) extends AtomicView[A, Repr] {
   def description = "<xs>" // s"<xs: $size, ${viewChain.size}>" // s"[linear $size]"
-  def size    = Size(repr)
+  def size        = xs.size
 
   @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit = {
     var i = Index.zero
-    (tc foreach repr) { x =>
+    xs foreach { x =>
       recordCall(x)
       if (range contains i) f(x)
       i = i.next
@@ -69,13 +69,13 @@ final class LinearView[A0, Repr](repr: Repr, val tc: Foreachable[Repr] { type A 
   }
 }
 
-final class IndexedView[A0, Repr](repr: Repr, val tc: DirectAccess[Repr] { type A = A0 }) extends AtomicView[A0, Repr] with Direct.DirectImpl[A0] with ops.HasPreciseSizeMethods {
+final class IndexedView[A, Repr](xs: Direct[A]) extends AtomicView[A, Repr] with Direct.DirectImpl[A] with ops.HasPreciseSizeMethods {
   def description                 = "<xs>" //s"<xs: $size, ${viewChain.size}>"
-  def size: Precise               = tc size repr
-  def elemAt(i: Index): A         = recordCall(tc.elemAt(repr)(i))
+  def size: Precise               = xs.size
+  def elemAt(i: Index): A         = recordCall(xs(i))
   def contains(x: A): Boolean     = this exists (_ == x)
-  def foreach(f: A => Unit): Unit = foreachSlice(size.indices)(f)
-  def foreachSlice(range: IndexRange)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
+  def foreach(f: A => Unit): Unit = xs foreach f
+  def foreachSlice(range: IndexRange)(f: A => Unit): Unit = xs slice range foreach f
 }
 
 final case class LabeledView[+A, Repr](prev: BaseView[A, Repr], label: String) extends BaseView[A, Repr] {
@@ -128,9 +128,7 @@ sealed trait BaseView[+A, Repr] extends Any with View[A] {
   // override def toString = viewChain.pvec.reverse map (_.description) mkString " "
 }
 
-sealed abstract class AtomicView[A0, Repr] extends View.Atomic[A0] with BaseView[A0, Repr] with CountCalls {
-  type A = tc.A
-  val tc: Walkable[Repr]
+sealed abstract class AtomicView[A, Repr] extends View.Atomic[A] with BaseView[A, Repr] with CountCalls {
   val counter = new RecorderCounter()
 
   def m: this.type = this
@@ -215,7 +213,7 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
   private def foreachSlice[A](xs: View[A], f: A => Unit, range: IndexRange): Unit = xs match {
     case Zipped(xs, ys)       => xs.biIterator zip ys.biIterator drop range.startInt take range.size.intSize foreach f
     case Interspersed(xs, ys) => foreachInterspersed(f, range, xs, ys)
-    case xs: AtomicView[_, _] => xs.foreachSlice(range)(f.castTo[xs.A => Unit])
+    case xs: AtomicView[_, _] => xs.foreachSlice(range)(f)
     case m: Mapped[a, _, _]   => foreachSlice[a](m.prev, m.f andThen f, range)
     case xs: Direct[A]        => range foreach (i => f(xs elemAt i))
     case Joined(ys1, ys2) =>
