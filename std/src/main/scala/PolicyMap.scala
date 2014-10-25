@@ -63,7 +63,6 @@ sealed abstract class PolicyMap[K, V](keySet: PolicySet[K], lookup: Lookup[K, V]
   def partial: K ?=> V                    = newPartial(contains, apply)
 }
 
-
 object PolicyMap {
   type BuildsMap[K, V] = Builds[(K, V), exMap[K, V]]
 
@@ -157,7 +156,7 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
   def update(key: K, value: V)         = andThis(jmap.put(key, value))
   def clear()                          = andThis(jmap.clear())
   def containsValue(value: V): Boolean = jmap containsValue value
-  def keySet: exSet[K]                 = jmap.keySet.naturalSet
+  def keySet: exSet[K]                 = jmap.keySet.m.naturalSet
 
   def remove(k: K, v: V): Boolean                      = jmap.remove(k, v)
   def replace(k: K, oldvalue: V, newvalue: V): Boolean = jmap.replace(k, oldvalue, newvalue)

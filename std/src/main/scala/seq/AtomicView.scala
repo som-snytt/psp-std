@@ -8,12 +8,12 @@ import psp.std.StdShow._
 final case class SplitView[+A, Repr](left: BaseView[A, Repr], right: BaseView[A, Repr]) extends View.Split[A] {
   type Single[+X] = BaseView[X, Repr]
 
-  def mapLeft[A1 >: A](f: Unary[Single[A1]]): SplitView[A1, Repr]  = SplitView(f(left), right)
-  def mapRight[A1 >: A](f: Unary[Single[A1]]): SplitView[A1, Repr] = SplitView(left, f(right))
-  def join: Single[A]                                              = Joined(left, right)
-  def intersperse: Single[A]                                       = Interspersed(left, right)
-  def zipped: Single[(A, A)]                                       = Zipped(left, right)
-  def force[That](implicit z: Builds[A, That]): That               = z build join
+  def mapLeft[A1 >: A](f: Single[A1] => Single[A1]): SplitView[A1, Repr]  = SplitView(f(left), right)
+  def mapRight[A1 >: A](f: Single[A1] => Single[A1]): SplitView[A1, Repr] = SplitView(left, f(right))
+  def join: Single[A]                                                     = Joined(left, right)
+  def intersperse: Single[A]                                              = Interspersed(left, right)
+  def zipped: Single[(A, A)]                                              = Zipped(left, right)
+  def force[That](implicit z: Builds[A, That]): That                      = z build join
 }
 
 object FlattenIndexedSlice {
@@ -53,14 +53,14 @@ object FlattenIndexedSlice {
 }
 
 
-final class LinearView[A, Repr](xs: Foreach[A]) extends AtomicView[A, Repr] {
-  def description = "<xs>" // s"<xs: $size, ${viewChain.size}>" // s"[linear $size]"
-  def size        = xs.size
+final class LinearView[A, Repr](ys: Foreach[A]) extends AtomicView[A, Repr] {
+  def description = "<xs>"
+  def size        = ys.size
 
   @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit = {
     var i = Index.zero
-    xs foreach { x =>
+    ys foreach { x =>
       recordCall(x)
       if (range contains i) f(x)
       i = i.next
@@ -69,53 +69,56 @@ final class LinearView[A, Repr](xs: Foreach[A]) extends AtomicView[A, Repr] {
   }
 }
 
-final class IndexedView[A, Repr](xs: Direct[A]) extends AtomicView[A, Repr] with Direct.DirectImpl[A] with ops.HasPreciseSizeMethods {
-  def description                 = "<xs>" //s"<xs: $size, ${viewChain.size}>"
-  def size: Precise               = xs.size
-  def elemAt(i: Index): A         = recordCall(xs(i))
-  def contains(x: A): Boolean     = this exists (_ == x)
-  def foreach(f: A => Unit): Unit = xs foreach f
-  def foreachSlice(range: IndexRange)(f: A => Unit): Unit = xs slice range foreach f
+final class SetView[A, Repr](ys: ExtensionalSet[A]) extends AtomicView[A, Repr] {
+  def description                                         = "<xs>"
+  def size                                                = ys.size
+  @inline def foreach(f: A => Unit): Unit                 = foreachSlice(IndexRange.full)(f)
+  def foreachSlice(range: IndexRange)(f: A => Unit): Unit = ys.contained slice range foreach f
 }
 
-final case class LabeledView[+A, Repr](prev: BaseView[A, Repr], label: String) extends BaseView[A, Repr] {
+final class IndexedView[A, Repr](ys: Direct[A]) extends AtomicView[A, Repr] with Direct[A] with ops.HasPreciseSizeMethods {
+  def description                 = "<xs>"
+  def size: Precise               = ys.size
+  def elemAt(i: Index): A         = recordCall(ys(i))
+  def foreach(f: A => Unit): Unit = foreachSlice(size.indices)(f)
+  def foreachSlice(range: IndexRange)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
+}
+
+final case class LabeledView[A, Repr](prev: BaseView[A, Repr], label: String) extends BaseView[A, Repr] {
   def foreach(f: A => Unit): Unit = prev foreach f
-
   def description = label
-  def isAtomic    = prev.isAtomic
-  def size    = prev.size
+  def size        = prev.size
   def calls       = prev.calls
-  def viewChain   = Direct[View[_]](this).m ++ prev.viewChain.m.tail force
+  def viewChain   = prev.viewChain.init :+ this
 }
 
-sealed trait BaseView[+A, Repr] extends Any with View[A] {
+sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[A] {
+  def xs: this.type = this
+
   type MapTo[+X]   = BaseView[X, Repr]
   type SplitTo[+X] = SplitView[X, Repr]
   type SizedTo[+X] = MapTo[X] with HasPreciseSize
 
-  def isAtomic: Boolean
-
   def |:(label: String): MapTo[A] = new LabeledView(this, label)
   def :|(label: String): MapTo[A] = new LabeledView(this, label)
 
-  final def ++[A1 >: A](that: View[A1]): MapTo[A1]          = Joined(this, that)
-  final def collect[B](pf: A ?=> B): MapTo[B]               = Collected(this, pf)
-  final def count(p: Predicate[A]): Precise                 = takeWhile(p) match { case Foreach.KnownSize(n: Precise) => n ; case v => v.force[pVector[A]].size }
-  final def drop(n: Precise): MapTo[A]                      = Dropped(this, n)
-  final def dropRight(n: Precise): MapTo[A]                 = DroppedR(this, n)
-  final def dropWhile(p: Predicate[A]): MapTo[A]            = DropWhile(this, p)
-  final def filter(p: Predicate[A]): MapTo[A]               = Filtered(this, p)
-  final def filterNot(p: Predicate[A]): MapTo[A]            = Filtered(this, (x: A) => !p(x))
-  final def flatMap[B](f: A => Foreach[B]): MapTo[B]        = FlatMapped(this, f)
-  final def intersperse[A1 >: A](that: View[A1]): MapTo[A1] = Interspersed(this, that)
-  final def map[B](f: A => B): MapTo[B]                     = Mapped(this, f)
-  final def sized(size: Precise): SizedTo[A]                = Sized(this, size)
-  final def slice(range: IndexRange): MapTo[A]              = Sliced(this, range)
-  final def take(n: Precise): MapTo[A]                      = Taken(this, n)
-  final def takeRight(n: Precise): MapTo[A]                 = TakenR(this, n)
-  final def takeWhile(p: Predicate[A]): MapTo[A]            = TakenWhile(this, p)
-  final def withFilter(p: Predicate[A]): MapTo[A]           = Filtered(this, p)
-  final def zip[B](that: View[B]): MapTo[(A, B)]            = Zipped(this, that)
+  final def ++[A1 >: A](that: View[A1]): MapTo[A1]   = Joined(this, that)
+  final def collect[B](pf: A ?=> B): MapTo[B]        = Collected(this, pf)
+  final def drop(n: Precise): MapTo[A]               = Dropped(this, n)
+  final def dropRight(n: Precise): MapTo[A]          = DroppedR(this, n)
+  final def dropWhile(p: Predicate[A]): MapTo[A]     = DropWhile(this, p)
+  final def filter(p: Predicate[A]): MapTo[A]        = Filtered(this, p)
+  final def filterNot(p: Predicate[A]): MapTo[A]     = Filtered(this, (x: A) => !p(x))
+  final def flatMap[B](f: A => Foreach[B]): MapTo[B] = FlatMapped(this, f)
+  // final def intersperse(that: View[A]): MapTo[A]     = Interspersed(this, that)
+  final def map[B](f: A => B): MapTo[B]              = Mapped(this, f)
+  final def sized(size: Precise): SizedTo[A]         = Sized(this, size)
+  final def slice(range: IndexRange): MapTo[A]       = Sliced(this, range)
+  final def take(n: Precise): MapTo[A]               = Taken(this, n)
+  final def takeRight(n: Precise): MapTo[A]          = TakenR(this, n)
+  final def takeWhile(p: Predicate[A]): MapTo[A]     = TakenWhile(this, p)
+  final def withFilter(p: Predicate[A]): MapTo[A]    = Filtered(this, p)
+  final def zip[B](that: View[B]): MapTo[(A, B)]     = Zipped(this, that)
 
   final def dropIndex(index: Index): MapTo[A]      = s"dropIndex $index" |: (index.toSize |> (s => SplitView(take(s), drop(s.increment)).join))
   final def splitAt(index: Index): SplitTo[A]      = index.toSize |> (s => SplitView(take(s), drop(s)))
@@ -124,25 +127,18 @@ sealed trait BaseView[+A, Repr] extends Any with View[A] {
 
   final def force[That](implicit z: Builds[A, That]): That = z build this
   final def build(implicit z: Builds[A, Repr]): Repr       = force[Repr]
-
-  // override def toString = viewChain.pvec.reverse map (_.description) mkString " "
 }
 
-sealed abstract class AtomicView[A, Repr] extends View.Atomic[A] with BaseView[A, Repr] with CountCalls {
+sealed abstract class AtomicView[A, Repr] extends View.Atomic[A] with BaseView[A, Repr] with CountCalls with ops.InvariantViewOps[A] {
   val counter = new RecorderCounter()
-
-  def m: this.type = this
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit
-  def isAtomic  = true
-  def viewChain = Direct(this)
+  def viewChain = view(this)
 }
 
 sealed abstract class CompositeView[A, B, Repr](val description: String, val sizeEffect: Unary[Size]) extends View.Composite[A, B] with BaseView[B, Repr] {
   def prev: View[A]
-
-  def isAtomic  = false
-  def viewChain = (this +: prev.viewChain.toScalaVector).pvec
-  def size  = sizeEffect(prev.size)
+  def viewChain = prev.viewChain.m :+ this
+  def size      = sizeEffect(prev.size)
 
   final def foreach(f: B => Unit): Unit = {
     def loop[C](xs: View[C])(f: C => Unit): Unit = xs match {
@@ -234,7 +230,7 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
 
 final case class Zipped[A, B, Repr](prev: BaseView[A, Repr], ys: View[B]) extends CompositeView[A, (A, B), Repr](pp"zip $ys", _ min ys.size)
 final case class Joined[A, B >: A, Repr](prev: BaseView[A, Repr], ys: View[B])   extends CompositeView[A, B, Repr](pp"++ $ys", _ + ys.size)
-final case class Sized       [A   , Repr](prev: BaseView[A, Repr], override val size: Precise)  extends CompositeView[A, A, Repr](pp"sized $size",  _ => size) with HasPreciseSize { def isEmpty = size.value == 0L }
+final case class Sized       [A   , Repr](prev: BaseView[A, Repr], override val size: Precise)  extends CompositeView[A, A, Repr](pp"sized $size",  _ => size) with HasPreciseSize
 
 final case class Interspersed[A   , Repr](prev: BaseView[A, Repr], ys: View[A])        extends CompositeView[A, A, Repr](pp"intersperse $ys", _ + ys.size)
 final case class Filtered    [A   , Repr](prev: BaseView[A, Repr], p: Predicate[A])    extends CompositeView[A, A, Repr](pp"filter $p",    _.atMost)

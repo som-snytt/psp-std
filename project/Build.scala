@@ -30,8 +30,8 @@ object Build extends sbt.Build {
   private def commonSettings(p: Project) = standardSettings ++ Seq(
             resolvers +=  Resolver.mavenLocal,
               version :=  sbtBuildProps.buildVersion,
-         scalaVersion :=  scalaVersionLatest,
-   crossScalaVersions :=  Seq("2.10.4", scalaVersion.value),
+         scalaVersion :=  "2.11.2",
+   crossScalaVersions :=  Seq(scalaVersion.value),
              licenses :=  pspLicenses,
          organization :=  pspOrg,
         scalacOptions ++= scalacOptionsFor(scalaBinaryVersion.value) ++ stdArgs,

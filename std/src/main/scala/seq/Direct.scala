@@ -3,9 +3,9 @@ package std
 
 import api._, StdShow._
 
-final case class FunctionGrid[A, B](values: pVector[A], functions: pVector[A => B]) {
-  def rows: pVector[pVector[B]]                         = values map (v => functions map (f => f(v)))
-  def columns: pVector[pVector[B]]                      = functions map (f => values map (v => f(v)))
+final case class FunctionGrid[A, B](values: View[A], functions: View[A => B]) {
+  def rows: View[View[B]]                         = values map (v => functions map (f => f(v)))
+  def columns: View[View[B]]                      = functions map (f => values map (v => f(v)))
   def renderLines(implicit z: Show[B]): pVector[String]               = {
     val widths = columns map (col => col map (x => (z show x).length) max)
     val rowFormat = widths map (_.size.leftFormatString) mkString " "
@@ -18,7 +18,7 @@ object Direct {
   final val Empty: Direct[Nothing] = new Impl[Nothing](newSize(0), i => abort(s"Empty($i)"))
 
   trait DirectImpl[+A] extends Any with api.Direct[A] with api.HasPreciseSize {
-    def isEmpty = size.value == 0L
+    def isEmpty = size.isZero
   }
   trait Forwarder[A] extends Direct[A] {
     protected def underlying: Direct[A]
@@ -82,6 +82,7 @@ object Direct {
   def join[A](xs: Direct[A], ys: Direct[A]): Direct[A] = Joined(xs, ys)
   def fromString(xs: String): Direct[Char]             = new WrapString(xs)
   def fromArray[A](xs: Array[A]): Direct[A]            = new WrapArray[A](xs)
+  def pure[A](size: Precise, f: Index => A): Direct[A] = new Impl(size, f)
 
   def unapplySeq[A](xs: Direct[A]): scala.Some[sciIndexedSeq[A]] = Some(new ToScala(xs))
 }

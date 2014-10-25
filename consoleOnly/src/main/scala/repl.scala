@@ -17,12 +17,12 @@ package repl {
       def >(implicit z: Show[A]): A     = target doto (x => println(z show x))
       def >>(implicit z: TryShow[A]): A = target doto (x => println(z show x))
     }
-    implicit final class ReplJavaOps[A](val xs: jCollection[A])        extends TargetCommon[A] { def target = xs.pvec }
+    implicit final class ReplJavaOps[A](val xs: jCollection[A])        extends TargetCommon[A] { def target = xs.m.pvec }
   }
   object ReplImport extends ReplImportLow {
-    implicit final class ReplForeachOps[A](val xs: Foreach[A])         extends TargetCommon[A] { def target = xs.pvec }
-    implicit final class ReplArrayOps[A](val xs: Array[A])             extends TargetCommon[A] { def target = xs.pvec }
-    implicit final class ReplTraversableOps[A](val xs: sCollection[A]) extends TargetCommon[A] { def target = xs.pvec }
+    implicit final class ReplForeachOps[A](val xs: Foreach[A])         extends TargetCommon[A] { def target = xs.m.pvec }
+    implicit final class ReplArrayOps[A](val xs: Array[A])             extends TargetCommon[A] { def target = xs.m.pvec }
+    implicit final class ReplTraversableOps[A](val xs: sCollection[A]) extends TargetCommon[A] { def target = xs.m.pvec }
 
     implicit final class ReplMapOps[K, V](val target: exMap[K, V]) {
       def >(implicit z1: Show[K], z2: Show[V]): exMap[K, V]                = target doto (m => println(show"$m"))

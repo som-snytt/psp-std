@@ -33,8 +33,8 @@ trait ClassLoaderTrait {
   def loader: jClassLoader
 
   def parentChain: pSeq[jClassLoader] = {
-    def loop(cl: jClassLoader): pSeq[jClassLoader] = cl match {
-      case null => Nil
+    def loop(cl: jClassLoader): View[jClassLoader] = cl match {
+      case null => view()
       case _    => cl +: loop(cl.getParent)
     }
     loop(loader)
@@ -46,6 +46,8 @@ trait ClassLoaderTrait {
 }
 
 final class PolicyClass(val clazz: jClass) extends AnyVal with ShowDirect {
+  private def toPolicy(x: jClass): PolicyClass = new PolicyClass(x)
+
   def isAnnotation     = clazz.isAnnotation
   def isAnonymousClass = clazz.isAnonymousClass
   def isArray          = clazz.isArray
@@ -62,18 +64,18 @@ final class PolicyClass(val clazz: jClass) extends AnyVal with ShowDirect {
   def fields: pVector[jField]                  = clazz.getFields.pvec
   def getCanonicalName: String                 = clazz.getCanonicalName
   def getClassLoader: ClassLoader              = clazz.getClassLoader
-  def getClasses: pVector[PolicyClass]         = clazz.getClasses.pvec map (x => x)
+  def getClasses: pVector[PolicyClass]         = clazz.getClasses.pvec map toPolicy
   def getComponentType: PolicyClass            = clazz.getComponentType
-  def getDeclaredClasses: pVector[PolicyClass] = clazz.getDeclaredClasses.pvec map (x => x)
+  def getDeclaredClasses: pVector[PolicyClass] = clazz.getDeclaredClasses.pvec map toPolicy
   def getDeclaringClass: PolicyClass           = clazz.getDeclaringClass
   def getEnclosingClass: PolicyClass           = clazz.getEnclosingClass
-  def getInterfaces: pVector[PolicyClass]      = clazz.getInterfaces.pvec map (x => x)
-  def getSuperclass: Option[PolicyClass]       = Option(clazz.getSuperclass) map (x => new PolicyClass(x))
+  def getInterfaces: pVector[PolicyClass]      = clazz.getInterfaces.pvec map toPolicy
+  def getSuperclass: Option[PolicyClass]       = Option(clazz.getSuperclass) map toPolicy
   def hasModuleName: Boolean                   = rawName endsWith "$"
   def methods: pVector[jMethod]                = clazz.getMethods.pvec
   def nameSegments: pVector[String]            = rawName.dottedSegments
   def pClass: PolicyClass                      = this
-  def parentInterfaces: pVector[PolicyClass]   = clazz.getInterfaces.pvec map (x => x)
+  def parentInterfaces: pVector[PolicyClass]   = clazz.getInterfaces.pvec map toPolicy
   def parents: pVector[PolicyClass]            = getSuperclass.pvec ++ parentInterfaces
   def qualifiedName: String                    = rawName.mapSplit('.')(decodeName)
   def rawName: String                          = clazz.getName
@@ -97,8 +99,8 @@ final class PolicyLoader(val classMap: exMap[String, Bytes]) extends ClassLoader
   def names        = keys
   def classes      = names map findClass
   def errors       = errorMap.toMap
-  def missing      = errorMap.pmap filterValues isNoClassDefFoundError keys
-  def otherErrors  = errorMap.pmap filterValues !(isNoClassDefFoundError _)
+  def missing      = errorMap.m.pmap filterValues isNoClassDefFoundError keys
+  def otherErrors  = errorMap.m.pmap filterValues !(isNoClassDefFoundError _)
   def totalBytes   = classMap.values map (_.length) sum
 
   def define(name: String): jClass               = define(name, classMap(name))

@@ -99,15 +99,17 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
       map (xss => xss reduceLeft (_ andThen _))
   )
   class CompositeOp(viewFn: IntViewFun) {
-    val eager          = NamedView("EAGER", ScalaNative(scalaIntList))
-    val eagerOutcome   = new CollectionResult(viewFn, eager)
-    val expected       = eagerOutcome.result
-    val indices        = collections.indices
-    val outcomes       = collections map (xs => new CollectionResult(viewFn, xs))
-    val counts         = outcomes map (r => "%-3s".format(r.count)) mkString " "
-    val description    = "%s  %s  // %s".format(viewFn(Direct[Int]().m).chainDescriptions.filterNot(_ == "<xs>").map("%-15s" format _).joinWords.render, counts, expected)
+    val eager        = NamedView("EAGER", ScalaNative(scalaIntList))
+    val eagerOutcome = new CollectionResult(viewFn, eager)
+    val expected     = eagerOutcome.result
+    val indices      = collections.indices
+    val outcomes     = collections map (xs => new CollectionResult(viewFn, xs)) pvec
+    val counts       = outcomes map (r => "%-3s".format(r.count)) mkString " "
+    val chain        = viewFn(view()).viewChain collect { case x: BaseView[_,_] => x } map (_.description) without "<xs>"
+    val description  = "%s  %s  // %s".format(chain.map("%-15s" format _).joinWords.render, counts, expected)
+
     def passed         = outcomes.map(_.result).distinct.size == 1.size
-    def distinctCounts = outcomes.map(_.count).distinct
+    def distinctCounts = outcomes.map(_.count).distinct.pvec
     def isInteresting  = distinctCounts.size >= 5.size
 
     override def toString = (

@@ -57,6 +57,7 @@ trait ZeroInstances {
   implicit def byteZero: Zero[Byte]                          = Zero(0.toByte)
   implicit def charZero: Zero[Char]                          = Zero(0.toChar)
   implicit def doubleZero: Zero[Double]                      = Zero(0d)
+  implicit def docZero: Zero[Doc]                            = Zero(Doc.empty)
   implicit def floatZero: Zero[Float]                        = Zero(0f)
   implicit def fileTimeZero: Zero[FileTime]                  = Zero(NoFileTime)
   implicit def jFileZero: Zero[jFile]                        = Zero(NoFile)
@@ -78,6 +79,7 @@ trait ZeroInstances {
   implicit def sciMapZero[A, B] : Zero[sciMap[A, B]]         = Zero(sciMap())
   implicit def sciVectorZero[A] : Zero[sciVector[A]]         = Zero(sciVector())
   implicit def shortZero: Zero[Short]                        = Zero(0.toShort)
+  implicit def shownZero: Zero[Shown]                        = Zero(Shown.empty)
   implicit def stringZero: Zero[String]                      = Zero("")
   implicit def unitZero: Zero[Unit]                          = Zero(())
 }
@@ -114,7 +116,7 @@ trait EqInstances {
   // Since Sets are created with their own notion of equality, you can't pass
   // an Eq instance. Map keys are also a set.
   implicit def arrayHashEq[A: HashEq] : HashEq[Array[A]]       = hashEqBy[Array[A]](_.pvec)
-  implicit def vectorHashEq[A: Eq] : HashEq[pVector[A]]        = HashEq(corresponds[A], _.toScalaVector.##)
+  implicit def vectorHashEq[A: Eq] : HashEq[pVector[A]]        = HashEq((xs, ys) => (xs.toScalaVector corresponds ys.toScalaVector)(_ === _), _.toScalaVector.##)
   implicit def exSetEq[A] : Eq[exSet[A]]                       = Eq(symmetrically[exSet[A]](_ isSubsetOf _))
   implicit def exMapEq[K, V: Eq] : Eq[exMap[K, V]]             = Eq((xs, ys) => xs.keySet === ys.keySet && (equalizer(xs.apply, ys.apply) forall xs.keys))
   implicit def tuple2Eq[A: HashEq, B: HashEq] : HashEq[(A, B)] = HashEq[(A, B)]({ case ((x1, y1), (x2, y2)) => x1 === x2 && y1 === y2 }, x => x._1.hash + x._2.hash)
@@ -129,13 +131,13 @@ trait EqInstances {
  *  Not printing the way scala does.
  */
 trait ShowInstances {
-  def inBrackets[A](xs: A*)(implicit shows: Show[A]): String      = xs map shows.show mkString ("[ ", ", ", " ]")
+  def inBrackets[A](xs: A*)(implicit shows: Show[A]): String      = xs.m.joinComma.inSpaces.inBrackets.render // xs map shows.show mkString ("[ ", ", ", " ]")
   implicit def attrNameShow : Show[java.util.jar.Attributes.Name] = Show.natural()
   implicit def exSetShow[A: Show] : Show[exSet[A]]                = showBy(_.contained)
   implicit def exMapShow[K: Show, V: Show] : Show[exMap[K, V]]    = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
-  implicit def pViewShow[A] : Show[View[A]]                       = Show(_.viewChain.reverse.map(_.description).joinWords.render) // map (_.description) joinWords)
+  implicit def pViewShow[A] : Show[View[A]]                       = Show(_.viewChain.map(_.description).joinWords.render)
   implicit def pListShow[A: Show] : Show[pList[A]]                = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ".asis) <> " :: nil" render)
-  implicit def pVectorShow[A: Show] : Show[pVector[A]]            = Show(xs => if (xs.isEmpty) "[]" else inBrackets(xs.seq: _*)) // "[ " + ( xs map (_.to_s) mkString " " ) + " ]")
+  implicit def pVectorShow[A: Show] : Show[pVector[A]]            = Show(xs => if (xs.isEmpty) "[]" else inBrackets(xs.seq: _*))
 
   implicit def stringShow: Show[String]                 = Show(x => x)
   implicit def charShow: Show[Char]                     = Show.natural()
@@ -182,23 +184,6 @@ trait ShowInstances {
     case k                        => k.toString.toLowerCase
   }
 
-  //  Show {
-  //   case null                  => "<null>"
-  //   case _: jWildcardType      => "_"
-  //   case x: jTypeVariable[_]   => x.getName
-  //   case x: jParameterizedType => x.constructor.to_s + x.args.m.optBrackets
-  //   case x: jGenericArrayType  => show"Array[${x.getGenericComponentType}]"
-  //   case x: jClass             => x.shortName
-  // }
-
-  // implicit def jMethodShow: Show[jMethod] = Show { m =>
-  //   val ts = m.typeParams.m.optBrackets
-  //   val ps = m.paramTypes mapWithNth ((nth, tp) => show"p$nth: $tp") joinComma
-  //   val rs = m.returnType
-  //   // m stripPackage
-  //   show"def ${m.name}$ts($ps): $rs"
-  // }
-
   implicit def showSize: Show[Size] = Show[Size] {
     case IntSize(size)         => show"$size"
     case LongSize(size)        => show"$size"
@@ -206,15 +191,6 @@ trait ShowInstances {
     case Bounded(lo, hi)       => show"[$lo, $hi]"
     case Infinite              => "<inf>"
   }
-
-  // case Foreach.Unfold(zero)              => show"unfold from $zero"
-  // case Foreach.Joined(xs, ys)            => show"$xs ++ $ys"
-  // case Foreach.Constant(elem)            => show"Constant($elem)"
-  // case Foreach.Continually(fn)           => show"Continually(<fn>)"
-  // case Foreach.KnownSize(Infinite)       => "<inf>"
-  // case Foreach.KnownSize(LongSize(0)) => "[]"
-  // case xs @ Foreach.KnownSize(size: LongSize) =>
-    // case xs: IndexRange                    => xs.toString
 
   private def showElems[A: Show](small: Precise, large: Int, xs: sciList[A]): String = xs splitAt large match {
     case (Nil, _)  => "[]"
@@ -226,9 +202,10 @@ trait ShowInstances {
     val large = 10
     def elems() = showElems[A](small, large - 2, xs.m take large toScalaList)
     (xs, xs.size) match {
-      case ( xs: IndexRange, _)                            => s"$xs"
-      case ( _: Direct[_] | _: Linear[_], _)               => elems()
+      case (xs: IndexRange, _)                             => "[%s,%s)".format(xs.start, xs.end)
+      case (Joined(xs, ys), _)                             => show"$xs ++ $ys"
       case (Foreach.Joined(xs, ys), _)                     => show"$xs ++ $ys"
+      case ( _: Direct[_] | _: Linear[_], _)               => elems()
       case (_, Bounded(Precise(0L), Infinite))             => show"${xs.shortClass}"
       case (_, Bounded(Precise(n), Infinite)) if n < large => show"${xs.shortClass} (size $n+)"
       case _                                               => elems()

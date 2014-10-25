@@ -78,11 +78,16 @@ object Size {
   }
 
   final class Ops(val lhs: Size) extends AnyVal {
+    def isNonZero    = !loBound.isZero
     def isZero       = lhs === Empty
     def isFinite     = lhs.hiBound !== Infinite
     def atMost: Size = bounded(Empty, lhs)
     def hiBound: Atomic = lhs match {
       case Bounded(_, hi) => hi
+      case x: Atomic      => x
+    }
+    def loBound: Atomic = lhs match {
+      case Bounded(lo, _) => lo
       case x: Atomic      => x
     }
 

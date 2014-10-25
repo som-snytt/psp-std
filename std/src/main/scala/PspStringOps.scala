@@ -60,7 +60,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def dottedSegments: pVector[String] = splitChar('.')
   def slashSegments: pVector[String]  = splitChar('/')
 
-  def containsChar(ch: Char): Boolean       = chars contains ch
+  def containsChar(ch: Char): Boolean       = chars.m contains ch
   def splitChar(ch: Char): pVector[String]  = splitRegex(Regex quote ch.toString)
   def splitRegex(r: Regex): pVector[String] = r.pattern split self pvec
   def words: pVector[String]                = splitRegex(whitespace)

@@ -4,6 +4,7 @@ package ops
 
 import api._
 import Doc._
+import StdZero._
 
 trait DocStringOps extends Any {
   def self: String
@@ -92,6 +93,7 @@ class DocOps(val lhs: Doc) extends AnyVal {
   def surround(left: Doc, right: Doc): Doc       = left <> lhs <> right
   def surround(left: String, right: String): Doc = left.asis <> lhs <> right.asis
 
+  def inSpaces: Doc       = surround(space, space)
   def inParens: Doc       = surround(lparen, rparen)
   def inBraces: Doc       = surround(lbrace, rbrace)
   def inBrackets: Doc     = surround(lbracket, rbracket)
@@ -102,16 +104,13 @@ class DocOps(val lhs: Doc) extends AnyVal {
 trait DocSeqCommonOps extends Any {
   def docs: DocSeq
 
-  import Doc._
-
   private def nonEmpties    = docs filterNot (_.isEmpty)
   private def isOnlyEmpties = nonEmpties.isEmpty
 
   // Empty if the seq is empty, otherwise apply the function.
   def opt(f: DocSeq => Doc): Doc = if (docs.isEmpty) empty else f(docs)
-
-  def join(sep: Doc): Doc       = if (docs.isEmpty) empty else docs reducel (_ <> sep <> _)
-  def joinSpaced(sep: Doc): Doc = if (docs.isEmpty) empty else docs reducel (_ <+> sep <+> _)
+  def join(sep: Doc): Doc        = docs safeReduce (_ <> sep <> _)
+  def joinSpaced(sep: Doc): Doc  = docs safeReduce (_ <+> sep <+> _)
 
   def inBracesBlock: Doc = if (isOnlyEmpties) lbrace <> space <> rbrace else joinLines.indent() surround (lbrace, line <> rbrace)
   def inBracesList: Doc  = joinComma surround (lbrace <> space, space <> rbrace)
@@ -145,6 +144,10 @@ final class IntensionalSetOps[A](xs: inSet[A]) {
   }
 }
 final class ExtensionalSetOps[A](xs: exSet[A]) {
+  private implicit def heq: HashEq[A] = xs.hashEq
+
+  def exists(p: Predicate[A]): Boolean    = xs.contained exists p
+  def add(x: A): exSet[A]                 = if (xs(x)) xs else xs union exSet(x)
   def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
   def intersect(that: exSet[A]): exSet[A] = ExtensionalSet.Intersect(xs, that)
   def diff(that: exSet[A]): exSet[A]      = ExtensionalSet.Diff(xs, that)
@@ -154,9 +157,9 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
   def filterNot(p: Predicate[A]): exSet[A] = ExtensionalSet.Filtered(xs, !p)
   def filter(p: Predicate[A]): exSet[A]    = ExtensionalSet.Filtered(xs, p)
   def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
-  def isSubsetOf(ys: inSet[A]): Boolean    = xs.m forall ys
+  def isSubsetOf(ys: inSet[A]): Boolean    = xs.contained forall ys
 
-  def mapContained(f: pSeq[A] => pSeq[A]): exSet[A] = f(xs.contained).pset(xs.hashEq)
+  def mapContained(f: pSeq[A] => pSeq[A]): exSet[A] = f(xs.contained).pset
 }
 
 trait HasPreciseSizeMethods extends Any {
@@ -171,7 +174,7 @@ trait HasPreciseSizeMethods extends Any {
   def lastNth: Nth        = lastIndex.toNth
 
   def containsIndex(index: Index): Boolean            = indices contains index
-  @inline def mapIndices[A](f: Index => A): Direct[A] = indices map f
+  @inline def mapIndices[A](f: Index => A): Direct[A] = indices map f force
   @inline def foreachIndex(f: Index => Unit): Unit    = indices foreach f
   @inline def foreachNth(f: Nth => Unit): Unit        = indices foreach (i => f(i.toNth))
 }
@@ -250,65 +253,6 @@ final class InputStreamOps(val in: InputStream) extends AnyVal {
       buf.result doto (xs => assert(len < 0 || xs.length == len, s"Could not read entire source ($offset of $len bytes)"))
     }
   }
-}
-
-final class DirectOps[A](val xs: Direct[A]) extends AnyVal with CommonOps[A, Direct] {
-  protected def rebuild[B](xs: pSeq[B]): pVector[B] = xs.pvec
-
-  def ++(ys: Direct[A]): Direct[A]                    = new Direct.Joined(xs, ys)
-  def apply(i: Index): A                              = xs elemAt i
-  def exclusiveEnd: Index                             = Index(length)
-  def hasSameSize(that: HasSize): Boolean             = (xs: HasSize).size p_== that.size
-  def head: A                                         = apply(0.index)
-  def indicesAtWhich(p: Predicate[A]): pVector[Index] = xs.indices filter (i => p(apply(i)))
-  def last: A                                         = apply(xs.size.lastIndex)
-  def length: Int                                     = xs.size.intSize
-  def nths: pVector[Nth]                              = xs mapIndices (_.toNth)
-  def offsets: pVector[Offset]                        = xs mapIndices (_.toOffset)
-  def takeRight(n: Precise): pVector[A]               = xs takeRight n
-
-  def view: IndexedView[A, Direct[A]] = new IndexedView[A, Direct[A]](xs)
-  def transformIndices(f: Index => Index): pVector[A] = new Direct.TransformIndices(xs, f)
-  def reverse: Direct[A]  = xs match {
-    case Direct.Reversed(xs) => xs
-    case _                   => new Direct.Reversed(xs)
-  }
-}
-
-final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with CommonOps[A, Foreach] {
-  def ++[A1 >: A](ys: Foreach[A1]): Foreach[A1] = Foreach.join(xs, ys)
-  def toRefs: pSeq[AnyRef] = xs map (_.toRef)
-
-  def view: LinearView[A, Foreach[A]] = new LinearView[A, Foreach[A]](xs)
-  protected def rebuild[B](xs: Foreach[B]): Foreach[B] = xs
-}
-
-trait CommonOps[A, CC[X] <: Foreach[X]] extends Any with CombinedOps[A] {
-  def xs: CC[A]
-  def build(implicit z: Builds[A, CC[A]]): CC[A] = force[CC[A]]
-  protected def rebuild[B](xs: Foreach[B]): CC[B]
-
-  def +:(elem: A): CC[A]                                                            = rebuild(Foreach.join(fromElems(elem), xs))
-  def :+(elem: A): CC[A]                                                            = rebuild(Foreach.join(xs, fromElems(elem)))
-  def collect[B, That](pf: A ?=> B)(implicit z: Builds[B, That]): That              = z direct (f => xs foreach (x => if (pf isDefinedAt x) f(pf(x))))
-  def distinct(implicit z: HashEq[A]): CC[A]                                        = rebuild(toPolicySet.contained)
-  def drop(n: Precise): View[A]                                                     = xs.m drop n
-  def filter(p: Predicate[A]): CC[A]                                                = withFilter(p)
-  def filterNot(p: Predicate[A]): CC[A]                                             = withFilter(!p)
-  def flatCollect[B, That](pf: A ?=> Foreach[B])(implicit z: Builds[B, That]): That = z direct (f => xs foreach (x => if (pf isDefinedAt x) pf(x) foreach f))
-  def flatMap[B](g: A => Foreach[B]): CC[B]                                         = rebuild(Foreach[B](f => xs foreach (x => g(x) foreach f)))
-  def flatten[B](implicit ev: A <:< Foreach[B]): CC[B]                              = rebuild(Foreach[B](f => xs foreach (x => ev(x) foreach f)))
-  def map[B](g: A => B): CC[B]                                                      = rebuild(Foreach[B](f => xs foreach (x => f(g(x)))))
-  def product(implicit z: Products[A]): A                                           = foldl(z.one)(z.product)
-  def slice(range: IndexRange): View[A]                                             = this drop range.precedingSize take range.size
-  def sum(implicit z: Sums[A]): A                                                   = foldl(z.zero)(z.sum)
-  def take(n: Precise): View[A]                                                     = xs.m take n
-  def withFilter(p: Predicate[A]): CC[A]                                            = rebuild(Foreach[A](f => xs foreach (x => if (p(x)) f(x))))
-  def without(x: A)                                                                 = filterNot(_ id_== x)
-
-  def reducel(f: (A, A) => A): A     = (xs take 1).force match { case PSeq(head) => (xs drop 1).foldl(head)(f) }
-  def max(implicit ord: Order[A]): A = reducel(_ max2 _)
-  def min(implicit ord: Order[A]): A = reducel(_ min2 _)
 }
 
 final class StdOptOps[A](val x: Opt[A]) extends AnyVal {

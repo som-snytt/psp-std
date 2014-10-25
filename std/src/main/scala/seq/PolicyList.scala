@@ -51,7 +51,9 @@ object PolicyList {
   def builder[A] : Builds[A, PolicyList[A]]      = Builds(xs => xs.foldr(empty[A])(_ :: _))
   def empty[A] : PolicyList[A]                   = pNil.castTo
   def fill[A](n: Int)(body: => A): PolicyList[A] = if (n <= 0) empty[A] else body :: fill(n - 1)(body)
-  def apply[A](xs: A*): PolicyList[A]            = xs.seq.pvec.foldr(empty[A])(_ :: _)
+
+  // Length check necessary to avoid infinite recursion in foldr, which may utilize this class
+  def apply[A](xs: A*): PolicyList[A] = if (xs.length == 0) empty[A] else xs.m.foldr(empty[A])(_ :: _)
 }
 
 /** A wrapper so a fixed-size sequence can linearly be decomposed with a bit less

@@ -27,6 +27,6 @@ class PathCache[A](f: Path => A) extends (Path => A) {
 
 object PathBytes extends PathCache[Bytes](Files readAllBytes _)
 object PathChars extends PathCache[Chars](path => utf8(PathBytes(path)).chars)
-object PathLines extends PathCache[pVector[String]](path => Files.readAllLines(path, utf8Charset).pvec)
+object PathLines extends PathCache[pVector[String]](path => Files.readAllLines(path, utf8Charset).m.pvec)
 object PathSlurp extends PathCache[String](path => utf8(PathBytes(path)).to_s)
 object PathJars  extends PathCache[Jar](path => Jar(path))

@@ -59,27 +59,22 @@ abstract class StdPackage
       }
       Foreach(f => loop(0, root, f))
     }
-    def transitiveClosure(expand: A => pSeq[A]): pSeq[A] = {
-      var seen = PolicySet.elems[A]()
+    def transitiveClosure(expand: A => View[A]): View[A] = fview { f =>
+      var seen = exSet[A]()
       def loop(root: A, f: A => Unit): Unit = if (!seen(root)) {
-        seen = seen union exSet(root)
+        seen = seen add root
         f(root)
         expand(root) |> (xs => if (xs != null) xs foreach (x => loop(x, f)))
       }
-      Foreach(f => loop(root, f))
+      loop(root, f)
     }
   }
   implicit def booleanToPredicate(value: Boolean): Predicate[Any] = if (value) ConstantTrue else ConstantFalse
   implicit def jClassToPolicyClass(x: jClass): PolicyClass        = new PolicyClass(x)
   implicit def intToPreciseSize(n: Int): IntSize                  = Precise(n)
-
-  implicit def viewifyString(x: String): View[Char]          = x.m
-  implicit def viewifyArray[A](x: Array[A]): View[A]         = x.m[DirectAccess] // must give this type argument explicitly.
-  implicit def unViewifyString(x: View[Char]): String        = x.force[String]
-  implicit def unViewifyArray[A: CTag](x: View[A]): Array[A] = x.force[Array[A]]
+  implicit def convertNilSeq[A](x: scala.Nil.type): pVector[A]    = Direct[A]()
 
   implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
-  implicit def scalaSeqToPSeq[A](x: scSeq[A]): pVector[A] = x.pvec
 
   implicit def conforms[A] : (A <:< A) = new conformance[A]
 }

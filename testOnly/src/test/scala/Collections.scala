@@ -37,7 +37,7 @@ class StringExtensions extends ScalacheckBundle {
     "takeRight"   -> newProp2[Int](_ takeRight _)(_ takeRight _)(mostInts, ?),
     "dropRight"   -> newProp2[Int](_ dropRight _)(_ dropRight _)(mostInts, ?),
     "toInt"       -> newProp[Int](_.toInt, _.toInt),
-    "tail"        -> newProp[String](_.tail, _.m.tail.force),
+    "tail"        -> newProp[String](_.tail, _.tail.force),
     "head"        -> newProp(_.head, _.head),
     "drop"        -> newProp[Char](_.head, _.head),
     "reverse"     -> newProp[String](_.reverse, _.reverse.force)
@@ -54,20 +54,20 @@ class PolicyBasic extends ScalacheckBundle {
   def pseq    = Foreach[Int](parray foreach _)
   def punfold = Foreach from 1
 
-  def closure   = parray transitiveClosure (x => Direct(x.m.init, x.m.tail)) mk_s ", "
+  def closure   = parray transitiveClosure (x => view(x.init.force, x.tail.force)) mk_s ", "
   def xxNumbers = (Foreach from 0).m grep """^(.*)\1""".r
 
   def props: sciList[NamedProp] = sciList(
     showsAs("[ 1, 2, 3 ]", plist),
     showsAs("[ 1, 2, 3 ]", pvector),
     showsAs("[ 1, 2, 3 ]", parray),
-    showsAs("[ 1, 2, 3 ] ++ [ 1, 2, 3 ]", plist ++ plist),
-    showsAs("[ 1, 2, 3, 1, 2, 3 ]", pvector ++ pvector),
-    showsAs("[ 1, 2, 3, 1, 2, 3 ]", parray ++ parray),
+    showsAs("[ 1, 2, 3, 1, 2, 3 ]", plist ++ plist force),
+    showsAs("[ 1, 2, 3, 1, 2, 3 ]", pvector ++ pvector force),
+    showsAs("[ 1, 2, 3, 1, 2, 3 ]", parray ++ parray force),
     showsAs("[ 1, 2, 3, ... ]", punfold),
     showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure),
     seqShows("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _)),
-    seqShows("11, 22, 33, 44", indexRange(1, 50).m grep """(.)\1""".r),
+    seqShows("11, 22, 33, 44", indexRange(1, 50).pvec.m grep """(.)\1""".r),
     seqShows("99, 1010, 1111", xxNumbers drop 8 take 3)
   )
 }
@@ -86,7 +86,7 @@ class Collections extends ScalacheckBundle {
 
   def props: sciList[NamedProp] = policyProps ++ sciList(
     expectTypes[sciBitSet](
-      bits map identity,
+      bits.m map identity,
       bits.m map (_.toString.length) build,
       bits.m map (_.toString) map (_.length) build,
       bits.m map (x => sciList(x)) map (_.size) build,

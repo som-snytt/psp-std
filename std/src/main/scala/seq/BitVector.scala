@@ -12,8 +12,8 @@ final class BitVector(longs: Array[Long], val size: Precise) extends Direct.Dire
   def elemAt(index: Index): Boolean     = apply64(index / 64)(index % 64)
 
   override def toString = if (isEmpty) "" else {
-    val xs: pVector[String] = longs.m.init map (l => 64.size.padLeft(l.binary, '0')) force
-    val ys: String          = longs.last.binary take lastSize
+    val xs: View[String] = longs dropRight 1 map (l => 64.size.padLeft(l.binary, '0'))
+    val ys: String       = longs.last.binary take lastSize
     (xs :+ ys).mkString("\n")
   }
 }
@@ -24,7 +24,7 @@ object BitVector {
   def compress(xs: Array[Boolean]): Array[Long] = (
     (Precise(xs.length) /+ 64).indices map { i =>
       val range = (i until i.next) * 64
-      (xs.m slice range).foldl(0L)((res, b) => (res << 1) | b.toLong)
+      (xs slice range).foldl(0L)((res, b) => (res << 1) | b.toLong)
     } toArray
   )
   def apply(xs: Boolean*): BitVector = new BitVector(compress(xs.toArray), newSize(xs.size))

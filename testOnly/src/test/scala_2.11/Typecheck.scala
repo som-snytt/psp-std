@@ -9,6 +9,7 @@ class Typecheck extends ScalacheckBundle {
   // We don't want to protect scala library from itself so let's unmask augmentString etc.
   def checkScala() = {
     val opsDirectString = null
+    val directStringIs = null
     import scala.Predef._
     divide("scala-library", typecheckedLines(scalaLibraryCode), expectedTypecheck = 32)
   }

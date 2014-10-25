@@ -12,17 +12,17 @@ trait NaturalHashEq
 object Hash {
   final class Impl[-A](val f: A => Int) extends AnyVal with Hash[A] { def hash(x: A): Int = f(x) }
 
-  def reference[A](): Impl[A with AnyRef] = new Impl[A with AnyRef](_.id_##)
-  def natural[A](): Impl[A]               = new Impl[A](_.##)
-  def apply[A](f: A => Int): Impl[A]      = new Impl[A](f)
+  def reference[A](): Hash[A with AnyRef] = new Impl[A with AnyRef](_.id_##)
+  def natural[A](): Hash[A]               = new Impl[A](_.##)
+  def apply[A](f: A => Int): Hash[A]      = new Impl[A](f)
 }
 
 object Eq {
   final class Impl[-A](val f: (A, A) => Boolean) extends AnyVal with Eq[A] { def equiv(x: A, y: A) = f(x, y) }
 
-  def reference[A](): Impl[A with AnyRef]     = new Impl[A with AnyRef](_ id_== _)
-  def natural[A](): Impl[A]                   = new Impl[A](_ == _)
-  def apply[A](f: (A, A) => Boolean): Impl[A] = new Impl[A](f)
+  def reference[A](): Eq[A with AnyRef]     = new Impl[A with AnyRef](_ id_== _)
+  def natural[A](): Eq[A]                   = new Impl[A](_ == _)
+  def apply[A](f: (A, A) => Boolean): Eq[A] = new Impl[A](f)
 }
 
 trait HashEqLow {
@@ -32,12 +32,12 @@ trait HashEqLow {
 object HashEq extends HashEqLow {
   implicit def composeHashEq[A](implicit eqs: Eq[A], hash: Hash[A]): HashEq[A] = new Impl[A](eqs.equiv, hash.hash)
 
-  def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): Impl[A] = new Impl[A](cmp, hashFn)
+  def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): HashEq[A] = new Impl[A](cmp, hashFn)
 
-  def natural[A](eqs: Eq[A]): Impl[A]   = apply[A](eqs.equiv, _.##)
-  def natural[A](): Impl[A]             = apply[A](_ == _, _.##)
-  def reference[A <: AnyRef](): Impl[A] = apply[A](_ eq _, identityHashCode)
-  def shown[A: Show](): Impl[A]         = apply[A](_.to_s == _.to_s, _.to_s.##)
+  def natural[A](eqs: Eq[A]): HashEq[A]   = apply[A](eqs.equiv, _.##)
+  def natural[A](): HashEq[A]             = apply[A](_ == _, _.##)
+  def reference[A <: AnyRef](): HashEq[A] = apply[A](_ eq _, identityHashCode)
+  def shown[A: Show](): HashEq[A]         = apply[A](_.to_s == _.to_s, _.to_s.##)
 
   final case class Wrap[A: HashEq](value: A) {
     override def hashCode = value.hash

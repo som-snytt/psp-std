@@ -111,6 +111,7 @@ package ops {
 
     // @tailrec
     def foreach(f: A => Unit): Unit = if (nonEmpty) g(f) foreach f
+    def view = fview(foreach)
 
     @inline def reduce(f: (A, A) => A): A = {
       var nonEmpty = false

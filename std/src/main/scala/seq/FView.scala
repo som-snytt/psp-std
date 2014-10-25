@@ -13,7 +13,7 @@ object FView {
   final case class Split[A](left: View[A], right: View[A]) {
     def mapLeft[A1 >: A](f: Unary[View[A1]]): Split[A1]  = new Split(f(left), right)
     def mapRight[A1 >: A](f: Unary[View[A1]]): Split[A1] = new Split(left, f(right))
-    def join: View[A]                                    = new Join(left, right) view
+    def join: View[A]                                    = new Join(left, right) m
     // def intersperse: Single[A]                        = Interspersed(left, right)
     def force[That](implicit z: Builds[A, That]): That   = z build join
   }

@@ -2,9 +2,9 @@ package psp
 package std
 package pio
 
+import api._
 import java.nio.file.{ Files, FileSystems, FileVisitResult, StandardOpenOption, FileSystemException }
 import StandardOpenOption._
-import api.IndexRange
 
 final class JioPathOps[T <: Path](val path: T) extends AnyVal with JavaPathMethods
 
@@ -85,7 +85,7 @@ trait JavaPathMethods extends Any {
   def subdirectories: Paths                                         = filterChildren(pathFs, path, _.toFile.isDirectory)
   def walk(f: (Path, BasicFileAttributes) => FileVisitResult): Unit = walk(PathVisitor(f))
   def walk(visitor: PathVisitor): Unit                              = Files.walkFileTree(path, visitor)
-  def lines(codec: Codec): pVector[String] = Files.readAllLines(path, codec.charSet).pvec
+  def lines(codec: Codec): View[String]                             = Files.readAllLines(path, codec.charSet).m
 
   def filterDeepFiles(p: PathPredicate): Paths = Direct build { f =>
     def loop(path: Path): Unit = if (path.isDir) path.entries() foreach loop else if (p(path)) f(path)
@@ -116,7 +116,7 @@ trait JavaPathMethods extends Any {
   private def writeNioLines(lines: jIterable[String], options: OpenOption*): Path = Files.write(path, lines, utf8Charset, options: _*)
 
   private def filterChildren(fs: FileSystem, root: Path, p: Path => Boolean): Paths =
-    fs.provider.newDirectoryStream(root, p) |> (s => try s.pvec finally s.close())
+    fs.provider.newDirectoryStream(root, p) |> (s => try s.m.pvec finally s.close())
 
   private def containerEntries(p: PathPredicate): Paths = (
     if (path.isReadable && isDir)

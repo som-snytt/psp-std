@@ -2,7 +2,7 @@ package psp
 package tests
 
 import org.scalacheck._, Prop._, Gen._
-import psp.std._, StdEq._, StdShow._
+import psp.std._, api._, StdEq._, StdShow._
 
 class ValuesSpec extends ScalacheckBundle {
   def bundle = "UInt laws"
@@ -12,8 +12,8 @@ class ValuesSpec extends ScalacheckBundle {
   type UIntOp = (UInt, UInt) => UInt
   final case class NamedOp(name: String, op: UIntOp)
 
-  def named(xs: NamedProp*): pSeq[NamedProp]    = xs.seq.pseq
-  def ops(xs: (String, UIntOp)*): pSeq[NamedOp] = xs.seq.pseq map (k => NamedOp(k._1, k._2))
+  def named(xs: NamedProp*): View[NamedProp]    = xs.m
+  def ops(xs: (String, UIntOp)*): View[NamedOp] = xs.m map (k => NamedOp(k._1, k._2))
 
   lazy val allOps = ops(
     "&"   -> (_ & _),

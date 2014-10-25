@@ -80,10 +80,6 @@ package object std extends psp.std.StdPackage {
   final val NoIndex              = Index.undefined
   final val NoNth                = Nth.undefined
 
-  type Walks[A0, Repr]                    = Walkable[Repr] { type A = A0 }
-  type ForeachableType[A0, Repr, CC0[X]]  = Foreachable[Repr]  { type A = A0 ; type CC[B] = CC0[B] }
-  type DirectAccessType[A0, Repr, CC0[X]] = DirectAccess[Repr] { type A = A0 ; type CC[B] = CC0[B] }
-
   // Methods similar to the more useful ones in scala's Predef.
   def ??? : Nothing                                                = throw new scala.NotImplementedError
   def assert(assertion: Boolean): Unit                             = if (!assertion) assertionError("assertion failed")
@@ -196,15 +192,18 @@ package object std extends psp.std.StdPackage {
   }
   def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
 
-  def pMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]      = xs.view.pmap
-  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]     = xs.view.pmap
-  def exSet[A: HashEq](xs: A*): exSet[A]                = xs.view.pset
-  def fview[A](mf: Suspended[A]): View[A]               = Foreach[A](mf).view
-  def inSet[A: HashEq](p: Predicate[A]): inSet[A]       = p.inSet
-  def pList[A](xs: A*): pList[A]                        = PolicyList[A](xs: _*)
-  def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
-  def pSeq[A](xs: A*): pSeq[A]                          = Direct[A](xs: _*)
-  def view[A](xs: A*): View[A]                          = Direct[A](xs: _*).view
+  def pMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]              = xs.m.pmap
+  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]             = xs.m.pmap
+  def exSet[A: HashEq](xs: A*): exSet[A]                        = xs.m.pset
+  def fview[A](mf: Suspended[A]): View[A]                       = Foreach[A](mf).m
+  def inSet[A: HashEq](p: Predicate[A]): inSet[A]               = p.inSet
+  def pList[A](xs: A*): pList[A]                                = xs.m.plist
+  def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V]         = new PolicyMutableMap(jConcurrentMap(xs: _*))
+  def pSeq[A](xs: A*): pSeq[A]                                  = Direct[A](xs: _*)
+  def view[A](xs: A*): View[A]                                  = Direct[A](xs: _*).m
+
+  def linearView[A, Repr](size: Size, mf: Suspended[A]): LinearView[A, Repr]   = new LinearView[A, Repr](Foreach.sized(size, mf))
+  def indexedView[A, Repr](size: Precise, f: Index => A): IndexedView[A, Repr] = new IndexedView[A, Repr](Direct.pure(size, f))
 
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ

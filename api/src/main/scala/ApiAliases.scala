@@ -38,6 +38,7 @@ trait ApiAliases extends scala.Any {
   type Predicate[-A]           = A => Boolean
   type Relation[-A]            = (A, A) => Boolean
   type PairOf[+A]              = (A, A)
+  type Shower[-A]              = A => String
   type Suspended[+A]           = (A => Unit) => Unit
   type SuspendedTo[+A, CC[+X]] = (A => Unit) => CC[A]
 }

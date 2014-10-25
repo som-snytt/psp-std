@@ -21,17 +21,17 @@ package object tests {
 
   def arb[A](implicit z: Arbitrary[A]): Arbitrary[A] = z
 
-  implicit def arbitraryIntensionalSet[A : Arbitrary : HashEq] : Arbitrary[inSet[A]] = arb[sciSet[A]] map (_.toPolicySet)
+  implicit def arbitraryIntensionalSet[A : Arbitrary : HashEq] : Arbitrary[inSet[A]] = arb[sciSet[A]] map (_.m.toPolicySet)
   implicit def arbitraryPint: Arbitrary[Pint]                                        = Arbitrary(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
 
   def showsAs[A: Show](expected: String, x: A): NamedProp         = expected -> (expected =? show"$x")
   def seqShows[A: Show](expected: String, xs: pSeq[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))
 
-  def expectType(expected: jClass, found: jClass): NamedProp           = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
-  def expectTypes(expected: jClass, found: pVector[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
+  def expectType(expected: jClass, found: jClass): NamedProp        = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
+  def expectTypes(expected: jClass, found: pSeq[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
 
   def expectType[A: CTag](result: A): NamedProp                     = expectType(classOf[A], result.getClass)
-  def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], results.seq.pvec map (_.getClass))
+  def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], fromScala(results) map (_.getClass))
 
   implicit def buildsToBuildable[A, CC[X]](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
     new Buildable[A, CC] { def builder: scmBuilder[A, CC[A]] = z.scalaBuilder }
@@ -77,7 +77,7 @@ package object tests {
   implicit def chooseNth: Choose[Nth]      = Choose.xmap[Long, Nth](_.nth, _.nthValue)
 
   def randomGen[A](xs: pVector[Gen[A]]): Gen[A] = indexRangeGen(xs.indices) flatMap xs.elemAt
-  def randomGen[A](xs: Gen[A]*): Gen[A]         = randomGen(xs.seq.pvec)
+  def randomGen[A](xs: Gen[A]*): Gen[A]         = randomGen(xs.m.pvec)
 
   def genPrecise: Gen[Precise]               = chooseNum(1, MaxInt / 2) map (x => newSize(x))
   def genBounded: Gen[Bounded]               = genPrecise flatMap (lo => genAtomic map (hi => bounded(lo, hi))) collect { case b: Bounded => b }

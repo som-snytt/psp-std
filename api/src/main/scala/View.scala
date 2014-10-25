@@ -28,7 +28,7 @@ trait View[+A] extends Any with Foreach[A] {
   def filter(p: Predicate[A]): MapTo[A]
   def filterNot(p: Predicate[A]): MapTo[A]
   def flatMap[B](f: A => Foreach[B]): MapTo[B]
-  def intersperse[A1 >: A](that: View[A1]): MapTo[A1]
+  // def intersperse[A1 >: A](that: View[A1]): MapTo[A1]
   def map[B](f: A => B): MapTo[B]
   def partition(p: Predicate[A]): SplitTo[A]
   def sized(size: Precise): MapTo[A]
@@ -38,7 +38,7 @@ trait View[+A] extends Any with Foreach[A] {
   def take(n: Precise): MapTo[A]
   def takeRight(n: Precise): MapTo[A]
   def takeWhile(p: Predicate[A]): MapTo[A]
-  def viewChain: Direct[View[_]]
+  def viewChain: Foreach[View[_]]
   def withFilter(p: Predicate[A]): MapTo[A]
   def zip[B](that: View[B]): MapTo[(A, B)]
 }
@@ -54,9 +54,5 @@ object View {
     def right: Single[A]
     def join: Single[A]
     def intersperse: Single[A]
-  }
-  trait Tuples[+A, +B] extends Any with View[(A, B)] {
-    def lefts: View[A]
-    def rights: View[B]
   }
 }

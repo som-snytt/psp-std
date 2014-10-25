@@ -16,7 +16,7 @@ object Order {
   def apply[A](f: (A, A) => Cmp): Impl[A]    = new Impl[A](f)
   def natural[A <: Comparable[A]](): Impl[A] = fromInt[A](_ compareTo _)
   def order[A: Order] : Order[A]             = ?[Order[A]]
-  def fold(xs: Cmp*): Cmp                    = xs.toSeq findOr (_ != EQ, EQ)
+  def fold(xs: Cmp*): Cmp                    = xs.m findOr (_ != EQ, EQ)
   def create[A](ord: Ordering[A]): Order[A]  = apply[A]((x, y) => newCmp(ord.compare(x, y)))
 
   def fromInt[A](f: (A, A) => Int): Impl[A]   = new Impl[A]((x, y) => newCmp(f(x, y)))
@@ -55,4 +55,12 @@ object Sums {
     def sum(x: A, y: A): A = f(x, y)
   }
   def apply[A](f: BinOp[A])(implicit z: Zero[A]): Sums[A] = new Impl(f, z)
+}
+
+object Products {
+  final class Impl[A](f: BinOp[A], z: Zero[A]) extends Products[A] {
+    def one: A = z.zero // That's right, one equals zero.
+    def product(x: A, y: A): A = f(x, y)
+  }
+  def apply[A](f: BinOp[A])(implicit z: Zero[A]): Products[A] = new Impl(f, z)
 }

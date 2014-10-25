@@ -3,6 +3,7 @@ package std
 
 import api._
 import StdEq.stringEq
+import StdZero._
 
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
@@ -30,7 +31,7 @@ final case class Shown(to_s: String) extends AnyVal with ShowDirect {
 
 object Shown {
   def empty: Shown             = new Shown("")
-  def apply(ss: Shown*): Shown = if (ss.isEmpty) empty else ss reduceLeft (_ ~ _)
+  def apply(ss: Shown*): Shown = ss.m safeReduce (_ ~ _)
 }
 
 final class ShowDirectOps(val x: ShowDirect) extends AnyVal {
@@ -48,7 +49,7 @@ final class ShowInterpolator(val x: StringContext) extends AnyVal {
   def show(args: Shown*): String  = StringContext(x.parts: _*).raw(args: _*)
   def pp(args: TryShown*): String = StringContext(x.parts: _*).raw(args: _*)
   def shown(args: Shown*): Shown  = Shown(show(args: _*))
-  def doc(args: Doc*): Doc        = (x.parts.m.map(_.asis) intersperse args.seq.m).joinChars
+  def doc(args: Doc*): Doc        = (Generator(x.parts.m map (_.asis)) intersperse Generator(args.m)).view.joinChars
 
   /** Can't see any way to reuse the standard (type-safe) f-interpolator, will
    *  apparently have to reimplement it entirely.
@@ -57,10 +58,10 @@ final class ShowInterpolator(val x: StringContext) extends AnyVal {
 }
 
 object Show {
-  final class Impl[-A](val f: A => String) extends AnyVal with Show[A] { def show(x: A) = f(x) }
+  final class Impl[-A](val f: Shower[A]) extends AnyVal with Show[A] { def show(x: A) = f(x) }
 
-  def apply[A](f: A => String): Show[A] = new Impl[A](f)
-  def natural[A](): Show[A]             = ToString
+  def apply[A](f: Shower[A]): Show[A] = new Impl[A](f)
+  def natural[A](): Show[A]           = ToString
 
   /** This of course is not implicit as that would defeat the purpose of the endeavor.
    */

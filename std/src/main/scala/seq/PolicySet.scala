@@ -12,7 +12,7 @@ object PolicySet {
   def direct[A](xs: pSeq[A])(equiv: Relation[A], hash: A => Int): exSet[A] = ExtensionalSet[A](xs)(HashEq(equiv, hash))
   def elems[A: HashEq](xs: A*): exSet[A]                                   = ExtensionalSet[A](fromElems(xs: _*))
 
-  class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
+  class FromScala[A](xs: scSet[A]) extends ExtensionalSet[A] {
     def size: IntSize  = Precise(xs.size)
     def contained      = Foreach[A](xs foreach _)
     def apply(elem: A) = xs(elem)
@@ -78,7 +78,7 @@ object ExtensionalSet {
     }
     def apply(elem: A)        = wrapSet contains wrap(elem)
     def size: Precise         = newSize(wrapSet.size)
-    def contained: Foreach[A] = wrapSet.m map (_.unwrap)
+    def contained: Foreach[A] = wrapSet map (_.unwrap)
   }
 }
 object IntensionalSet {

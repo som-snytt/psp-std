@@ -55,13 +55,13 @@ object Foreach {
   def elems[A](xs: A*): pSeq[A]                                   = apply[A](xs foreach _)
   def apply[A](mf: Suspended[A]): Foreach[A]                      = new Impl[A](Size.unknown, mf)
   def constant[A](elem: A): Constant[A]                           = Constant[A](elem)
-  def continuallySpan[A](p: Predicate[A])(expr: => A): Foreach[A] = continually(expr).m takeWhile p
+  def continuallySpan[A](p: Predicate[A])(expr: => A): Foreach[A] = continually(expr) takeWhile p
   def continually[A](elem: => A): Continually[A]                  = Continually[A](() => elem)
   def empty[A] : Foreach[A]                                       = Direct.Empty
   def from(n: BigInt): Foreach[BigInt]                            = unfold(n)(_ + 1)
   def from(n: Int): Foreach[Int]                                  = unfold(n)(_ + 1)
   def from(n: Long): Foreach[Long]                                = unfold(n)(_ + 1)
   def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]         = Joined[A](xs, ys)
-  def sized[A](size: Size)(mf: Suspended[A]): Foreach[A]          = new Impl[A](size, mf)
+  def sized[A](size: Size, mf: Suspended[A]): Foreach[A]          = new Impl[A](size, mf)
   def unfold[A](start: A)(next: A => A): Unfold[A]                = Unfold[A](start)(next)
 }
