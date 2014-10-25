@@ -62,6 +62,7 @@ trait GlobalShow extends GlobalShow0 {
 trait Typeclasses0 {
   implicit def tupleTwoPairUp[A, B] : PairUp[(A, B), A, B]                     = PairUp(_ -> _)
   implicit def productTwoPairDown[A, B] : PairDown[scala.Product2[A, B], A, B] = PairDown(_._1, _._2)
+  implicit def linearSeqPairDown[A] : PairDown[Linear[A], A, Linear[A]]        = PairDown(_.head, _.tail)
 }
 trait Typeclasses1 extends Typeclasses0 {
 }
@@ -135,7 +136,7 @@ trait StdOps extends Any with StdOps3 {
   // Promotion of the api type (which has as few methods as possible) to the
   // concrete type which has all the other ones.
   implicit def apiIndexPromote(x: Index): IndexImpl                              = Index impl x
-  implicit def apiIndexRangePromote(x: IndexRange): IntIndexRange                = IndexRange impl x
+  implicit def apiIndexRangePromote(x: IndexRange): LongRange                = IndexRange impl x
   implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]                  = Order(ord.compare)
   implicit def directoryStreamToIterable[A](stream: DirectoryStream[A]): pSeq[A] = BiIterable(stream).pseq
 }

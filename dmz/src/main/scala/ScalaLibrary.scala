@@ -27,11 +27,13 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Try[+A]                         = scala.util.Try[A]
 
   // common annotations
-  type inline  = scala.inline
-  type spec    = scala.specialized
-  type switch  = scala.annotation.switch
-  type tailrec = scala.annotation.tailrec
-  type uV      = scala.annotation.unchecked.uncheckedVariance
+  type inline    = scala.inline
+  type spec      = scala.specialized
+  type switch    = scala.annotation.switch
+  type tailrec   = scala.annotation.tailrec
+  type transient = scala.transient
+  type uV        = scala.annotation.unchecked.uncheckedVariance
+  type volatile  = scala.volatile
 
   // scala types which I won't let win.
   type sCollection[+A]        = sc.GenTraversable[A]

@@ -10,11 +10,13 @@ final case object pNil extends PolicyList[Nothing] {
   def isEmpty  = true
   def head     = abort("pNil.head")
   def tail     = abort("pNil.tail")
+  override def toString = "nil"
 }
 final case class pCons[A](head: A, tail: PolicyList[A]) extends PolicyList[A] {
   def foreach(f: A => Unit): Unit = { f(head) ; tail foreach f }
   def size = Size.NonEmpty
   def isEmpty  = false
+  override def toString = s"$head :: $tail"
 }
 
 final class pChunked[A](private val chunks: Linear[Linear[A]]) extends Linear[A] {

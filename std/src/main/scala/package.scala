@@ -9,13 +9,14 @@ import psp.std.lowlevel._
 import psp.std.StdShow._
 
 package object std extends psp.std.StdPackage {
-  type pSeq[+A]    = Foreach[A]
-  type pVector[+A] = Direct[A]
-  type pList[A]    = PolicyList[A]
-  type inSet[A]    = IntensionalSet[A]
-  type exSet[A]    = ExtensionalSet[A]
-  type inMap[K, V] = IntensionalMap[K, V]
-  type exMap[K, V] = ExtensionalMap[K, V]
+  type pSeq[+A]          = Foreach[A]
+  type pVector[+A]       = Direct[A]
+  type pList[A]          = PolicyList[A]
+  type inSet[A]          = IntensionalSet[A]
+  type exSet[A]          = ExtensionalSet[A]
+  type inMap[K, V]       = IntensionalMap[K, V]
+  type exMap[K, V]       = ExtensionalMap[K, V]
+  type pMutableMap[K, V] = PolicyMutableMap[K, V]
 
   type DocSeq      = pSeq[Doc]
 
@@ -148,25 +149,22 @@ package object std extends psp.std.StdPackage {
   def ordering[A: Order] : Ordering[A]                  = ?[Order[A]].toScalaOrdering
   def regex(re: String): Regex                          = Regex(re)
   def show[A: Show] : Show[A]                           = ?
-  def summonZero[A](implicit z: Zero[A]): Zero[A]       = z
+  def zero[A](implicit z: Zero[A]): A                   = z.zero
 
   def optImplicit[A](implicit value: A = null): Option[A] = if (value == null) None else Some(value)
 
   def fromScala[A](xs: sCollection[A]): Foreach[A] = xs match {
-    case xs: scIndexedSeq[_] => new Direct.FromScala(xs.toIndexedSeq)
-    case xs: sciLinearSeq[_] => new PolicyList.FromScala(xs)
-    case xs: scSet[A]        => (new PolicySet.FromScala(xs.toSet[A])).m[Foreachable]
-    case _                   => new Foreach.FromScala(xs)
+    case xs: sciIndexedSeq[_] => new Direct.FromScala(xs)
+    case xs: sciLinearSeq[_]  => new PolicyList.FromScala(xs)
+    // case xs: sciSet[A]        => new PolicySet.FromScala(xs)
+    case _                    => new Foreach.FromScala(xs)
   }
   def fromJava[A](xs: jIterable[A]): Foreach[A] = xs match {
     case xs: jList[_] => new Direct.FromJava[A](xs)
+    // case xs: jSet[_]  => new PolicySet.FromJava[A](xs)
     case xs           => new Foreach.FromJava[A](xs)
   }
-  def fromElems[A](xs: A*): Foreach[A] = xs match {
-    case xs: scmWrappedArray[A] => Direct fromArray xs.array
-    case xs: sCollection[_]     => fromScala[A](xs)
-    case _                      => fromScala(xs.toVector)
-  }
+  def fromElems[A](xs: A*): Direct[A] = new Direct.FromScala(xs.toVector)
 
   def mapBuilder[K, V](xs: (K, V)*): scmBuilder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
   def setBuilder[A](xs: A*): scmBuilder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
@@ -176,20 +174,21 @@ package object std extends psp.std.StdPackage {
   def mapToList[K, V](): scmMap[K, sciList[V]]                       = scmMap[K, sciList[V]]() withDefaultValue Nil
 
   // Java.
-  def jMap[K, V](xs: (K, V)*): jMap[K, V] = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
-  def jSet[A](xs: A*): jSet[A]            = new jHashSet[A] doto (b => xs foreach b.add)
-  def jList[A](xs: A*): jList[A]          = java.util.Arrays.asList(xs: _* )
-  def jFile(s: String): jFile             = path(s).toFile
-  def jUri(x: String): jUri               = java.net.URI create x
-  def jUrl(x: String): jUrl               = jUri(x).toURL
-
-  def concurrentMap[K, V](): ConcurrentMapWrapper[K, V]           = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], None)
-  def concurrentMap[K, V](default: V): ConcurrentMapWrapper[K, V] = new ConcurrentMapWrapper[K, V](new ConcurrentHashMap[K, V], Some(default))
+  def jConcurrentMap[K, V](xs: (K, V)*): jConcurrentMap[K, V] = new jConcurrentHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
+  def jFile(s: String): jFile                                 = path(s).toFile
+  def jList[A](xs: A*): jList[A]                              = java.util.Arrays.asList(xs: _* )
+  def jMap[K, V](xs: (K, V)*): jMap[K, V]                     = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
+  def jSet[A](xs: A*): jSet[A]                                = new jHashSet[A] doto (b => xs foreach b.add)
+  def jUri(x: String): jUri                                   = java.net.URI create x
+  def jUrl(x: String): jUrl                                   = jUri(x).toURL
 
   object PSeq {
     def unapplySeq[A](xs: pSeq[A]): scala.Some[scSeq[A]] = Some(xs.seq)
   }
-
+  object Pair {
+    def apply[R, A, B](x: A, y: B)(implicit z: PairUp[R, A, B]): R                = z.create(x, y)
+    def unapply[R, A, B](x: R)(implicit z: PairDown[R, A, B]): scala.Some[(A, B)] = Some((z left x, z right x))
+  }
 
   def PairDown[R, A, B](l: R => A, r: R => B): PairDown[R, A, B] = new PairDown[R, A, B] {
     def left(x: R)  = l(x)
@@ -197,11 +196,15 @@ package object std extends psp.std.StdPackage {
   }
   def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
 
-  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V] = xs.view.pmap
-  def exSet[A: HashEq](xs: A*): exSet[A]            = xs.view.pset
-  def inSet[A: HashEq](p: Predicate[A]): inSet[A]   = p.inSet
-  def pSeq[A](xs: A*): pSeq[A]                      = Direct[A](xs: _*)
-  def view[A](xs: A*): View[A]                      = Direct[A](xs: _*).view
+  def pMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]      = xs.view.pmap
+  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]     = xs.view.pmap
+  def exSet[A: HashEq](xs: A*): exSet[A]                = xs.view.pset
+  def fview[A](mf: Suspended[A]): View[A]               = Foreach[A](mf).view
+  def inSet[A: HashEq](p: Predicate[A]): inSet[A]       = p.inSet
+  def pList[A](xs: A*): pList[A]                        = PolicyList[A](xs: _*)
+  def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
+  def pSeq[A](xs: A*): pSeq[A]                          = Direct[A](xs: _*)
+  def view[A](xs: A*): View[A]                          = Direct[A](xs: _*).view
 
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ

@@ -47,7 +47,7 @@ trait ConversionOps[A] extends Any {
   def toScalaStream: sciStream[A]                               = toScala[sciStream]
   def toScalaTraversable: scTraversable[A]                      = toScala[scTraversable]
   def toScalaMap[K, V](implicit ev: A <:< (K, V)): sciMap[K, V] = toScalaVector map ev toMap
-  def toArray(implicit z: CTag[A]): Array[A] = Array.newBuilder[A] ++= toScalaTraversable result
+  def toArray(implicit z: CTag[A]): Array[A]                    = Array.newBuilder[A] ++= toScalaTraversable result
 
   def toPartial[K, V](implicit ev: A <:< (K, V)): K ?=> V = toScalaMap[K, V]
 

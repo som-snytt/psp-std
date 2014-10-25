@@ -30,6 +30,7 @@ object TestRunner_211 extends TestRunnerCommon {
 
   override def bundles = Direct[Bundle](
     new Typecheck,
+    new Collections_211,
     new AlgebraPoliceman[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
     new AlgebraPoliceman[InvariantPredicate[Pint]]("InvariantPredicate[Pint]"),
     new AlgebraPoliceman[IntensionalSet[Pint]]("IntensionalSet[Pint]")

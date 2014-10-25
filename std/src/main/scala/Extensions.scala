@@ -4,6 +4,27 @@ package ops
 
 import api._
 
+final class FunctionAsPartial[-T, +R](f: T => R) extends (T ?=> R) {
+  def isDefinedAt(x: T) = true
+  def apply(x: T): R    = f(x)
+}
+final class PairPartial[-T : Eq, +R](key: T, value: R) extends (T ?=> R) {
+  def isDefinedAt(x: T) = key === x
+  def apply(x: T): R    = value
+}
+final class JoinPartial[-T, +R](pf1: T ?=> R, pf2: T ?=> R) extends (T ?=> R) {
+  def isDefinedAt(x: T) = (pf1 isDefinedAt x) || (pf2 isDefinedAt x)
+  def apply(x: T): R    = if (pf1 isDefinedAt x) pf1(x) else pf2(x)
+}
+final class ComapPartial[T1, -T, +R](pf: T ?=> R, g: T1 => T) extends (T1 ?=> R) {
+  def isDefinedAt(x: T1) = pf isDefinedAt g(x)
+  def apply(x: T1): R    = pf(g(x))
+}
+final class CopmapPartial[T1, -T, +R](pf: T ?=> R, pg: T1 ?=> T) extends (T1 ?=> R) {
+  def isDefinedAt(x: T1) = (pg isDefinedAt x) && (pf isDefinedAt pg(x))
+  def apply(x: T1): R    = pf(pg(x))
+}
+
 /** "Extensions" are classes which only exist to add methods to
  *  built-in types from the scala standard library. As we phase
  *  out the use of the standard library these will migrate into
@@ -15,6 +36,7 @@ final class Function1Ops[T, R](val f: T => R) extends AnyVal {
 
   def untupled[A, B](implicit z: PairUp[T, A, B]): (A, B) => R = (x, y) => f(z.create(x, y))
 
+  def partial: T ?=> R                                   = new FunctionAsPartial(f)
   def map[S](g: R => S): T => S                          = f andThen g
   def comap[S](g: S => T): S => R                        = g andThen f
   def sameAt(g: T => R)(implicit z: Eq[R]): Predicate[T] = x => f(x) === g(x)
@@ -34,8 +56,8 @@ final class PredicateOps[A](val p: Predicate[A]) extends AnyVal {
   def inSet(implicit z: HashEq[A]): inSet[A] = IntensionalSet(p)
 }
 final class PartialFunctionOps[A, B](val pf: A ?=> B) extends AnyVal {
-  def comap[A1](f: A1 => A): A1 ?=> B    = newPartial(x => pf isDefinedAt f(x), x => pf(f(x)))
-  def copmap[A1](pg: A1 ?=> A): A1 ?=> B = newPartial(x => (pg isDefinedAt x) && (pf isDefinedAt pg(x)), x => pf(pg(x)))
+  def comap[A1](f: A1 => A): A1 ?=> B    = new ComapPartial(pf, f)
+  def copmap[A1](pg: A1 ?=> A): A1 ?=> B = new CopmapPartial(pf, pg)
 }
 
 final class OptionOps[A](val x: Option[A]) extends AnyVal {

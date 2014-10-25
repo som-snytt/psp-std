@@ -134,7 +134,7 @@ final class IndexRangeOps(xs: IndexRange) {
 }
 
 final class IntensionalSetOps[A](xs: inSet[A]) {
-  def mapOnto[B](f: A => B): inMap[A, B]  = new IntensionalMap(xs, PolicyMap.Lookup[A, B]({ case x => f(x) }))
+  def mapOnto[B](f: A => B): inMap[A, B]  = new IntensionalMap(xs, Lookup total f)
   def diff(that: inSet[A]): inSet[A]      = this filter that
   def filter(p: Predicate[A]): inSet[A]   = IntensionalSet.Filtered(xs, p)
   def union(that: inSet[A]): inSet[A]     = IntensionalSet.Union(xs, that)
@@ -145,7 +145,7 @@ final class IntensionalSetOps[A](xs: inSet[A]) {
   }
 }
 final class ExtensionalSetOps[A](xs: exSet[A]) {
-  def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, PolicyMap.LookupTotal(f))
+  def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
   def intersect(that: exSet[A]): exSet[A] = ExtensionalSet.Intersect(xs, that)
   def diff(that: exSet[A]): exSet[A]      = ExtensionalSet.Diff(xs, that)
   def intersect(that: inSet[A]): exSet[A] = filter(that)
@@ -156,7 +156,7 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
   def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
   def isSubsetOf(ys: inSet[A]): Boolean    = xs.m forall ys
 
-  def mapContained(f: pSeq[A] => pSeq[A]): exSet[A] = PolicySet.direct(f(xs.contained))(xs.equiv, xs.hash)
+  def mapContained(f: pSeq[A] => pSeq[A]): exSet[A] = f(xs.contained).pset(xs.hashEq)
 }
 
 trait HasPreciseSizeMethods extends Any {

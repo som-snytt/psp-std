@@ -54,9 +54,6 @@ class PolicyBasic extends ScalacheckBundle {
   def pseq    = Foreach[Int](parray foreach _)
   def punfold = Foreach from 1
 
-  def showsAs[A: Show](expected: String, x: A): NamedProp         = expected -> (expected =? show"$x")
-  def seqShows[A: Show](expected: String, xs: pSeq[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))
-
   def closure   = parray transitiveClosure (x => Direct(x.m.init, x.m.tail)) mk_s ", "
   def xxNumbers = (Foreach from 0).m grep """^(.*)\1""".r
 
@@ -71,8 +68,7 @@ class PolicyBasic extends ScalacheckBundle {
     showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure),
     seqShows("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _)),
     seqShows("11, 22, 33, 44", indexRange(1, 50).m grep """(.)\1""".r),
-    seqShows("99, 1010, 1111", xxNumbers drop 8 take 3),
-    seqShows("10 -> 2, 30 -> 4", pSeq(1 -> 2, 3 -> 4).m mapLeft (_ * 10))
+    seqShows("99, 1010, 1111", xxNumbers drop 8 take 3)
   )
 }
 

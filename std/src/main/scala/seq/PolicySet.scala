@@ -13,30 +13,33 @@ object PolicySet {
   def elems[A: HashEq](xs: A*): exSet[A]                                   = ExtensionalSet[A](fromElems(xs: _*))
 
   class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
-    def size: IntSize     = Precise(xs.size)
-    def contained         = Foreach[A](xs foreach _)
-    def apply(elem: A)    = xs(elem)
-    def equiv(x: A, y: A) = x == y
-    def hash(x: A)        = x.##
+    def size: IntSize  = Precise(xs.size)
+    def contained      = Foreach[A](xs foreach _)
+    def apply(elem: A) = xs(elem)
+    def hashEq         = HashEq.natural()
   }
   class FromJava[A](xs: jSet[A]) extends ExtensionalSet[A] {
-    def size: IntSize     = Precise(xs.size)
-    def contained         = Foreach[A](BiIterable(xs) foreach _)
-    def apply(elem: A)    = xs contains elem
-    def equiv(x: A, y: A) = x == y
-    def hash(x: A)        = x.##
+    def size: IntSize  = Precise(xs.size)
+    def contained      = Foreach[A](BiIterable(xs) foreach _)
+    def apply(elem: A) = xs contains elem
+    def hashEq         = HashEq.natural()
   }
 }
 
 sealed trait PolicySet[-A] extends (A => Boolean)
-sealed trait IntensionalSet[A] extends PolicySet[A] with InSet[A] { def hash(x: A): Int }
-sealed trait ExtensionalSet[A] extends IntensionalSet[A] with ExSet[A]
+sealed trait IntensionalSet[A] extends PolicySet[A] with InSet[A]
+sealed trait ExtensionalSet[A] extends IntensionalSet[A] with ExSet[A] {
+  def hashEq: HashEq[A]
+  def hash(x: A): Int            = hashEq hash x
+  def equiv(x: A, y: A): Boolean = hashEq.equiv(x, y)
+}
 
 object ExtensionalSet {
   def apply[A: HashEq](xs: pSeq[A]): exSet[A] = new Impl[A](xs, implicitly)
 
   sealed trait Derived[A] extends AnyRef with ExtensionalSet[A] with IntensionalSet.Derived[A] {
     protected def underlying: exSet[A]
+    def hashEq = underlying.hashEq
   }
   final case class Filtered[A](lhs: exSet[A], rhs: Predicate[A]) extends Derived[A] {
     protected def underlying = lhs
@@ -62,7 +65,7 @@ object ExtensionalSet {
     def contained            = lhs.contained filterNot rhs
     def size                 = lhs.size diff rhs.size
   }
-  final class Impl[A](basis: Foreach[A], heq: HashEq[A]) extends ExtensionalSet[A] {
+  final class Impl[A](basis: Foreach[A], val hashEq: HashEq[A]) extends ExtensionalSet[A] {
     private[this] val wrapSet: jSet[Wrap] = basis map wrap toJavaSet
     private def wrap(elem: A): Wrap = new Wrap(elem)
     private class Wrap(val unwrap: A) {
@@ -73,8 +76,6 @@ object ExtensionalSet {
       override def hashCode = hash(unwrap)
       override def toString = s"$unwrap (wrapped)"
     }
-    def equiv(x: A, y: A)     = heq.equiv(x, y)
-    def hash(x: A): Int       = heq.hash(x)
     def apply(elem: A)        = wrapSet contains wrap(elem)
     def size: Precise         = newSize(wrapSet.size)
     def contained: Foreach[A] = wrapSet.m map (_.unwrap)
@@ -88,8 +89,6 @@ object IntensionalSet {
 
   sealed trait Derived[A] extends AnyRef with inSet[A] {
     protected def underlying: inSet[A]
-    def equiv(x: A, y: A) = underlying.equiv(x, y)
-    def hash(x: A)        = underlying.hash(x)
   }
   final case class Filtered[A](lhs: inSet[A], rhs: Predicate[A]) extends Derived[A] {
     protected def underlying = lhs

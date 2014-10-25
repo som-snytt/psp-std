@@ -53,7 +53,6 @@ trait JavaLibrary extends Any {
   type Class[A]                = java.lang.Class[A]
   type Comparable[A]           = java.lang.Comparable[A]
   type Comparator[-A]          = java.util.Comparator[A @uV]
-  type ConcurrentHashMap[K, V] = java.util.concurrent.ConcurrentHashMap[K, V]
   type DataInput               = java.io.DataInput
   type DataInputStream         = java.io.DataInputStream
   type DataOutputStream        = java.io.DataOutputStream
@@ -84,6 +83,8 @@ trait JavaLibrary extends Any {
   type jClass                                  = java.lang.Class[_]
   type jClassLoader                            = java.lang.ClassLoader
   type jCollection[A]                          = java.util.Collection[A]
+  type jConcurrentMap[K, V]                    = java.util.concurrent.ConcurrentMap[K, V]
+  type jConcurrentHashMap[K, V]                = java.util.concurrent.ConcurrentHashMap[K, V]
   type jDate                                   = java.util.Date
   type jEnumeration[A]                         = java.util.Enumeration[A]
   type jField                                  = java.lang.reflect.Field

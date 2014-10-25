@@ -24,6 +24,9 @@ package object tests {
   implicit def arbitraryIntensionalSet[A : Arbitrary : HashEq] : Arbitrary[inSet[A]] = arb[sciSet[A]] map (_.toPolicySet)
   implicit def arbitraryPint: Arbitrary[Pint]                                        = Arbitrary(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
 
+  def showsAs[A: Show](expected: String, x: A): NamedProp         = expected -> (expected =? show"$x")
+  def seqShows[A: Show](expected: String, xs: pSeq[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))
+
   def expectType(expected: jClass, found: jClass): NamedProp           = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
   def expectTypes(expected: jClass, found: pVector[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
 

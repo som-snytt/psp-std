@@ -8,8 +8,8 @@ import java.nio.file.Files
  *  time on the path changes, the cache entry is invalidated.
  */
 class PathCache[A](f: Path => A) extends (Path => A) {
-  private[this] val timestamps = concurrentMap[Path, FileTime](default = NoFileTime)
-  private[this] val content    = concurrentMap[Path, A]()
+  private[this] val timestamps = pMutableMap[Path, FileTime]() withDefaultValue NoFileTime
+  private[this] val content    = pMutableMap[Path, A]()
   private def timestampOk(path: Path) = path.lastModified == timestamps(path)
   private def updateCache(path: Path): A = {
     timestamps(path) = path.lastModified

@@ -2,11 +2,10 @@ package psp
 package std
 
 import api._
-import Index.zero
 import IndexRange.{ undefined, empty }
 import lowlevel.ExclusiveIntRange
 
-final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange {
+final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange {
   def startInt      = intRange.start
   def endInt        = intRange.end
   def intRange      = ExclusiveIntRange create bits
@@ -39,10 +38,10 @@ final class IntIndexRange private[std] (val bits: Long) extends AnyVal with Dire
 /** All IndexRanges are inclusive of start and exclusive of end.
  */
 object IndexRange {
-  def empty: IndexRange                           = new IntIndexRange(0L)
-  def undefined: IndexRange                       = new IntIndexRange(-1L)
+  def empty: IndexRange                           = new LongRange(0L)
+  def undefined: IndexRange                       = new LongRange(-1L)
   def full: IndexRange                            = apply(0, MaxInt)
   def apply(range: ExclusiveIntRange): IndexRange = apply(range.start.zeroPlus, range.end.zeroPlus)
-  def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else new IntIndexRange(start join64 end)
-  def impl(x: IndexRange): IntIndexRange          = new IntIndexRange(x.start.safeToInt join64 x.end.safeToInt)
+  def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else new LongRange(start join64 end)
+  def impl(x: IndexRange): LongRange              = new LongRange(x.start.safeToInt join64 x.end.safeToInt)
 }
