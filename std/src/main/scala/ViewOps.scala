@@ -32,9 +32,9 @@ trait ApiViewOps[+A] extends Any {
   def find(p: Predicate[A]): Option[A] = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
   def forall(p: Predicate[A]): Boolean = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
 
-  def collectFirst[B](pf: A ?=> B): Option[B]                    = find(pf isDefinedAt _) map pf
-  def firstOrZero[B](pf: A ?=> B)(implicit z: Zero[B]): B        = collectFirst(pf) | z.zero
-  def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap (x => if (pf isDefinedAt x) fview(pf(x) foreach _) else view())
+  def collectFirst[B](pf: A ?=> B): Option[B]                    = find(pf.isDefinedAt) map pf
+  def firstOrZero[B](pf: A ?=> B)(implicit z: Zero[B]): B        = find(pf.isDefinedAt).fold(z.zero)(pf)
+  def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap pf.applyOrZero
   def foreachCounted(f: (Index, A) => Unit): Unit                = foldl(0.index)((idx, x) => try idx.next finally f(idx, x))
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
   def indexAtWhich(p: Predicate[A]): Index                       = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
