@@ -146,6 +146,7 @@ final class IntensionalSetOps[A](xs: inSet[A]) {
 final class ExtensionalSetOps[A](xs: exSet[A]) {
   private implicit def heq: HashEq[A] = xs.hashEq
 
+  def isEmpty: Boolean                    = xs.contained.isEmpty
   def exists(p: Predicate[A]): Boolean    = xs.contained exists p
   def add(x: A): exSet[A]                 = if (xs(x)) xs else xs union exSet(x)
   def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, Lookup total f)

@@ -124,8 +124,8 @@ trait JavaPathMethods extends Any {
   private def containerEntries(p: PathPredicate): Paths = (
     if (path.isReadable && isDir)
       filterChildren(pathFs, path, p)
-    else if (path.isReadable && isJarOrZip)
-      getOrCreateFs(jarUri("")) |> (fs => filterChildren(fs, fs.provider getPath jarUri("!/"), p))
+    else if (path.isFile && isJarOrZip)
+      Try(getOrCreateFs(jarUri("")) |> (fs => filterChildren(fs, fs.provider getPath jarUri("!/"), p))) | view()
     else
       view()
   )

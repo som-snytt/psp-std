@@ -18,6 +18,8 @@ trait Products[A] extends Any   { def one: A ; def product(x: A, y: A): A }
  */
 trait Show[-A] extends Any { def show(x: A): String }
 
+trait Recover[A] extends Any { def onFailure[A](t: Throwable): A }
+
 /** A boolean algebra abstracts across the standard boolean operations.
  *  The given laws must hold.
  *

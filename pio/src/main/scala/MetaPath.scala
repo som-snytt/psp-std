@@ -21,13 +21,13 @@ final case class SinglePaths(singles: pVector[SinglePath]) extends Direct[Single
   def elemAt(idx: Index)             = singles(idx)
   def length                         = singles.length
   def paths                          = singles map (_.path)
-  def entries                        = paths flatMap (_.entries)
-  // def deepEntries                 = paths flatMap (_.deepEntries)
-  // def packageNames                = deepFiles flatMap packagesIn dsort
+  def entries                        = paths flatMap (p => Try(p.entries) | view())
+  def deepEntries                    = paths flatMap (_.deepEntries)
+  def packageNames                   = deepEntries flatMap (x => pathToPackage(x)) sortDistinct
 
-  val pathToPackage: exMap[Path, pVector[String]] = paths mapOnto (_.deepPackageNames)
-  val packageToPath: exMap[String, pVector[Path]] =
-    pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p).m containsByEquals pkg))
+  val pathToPackage: exMap[Path, View[String]] = paths mapOnto (_.deepPackageNames)
+  // val packageToPath: exMap[String, pVector[Path]] =
+  //   pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p).m containsByEquals pkg))
 }
 
 /** A MetaPath encapsulates the character content of a classpath string as
@@ -45,12 +45,10 @@ case class MetaPath(path: Path, style: MetaStyle) {
   private def newPath(s: String) = path.getFileSystem getPath s
   private def single(s: String): MetaPath = copy(path = newPath(s))
 
-  def isComposite                = chars containsChar sep
-  def flatten: pVector[MetaPath] = if (isComposite) singles else Direct(this)
-  def expanded: SinglePaths      = MetaPath expansion this
-  def entries: pVector[Path]     = expanded flatMap (_.entries)
-
-  override def toString = s"meta[$path]"
+  def isComposite             = chars containsChar sep
+  def flatten: View[MetaPath] = if (isComposite) singles else view(this)
+  def expanded: SinglePaths   = MetaPath expansion this
+  def entries: View[Path]     = expanded flatMap (_.entries)
 }
 
 object MetaPath {

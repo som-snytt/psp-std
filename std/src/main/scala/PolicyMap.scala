@@ -20,20 +20,20 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Looku
 
   def +(key: K, value: V): This             = newLookup(lookup.put(key, value)(keySet.hashEq))
   def ++(map: This): This                   = newMap(keySet union map.keySet, map.lookup orElse lookup)
-  def contained: pVector[Entry]             = keyVector map (k => k -> lookup(k))
+  def contained: View[Entry]                = keys mapZip lookup
   def filterKeys(p: Predicate[K]): This     = newKeys(keySet filter p)
   def foreachEntry(f: (K, V) => Unit): Unit = foreachKey(k => f(k, apply(k)))
-  def foreachKey(f: K => Unit): Unit        = keyVector foreach f
-  def isEmpty: Boolean                      = contained.isEmpty
+  def foreachKey(f: K => Unit): Unit        = keys foreach f
+  def isEmpty: Boolean                      = keySet.isEmpty
   def iterator: BiIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
-  def keyVector: pVector[K]                 = keySet.contained.pvec
-  def keys: pVector[K]                      = keyVector
-  def keysIterator: BiIterator[K]           = keyVector.biIterator
+  def keyVector: pVector[K]                 = keys.pvec
+  def keys: View[K]                         = keySet.contained
+  def keysIterator: BiIterator[K]           = keys.biIterator
   def map[V1](f: V => V1): exMap[K, V1]     = newLookup(lookup map f)
   def reverseKeys                           = newKeys(keySet mapContained (_.pvec.reverse))
   def seq: scSeq[Entry]                     = contained.seq
   def size: Precise                         = keyVector.size
-  def values: pVector[V]                    = keyVector map (x => lookup(x))
+  def values: View[V]                       = keys map (x => lookup(x))
   def valuesIterator: BiIterator[V]         = keysIterator map (x => lookup(x))
   def withDefaultValue(v: V): This          = newLookup(lookup withDefault ConstantDefault(v))
 
@@ -129,7 +129,7 @@ object PolicyMap {
   }
 
   object ToScala {
-    def newBuilder[K, V] : scmBuilder[(K, V), ToScala[K, V]]    = vectorBuilder[(K, V)]() mapResult apply
+    def newBuilder[K, V] : scmBuilder[(K, V), ToScala[K, V]] = vectorBuilder[(K, V)]() mapResult apply
     def apply[K, V](pairs: sciVector[(K, V)]): ToScala[K, V] = new ToScala[K, V](pairs map (_._1), pairs map (_._2))
     def empty[K, V] : ToScala[K, V]                          = apply(sciVector())
 

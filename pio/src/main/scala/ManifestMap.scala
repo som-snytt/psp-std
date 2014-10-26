@@ -2,12 +2,13 @@ package psp
 package std
 package pio
 
+import api._
 import java.util.jar.Attributes.Name
 import scala.util.Properties._
 import Unsafe.universalEq
 
 object ManifestMap {
-  def initialMainAttrs: pVector[(Name, String)] = Direct(
+  def initialMainAttrs: View[(Name, String)] = view(
     Name.MANIFEST_VERSION -> "1.0",
     ScalaCompilerVersion  -> versionNumberString
   )
