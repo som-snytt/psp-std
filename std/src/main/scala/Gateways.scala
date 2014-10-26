@@ -31,7 +31,7 @@ trait StdBuilds  extends Any with StdBuilds4 { implicit def implicitBuildsString
 
 trait GlobalShow0 {
   // A weaker variation of Shown - use Show[A] if one can be found and toString otherwise.
-  implicit def showableToTryShown[A](x: A)(implicit z: Show[A] = Show.natural()): TryShown = new TryShown(z show x)
+  implicit def showableToTryShown[A](x: A)(implicit z: TryShow[A]): TryShown = new TryShown(z show x)
 }
 trait GlobalShow extends GlobalShow0 {
   implicit def showableToShown[A](x: A)(implicit z: Show[A]): Shown = Shown(z show x)

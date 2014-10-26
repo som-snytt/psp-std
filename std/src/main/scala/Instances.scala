@@ -79,6 +79,7 @@ trait ZeroInstances {
   implicit def sciMapZero[A, B] : Zero[sciMap[A, B]]         = Zero(sciMap())
   implicit def sciVectorZero[A] : Zero[sciVector[A]]         = Zero(sciVector())
   implicit def shortZero: Zero[Short]                        = Zero(0.toShort)
+  implicit def showZero[A]: Zero[Show[A]]                    = Zero(Show.natural[A]())
   implicit def shownZero: Zero[Shown]                        = Zero(Shown.empty)
   implicit def stringZero: Zero[String]                      = Zero("")
   implicit def unitZero: Zero[Unit]                          = Zero(())

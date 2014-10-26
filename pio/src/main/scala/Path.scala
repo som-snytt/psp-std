@@ -6,24 +6,26 @@ import api._
 import java.nio.file.{ Files, FileSystems, FileVisitResult, StandardOpenOption, FileSystemException }
 import StandardOpenOption._
 
-final class JioPathOps[T <: Path](val path: T) extends AnyVal with JavaPathMethods
+final class PioPathOps[T <: Path](val path: T) extends AnyVal with JavaPathMethods
 
 trait JavaPathMethods extends Any {
   def path: Path
-  type Paths = pVector[Path]
+
+  type Paths   = View[Path]
+  type Strings = View[String]
 
   /** The recommended way to obtain these things.
    */
-  def bytes(): Bytes           = PathBytes(path)
-  def chars(): Chars           = PathChars(path)
-  def lines(): pVector[String] = PathLines(path)
-  def slurp(): String          = PathSlurp(path)
-  def toPioJar(): Jar          = PathJars(path)
+  def bytes(): Bytes   = PathBytes(path)
+  def chars(): Chars   = PathChars(path)
+  def lines(): Strings = PathLines(path)
+  def slurp(): String  = PathSlurp(path)
+  def toPioJar(): Jar  = PathJars(path)
 
-  def foreach(f: Path => Unit): Unit   = walk(PathVisitor(f))
-  def map[A](f: Path => A): pVector[A] = Direct build foreach map f
-  def indices: IndexRange              = indexRange(0, path.getNameCount)
-  def to_s: String                     = path.toString
+  def foreach(f: Path => Unit): Unit = walk(PathVisitor(f))
+  def map[A](f: Path => A): View[A]  = fview(foreach) map f
+  def indices: IndexRange            = indexRange(0, path.getNameCount)
+  def to_s: String                   = path.toString
 
   /** Related names and paths.
    */
@@ -74,20 +76,21 @@ trait JavaPathMethods extends Any {
 
   /** Traversal.
    */
-  def deepClasses: Paths                                            = deepFiles filter (_.isClassFile)
-  def deepDirs: Paths                                               = deepEntries() filter (_.isDir)
-  def deepEntries(): Paths                                          = entries() |> (xs => if (xs.isEmpty) Nil else xs ++ xs.flatMap(_.deepEntries))
-  def deepFiles: Paths                                              = deepEntries() filterNot (_.isDir)
-  def deepPackageNames: pVector[String]                             = deepClasses.map(_.packageName).sortDistinct
-  def entries(): Paths                                              = containerEntries(_ => true)
-  def files: Paths                                                  = filterChildren(pathFs, path, _.toFile.isFile)
-  def filterEntries(p: PathPredicate): Paths                        = containerEntries(p)
-  def subdirectories: Paths                                         = filterChildren(pathFs, path, _.toFile.isDirectory)
+  def deepClasses: Paths                     = deepFiles filter (_.isClassFile)
+  def deepDirs: Paths                        = deepEntries() filter (_.isDir)
+  def deepEntries(): Paths                   = entries() |> (xs => xs ++ xs.flatMap(_.deepEntries))
+  def deepFiles: Paths                       = deepEntries() filterNot (_.isDir)
+  def deepPackageNames: Strings              = deepClasses.map(_.packageName).sortDistinct
+  def entries(): Paths                       = containerEntries(_ => true)
+  def files: Paths                           = filterChildren(pathFs, path, _.toFile.isFile)
+  def filterEntries(p: PathPredicate): Paths = containerEntries(p)
+  def subdirectories: Paths                  = filterChildren(pathFs, path, _.toFile.isDirectory)
+  def lines(codec: Codec): Strings           = Files.readAllLines(path, codec.charSet).m
+
   def walk(f: (Path, BasicFileAttributes) => FileVisitResult): Unit = walk(PathVisitor(f))
   def walk(visitor: PathVisitor): Unit                              = Files.walkFileTree(path, visitor)
-  def lines(codec: Codec): View[String]                             = Files.readAllLines(path, codec.charSet).m
 
-  def filterDeepFiles(p: PathPredicate): Paths = Direct build { f =>
+  def filterDeepFiles(p: PathPredicate): Paths = fview { f =>
     def loop(path: Path): Unit = if (path.isDir) path.entries() foreach loop else if (p(path)) f(path)
     loop(path)
   }
@@ -124,6 +127,6 @@ trait JavaPathMethods extends Any {
     else if (path.isReadable && isJarOrZip)
       getOrCreateFs(jarUri("")) |> (fs => filterChildren(fs, fs.provider getPath jarUri("!/"), p))
     else
-      Nil
+      view()
   )
 }

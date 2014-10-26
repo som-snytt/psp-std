@@ -88,6 +88,7 @@ package object std extends psp.std.StdPackage {
   def echoErr[A: TryShow](x: A): Unit                              = Console echoErr pp"$x"
   def identity[A](x: A): A                                         = x
   def implicitly[A](implicit x: A): A                              = x
+  def implicitOrZero[A: Zero](implicit value: A = nullAs[A]): A    = if (value.isNull) zero[A] else value
   def printResult[A: TryShow](msg: String)(result: A): A           = result doto (r => println(pp"$msg: $r"))
   def println[A: TryShow](x: A): Unit                              = Console echoOut pp"$x"
   def require(requirement: Boolean): Unit                          = if (!requirement) illegalArgumentException("requirement failed")
@@ -146,8 +147,6 @@ package object std extends psp.std.StdPackage {
   def regex(re: String): Regex                          = Regex(re)
   def show[A: Show] : Show[A]                           = ?
   def zero[A](implicit z: Zero[A]): A                   = z.zero
-
-  def optImplicit[A](implicit value: A = null): Option[A] = if (value == null) None else Some(value)
 
   def fromScala[A](xs: sCollection[A]): Foreach[A] = xs match {
     case xs: sciIndexedSeq[_] => new Direct.FromScala(xs)

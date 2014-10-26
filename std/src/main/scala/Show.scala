@@ -17,8 +17,8 @@ class TryShow[-A](shows: Show[A]) {
 object TryShow {
   implicit def apply[A](implicit z: Show[A] = Show.natural()): TryShow[A] = new TryShow[A](z)
 }
-final case class TryShown(to_s: String) extends AnyVal with ShowDirect {
-  override def toString = to_s
+final case class TryShown(try_s: String) extends AnyVal {
+  override def toString = try_s
 }
 
 /** Used to achieve type-safety in the show interpolator.
@@ -96,7 +96,7 @@ object Read {
 
 package object repl {
   def show(arg: TryShown, maxElements: Int): String = {
-    val s = arg.to_s
+    val s = arg.try_s
     val nl = if (s contains "\n") "\n" else ""
     nl + s + "\n"
   }

@@ -2,6 +2,7 @@ package psp
 package std
 package pio
 
+import api._
 import java.nio.file.Files
 
 /** A cache which maps paths to values. If the last modified
@@ -27,6 +28,6 @@ class PathCache[A](f: Path => A) extends (Path => A) {
 
 object PathBytes extends PathCache[Bytes](Files readAllBytes _)
 object PathChars extends PathCache[Chars](path => utf8(PathBytes(path)).chars)
-object PathLines extends PathCache[pVector[String]](path => Files.readAllLines(path, utf8Charset).m.pvec)
+object PathLines extends PathCache[View[String]](path => Files.readAllLines(path, utf8Charset).m)
 object PathSlurp extends PathCache[String](path => utf8(PathBytes(path)).to_s)
 object PathJars  extends PathCache[Jar](path => Jar(path))

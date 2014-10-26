@@ -51,8 +51,10 @@ trait ConversionOps[A] extends Any {
   def pset(implicit z: HashEq[A]): exSet[A]                            = toPolicySet
   def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): exMap[K, V] = toPolicyMap[K, V]
 
-  def naturalSet: exSet[A] = pset(HashEq.natural())
-  def seq: sciSeq[A]       = toScalaSeq // varargs
+  def naturalMap[K, V](implicit ev: A <:< (K, V)): exMap[K, V] = toPolicyMap[K, V](HashEq.natural(), ev)
+  def naturalSet: exSet[A]                                     = toPolicySet(HashEq.natural())
+
+  def seq: sciSeq[A] = toScalaSeq // varargs
 }
 
 final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with ConversionOps[A]
