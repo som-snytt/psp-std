@@ -13,9 +13,11 @@ final object UnitOps {
 final class FixType[A, R](x: A) { def apply(f: A => R): R = f(x) }
 
 final class AnyOps[A](val x: A) extends AnyVal {
+  private def lastOf[A](xs: Array[A]): A = xs match { case Array(xs @ _*) => xs.last }
   // Short decoded class name.
-  def shortClass: String   = x.getClass.shortName
-  def shortPackage: String = x.getClass.shortPackage
+  // Note - don't use any implicit ops here as it sends us into loops when debugging.
+  def shortClass: String   = NameTransformer decode lastOf(x.getClass.getName split "[.]")
+  def shortPackage: String = x.getClass.getPackage.toString
 
   // "Maybe we can enforce good programming practice with annoyingly long method names."
   def castTo[U] : U   = x.asInstanceOf[U]

@@ -1,21 +1,10 @@
 package psp
 package std
 
-import api._, StdShow._
-
-final case class FunctionGrid[A, B](values: View[A], functions: View[A => B]) {
-  def rows: View[View[B]]                         = values map (v => functions map (f => f(v)))
-  def columns: View[View[B]]                      = functions map (f => values map (v => f(v)))
-  def renderLines(implicit z: Show[B]): pVector[String]               = {
-    val widths = columns map (col => col map (x => (z show x).length) max)
-    val rowFormat = widths map (_.size.leftFormatString) mkString " "
-    rows map (row => rowFormat.format(row.seq: _*))
-  }
-  def render(implicit z: Show[B]): String = renderLines.joinLines.render
-}
+import api._
 
 object Direct {
-  final val Empty: Direct[Nothing] = new Impl[Nothing](newSize(0), i => abort(s"Empty($i)"))
+  final val Empty: Direct[Nothing] = new Impl[Nothing](0, i => abort(s"Empty($i)"))
 
   trait DirectImpl[+A] extends Any with api.Direct[A] with api.HasPreciseSize {
     def isEmpty = size.isZero
@@ -38,11 +27,11 @@ object Direct {
       case _             => psp.std.arrayBuilder[A]() doto (b => xs foreach b.+=) result
     }
   )
-  final class FromJava[A](xs: jList[A]) extends Leaf[A](newSize(xs.size)) {
+  final class FromJava[A](xs: jList[A]) extends Leaf[A](xs.size) {
     def elemAt(i: Index): A = xs get i.safeToInt
   }
-  final class FromScala[A](xs: sciIndexedSeq[A]) extends Leaf[A](newSize(xs.length)) {
-    def elemAt(i: Index): A = xs(i.safeToInt)
+  final case class FromScala[A](scalaCollection: sciIndexedSeq[A]) extends Leaf[A](scalaCollection.length) with psp.std.FromScala[sciIndexedSeq[A]] {
+    def elemAt(i: Index): A = scalaCollection(i.safeToInt)
   }
   final class ToScala[A](xs: Direct[A]) extends sciIndexedSeq[A] {
     def apply(idx: Int): A = xs elemAt Index(idx)
@@ -54,10 +43,10 @@ object Direct {
   final class Impl[A](size: Precise, f: Index => A) extends Leaf[A](size) {
     def elemAt(i: Index): A = f(i)
   }
-  private class WrapString(xs: String) extends Leaf[Char](newSize(xs.length)) {
+  private class WrapString(xs: String) extends Leaf[Char](xs.length) {
     def elemAt(i: Index): Char = xs charAt i.safeToInt
   }
-  private class WrapArray[A](xs: Array[_]) extends Leaf[A](newSize(xs.length)) {
+  private class WrapArray[A](xs: Array[_]) extends Leaf[A](xs.length) {
     def elemAt(i: Index): A = xs(i.safeToInt).castTo[A]
   }
   final case class Joined[A](xs: Direct[A], ys: Direct[A]) extends DirectImpl[A] {
@@ -76,13 +65,16 @@ object Direct {
   def apply[A](xs: A*): Direct[A] = xs match {
     case xs: scmWrappedArray[A] => fromArray(xs.array)
     case xs: sciIndexedSeq[A]   => new FromScala[A](xs)
-    case _                      => new Impl[A](newSize(xs.size), xs.seq.toVector |> (v => index => v(index.safeToInt)))
+    case _                      => new Impl[A](xs.size, xs.seq.toVector |> (v => index => v(index.safeToInt)))
   }
   def empty[A] : Direct[A]                             = Empty
   def join[A](xs: Direct[A], ys: Direct[A]): Direct[A] = Joined(xs, ys)
   def fromString(xs: String): Direct[Char]             = new WrapString(xs)
   def fromArray[A](xs: Array[A]): Direct[A]            = new WrapArray[A](xs)
   def pure[A](size: Precise, f: Index => A): Direct[A] = new Impl(size, f)
+
+  def from(start: Long): IndexedView[Long, Direct[Long]] =
+    new IndexedView(new Impl(Precise(MaxLong), n => start + n.indexValue)) //:| s"Direct.from($start)"
 
   def unapplySeq[A](xs: Direct[A]): scala.Some[sciIndexedSeq[A]] = Some(new ToScala(xs))
 }

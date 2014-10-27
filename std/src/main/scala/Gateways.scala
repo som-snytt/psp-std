@@ -16,6 +16,8 @@ trait StdGateways extends Any
       with StdUniversal {
 
   self =>
+
+  implicit def opsDirect[A](xs: Direct[A]): ops.DirectOps[A] = new ops.DirectOps(xs)
 }
 
 // Adapt CanBuildFrom to Builds, since there are zillions of implicit CanBuildFroms already lying around.
@@ -64,7 +66,6 @@ trait StdOps0 extends Any {
   }
 }
 trait StdOps1 extends Any with StdOps0 {
-  implicit def opsDirect[A](xs: Direct[A]): ops.DirectOps[A]                          = new ops.DirectOps(xs)
   implicit def arraySpecificOps[A](xs: Array[A]): ops.ArraySpecificOps[A]             = new ops.ArraySpecificOps[A](xs)
 
   implicit def unViewify0[A, CC[A]](xs: View[A])(implicit z: Builds[A, CC[A]]): CC[A] = z build xs
@@ -84,17 +85,15 @@ trait StdOps2 extends Any with StdOps1 {
     def m: LinearView[A, Repr] = z wrap repr
   }
 
-  implicit def sCollectionIs[A, CC[X] <: sCollection[X]](xs: CC[A]): LinearView[A, CC[A]] = new LinearView(fromScala(xs))
-  implicit def jIterableIs[A, CC[X] <: jIterable[X]](xs: CC[A]): LinearView[A, CC[A]]     = new LinearView(fromJava(xs))
-  implicit def atomicForeachIs[A, CC[X] <: Foreach[X]](xs: CC[A]): LinearView[A, CC[A]]   = new LinearView(xs)
+  implicit def sCollectionIs[A, CC[X] <: sCollection[X]](xs: CC[A]): LinearView[A, CC[A]] = new LinearView[A, CC[A]](fromScala(xs))
+  implicit def jIterableIs[A, CC[X] <: jIterable[X]](xs: CC[A]): LinearView[A, CC[A]]     = new LinearView[A, CC[A]](fromJava(xs))
+  implicit def atomicForeachIs[A, CC[X] <: Foreach[X]](xs: CC[A]): LinearView[A, CC[A]]   = new LinearView[A, CC[A]](xs)
 }
 
 trait StdOps3 extends Any with StdOps2 {
   implicit class ForeachableIndexedOps[A, Repr](repr: Repr)(implicit z: ForeachableIndexed.Coll[A, Repr]) {
     def m: IndexedView[A, Repr] = z wrap repr
   }
-
-  implicit def unViewify2[A, Repr](xs: BaseView[A, Repr])(implicit z: Builds[A, Repr]): Repr = z build xs
 
   implicit def directScalaIndexedIs[A, CC[X] <: sciIndexedSeq[X]](xs: CC[A]): IndexedView[A, CC[A]] = new IndexedView(new Direct.FromScala(xs))
   implicit def directIndexedIs[A, CC[X] <: Direct[X]](xs: CC[A]): IndexedView[A, CC[A]]             = new IndexedView(xs)

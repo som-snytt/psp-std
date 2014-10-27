@@ -4,13 +4,11 @@ package std
 import api._, StdShow._
 import Lookup._
 
-trait VarargsSeq[+A] { def seq: scSeq[A] }
-
 final class IntensionalMap[K, V](val keySet: inSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](keySet, lookup) with InMap[K, V] {
   type This = inMap[K, V]
   def filterKeys(p: Predicate[K]): This = new IntensionalMap(keySet filter p, lookup)
 }
-final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](keySet, lookup) with ExMap[K, V] with VarargsSeq[(K, V)] {
+final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](keySet, lookup) with ExMap[K, V] {
   type Entry = (K, V)
   type This  = exMap[K, V]
 
@@ -25,16 +23,16 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Looku
   def foreachEntry(f: (K, V) => Unit): Unit = foreachKey(k => f(k, apply(k)))
   def foreachKey(f: K => Unit): Unit        = keys foreach f
   def isEmpty: Boolean                      = keySet.isEmpty
-  def iterator: BiIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
+  def iterator: scIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
   def keyVector: pVector[K]                 = keys.pvec
   def keys: View[K]                         = keySet.contained
-  def keysIterator: BiIterator[K]           = keys.biIterator
+  def keysIterator: scIterator[K]           = keys.iterator
   def map[V1](f: V => V1): exMap[K, V1]     = newLookup(lookup map f)
   def reverseKeys                           = newKeys(keySet mapContained (_.pvec.reverse))
   def seq: scSeq[Entry]                     = contained.seq
   def size: Precise                         = keyVector.size
   def values: View[V]                       = keys map (x => lookup(x))
-  def valuesIterator: BiIterator[V]         = keysIterator map (x => lookup(x))
+  def valuesIterator: scIterator[V]         = keysIterator map (x => lookup(x))
   def withDefaultValue(v: V): This          = newLookup(lookup withDefault ConstantDefault(v))
 
   def merge(that: This)(implicit z: Sums[V]): This =
@@ -166,7 +164,7 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
   def -=(key: K): this.type        = try this finally jmap remove key
   def +=(kv: (K, V)): this.type    = try this finally jmap.put(kv._1, kv._2)
   def get(key: K): Option[V]       = Option(jmap get key)
-  def iterator: BiIterator[(K, V)] = BiIterable(jmap.keySet).iterator map (k => (k, apply(k)))
+  def iterator: scIterator[(K, V)] = Generator(jmap.keySet).iterator map (k => (k, apply(k)))
   def contains(key: K): Boolean    = jmap containsKey key
   def apply(key: K): V             = get(key) | default(key)
   def withDefaultValue(value: V)   = new PolicyMutableMap(jmap, ConstantDefault(value))

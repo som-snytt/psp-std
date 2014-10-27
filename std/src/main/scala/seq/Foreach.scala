@@ -3,6 +3,16 @@ package std
 
 import api._
 
+sealed abstract class CollectionSizeException(msg: String) extends RuntimeException(msg)
+final class InfiniteSizeException(msg: String) extends CollectionSizeException(msg)
+final class LongSizeException(msg: String) extends CollectionSizeException(msg)
+
+trait FromScala[Repr] extends Any { def scalaCollection: Repr }
+object FromScala {
+  def apply[A, CC[X] <: sCollection[X]](xs: CC[A]): FromScala[CC[A]] = new FromScala[CC[A]] { def scalaCollection = xs }
+  def unapply[Repr](wrapped: FromScala[Repr]): scala.Some[Repr]      = Some(wrapped.scalaCollection)
+}
+
 object Foreach {
   def builder[A] : Builds[A, Foreach[A]] = Builds(identity)
 
@@ -10,12 +20,23 @@ object Foreach {
     def size = Size(xs)
     @inline def foreach(f: A => Unit): Unit = BiIterable(xs) foreach f
   }
-  final class FromScala[A](xs: sCollection[A]) extends Foreach[A] {
-    def size = Size(xs)
-    @inline def foreach(f: A => Unit): Unit = xs foreach f
+  final case class FromScala[A](scalaCollection: sCollection[A]) extends AnyVal with Foreach[A] with psp.std.FromScala[sCollection[A]] {
+    def size = Size(scalaCollection)
+    @inline def foreach(f: A => Unit): Unit = scalaCollection foreach f
   }
-  final class ToScala[A](xs: Foreach[A]) extends sciTraversable[A] {
-    def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
+  /** We have to produce a scala Seq in order to return from an extractor.
+   *  That requires us to produce made-up values for these methods thanks to
+   *  scala's rampant overspecification.
+   */
+  final class ToScala[A](xs: Foreach[A]) extends sciSeq[A] {
+    override def length: Int = xs.size match {
+      case Infinite                 => throw new InfiniteSizeException(s"$xs")
+      case Precise(n) if n > MaxInt => throw new LongSizeException(s"$xs")
+      case Precise(n)               => n.toInt
+    }
+    def iterator: scIterator[A] = xs.generator.iterator
+    def apply(index: Int): A = xs drop index.size head
+    override def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
   final class Impl[A](val size: Size, mf: Suspended[A]) extends Foreach[A] {
     @inline def foreach(f: A => Unit): Unit = mf(f)
@@ -36,6 +57,17 @@ object Foreach {
     def unapply[A](xs: Foreach[A]) = xs.size optionally { case x: Atomic => x }
   }
 
+  final case class Sized[A](underlying: Foreach[A], override val size: Precise) extends Foreach[A] with HasPreciseSize {
+    def isEmpty = size.isZero
+    @inline def foreach(f: A => Unit): Unit = {
+      var count: Precise = 0.size
+      underlying foreach { x =>
+        if (count >= size) return
+        f(x)
+        count += 1
+      }
+    }
+  }
   final case class Constant[A](elem: A) extends InfiniteSize[A] {
     @inline def foreach(f: A => Unit): Unit = while (true) f(elem)
   }
@@ -62,6 +94,5 @@ object Foreach {
   def from(n: Int): Foreach[Int]                                  = unfold(n)(_ + 1)
   def from(n: Long): Foreach[Long]                                = unfold(n)(_ + 1)
   def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]         = Joined[A](xs, ys)
-  def sized[A](size: Size, mf: Suspended[A]): Foreach[A]          = new Impl[A](size, mf)
   def unfold[A](start: A)(next: A => A): Unfold[A]                = Unfold[A](start)(next)
 }

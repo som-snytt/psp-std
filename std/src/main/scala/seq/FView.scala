@@ -18,7 +18,6 @@ object FView {
     def force[That](implicit z: Builds[A, That]): That   = z build join
   }
 
-
   sealed abstract class Predicated[A](xs: MapTo[A], drop: Predicate[A], take: Predicate[A]) extends ForView[A] {
     def size = xs.size.atMost
     def foreach(f: A => Unit): Unit = {
@@ -33,6 +32,13 @@ object FView {
           if (take(x)) f(x) else return
       }
     }
+  }
+
+  sealed class SlicedDirect[A](xs: Direct[A], range: IndexRange) extends ForView[A] with Direct[A] {
+    def isEmpty = size.isZero
+    def size    = Size.sliced(xs.size, range)
+    def elemAt(index: Index): A     = xs(index + range.startInt)
+    def foreach(f: A => Unit): Unit = range foreach (i => f(xs(i)))
   }
 
   sealed abstract class Sliced[A](xs: MapTo[A], range: IndexRange) extends ForView[A] {
@@ -93,6 +99,7 @@ object FView {
   sealed class Map[A, B](xs: MapTo[A], f: A => B)          extends Filtered(xs, true, f, xs.size)
   sealed class Collect[A, B](xs: MapTo[A], pf: A ?=> B)    extends Filtered[A, B](xs, pf isDefinedAt _, pf, xs.size.atMost)
   sealed class Filter[A](xs: MapTo[A], p: Predicate[A])    extends Filtered(xs, p, identity[A], xs.size.atMost)
+  sealed class Identity[A](xs: MapTo[A])                   extends Filtered(xs, true, identity[A], xs.size)
 
   final class FlatMap[A, B](xs: MapTo[A], f: A => View[B]) extends ForView[B] {
     def size = Size.unknown

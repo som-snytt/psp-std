@@ -5,6 +5,25 @@ import Size._, api._
 import lowlevel.CircularBuffer
 import psp.std.StdShow._
 
+sealed abstract class AtomicView[A, Repr] extends View.Atomic[A] with BaseView[A, Repr] with ops.InvariantViewOps[A] {
+  type This <: AtomicView[A, Repr]
+  def counting: CounterView[A, Repr, This] = new CounterView(this.castTo[This], new RecorderCounter())
+  def foreachSlice(range: IndexRange)(f: A => Unit): Unit
+}
+
+final class CounterView[A, Repr, V <: AtomicView[A, Repr]](val underlying: V, val counter: RecorderCounter) extends AtomicView[A, Repr] {
+  type This = CounterView[A, Repr, V]
+
+  def calls   = counter.count
+  def viewOps = underlying.viewOps
+  def size    = underlying.size
+
+  @inline def foreach(f: A => Unit): Unit                         = underlying foreach (x => f(counter record x))
+  @inline def foreachSlice(range: IndexRange)(f: A => Unit): Unit = underlying.foreachSlice(range)(x => f(counter record x))
+
+  def debug_s = underlying.debug_s
+}
+
 final case class SplitView[+A, Repr](left: BaseView[A, Repr], right: BaseView[A, Repr]) extends View.Split[A] {
   type Single[+X] = BaseView[X, Repr]
 
@@ -54,14 +73,14 @@ object FlattenIndexedSlice {
 
 
 final class LinearView[A, Repr](ys: Foreach[A]) extends AtomicView[A, Repr] {
-  def description = "<xs>"
+  type This = LinearView[A, Repr]
+  def viewOps = Direct("<list>")
   def size        = ys.size
 
   @inline def foreach(f: A => Unit): Unit = foreachSlice(IndexRange.full)(f)
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit = {
     var i = Index.zero
     ys foreach { x =>
-      recordCall(x)
       if (range contains i) f(x)
       i = i.next
       if (i >= range.end) return
@@ -70,29 +89,33 @@ final class LinearView[A, Repr](ys: Foreach[A]) extends AtomicView[A, Repr] {
 }
 
 final class SetView[A, Repr](ys: ExtensionalSet[A]) extends AtomicView[A, Repr] {
-  def description                                         = "<xs>"
+  type This = SetView[A, Repr]
+  def viewOps                                             = Direct("<set>")
   def size                                                = ys.size
   @inline def foreach(f: A => Unit): Unit                 = foreachSlice(IndexRange.full)(f)
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit = ys.contained slice range foreach f
 }
 
 final class IndexedView[A, Repr](ys: Direct[A]) extends AtomicView[A, Repr] with Direct[A] with ops.HasPreciseSizeMethods {
-  def description                 = "<xs>"
-  def size: Precise               = ys.size
-  def elemAt(i: Index): A         = recordCall(ys(i))
-  def foreach(f: A => Unit): Unit = foreachSlice(size.indices)(f)
+  type This = IndexedView[A, Repr]
+  def viewOps                                             = Direct("<vector>")
+  def size: Precise                                       = ys.size
+  def elemAt(i: Index): A                                 = ys(i)
+  def foreach(f: A => Unit): Unit                         = foreachSlice(size.indices)(f)
   def foreachSlice(range: IndexRange)(f: A => Unit): Unit = range foreach (i => f(elemAt(i)))
 }
 
 final case class LabeledView[A, Repr](prev: BaseView[A, Repr], label: String) extends BaseView[A, Repr] {
+  type This = LabeledView[A, Repr]
+  def viewOps                     = prev.viewOps.init :+ label
   def foreach(f: A => Unit): Unit = prev foreach f
-  def description = label
-  def size        = prev.size
-  def calls       = prev.calls
-  def viewChain   = prev.viewChain.init :+ this
+  def description                 = label
+  def size                        = prev.size
 }
 
 sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[A] {
+  type This <: BaseView[A, Repr]
+
   def xs: this.type = this
 
   type MapTo[+X]   = BaseView[X, Repr]
@@ -129,16 +152,10 @@ sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[
   final def build(implicit z: Builds[A, Repr]): Repr       = force[Repr]
 }
 
-sealed abstract class AtomicView[A, Repr] extends View.Atomic[A] with BaseView[A, Repr] with CountCalls with ops.InvariantViewOps[A] {
-  val counter = new RecorderCounter()
-  def foreachSlice(range: IndexRange)(f: A => Unit): Unit
-  def viewChain = view(this)
-}
-
 sealed abstract class CompositeView[A, B, Repr](val description: String, val sizeEffect: Unary[Size]) extends View.Composite[A, B] with BaseView[B, Repr] {
   def prev: View[A]
-  def viewChain = prev.viewChain.m :+ this
-  def size      = sizeEffect(prev.size)
+  def size    = sizeEffect(prev.size)
+  def viewOps = prev.viewOps :+ description
 
   final def foreach(f: B => Unit): Unit = {
     def loop[C](xs: View[C])(f: C => Unit): Unit = xs match {
@@ -183,8 +200,8 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
   }
   private def foreachInterspersed[A](f: A => Unit, range: IndexRange, xs: Foreach[A], ys: Foreach[A]): Unit = {
     var i = Index.zero
-    val it1 = xs.biIterator
-    val it2 = ys.biIterator
+    val it1 = xs.iterator
+    val it2 = ys.iterator
     while (it1.hasNext && it2.hasNext && i < range.start) {
       it1.next
       it2.next
@@ -207,7 +224,7 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
     xs.foldl(CircularBuffer[A](n))((buf, x) => if (buf.isFull) try buf finally f(buf push x) else buf += x)
 
   private def foreachSlice[A](xs: View[A], f: A => Unit, range: IndexRange): Unit = xs match {
-    case Zipped(xs, ys)       => xs.biIterator zip ys.biIterator drop range.startInt take range.size.intSize foreach f
+    case Zipped(xs, ys)       => xs.iterator zip ys.iterator drop range.startInt take range.size.intSize foreach f
     case Interspersed(xs, ys) => foreachInterspersed(f, range, xs, ys)
     case xs: AtomicView[_, _] => xs.foreachSlice(range)(f)
     case m: Mapped[a, _, _]   => foreachSlice[a](m.prev, m.f andThen f, range)
@@ -220,11 +237,6 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
       }
 
     case _              => runThrough(f, range, xs)
-  }
-
-  def calls = this match {
-    case Joined(xs, ys) => xs.calls + ys.calls
-    case _              => prev.calls
   }
 }
 

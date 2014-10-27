@@ -6,17 +6,16 @@ import ScalaNative._
 
 /** Compatibility layer for wrapping scala views on their own terms.
  */
-final class ScalaNative[+A](val xs: scIterable[A], val counter: RecorderCounter) extends View[A] with CountCalls {
+final class ScalaNative[+A] private (val xs: scIterable[A], val counter: RecorderCounter) extends View[A] {
   type MapTo[+X]   = ScalaNative[X]
   type SplitTo[+X] = ScalaNative.Split[X]
 
   private implicit def lift[B](result: scIterable[B]): MapTo[B]           = new ScalaNative(result, counter)
   private implicit def liftPair[B](xs: PairOf[scIterable[B]]): SplitTo[B] = Split(lift(xs._1) -> lift(xs._2))
-  private implicit def lower[A](x: View[A]): scIterable[A]                = BiIterable(x)
+  private implicit def lower[A](x: View[A]): scIterable[A]                = new Foreach.ToScala(x)
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]          = xs ++ that
   def collect[B](pf: A ?=> B): MapTo[B]               = xs collect pf
-  def description: String                             = xs.shortClass
   def drop(n: Precise): MapTo[A]                      = xs drop n.intSize
   def dropRight(n: Precise): MapTo[A]                 = xs dropRight n.intSize
   def dropWhile(p: Predicate[A]): MapTo[A]            = xs dropWhile p
@@ -27,12 +26,11 @@ final class ScalaNative[+A](val xs: scIterable[A], val counter: RecorderCounter)
   def intersperse[A1 >: A](that: View[A1]): MapTo[A1] = ??? // TODO
   def map[B](f: A => B): MapTo[B]                     = xs map f
   def size: IntSize                                   = Precise(xs.size)
-  def sized(size: Precise): MapTo[A]                  = this
   def slice(range: IndexRange): MapTo[A]              = xs.slice(range.startInt, range.endInt)
   def take(n: Precise): MapTo[A]                      = xs take n.intSize
   def takeRight(n: Precise): MapTo[A]                 = xs takeRight n.intSize
   def takeWhile(p: Predicate[A]): MapTo[A]            = xs takeWhile p
-  def viewChain: Foreach[View[_]]                     = view(this)
+  def viewOps                                         = Direct(toString)
   def withFilter(p: Predicate[A]): MapTo[A]           = xs filter p  // scala withFilter returns "FilterMonadic"
   def zip[B](that: View[B]): MapTo[(A, B)]            = xs zip that
 
@@ -41,7 +39,7 @@ final class ScalaNative[+A](val xs: scIterable[A], val counter: RecorderCounter)
   def span(p: Predicate[A]): SplitTo[A]      = xs span p
   def partition(p: Predicate[A]): SplitTo[A] = xs partition p
 
-  override def toString = description
+  override def toString = xs.shortClass
 }
 
 object ScalaNative {
@@ -58,5 +56,5 @@ object ScalaNative {
   }
 
   def apply[A](xs: scIterable[A]): ScalaNative[A] = new RecorderCounter() |> (c => new ScalaNative(xs map c.record, c))
-  def unapply[A](n: ScalaNative[A])              = Some(n.xs -> n.counter)
+  def unapply[A](n: ScalaNative[A])               = Some(n.xs -> n.counter)
 }

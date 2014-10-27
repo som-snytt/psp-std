@@ -42,9 +42,11 @@ trait ConversionOps[A] extends Any {
   def toJavaSet: jSet[A]                                     = jSet(seq: _*)
   def toJavaMap[K, V](implicit ev: A <:< (K, V)): jMap[K, V] = jMap(seq map ev: _*)
 
-  def biIterator: BiIterator[A] = biIterable.iterator
-  def biIterable: BiIterable[A] = BiIterable(toScalaIterable)
-
+  def iterator: scIterator[A] = xs match {
+    case FromScala(xs: scIterable[A]) => xs.iterator
+    case _                            => generator.iterator
+  }
+  def generator: Generator[A]                                          = Generator(xs)
   def plist: pList[A]                                                  = toPolicyList
   def pvec: pVector[A]                                                 = toPolicyVector
   def pseq: pSeq[A]                                                    = toPolicySeq
@@ -54,17 +56,22 @@ trait ConversionOps[A] extends Any {
   def naturalMap[K, V](implicit ev: A <:< (K, V)): exMap[K, V] = toPolicyMap[K, V](HashEq.natural(), ev)
   def naturalSet: exSet[A]                                     = toPolicySet(HashEq.natural())
 
-  def seq: sciSeq[A] = toScalaSeq // varargs
+  def seq: sciSeq[A] = toScalaSeq // new Foreach.ToScala(xs) // varargs
 }
 
-final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with ConversionOps[A]
+final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with ConversionOps[A] {
+  def sized(size: Precise): Foreach[A] = new Foreach.Sized(xs, size)
+}
 
 final class DirectOps[A](val xs: Direct[A]) extends AnyVal with ConversionOps[A] {
-  def apply(i: Index): A = xs elemAt i
-  def length: Int        = xs.size.intSize
+  def +:(y: A): Direct[A]          = Direct.join(Direct(y), xs)
+  def :+(y: A): Direct[A]          = Direct.join(xs, Direct(y))
+  def ++(ys: Direct[A]): Direct[A] = Direct.join(xs, ys)
+
+  def apply(i: Index): A           = xs elemAt i
+  def length: Int                  = xs.size.intSize
   def reverse: Direct[A]  = xs match {
     case Direct.Reversed(xs) => xs
     case _                   => new Direct.Reversed(xs)
   }
 }
-

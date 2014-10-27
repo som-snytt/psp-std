@@ -26,7 +26,7 @@ trait StdZipped {
     def toMap: sciMap[A1, A2]                        = map(_ -> _).toScalaMap
     def withFilter(q: Predicate2[A1, A2]): This      = new Zip2Ops(xs, ys, (x, y) => p(x, y) && q(x, y))
 
-    def foreach(f: (A1, A2) => Unit): Unit = xs.m.biIterator doto (it =>
+    def foreach(f: (A1, A2) => Unit): Unit = xs.iterator doto (it =>
       ys.m foreach (y =>
         if (it.hasNext)
           it.next |> (x => if (p(x, y)) f(x, y))

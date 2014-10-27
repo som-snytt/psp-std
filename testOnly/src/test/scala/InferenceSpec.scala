@@ -44,7 +44,6 @@ class InferenceSpec extends ScalacheckBundle {
     // expectType[exSet[Int]](b7)
   )
   def ptArray = expectTypes[Array[Int]](
-    as.m map identity,
     as.m map identity build,
     as.m map identity force,
     ds.m map identity force,
@@ -52,7 +51,6 @@ class InferenceSpec extends ScalacheckBundle {
     ls.m map identity force,
     vs.m map identity force,
     xs.m map identity force,
-    as map identity,
     as map identity build,
     as map identity force
   )
@@ -84,9 +82,9 @@ class InferenceSpec extends ScalacheckBundle {
 
   def props: sciList[NamedProp] = sciList(ptArray, ptView, ptVector) ++ ptBuild ++ sciList(
     expectType[Array[Char]]   (ss.m map identity force),
-    expectType[String]        (ss map identity),
+    // expectType[String]        (ss map identity),
     expectType[String]        (ss map identity build),
-    expectType[String]        (ss.m map identity),
+    // expectType[String]        (ss.m map identity),
     expectType[String]        (ss.m map identity force),
     expectType[View[Char]]    (ss.m map identity),
     expectType[exSet[Int]]    (xs.m map identity force),

@@ -10,6 +10,9 @@ import StdZero._
  *  using a synthetic toString, e.g. of case classes.
  */
 trait ShowDirect extends Any { def to_s: String }
+trait ForceShowDirect extends Any with ShowDirect {
+  override def toString = to_s
+}
 
 class TryShow[-A](shows: Show[A]) {
   def show(x: A): String = if (shows == null) "" + x else shows show x
@@ -24,9 +27,8 @@ final case class TryShown(try_s: String) extends AnyVal {
 /** Used to achieve type-safety in the show interpolator.
  *  It's the String resulting from passing a value through its Show instance.
  */
-final case class Shown(to_s: String) extends AnyVal with ShowDirect {
+final case class Shown(to_s: String) extends AnyVal with ForceShowDirect {
   def ~ (that: Shown): Shown = new Shown(to_s + that.to_s)
-  override def toString = to_s
 }
 
 object Shown {
@@ -54,7 +56,7 @@ final class ShowInterpolator(val x: StringContext) extends AnyVal {
   /** Can't see any way to reuse the standard (type-safe) f-interpolator, will
    *  apparently have to reimplement it entirely.
    */
-  def fshow(args: Shown*): String = x.parts.mkString("").format(args: _*)
+  def fshow(args: Shown*): String = (x.parts map (_.processEscapes) mkString "").format(args: _*)
 }
 
 object Show {
@@ -65,11 +67,14 @@ object Show {
 
   /** This of course is not implicit as that would defeat the purpose of the endeavor.
    */
-  private val ToString = apply[Any]({
-    case null          => ""
-    case x: ShowDirect => x.to_s
-    case x             => x.toString
-  })
+  private object ToString extends Show[Any] {
+    def show(x: Any): String = x match {
+      case null          => ""
+      case x: ShowDirect => x.to_s
+      case x             => x.toString
+    }
+    override def toString = "ToString"
+  }
 }
 
 /** For this to have any hope of being smooth, we need the VALUE

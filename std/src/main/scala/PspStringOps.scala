@@ -41,10 +41,11 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
     case (res, PatternReplacement(from, to)) => from matcher self replaceAll to
   }
 
-  def isNonEmptyDigits   = self matches """^[\d]+$"""
-  def isAllWhitespace    = self matches """[\s]*"""
-  def nonEmpty: Boolean  = onull.length > 0
-  def capitalize: String = mapNonEmpty(x => x splitAt 1.index match { case SplitView(l, r) => l.toUpperCase ~ r })
+  def processEscapes: String = scala.StringContext processEscapes self
+  def isNonEmptyDigits       = self matches """^[\d]+$"""
+  def isAllWhitespace        = self matches """[\s]*"""
+  def nonEmpty: Boolean      = onull.length > 0
+  def capitalize: String     = mapNonEmpty(x => x splitAt 1.index match { case SplitView(l, r) => l.force.toUpperCase ~ r.force })
 
   def ~ (that: String): String    = self + that
   def * (n: Int): String          = this * n.size
@@ -65,7 +66,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def splitRegex(r: Regex): pVector[String] = r.pattern split self pvec
   def words: pVector[String]                = splitRegex(whitespace)
 
-  def mapChars(pf: Char ?=> Char): String          = self map (c => if (pf isDefinedAt c) pf(c) else c)
+  def mapChars(pf: Char ?=> Char): String          = self map (c => if (pf isDefinedAt c) pf(c) else c) build
   def mapLines(f: Unary[String]): String           = mapSplit('\n')(f)
   def mapNonEmpty(f: Unary[String]): String        = if (isEmpty) "" else f(self)
   def mapSplit(ch: Char)(f: Unary[String]): String = splitChar(ch) map f mkString ch.toString
@@ -98,7 +99,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def sanitize: String    = mapChars { case x if x.isControl => '?' }
 
   def truncateAndLeftJustifyTo(max: Precise) = max leftFormat (normalizeSpace truncateTo max).asis
-  def truncateTo(max: Precise)               = if ((size: Precise) <= max) self else (self take max - 3) + "..."
+  def truncateTo(max: Precise)               = if ((size: Precise) <= max) self else (self take max - 3).force ~ "..."
 
   def normalizeSpace: String = self.trim.replacePattern(
     "\\n+"      -> "\n",

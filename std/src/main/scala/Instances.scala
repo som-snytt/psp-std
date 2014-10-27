@@ -132,48 +132,21 @@ trait EqInstances {
 /** An incomplete selection of show compositors.
  *  Not printing the way scala does.
  */
-trait ShowInstances {
-  def inBrackets[A](xs: A*)(implicit shows: Show[A]): String      = xs.m.joinComma.inSpaces.inBrackets.render // xs map shows.show mkString ("[ ", ", ", " ]")
-  implicit def attrNameShow : Show[java.util.jar.Attributes.Name] = Show.natural()
-  implicit def exSetShow[A: Show] : Show[exSet[A]]                = showBy(_.contained)
-  implicit def exMapShow[K: Show, V: Show] : Show[exMap[K, V]]    = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
-  implicit def pViewShow[A] : Show[View[A]]                       = Show(_.viewChain.map(_.description).joinWords.render)
-  implicit def pListShow[A: Show] : Show[pList[A]]                = Show(xs => if (xs.isEmpty) "nil" else (xs join " :: ".asis) <> " :: nil" render)
-  implicit def pVectorShow[A: Show] : Show[pVector[A]]            = Show(xs => if (xs.isEmpty) "[]" else inBrackets(xs.seq: _*))
-
-  implicit def stringShow: Show[String]                 = Show(x => x)
-  implicit def charShow: Show[Char]                     = Show.natural()
-  implicit def booleanShow: Show[Boolean]               = Show.natural()
-  implicit def doubleShow: Show[Double]                 = Show.natural()
-  implicit def intShow: Show[Int]                       = Show.natural()
-  implicit def longShow: Show[Long]                     = Show.natural()
-  implicit def numberShow: Show[scala.math.ScalaNumber] = Show.natural()
-  implicit def showDirect: Show[ShowDirect]             = Show(_.to_s)
-  implicit def showClass: Show[jClass]                  = Show(_.shortName)
-  implicit def indexShow: Show[Index]                   = showBy[Index](_.indexValue)
-  implicit def nthShow: Show[Nth]                       = showBy[Nth](_.nthValue)
-  implicit def showPath: Show[Path]                     = showBy[Path](_.toString)
-
-  implicit def arrayShow[A: Show] : Show[Array[A]]        = Show(xs => inBrackets(xs: _*))
-  implicit def optShow[A: Show] : Show[Option[A]]         = Show(_.fold("-")(?[Show[A]].show))
-  implicit def seqShow[A: Show] : Show[scSeq[A]]          = Show(xs => inBrackets(xs: _*))
-  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)] = Show { case (x, y) => show"$x -> $y" }
-
+trait ShowInstances extends ShowForeach {
+  implicit def attrNameShow : Show[jAttributeName]            = Show.natural()
+  implicit def booleanShow: Show[Boolean]                     = Show.natural()
+  implicit def charShow: Show[Char]                           = Show.natural()
+  implicit def doubleShow: Show[Double]                       = Show.natural()
+  implicit def indexShow: Show[Index]                         = showBy[Index](_.indexValue)
+  implicit def intShow: Show[Int]                             = Show.natural()
+  implicit def longShow: Show[Long]                           = Show.natural()
+  implicit def nthShow: Show[Nth]                             = showBy[Nth](_.nthValue)
+  implicit def scalaNumberShow: Show[ScalaNumber]             = Show.natural()
+  implicit def showClass: Show[jClass]                        = Show(_.shortName)
+  implicit def showDirect: Show[ShowDirect]                   = Show(_.to_s)
+  implicit def showPath: Show[Path]                           = showBy[Path](_.toString)
+  implicit def stringShow: Show[String]                       = Show(x => x)
   implicit def stackTraceElementShow: Show[StackTraceElement] = Show("\tat" + _ + "\n")
-
-  implicit def intensionalSetShow[A: Show] : Show[IntensionalSet[A]] = {
-    import IntensionalSet._
-    Show[IntensionalSet[A]] {
-      case xs: ExtensionalSet[A] => show"${xs.contained}"
-      case Filtered(lhs, rhs)    => show"Filtered($lhs, ${rhs.toString})"
-      case Complement(xs)        => show"Not($xs)"
-      case Intersect(lhs, rhs)   => show"Intersect($lhs, $rhs)"
-      case Union(lhs, rhs)       => show"Union($lhs, $rhs)"
-      case Diff(lhs, rhs)        => show"Diff($lhs, $rhs)"
-      case Impl(member, heq)     => pp"Impl($member, $heq)"
-    }
-  }
-
   implicit def keywordShow: Show[Keyword] = Show[Keyword] {
     case Keyword.Empty            => ""
     case Keyword.ClassConstructor => ""
@@ -185,32 +158,52 @@ trait ShowInstances {
     case Keyword.CaseClass        => "case class"
     case k                        => k.toString.toLowerCase
   }
-
   implicit def showSize: Show[Size] = Show[Size] {
     case IntSize(size)         => show"$size"
     case LongSize(size)        => show"$size"
     case Bounded(lo, Infinite) => show"$lo+"
-    case Bounded(lo, hi)       => show"[$lo, $hi]"
+    case Bounded(lo, hi)       => show"[$lo,$hi]"
     case Infinite              => "<inf>"
   }
 
-  private def showElems[A: Show](small: Precise, large: Int, xs: sciList[A]): String = xs splitAt large match {
-    case (Nil, _)  => "[]"
-    case (xs, Nil) => xs.m.joinComma.surround("[ ", " ]").render
-    case (xs, _)   => (xs.m take small joinComma).surround("[ ", ", ... ]").render
+  implicit def optShow[A: Show] : Show[Option[A]]             = Show(_.fold("-")(_.to_s))
+  implicit def tupleShow[A: Show, B: Show] : Show[(A, B)]     = Show { case (x, y) => show"$x -> $y" }
+}
+
+
+trait ShowForeach {
+  self: ShowInstances =>
+
+  def maxElements: Precise = 10
+  def minElements: Precise = 3
+
+  implicit def jCollectionShow[A: Show] : Show[jIterable[A]]       = showBy[jIterable[A]](fromJava)
+  implicit def sCollectionShow[A: Show] : Show[sCollection[A]]     = showBy[sCollection[A]](fromScala)
+  implicit def arrayShow[A: Show] : Show[Array[A]]                 = showBy[Array[A]](Direct.fromArray)
+  implicit def policySeqShow[A: Show] : Show[Foreach[A]]           = Show(foreachString[A])
+  implicit def policySetShow[A: Show] : Show[inSet[A]]             = Show(inSetString[A])
+  implicit def policyMapShow[K: Show, V: Show] : Show[exMap[K, V]] = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
+  implicit def policyViewShow[A] : Show[View[A]]                   = Show(_.viewOps.joinWords.render)
+
+  def foreachString[A: Show](xs: Foreach[A]): String = xs match {
+    case xs: ShowDirect => xs.to_s
+    case _              =>
+      xs splitAt maxElements.lastIndex match {
+        case SplitView(xs, ys) if ys.isEmpty => "[ " ~ (xs mk_s ", ") ~ " ]"
+        case SplitView(xs, _)                => "[ " ~ (xs take minElements mk_s ", ") ~ ", ... ]"
+      }
   }
-  implicit def pSeqShow[A: Show] : Show[pSeq[A]] = Show[pSeq[A]] { xs =>
-    val small = 3.size
-    val large = 10
-    def elems() = showElems[A](small, large - 2, xs.m take large toScalaList)
-    (xs, xs.size) match {
-      case (xs: IndexRange, _)                             => "[%s,%s)".format(xs.start, xs.end)
-      case (Joined(xs, ys), _)                             => show"$xs ++ $ys"
-      case (Foreach.Joined(xs, ys), _)                     => show"$xs ++ $ys"
-      case ( _: Direct[_] | _: Linear[_], _)               => elems()
-      case (_, Bounded(Precise(0L), Infinite))             => show"${xs.shortClass}"
-      case (_, Bounded(Precise(n), Infinite)) if n < large => show"${xs.shortClass} (size $n+)"
-      case _                                               => elems()
+
+  def inSetString[A: Show](xs: inSet[A]): String = {
+    import IntensionalSet._
+    xs match {
+      case xs: ExtensionalSet[A] => show"${xs.contained}"
+      case Complement(xs)        => show"Not($xs)"
+      case Intersect(lhs, rhs)   => show"Intersect($lhs, $rhs)"
+      case Union(lhs, rhs)       => show"Union($lhs, $rhs)"
+      case Diff(lhs, rhs)        => show"Diff($lhs, $rhs)"
+      case Filtered(lhs, rhs)    => pp"Filtered($lhs, $rhs)"
+      case Impl(member, heq)     => pp"Impl($member, $heq)"
     }
   }
 }

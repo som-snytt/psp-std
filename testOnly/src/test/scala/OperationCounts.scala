@@ -26,16 +26,17 @@ object IntViews {
 }
 import IntViews._
 
-class CollectionResult(viewFn: IntViewFun, nxs: NamedView) {
+class CollectionResult(viewFn: IntViewFun, nxs: NamedView) extends ForceShowDirect {
   val name        = nxs.name
-  val xs          = nxs.view
-  val description = xs.description
+  val xs          = nxs.view.counting
+  val description = xs.to_s
   val size        = xs.size
   val applied     = viewFn(xs)
-  val front3      = (applied take 3).force.pvec
-  val result      = front3.to_s
-  val count       = xs.calls
-  override def toString = show"$name input: $xs operation: $description size: $size result: $result count: $count"
+  val result      = (applied take 3).pvec.to_s
+  val calls       = xs.calls
+
+  def to_s    = fshow"$name%12s  $result%s"
+  def debug_s = show"$name $xs size=$size calls=$calls // $result"
 }
 
 final case class NamedView(name: String, view: IntView) extends NaturalHashEq {
@@ -48,7 +49,7 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
   def numOps      = 3
   def collections = Direct[NamedView](
     NamedView("p/linear", policyList.m),
-    NamedView("p/sized", policyList.m sized newSize(max)),
+    NamedView("p/sized", policyList.m sized max),
     NamedView("p/direct", policyVector.m),
     NamedView("p/mixed1", policyMixed1.m),
     NamedView("s/listv", ScalaNative(scalaIntList.view)),
@@ -104,18 +105,21 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
     val expected     = eagerOutcome.result
     val indices      = collections.indices
     val outcomes     = collections map (xs => new CollectionResult(viewFn, xs)) pvec
-    val counts       = outcomes map (r => "%-3s".format(r.count)) mkString " "
-    val chain        = viewFn(view()).viewChain collect { case x: BaseView[_,_] => x } map (_.description) without "<xs>"
-    val description  = "%s  %s  // %s".format(chain.map("%-15s" format _).joinWords.render, counts, expected)
+    val counts       = outcomes map (r => "%-3s".format(r.calls)) mkString " "
+    val ops          = viewFn(view[Int]()).viewOps.tail
+    val passOps      = ops map ("%-15s" format _) mk_s " "
+    val failOps      = ops mk_s " "
 
+    def description    = if (passed) s"$passOps  $counts  // $expected" else failure
+    def failure        = fshow"Inconsistent results for $failOps%s:\n  " + (outcomes mk_s "\n  ") + "\n"
     def passed         = outcomes.map(_.result).distinct.size == 1.size
-    def distinctCounts = outcomes.map(_.count).distinct.pvec
-    def isInteresting  = distinctCounts.size >= 5.size
+    def distinctCounts = outcomes.map(_.calls).distinct.pvec
+    def isInteresting  = !passed || distinctCounts.size >= 2.size || isTestDebug
 
     override def toString = (
       description.asis <@> indices.tabular(
         i => collections(i).name,
-        i => outcomes(i).count.to_s,
+        i => outcomes(i).calls.to_s,
         i => (outcomes(i).result |> (r => if (r == expected) "" else s"  // !!! found: $r"))
       ).asis render
     )

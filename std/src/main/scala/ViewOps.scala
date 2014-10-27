@@ -39,8 +39,9 @@ trait ApiViewOps[+A] extends Any {
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
   def indexAtWhich(p: Predicate[A]): Index                       = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): View[C] = xs map (f => ev(f)(x))
-  def mapWithIndex[B](f: (A, Index) => B): View[B]               = linearView(xs.size, mf => xs.foldl(0)((res, x) => try res + 1 finally mf(f(x, Index(res)))))
+  def mapWithIndex[B](f: (A, Index) => B): View[B]               = fview[B](mf => xs.foldl(0)((res, x) => try res + 1 finally mf(f(x, Index(res))))) withSize xs.size
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
+  def withSize(size: Size): View[A]                              = new Foreach.Impl[A](size, xs foreach _)
   def mkString(sep: String): String                              = stringed(sep)(_.any_s)
   def mk_s(sep: String)(implicit z: Show[A]): String             = stringed(sep)(_.to_s)
   def sortOrder[B: Order](f: A => B): pVector[A]                 = sorted(orderBy[A](f))

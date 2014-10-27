@@ -46,7 +46,7 @@ final case class StreamJar(instream: () => InputStream) extends Jar {
     val arr     = new Array[Byte](arrSize)
     def loop(offset: Int): Unit = in.read(arr, offset, arrSize - offset) match {
       case read if read >= 0 => loop(offset + read)
-      case _                 => in.closeEntry() ; f(entry, arr take offset)
+      case _                 => in.closeEntry() ; f(entry, arr take offset force)
     }
     loop(0)
   }

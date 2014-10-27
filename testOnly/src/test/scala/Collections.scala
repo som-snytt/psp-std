@@ -32,10 +32,10 @@ class StringExtensions extends ScalacheckBundle {
   def props: sciList[NamedProp] = sciList(
     "stripSuffix" -> newProp2[String](_ stripSuffix _)(_ stripSuffix _),
     "stripPrefix" -> newProp2[String](_ stripPrefix _)(_ stripPrefix _),
-    "take"        -> newProp2[Int](_ take _)(_ take _),
-    "drop"        -> newProp2[Int](_ drop _)(_ drop _),
-    "takeRight"   -> newProp2[Int](_ takeRight _)(_ takeRight _)(mostInts, ?),
-    "dropRight"   -> newProp2[Int](_ dropRight _)(_ dropRight _)(mostInts, ?),
+    "take"        -> newProp2[Int](_ take _)(_ take _ build),
+    "drop"        -> newProp2[Int](_ drop _)(_ drop _ build),
+    "takeRight"   -> newProp2[Int](_ takeRight _)(_ takeRight _ build)(mostInts, ?),
+    "dropRight"   -> newProp2[Int](_ dropRight _)(_ dropRight _ build)(mostInts, ?),
     "toInt"       -> newProp[Int](_.toInt, _.toInt),
     "tail"        -> newProp[String](_.tail, _.tail.force),
     "head"        -> newProp(_.head, _.head),
@@ -86,17 +86,17 @@ class Collections extends ScalacheckBundle {
 
   def props: sciList[NamedProp] = policyProps ++ sciList(
     expectTypes[sciBitSet](
-      bits.m map identity,
+      bits.m map identity build,
       bits.m map (_.toString.length) build,
       bits.m map (_.toString) map (_.length) build,
       bits.m map (x => sciList(x)) map (_.size) build,
       bits.m map (x => sciList(x).size) build
     ),
     expectTypes[String](
-      "abc" map identity,
-      "abc" map (_.toInt.toChar),
+      "abc" map identity build,
+      "abc" map (_.toInt.toChar) build,
       "abc".m flatMap (_.toString * 3 m) build,
-      "abc" flatMap (_.toString * 3)
+      "abc" flatMap (_.toString * 3) build
     ),
     expectTypes[Array[Int]](
       arr mapInPlace identity,

@@ -15,18 +15,16 @@ class FunctionEqualizer[A, B : Eq](f: A => B, g: A => B) extends (A ?=> B) {
   def forall(xs: pSeq[A]): Boolean = xs forall isDefinedAt
 }
 
-final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T ?=> R) with ShowDirect {
+final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T ?=> R) with ForceShowDirect {
   def isDefinedAt(x: T) = f match {
     case f: PartialFunction[_, _] => f isDefinedAt x
     case _                        => true
   }
   def apply(x: T): R = f(x)
-  override def toString = to_s
 }
-final class Utf8(val bytes: Array[Byte]) extends AnyVal {
+final class Utf8(val bytes: Array[Byte]) extends AnyVal with ForceShowDirect {
   def chars: Chars = scala.io.Codec fromUTF8 bytes
   def to_s: String = new String(chars)
-  override def toString = to_s
 }
 
 trait ClassLoaderTrait {
@@ -45,7 +43,7 @@ trait ClassLoaderTrait {
   }
 }
 
-final class PolicyClass(val clazz: jClass) extends AnyVal with ShowDirect {
+final class PolicyClass(val clazz: jClass) extends AnyVal with ForceShowDirect {
   private def toPolicy(x: jClass): PolicyClass = new PolicyClass(x)
 
   def isAnnotation     = clazz.isAnnotation
@@ -82,8 +80,6 @@ final class PolicyClass(val clazz: jClass) extends AnyVal with ShowDirect {
   def shortName: String                        = unqualifiedName
   def to_s                                     = s"$clazz"
   def unqualifiedName: String                  = decodeName(nameSegments.last)
-
-  override def toString = to_s
 }
 
 final class PolicyLoader(val classMap: exMap[String, Bytes]) extends ClassLoader {

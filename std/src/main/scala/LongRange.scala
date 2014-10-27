@@ -5,7 +5,7 @@ import api._
 import IndexRange.{ undefined, empty }
 import lowlevel.ExclusiveIntRange
 
-final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange {
+final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange with ForceShowDirect {
   def startInt      = intRange.start
   def endInt        = intRange.end
   def intRange      = ExclusiveIntRange create bits
@@ -32,7 +32,7 @@ final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.D
   def dropWhile(p: Predicate[Index]): IndexRange = IndexRange(intRange dropWhile (i => p(Index(i))))
   def takeWhile(p: Predicate[Index]): IndexRange = IndexRange(intRange takeWhile (i => p(Index(i))))
 
-  override def toString = s"[$start,$end)"
+  def to_s = s"[$start,$end)"
 }
 
 /** All IndexRanges are inclusive of start and exclusive of end.

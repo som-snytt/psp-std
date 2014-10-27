@@ -30,8 +30,9 @@ sealed trait PolicySet[-A] extends (A => Boolean)
 sealed trait IntensionalSet[A] extends PolicySet[A] with InSet[A]
 sealed trait ExtensionalSet[A] extends IntensionalSet[A] with ExSet[A] {
   def hashEq: HashEq[A]
-  def hash(x: A): Int            = hashEq hash x
-  def equiv(x: A, y: A): Boolean = hashEq.equiv(x, y)
+  def hash(x: A): Int             = hashEq hash x
+  def equiv(x: A, y: A): Boolean  = hashEq.equiv(x, y)
+  def foreach(f: A => Unit): Unit = contained foreach f
 }
 
 object ExtensionalSet {

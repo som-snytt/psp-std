@@ -77,9 +77,15 @@ object Size {
     case (Bounded(l1, h1), Bounded(l2, h2)) => Bounded(l1, h2)
   }
 
+  def sliced(size: Precise, range: IndexRange): Precise = (size - range.precedingSize) min range.size
+  def sliced(size: Size, range: IndexRange): Size       = (size - range.precedingSize) min range.size
+
   final class Ops(val lhs: Size) extends AnyVal {
     def isNonZero    = !loBound.isZero
-    def isZero       = lhs === Empty
+    def isZero       = lhs match {
+      case Precise(0L) => true
+      case _           => false
+    }
     def isFinite     = lhs.hiBound !== Infinite
     def atMost: Size = bounded(Empty, lhs)
     def hiBound: Atomic = lhs match {
@@ -89,6 +95,11 @@ object Size {
     def loBound: Atomic = lhs match {
       case Bounded(lo, _) => lo
       case x: Atomic      => x
+    }
+
+    def mapAtomic(f: Precise => Precise, g: Atomic => Atomic): Size = lhs match {
+      case x: Atomic       => g(x)
+      case Bounded(lo, hi) => Bounded(f(lo), g(hi))
     }
 
     /** For instance taking the union of two sets. The new size is

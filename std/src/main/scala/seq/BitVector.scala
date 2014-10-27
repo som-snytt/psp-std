@@ -13,7 +13,8 @@ final class BitVector(longs: Array[Long], val size: Precise) extends Direct.Dire
 
   override def toString = if (isEmpty) "" else {
     val xs: View[String] = longs dropRight 1 map (l => 64.size.padLeft(l.binary, '0'))
-    val ys: String       = longs.last.binary take lastSize
+    val ys: String       = longs.last.binary take lastSize force;
+
     (xs :+ ys).mkString("\n")
   }
 }
