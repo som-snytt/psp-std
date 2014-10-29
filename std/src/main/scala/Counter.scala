@@ -25,15 +25,8 @@ object Counter {
 }
 
 class RecorderCounter() {
-  private[this] var counted = 0
-  def inc(): this.type = try this finally counted += 1
-  def count: Int = counted
-  def record[T](x: T): T = try x finally inc()
+  private[this] val seen = jSet[Any]()
+  def count: Int = seen.size
+  def record[A](x: A): A = try x finally seen add x
   override def toString = s"$count"
-}
-
-trait CountCalls {
-  def counter: RecorderCounter
-  def calls                  = counter.count
-  def recordCall[T](x: T): T = counter record x
 }

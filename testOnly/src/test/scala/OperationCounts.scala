@@ -29,11 +29,12 @@ import IntViews._
 class CollectionResult(viewFn: IntViewFun, nxs: NamedView) extends ForceShowDirect {
   val name        = nxs.name
   val xs          = nxs.view.counting
-  val description = xs.to_s
-  val size        = xs.size
   val applied     = viewFn(xs)
-  val result      = (applied take 3).pvec.to_s
+  val result      = (applied take 3).to_s
   val calls       = xs.calls
+
+  lazy val description = xs.to_s
+  lazy val size        = xs.size
 
   def to_s    = fshow"$name%12s  $result%s"
   def debug_s = show"$name $xs size=$size calls=$calls // $result"
@@ -64,10 +65,9 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
     _ collect collectDivSix,
     _ drop 5,
     _ dropWhile lessThan(max / 3),
-    _ filter isEven,
+    _ withFilter isEven,
     _ flatMap tupleFlatMap,
     _ map timesThree,
-    _ slice indexRange(7, 41),
     _ take 13,
     _ takeWhile lessThan(max / 3)
   )

@@ -23,7 +23,7 @@ object Direct {
   def stringBuilder(): Builds[Char, String]      = arrayBuilder[Char] map (cs => new String(cs))
   def arrayBuilder[A: CTag]: Builds[A, Array[A]] = Builds[A, Array[A]](xs =>
     xs.size match {
-      case size: Precise => newArray[A](size) doto (xs foreachCounted _.updated)
+      case size: Precise => newArray[A](size) doto (arr => xs foreachWithIndex ((x, i) => arr(i.safeToInt) = x))
       case _             => psp.std.arrayBuilder[A]() doto (b => xs foreach b.+=) result
     }
   )

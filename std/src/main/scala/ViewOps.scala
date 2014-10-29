@@ -13,6 +13,9 @@ trait ApiViewOps[+A] extends Any {
     true
   }
 
+  def foreachWithIndex(f: (A, Index) => Unit): Unit = foldl(0.index)((idx, x) => try idx.next finally f(x, idx))
+  def mapWithIndex[B](f: (A, Index) => B): View[B]  = inView[B](mf => foreachWithIndex(f andThen mf))
+
   def isEmpty: Boolean     = xs.size.isZero || directIsEmpty
   def nonEmpty: Boolean    = xs.size.isNonZero || !directIsEmpty
   def head: A              = xs take      1 optionally { case PSeq(x) => x } orFail "empty.head"
@@ -38,11 +41,9 @@ trait ApiViewOps[+A] extends Any {
   def collectFirst[B](pf: A ?=> B): Option[B]                    = find(pf.isDefinedAt) map pf
   def firstOrZero[B](pf: A ?=> B)(implicit z: Zero[B]): B        = find(pf.isDefinedAt).fold(z.zero)(pf)
   def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap pf.applyOrZero
-  def foreachCounted(f: (Index, A) => Unit): Unit                = foldl(0.index)((idx, x) => try idx.next finally f(idx, x))
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
   def indexAtWhich(p: Predicate[A]): Index                       = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): View[C] = xs map (f => ev(f)(x))
-  def mapWithIndex[B](f: (A, Index) => B): View[B]               = inView[B](mf => xs.foldl(0)((res, x) => try res + 1 finally mf(f(x, Index(res))))) withSize xs.size
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
   def mkString(sep: String): String                              = stringed(sep)(_.any_s)
