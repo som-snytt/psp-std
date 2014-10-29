@@ -5,28 +5,31 @@ package api
 import ApiAliases._
 
 trait AnyView[+A] extends Any with Each[A] {
+  type MapTo[+X] <: AnyView[X]
+  type SplitTo[+X] <: View.Split[X]
 
+  def partition(p: Predicate[A]): SplitTo[A]
 }
 
 trait SetView[+A] extends Any with AnyView[A] with ExSet[A] {
-
+  type MapTo[+X] <: SetView[X]
 }
 
 trait View[+A] extends Any with AnyView[A] with ExSeq[A] {
+  type MapTo[+X] <: View[X]
 }
 
-// trait MapView[K, +V] extends Any with AnyView[V] with ExMap[K, V] {
-//   // type CoMapTo[-X] <: MapView[X, V]
-//   // type MapTo[+X] <: MapView[K, X]
+trait InMapView[-K, +V] extends Any with AnyView[V] with InMap[K, V] {
+  type CoMapTo[-X] <: InMapView[X, V]
+  type MapTo[+X] <: InMapView[K, X]
 
-//   // def comap[K1](f: K1 => K): CoMapTo[K1]
-//   // def filter(p: Predicate[V]): MapTo[V]
-//   // def map[V1](f: V => V1): MapTo[V1]
-// }
+  def comap[K1](f: K1 => K): CoMapTo[K1]
+  def filter(p: Predicate[V]): MapTo[V]
+  def map[V1](f: V => V1): MapTo[V1]
+}
 
 trait ExSeq[+A] extends Any {
-  type   MapTo[+X] <: View[X]
-  type SplitTo[+X] <: View.Split[X]
+  self: View[A] =>
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]
   def collect[B](pf: A ?=> B): MapTo[B]
@@ -39,7 +42,6 @@ trait ExSeq[+A] extends Any {
   def filterNot(p: Predicate[A]): MapTo[A]
   def flatMap[B](f: A => Each[B]): MapTo[B]
   def map[B](f: A => B): MapTo[B]
-  def partition(p: Predicate[A]): SplitTo[A]
   def slice(range: IndexRange): MapTo[A]
   def span(p: Predicate[A]): SplitTo[A]
   def splitAt(index: Index): SplitTo[A]
