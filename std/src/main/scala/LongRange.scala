@@ -6,14 +6,17 @@ import IndexRange.{ undefined, empty }
 import lowlevel.ExclusiveIntRange
 
 final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange with ForceShowDirect {
-  def startInt      = intRange.start
-  def endInt        = intRange.end
-  def intRange      = ExclusiveIntRange create bits
-  def start         = Index(startInt)
-  def end           = Index(endInt)
-  def endInclusive  = if (end <= start) NoIndex else end.prev
-  def size          = intRange.size
-  def precedingSize = newSize(startInt)
+  def startLong: Long = intRange.start
+  def endLong: Long   = intRange.end
+
+  def startInt        = intRange.start
+  def endInt          = intRange.end
+  def intRange        = ExclusiveIntRange create bits
+  def start           = Index(startInt)
+  def end             = Index(endInt)
+  def endInclusive    = if (end <= start) NoIndex else end.prev
+  def size            = intRange.size
+  def precedingSize   = newSize(startInt)
 
   @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(Index(i)))
 

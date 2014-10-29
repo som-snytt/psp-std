@@ -135,12 +135,55 @@ sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[
 
   final def force[That](implicit z: Builds[A, That]): That = z build this
   final def build(implicit z: Builds[A, Repr]): Repr       = force[Repr]
+
+  def linearlySlice[A](xs: Each[A], range: IndexRange, f: A => Unit): IndexRange = {
+    var dropping = range.precedingSize.getInt
+    var remaining = range.intSize
+    def nextRange = indexRange(dropping, dropping + remaining)
+    xs foreach { x =>
+      if (dropping > 0)
+        dropping = dropping - 1
+      else if (remaining > 0)
+        try f(x) finally remaining -= 1
+      else
+        return nextRange
+    }
+    nextRange
+  }
+  def directlySlice[A](xs: Direct[A], range: IndexRange, f: A => Unit): IndexRange = {
+    xs.indices slice range foreach (i => f(xs(i)))
+    range << xs.intSize
+  }
 }
 
 sealed abstract class CompositeView[A, B, Repr](val description: String, val sizeEffect: Unary[Size]) extends View.Composite[A, B] with BaseView[B, Repr] {
   def prev: View[A]
   def size    = sizeEffect(prev.size)
   def viewOps = prev.viewOps :+ description
+
+
+  // def handleSlice[A](xs: Each[A], range: IndexRange, f: A => Unit): IndexRange = xs match {
+  //   case xs: Direct[A] => directlySlice(xs, range, f)
+  //   case _             => linearlySlice(xs, range, f)
+  // }
+
+  // def linearlySlice[A](xs: Each[A], range: IndexRange, f: A => Unit): IndexRange = {
+  //   var dropping = range.precedingSize
+  //   var remaining = range.size
+  //   def nextRange = indexRange(dropping.value, dropping.value + remaining.value)
+  //   xs foreach { x =>
+  //     index += 1
+  //     if (dropping > 0)
+  //       dropping = dropping - 1
+  //     else if (remaining > 0)
+  //       try f(x) finally remaining -= 1
+  //     else
+  //       return nextRange
+  //   }
+  //   nextRange
+  // }
+  // def directlySlice[A](xs: Direct[A], range: IndexRange, f: A => Unit): IndexRange =
+  //   xs.indices slice range foreach (i => f(xs(i)))
 
   final def foreach(f: B => Unit): Unit = {
     def loop[C](xs: View[C])(f: C => Unit): Unit = xs match {
@@ -193,17 +236,15 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
     xs.foldl(CircularBuffer[A](n))((buf, x) => if (buf.isFull) try buf finally f(buf push x) else buf += x)
 
   private def foreachSlice[A](xs: View[A], f: A => Unit, range: IndexRange): Unit = xs match {
-    case Zipped(xs, ys)       => xs.iterator zip ys.iterator drop range.startInt take range.size.intSize foreach f
-    case xs: AtomicView[_, _] => xs.foreachSlice(range)(f)
-    case m: Mapped[a, _, _]   => foreachSlice[a](m.prev, m.f andThen f, range)
-    case Joined(ys1, ys2) =>
-      ys1.size match {
-        case n: Precise if n.intSize < range.startInt     => ys2 slice (range << n.intSize) foreach f
-        case n: Precise if n.lastIndex >= range.lastIndex => ys1 slice range foreach f
-        case _                                            => handleSlice(ys1, range, f) |> (remainingRange => handleSlice(ys2, remainingRange, f))
-      }
 
-    case _ => handleSlice(xs, range, f)
+    case Zipped(xs, ys)                                             => xs.iterator zip ys.iterator drop range.startInt take range.size.intSize foreach f
+    case xs: AtomicView[_, _]                                       => xs.foreachSlice(range)(f)
+    case m: Mapped[a, _, _]                                         => foreachSlice[a](m.prev, m.f andThen f, range)
+    case xs: Direct[_]                                              => directlySlice(xs, range, f)
+    case Joined(HasSize(PreciseInt(n)), ys) if n < range.startInt   => ys slice (range << n) foreach f
+    case Joined(ys @ HasSize(PreciseInt(n)), _) if range.endInt < n => ys slice range foreach f
+    case Joined(ys1, ys2)                                           => linearlySlice(ys1, range, f) |> (remainingRange => linearlySlice(ys2, remainingRange, f))
+    case _                                                          => linearlySlice(xs, range, f)
   }
 }
 

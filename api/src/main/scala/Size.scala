@@ -40,3 +40,9 @@ object Precise {
   def apply(size: Int): IntSize       = IntSize( if (size < 0) 0 else size )
   def unapply(x: Precise): Some[Long] = Some(x.value) // XXX 2.11 this should be made box-free
 }
+object PreciseInt {
+  def unapply(x: Precise): Option[Int] = if (x.value <= Int.MaxValue.toLong) Some(x.value.toInt) else None
+}
+object HasSize {
+  def unapply(x: HasSize): Some[Size] = Some(x.size)
+}

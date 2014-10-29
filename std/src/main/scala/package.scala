@@ -202,32 +202,4 @@ package object std extends psp.std.StdPackage {
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
   def newArray[A: CTag](size: Precise): Array[A]            = new Array[A](size.intSize)
   def newSize(n: Long): Precise                             = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
-
-  def handleSlice[A](xs: Each[A], range: IndexRange, f: A => Unit): IndexRange = xs match {
-    case xs: Direct[A] => directlySlice(xs, range, f)
-    case _             => linearlySlice(xs, range, f)
-  }
-  def linearlySlice[A](xs: Each[A], range: IndexRange, f: A => Unit): IndexRange = {
-    var dropping = range.precedingSize
-    var remaining = range.size
-    var index = Index(0)
-    xs foreach { x =>
-      index += 1
-      if (dropping > 0)
-        dropping = dropping - 1
-      else if (remaining > 0)
-        try f(x) finally remaining -= 1
-      else
-        return index until range.end
-    }
-    index until range.end
-  }
-  def directlySlice[A](xs: Direct[A], range: IndexRange, f: A => Unit): IndexRange = {
-    var index = Index(0)
-    xs foreach { x =>
-      if (range containsIndex index) f(x)
-      index += 1
-    }
-    index until range.end
-  }
 }
