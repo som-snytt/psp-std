@@ -12,7 +12,7 @@ trait AnyView[+A] extends Any with Each[A] {
 }
 
 trait SetView[+A] extends Any with AnyView[A] with ExSet[A] {
-  type MapTo[+X] <: SetView[X]
+  // type MapTo[+X] <: SetView[X]
 }
 
 trait View[+A] extends Any with AnyView[A] with ExSeq[A] {
@@ -38,8 +38,6 @@ trait ExSeq[+A] extends Any {
   def dropIndex(index: Index): MapTo[A]
   def dropRight(n: Precise): MapTo[A]
   def dropWhile(p: Predicate[A]): MapTo[A]
-  def filter(p: Predicate[A]): MapTo[A]
-  def filterNot(p: Predicate[A]): MapTo[A]
   def flatMap[B](f: A => Each[B]): MapTo[B]
   def map[B](f: A => B): MapTo[B]
   def slice(range: IndexRange): MapTo[A]

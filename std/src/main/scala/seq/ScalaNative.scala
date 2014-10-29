@@ -19,8 +19,6 @@ final class ScalaNative[+A] private (val xs: scIterable[A], val counter: Recorde
   def drop(n: Precise): MapTo[A]                      = xs drop n.intSize
   def dropRight(n: Precise): MapTo[A]                 = xs dropRight n.intSize
   def dropWhile(p: Predicate[A]): MapTo[A]            = xs dropWhile p
-  def filter(p: Predicate[A]): MapTo[A]               = xs filter p
-  def filterNot(p: Predicate[A]): MapTo[A]            = xs filterNot p
   def flatMap[B](f: A => Each[B]): MapTo[B]           = xs flatMap (x => BiIterable(f(x)))
   def foreach(f: A => Unit): Unit                     = xs foreach f
   def intersperse[A1 >: A](that: View[A1]): MapTo[A1] = ??? // TODO
