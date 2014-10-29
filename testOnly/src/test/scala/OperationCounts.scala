@@ -106,7 +106,7 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
     val indices      = collections.indices
     val outcomes     = collections map (xs => new CollectionResult(viewFn, xs)) pvec
     val counts       = outcomes map (r => "%-3s".format(r.calls)) mkString " "
-    val ops          = viewFn(exView[Int]()).viewOps.tail
+    val ops          = viewFn(exView[Int]()).viewOps without "<vector>"
     val passOps      = ops map ("%-15s" format _) mk_s " "
     val failOps      = ops mk_s " "
 

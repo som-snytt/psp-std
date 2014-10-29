@@ -203,18 +203,31 @@ package object std extends psp.std.StdPackage {
   def newArray[A: CTag](size: Precise): Array[A]            = new Array[A](size.intSize)
   def newSize(n: Long): Precise                             = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
 
-  def directlySlice[A](xs: Each[A], range: IndexRange, f: A => Unit): Unit = xs match {
-    case xs: Direct[_] => range foreach (i => f(xs(i)))
-    case _             =>
-      var dropping = range.precedingSize
-      var taking   = range.size
-      xs foreach { x =>
-        if (dropping > 0)
-          dropping = dropping - 1
-        else if (taking > 0)
-          try f(x) finally taking = taking - 1
-        else
-          return
-      }
+  def handleSlice[A](xs: Each[A], range: IndexRange, f: A => Unit): IndexRange = xs match {
+    case xs: Direct[A] => directlySlice(xs, range, f)
+    case _             => linearlySlice(xs, range, f)
+  }
+  def linearlySlice[A](xs: Each[A], range: IndexRange, f: A => Unit): IndexRange = {
+    var dropping = range.precedingSize
+    var remaining = range.size
+    var index = Index(0)
+    xs foreach { x =>
+      index += 1
+      if (dropping > 0)
+        dropping = dropping - 1
+      else if (remaining > 0)
+        try f(x) finally remaining -= 1
+      else
+        return index until range.end
+    }
+    index until range.end
+  }
+  def directlySlice[A](xs: Direct[A], range: IndexRange, f: A => Unit): IndexRange = {
+    var index = Index(0)
+    xs foreach { x =>
+      if (range containsIndex index) f(x)
+      index += 1
+    }
+    index until range.end
   }
 }
