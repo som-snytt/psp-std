@@ -160,17 +160,17 @@ package object std extends psp.std.StdPackage {
   }
   def fromElems[A](xs: A*): Direct[A] = new Direct.FromScala(xs.toVector)
 
-  def mapBuilder[K, V](xs: (K, V)*): scmBuilder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
-  def setBuilder[A](xs: A*): scmBuilder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
-  def listBuilder[A](xs: A*): scmBuilder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
+  // def mapBuilder[K, V](xs: (K, V)*): scmBuilder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
+  // def setBuilder[A](xs: A*): scmBuilder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
+  // def listBuilder[A](xs: A*): scmBuilder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
+  // def mapToList[K, V](): scmMap[K, sciList[V]]                       = scmMap[K, sciList[V]]() withDefaultValue Nil
   def arrayBuilder[A: CTag](xs: A*): scmBuilder[A, Array[A]]         = scala.Array.newBuilder[A] ++= xs
   def vectorBuilder[A](xs: A*): scmBuilder[A, sciVector[A]]          = sciVector.newBuilder[A] ++= xs
-  def mapToList[K, V](): scmMap[K, sciList[V]]                       = scmMap[K, sciList[V]]() withDefaultValue Nil
 
   // Java.
   def jConcurrentMap[K, V](xs: (K, V)*): jConcurrentMap[K, V] = new jConcurrentHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
   def jFile(s: String): jFile                                 = path(s).toFile
-  def jList[A](xs: A*): jList[A]                              = java.util.Arrays.asList(xs: _* )
+  def jList[A](xs: A*): jList[A]                              = java.util.Arrays.asList(xs: _*)
   def jMap[K, V](xs: (K, V)*): jMap[K, V]                     = new jHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
   def jSet[A](xs: A*): jSet[A]                                = new jHashSet[A] doto (b => xs foreach b.add)
   def jUri(x: String): jUri                                   = java.net.URI create x
