@@ -46,7 +46,7 @@ trait JavaPathMethods extends Any {
 
   /** I/O.
    */
-  def appendLines(lines: pSeq[String]): Path                                      = writeNioLines(BiIterable(lines), CREATE, APPEND)
+  def appendLines(lines: Each[String]): Path                                      = writeNioLines(BiIterable(lines), CREATE, APPEND)
   def appendString(line: String): Path                                            = appendLines(Direct(line))
   def attrs[A <: BasicFileAttributes : CTag](opts: LinkOption*): A                = Files.readAttributes(path, classOf[A], opts: _*)
   def bufferedReader(implicit codec: Codec): BufferedReader                       = Files.newBufferedReader(path, codec.charSet)
@@ -57,7 +57,7 @@ trait JavaPathMethods extends Any {
   def outputStream(options: OpenOption*): OutputStream                            = Files.newOutputStream(path, options: _*)
   def size: Long                                                                  = Files size path
   def writeBytes(bytes: Array[Byte]): Path                                        = Files.write(path, bytes)
-  def writeLines(lines: pSeq[String]): Path                                       = writeNioLines(BiIterable(lines), CREATE)
+  def writeLines(lines: Each[String]): Path                                       = writeNioLines(BiIterable(lines), CREATE)
   def writeString(line: String): Path                                             = writeLines(Direct(line))
   def zeroOut(): Path                                                             = path doto { p => Files deleteIfExists p ; Files createFile p }
 

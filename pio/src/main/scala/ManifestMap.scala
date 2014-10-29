@@ -18,7 +18,7 @@ object ManifestMap {
 
 class ManifestMap private (val manifest: jManifest) extends AndThis {
   def +=(kv: (Name, String))         = andThis(javaAttrs.put(kv._1, kv._2))
-  def ++=(kvs: pSeq[(Name, String)]) = andThis(kvs foreach +=)
+  def ++=(kvs: Each[(Name, String)]) = andThis(kvs foreach +=)
 
   def underlying                              = manifest
   def javaAttrs: jMap[jAttributeName, String] = manifest.getMainAttributes().castTo

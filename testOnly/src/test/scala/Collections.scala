@@ -51,11 +51,11 @@ class PolicyBasic extends ScalacheckBundle {
   def plist   = PolicyList(1, 2, 3)
   def pvector = Direct(1, 2, 3)
   def parray  = Array(1, 2, 3)
-  def pseq    = Foreach[Int](parray foreach _)
-  def punfold = Foreach from 1
+  def pseq    = Each[Int](parray foreach _)
+  def punfold = Each from 1
 
   def closure   = parray transitiveClosure (x => view(x.init.force, x.tail.force)) mk_s ", "
-  def xxNumbers = (Foreach from 0).m grep """^(.*)\1""".r
+  def xxNumbers = (Each from 0).m grep """^(.*)\1""".r
 
   def props: sciList[NamedProp] = sciList(
     showsAs("[ 1, 2, 3 ]", plist),
@@ -133,7 +133,7 @@ class Collections extends ScalacheckBundle {
   def policyProps: sciList[NamedProp] = {
     import StdEq._
     val pset = exSet("a" -> 1, "b" -> 2, "c" -> 3)
-    val pseq = pSeq("a" -> 1, "b" -> 2, "c" -> 3)
+    val pseq = exSeq("a" -> 1, "b" -> 2, "c" -> 3)
 
     sciList(
       expectTypes[exSet[_]](
@@ -142,11 +142,11 @@ class Collections extends ScalacheckBundle {
         pset.m map identity build,
         pset.m.map(_._1).map(paired).force[exSet[_]]
       ),
-      expectTypes[pSeq[_]](
+      expectTypes[Each[_]](
         pseq map identity,
         pseq.m.build,
         pseq.m map identity build,
-        pseq.m.map(_._1).map(paired).force[pSeq[_]]
+        pseq.m.map(_._1).map(paired).force[Each[_]]
       )
     )
   }

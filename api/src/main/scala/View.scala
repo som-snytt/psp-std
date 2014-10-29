@@ -13,7 +13,7 @@ trait MapView[-K, +V] extends Any with Intensional[K, V] {
   def map[V1](f: V => V1): MapTo[V1]
 }
 
-trait View[+A] extends Any with Foreach[A] {
+trait View[+A] extends Any with Each[A] {
   type   MapTo[+X] <: View[X]
   type SplitTo[+X] <: View.Split[X]
 
@@ -26,7 +26,7 @@ trait View[+A] extends Any with Foreach[A] {
   def dropWhile(p: Predicate[A]): MapTo[A]
   def filter(p: Predicate[A]): MapTo[A]
   def filterNot(p: Predicate[A]): MapTo[A]
-  def flatMap[B](f: A => Foreach[B]): MapTo[B]
+  def flatMap[B](f: A => Each[B]): MapTo[B]
   def map[B](f: A => B): MapTo[B]
   def partition(p: Predicate[A]): SplitTo[A]
   def slice(range: IndexRange): MapTo[A]

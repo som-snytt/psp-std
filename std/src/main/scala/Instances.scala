@@ -45,7 +45,7 @@ trait OrderInstances {
 trait MonoidInstances {
   import StdZero._
 
-  implicit def seqAddition[A] : Sums[pSeq[A]]       = Sums(_ ++ _)
+  implicit def seqAddition[A] : Sums[Each[A]]       = Sums(_ ++ _)
   implicit def vectorAddition[A] : Sums[pVector[A]] = Sums(_ ++ _)
 }
 
@@ -67,7 +67,7 @@ trait ZeroInstances {
   implicit def longZero: Zero[Long]                          = Zero(0L)
   implicit def optionZero[A] : Zero[Option[A]]               = Zero(None)
   implicit def pVectorZero[A] : Zero[pVector[A]]             = Zero(Direct())
-  implicit def pSeqZero[A] : Zero[pSeq[A]]                   = Zero(Foreach.elems())
+  implicit def pSeqZero[A] : Zero[Each[A]]                   = Zero(Each.elems())
   implicit def exSetZero[A: HashEq] : Zero[exSet[A]]         = Zero(exSet[A]())
   implicit def exMapZero[K: HashEq, V] : Zero[exMap[K, V]]   = Zero(exMap[K, V]())
   implicit def scIterableZero[A] : Zero[scIterable[A]]       = Zero(Nil)
@@ -180,12 +180,12 @@ trait ShowForeach {
   implicit def jCollectionShow[A: Show] : Show[jIterable[A]]       = showBy[jIterable[A]](fromJava)
   implicit def sCollectionShow[A: Show] : Show[sCollection[A]]     = showBy[sCollection[A]](fromScala)
   implicit def arrayShow[A: Show] : Show[Array[A]]                 = showBy[Array[A]](Direct.fromArray)
-  implicit def policySeqShow[A: Show] : Show[Foreach[A]]           = Show(foreachString[A])
+  implicit def policySeqShow[A: Show] : Show[Each[A]]           = Show(foreachString[A])
   implicit def policySetShow[A: Show] : Show[inSet[A]]             = Show(inSetString[A])
   implicit def policyMapShow[K: Show, V: Show] : Show[exMap[K, V]] = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
   implicit def policyViewShow[A] : Show[View[A]]                   = Show(_.viewOps.joinWords.render)
 
-  def foreachString[A: Show](xs: Foreach[A]): String = xs match {
+  def foreachString[A: Show](xs: Each[A]): String = xs match {
     case xs: ShowDirect => xs.to_s
     case _              =>
       xs splitAt maxElements.lastIndex match {

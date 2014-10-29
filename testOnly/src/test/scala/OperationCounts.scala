@@ -14,7 +14,7 @@ object IntViews {
   def pfn[A](f: Int ?=> A): Int ?=> A   = f
   def vfn[A](f: IntViewFun): IntViewFun = f
 
-  lazy val tupleFlatMap: Int => pSeq[Int] = "(x, x)" |: fn(x => fromElems(x, x))
+  lazy val tupleFlatMap: Int => Each[Int] = "(x, x)" |: fn(x => fromElems(x, x))
   lazy val isEven: IntPred                = "isEven" |: divisibleBy(2)
   lazy val timesThree: Int => Int         = "*3"     |: fn(_ * 3)
   lazy val collectDivSix: Int ?=> Int     = "%/6"    |: pfn({ case x if x % 6 == 0 => x / 6 })
@@ -88,8 +88,8 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
 
   def policyList: pList[Int]         = (1 to max).plist
   def policyVector: pVector[Int]     = (1 to max).pvec
-  def policyMixed1: pSeq[Int]        = Foreach.join((1 until max / 2).pvec, (max / 2 to max).plist)
-  def policyMixed2: pSeq[Int]        = Foreach.join((1 until max / 2).plist, (max / 2 to max).pvec)
+  def policyMixed1: Each[Int]        = Each.join((1 until max / 2).pvec, (max / 2 to max).plist)
+  def policyMixed2: Each[Int]        = Each.join((1 until max / 2).plist, (max / 2 to max).pvec)
   def scalaIntRange: sciRange        = sciRange.inclusive(1, max, 1)
   def scalaIntList: sciList[Int]     = scalaIntRange.toList
   def scalaIntStream: sciStream[Int] = scalaIntRange.toStream

@@ -33,12 +33,12 @@ object Order {
 }
 
 object Builds {
-  def apply[Elem, To](f: Foreach[Elem] => To): Builds[Elem, To] = new Impl(f)
+  def apply[Elem, To](f: Each[Elem] => To): Builds[Elem, To] = new Impl(f)
   def wrap[Elem, To](z: CanBuild[Elem, To]): Builds[Elem, To]   = new Impl(xs => z() doto (b => xs foreach (b += _)) result)
 
-  final class Impl[Elem, To](val f: Foreach[Elem] => To) extends AnyVal with Builds[Elem, To] {
-    def build(xs: Foreach[Elem]): To   = f(xs)
-    def apply(mf: Suspended[Elem]): To = build(Foreach(mf))
+  final class Impl[Elem, To](val f: Each[Elem] => To) extends AnyVal with Builds[Elem, To] {
+    def build(xs: Each[Elem]): To   = f(xs)
+    def apply(mf: Suspended[Elem]): To = build(Each(mf))
   }
 }
 

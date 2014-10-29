@@ -178,7 +178,7 @@ def unsortedFrequencyMap: Map[A, Int]                     = sciMap(toScalaVector
 def mapFrom[B](f: A => B): exMap[B, A]                    = newMap(toScalaVector map (x => f(x) -> x): _*)
 def mapToAndOnto[B, C](k: A => B, v: A => C): exMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
 def mapToMapPairs[B, C](f: A => (B, C)): exMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
-def groupBy[B, C](f: A => B)(g: pSeq[A] => C): exMap[B, C] = {
+def groupBy[B, C](f: A => B)(g: Each[A] => C): exMap[B, C] = {
   val buf = scmMap[B, pList[A]]() withDefaultValue newList[A]()
   pseq foreach (x => buf(f(x)) ::= x)
   newMap((buf.toMap mapValues g).toSeq: _*)

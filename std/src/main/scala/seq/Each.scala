@@ -13,14 +13,14 @@ object FromScala {
   def unapply[Repr](wrapped: FromScala[Repr]): scala.Some[Repr]      = Some(wrapped.scalaCollection)
 }
 
-object Foreach {
-  def builder[A] : Builds[A, Foreach[A]] = Builds(identity)
+object Each {
+  def builder[A] : Builds[A, Each[A]] = Builds(identity)
 
-  final class FromJava[A](xs: jIterable[A]) extends Foreach[A] {
+  final class FromJava[A](xs: jIterable[A]) extends Each[A] {
     def size = Size(xs)
     @inline def foreach(f: A => Unit): Unit = BiIterable(xs) foreach f
   }
-  final case class FromScala[A](scalaCollection: sCollection[A]) extends AnyVal with Foreach[A] with psp.std.FromScala[sCollection[A]] {
+  final case class FromScala[A](scalaCollection: sCollection[A]) extends AnyVal with Each[A] with psp.std.FromScala[sCollection[A]] {
     def size = Size(scalaCollection)
     @inline def foreach(f: A => Unit): Unit = scalaCollection foreach f
   }
@@ -28,7 +28,7 @@ object Foreach {
    *  That requires us to produce made-up values for these methods thanks to
    *  scala's rampant overspecification.
    */
-  final class ToScala[A](xs: Foreach[A]) extends sciSeq[A] {
+  final class ToScala[A](xs: Each[A]) extends sciSeq[A] {
     override def length: Int = xs.size match {
       case Infinite                 => throw new InfiniteSizeException(s"$xs")
       case Precise(n) if n > MaxInt => throw new LongSizeException(s"$xs")
@@ -38,26 +38,26 @@ object Foreach {
     def apply(index: Int): A = xs drop index.size head
     override def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
-  final class Impl[A](val size: Size, mf: Suspended[A]) extends Foreach[A] {
+  final class Impl[A](val size: Size, mf: Suspended[A]) extends Each[A] {
     @inline def foreach(f: A => Unit): Unit = mf(f)
   }
-  final case class Joined[A](xs: Foreach[A], ys: Foreach[A]) extends Foreach[A] {
+  final case class Joined[A](xs: Each[A], ys: Each[A]) extends Each[A] {
     def size = xs.size + ys.size
     @inline def foreach(f: A => Unit): Unit = {
       xs foreach f
       ys foreach f
     }
   }
-  trait AtomicSize[+A] extends Any with Foreach[A] with HasAtomicSize
+  trait AtomicSize[+A] extends Any with Each[A] with HasAtomicSize
   trait InfiniteSize[+A] extends Any with AtomicSize[A] {
     def isEmpty  = false
     def size = Infinite
   }
   object KnownSize {
-    def unapply[A](xs: Foreach[A]) = xs.size optionally { case x: Atomic => x }
+    def unapply[A](xs: Each[A]) = xs.size optionally { case x: Atomic => x }
   }
 
-  final case class Sized[A](underlying: Foreach[A], override val size: Precise) extends Foreach[A] with HasPreciseSize {
+  final case class Sized[A](underlying: Each[A], override val size: Precise) extends Each[A] with HasPreciseSize {
     def isEmpty = size.isZero
     @inline def foreach(f: A => Unit): Unit = {
       var count: Precise = 0.size
@@ -84,15 +84,15 @@ object Foreach {
     }
   }
 
-  def elems[A](xs: A*): pSeq[A]                                   = apply[A](xs foreach _)
-  def apply[A](mf: Suspended[A]): Foreach[A]                      = new Impl[A](Size.unknown, mf)
-  def constant[A](elem: A): Constant[A]                           = Constant[A](elem)
-  def continuallySpan[A](p: Predicate[A])(expr: => A): Foreach[A] = continually(expr) takeWhile p
-  def continually[A](elem: => A): Continually[A]                  = Continually[A](() => elem)
-  def empty[A] : Foreach[A]                                       = Direct.Empty
-  def from(n: BigInt): Foreach[BigInt]                            = unfold(n)(_ + 1)
-  def from(n: Int): Foreach[Int]                                  = unfold(n)(_ + 1)
-  def from(n: Long): Foreach[Long]                                = unfold(n)(_ + 1)
-  def join[A](xs: Foreach[A], ys: Foreach[A]): Foreach[A]         = Joined[A](xs, ys)
-  def unfold[A](start: A)(next: A => A): Unfold[A]                = Unfold[A](start)(next)
+  def elems[A](xs: A*): Each[A]                                = apply[A](xs foreach _)
+  def apply[A](mf: Suspended[A]): Each[A]                      = new Impl[A](Size.unknown, mf)
+  def constant[A](elem: A): Constant[A]                        = Constant[A](elem)
+  def continuallySpan[A](p: Predicate[A])(expr: => A): Each[A] = continually(expr) takeWhile p
+  def continually[A](elem: => A): Continually[A]               = Continually[A](() => elem)
+  def empty[A] : Each[A]                                       = Direct.Empty
+  def from(n: BigInt): Each[BigInt]                            = unfold(n)(_ + 1)
+  def from(n: Int): Each[Int]                                  = unfold(n)(_ + 1)
+  def from(n: Long): Each[Long]                                = unfold(n)(_ + 1)
+  def join[A](xs: Each[A], ys: Each[A]): Each[A]               = Joined[A](xs, ys)
+  def unfold[A](start: A)(next: A => A): Unfold[A]             = Unfold[A](start)(next)
 }

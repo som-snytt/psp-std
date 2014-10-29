@@ -5,14 +5,14 @@ import api._, StdEq._
 
 object +: {
   def unapply[A](xs: Array[A])       = if (xs.length == 0) None else Some(xs(0) -> (xs drop 1))
-  def unapply[A](xs: pSeq[A])        = xs match { case PSeq(hd, _*) => Some(hd -> (xs drop 1)) ; case _ => None }
+  def unapply[A](xs: Each[A])        = xs match { case PSeq(hd, _*) => Some(hd -> (xs drop 1)) ; case _ => None }
   def unapply[A](xs: sCollection[A]) = if (xs.isEmpty) None else Some(xs.head -> xs.tail)
 }
 
 class FunctionEqualizer[A, B : Eq](f: A => B, g: A => B) extends (A ?=> B) {
   def isDefinedAt(x: A) = f(x) === g(x)
   def apply(x: A): B    = f(x)
-  def forall(xs: pSeq[A]): Boolean = xs forall isDefinedAt
+  def forall(xs: Each[A]): Boolean = xs forall isDefinedAt
 }
 
 final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T ?=> R) with ForceShowDirect {
@@ -30,14 +30,14 @@ final class Utf8(val bytes: Array[Byte]) extends AnyVal with ForceShowDirect {
 trait ClassLoaderTrait {
   def loader: jClassLoader
 
-  def parentChain: pSeq[jClassLoader] = {
+  def parentChain: Each[jClassLoader] = {
     def loop(cl: jClassLoader): View[jClassLoader] = cl match {
       case null => view()
       case _    => cl +: loop(cl.getParent)
     }
     loop(loader)
   }
-  def uris: pSeq[jUri] = loader match {
+  def uris: Each[jUri] = loader match {
     case cl: URLClassLoader => cl.getURLs.pseq map (_.toURI)
     case _                  => Nil
   }

@@ -25,10 +25,10 @@ package object tests {
   implicit def arbitraryPint: Arbitrary[Pint]                                        = Arbitrary(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
 
   def showsAs[A: Show](expected: String, x: A): NamedProp         = expected -> (expected =? show"$x")
-  def seqShows[A: Show](expected: String, xs: pSeq[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))
+  def seqShows[A: Show](expected: String, xs: Each[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))
 
   def expectType(expected: jClass, found: jClass): NamedProp        = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
-  def expectTypes(expected: jClass, found: pSeq[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
+  def expectTypes(expected: jClass, found: Each[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
 
   def expectType[A: CTag](result: A): NamedProp                     = expectType(classOf[A], result.getClass)
   def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], fromScala(results) map (_.getClass))
@@ -37,9 +37,9 @@ package object tests {
     new Buildable[A, CC] { def builder: scmBuilder[A, CC[A]] = z.scalaBuilder }
 
   def pvectorOf[A: Arbitrary](g: Gen[A]): Gen[pVector[A]]          = containerOf[pVector, A](g)(?, _.toScalaTraversable)
-  def pseqOf[A: Arbitrary](g: Gen[A]): Gen[pSeq[A]]                = containerOf[pSeq, A](g)(?, _.toScalaTraversable)
+  def pseqOf[A: Arbitrary](g: Gen[A]): Gen[Each[A]]                = containerOf[Each, A](g)(?, _.toScalaTraversable)
   def pvectorOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[pVector[A]] = containerOfN[pVector, A](n, g)(?, _.toScalaTraversable)
-  def pseqOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[pSeq[A]]       = containerOfN[pSeq, A](n, g)(?, _.toScalaTraversable)
+  def pseqOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[Each[A]]       = containerOfN[Each, A](n, g)(?, _.toScalaTraversable)
 
   implicit class ArbitraryOps[A](x: Arbitrary[A]) {
     def map[B](f: A => B): Arbitrary[B]       = Arbitrary(x.arbitrary map f)
@@ -47,8 +47,8 @@ package object tests {
   }
   implicit class GenOps[A](gen: Gen[A]) {
     def collect[B](pf: A ?=> B): Gen[B]                                          = gen suchThat pf.isDefinedAt map pf.apply
-    def collectN[B](n: Int)(pf: pSeq[A] ?=> B)(implicit z: Arbitrary[A]): Gen[B] = pseqOfN(n, gen) collect pf
-    def stream: pSeq[A]                                                          = Foreach continually gen.sample flatMap (_.pvec)
+    def collectN[B](n: Int)(pf: Each[A] ?=> B)(implicit z: Arbitrary[A]): Gen[B] = pseqOfN(n, gen) collect pf
+    def stream: Each[A]                                                          = Each continually gen.sample flatMap (_.pvec)
     def take(n: Int): pVector[A]                                                 = stream take n pvec
   }
   implicit class PropOps(p: Prop) {

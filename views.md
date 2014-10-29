@@ -122,8 +122,8 @@ res0: String = 5
 Other times we succeed where scala opts for non-termination.
 
 ```
-scala> val xs = Foreach from BigInt(1)
-xs: psp.std.core.Foreach[BigInt] = unfold from 1
+scala> val xs = Each from BigInt(1)
+xs: psp.std.core.Each[BigInt] = unfold from 1
 
 // We drop 1000 elements off the right side of infinity, then take the first three.
 scala> xs dropRight 1000 take 3 join ", "

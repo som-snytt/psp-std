@@ -20,7 +20,7 @@ package repl {
     implicit final class ReplJavaOps[A](val xs: jCollection[A])        extends TargetCommon[A] { def target = xs.m.pvec }
   }
   object ReplImport extends ReplImportLow {
-    implicit final class ReplForeachOps[A](val xs: Foreach[A])         extends TargetCommon[A] { def target = xs.m.pvec }
+    implicit final class ReplForeachOps[A](val xs: Each[A])         extends TargetCommon[A] { def target = xs.m.pvec }
     implicit final class ReplArrayOps[A](val xs: Array[A])             extends TargetCommon[A] { def target = xs.m.pvec }
     implicit final class ReplTraversableOps[A](val xs: sCollection[A]) extends TargetCommon[A] { def target = xs.m.pvec }
 

@@ -9,7 +9,6 @@ import psp.std.lowlevel._
 import psp.std.StdShow._
 
 package object std extends psp.std.StdPackage {
-  type pSeq[+A]          = Foreach[A]
   type pVector[+A]       = Direct[A]
   type pList[A]          = PolicyList[A]
   type inSet[A]          = IntensionalSet[A]
@@ -17,8 +16,7 @@ package object std extends psp.std.StdPackage {
   type inMap[K, V]       = IntensionalMap[K, V]
   type exMap[K, V]       = ExtensionalMap[K, V]
   type pMutableMap[K, V] = PolicyMutableMap[K, V]
-
-  type DocSeq      = pSeq[Doc]
+  type DocSeq            = Each[Doc]
 
   // Inlinable.
   final val InputStreamBufferSize = 8192
@@ -136,7 +134,7 @@ package object std extends psp.std.StdPackage {
   def andFalse(x: Unit): Boolean                        = false
   def andTrue(x: Unit): Boolean                         = true
   def direct[A](xs: A*): Direct[A]                      = new Direct.FromScala(xs.toVector)
-  def each[A](xs: sCollection[A]): Foreach[A]           = fromScala(xs)
+  def each[A](xs: sCollection[A]): Each[A]           = fromScala(xs)
   def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)
   def intRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end)
   def nthRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end + 1)
@@ -148,16 +146,16 @@ package object std extends psp.std.StdPackage {
   def show[A: Show] : Show[A]                           = ?
   def zero[A](implicit z: Zero[A]): A                   = z.zero
 
-  def fromScala[A](xs: sCollection[A]): Foreach[A] = xs match {
+  def fromScala[A](xs: sCollection[A]): Each[A] = xs match {
     case xs: sciIndexedSeq[_] => new Direct.FromScala(xs)
     case xs: sciLinearSeq[_]  => new PolicyList.FromScala(xs)
     // case xs: sciSet[A]        => new PolicySet.FromScala(xs)
-    case _                    => new Foreach.FromScala(xs)
+    case _                    => new Each.FromScala(xs)
   }
-  def fromJava[A](xs: jIterable[A]): Foreach[A] = xs match {
+  def fromJava[A](xs: jIterable[A]): Each[A] = xs match {
     case xs: jList[_] => new Direct.FromJava[A](xs)
     // case xs: jSet[_]  => new PolicySet.FromJava[A](xs)
-    case xs           => new Foreach.FromJava[A](xs)
+    case xs           => new Each.FromJava[A](xs)
   }
   def fromElems[A](xs: A*): Direct[A] = new Direct.FromScala(xs.toVector)
 
@@ -178,7 +176,7 @@ package object std extends psp.std.StdPackage {
   def jUrl(x: String): jUrl                                   = jUri(x).toURL
 
   object PSeq {
-    def unapplySeq[A](xs: pSeq[A]): scala.Some[scSeq[A]] = Some(xs.seq)
+    def unapplySeq[A](xs: Each[A]): scala.Some[scSeq[A]] = Some(xs.seq)
   }
   object Pair {
     def apply[R, A, B](x: A, y: B)(implicit z: PairUp[R, A, B]): R                = z.create(x, y)
@@ -191,15 +189,15 @@ package object std extends psp.std.StdPackage {
   }
   def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
 
-  def pMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]              = xs.m.pmap
-  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]             = xs.m.pmap
-  def exSet[A: HashEq](xs: A*): exSet[A]                        = xs.m.pset
-  def fview[A](mf: Suspended[A]): View[A]                       = Foreach[A](mf).m
-  def inSet[A: HashEq](p: Predicate[A]): inSet[A]               = p.inSet
-  def pList[A](xs: A*): pList[A]                                = xs.m.plist
-  def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V]         = new PolicyMutableMap(jConcurrentMap(xs: _*))
-  def pSeq[A](xs: A*): pSeq[A]                                  = Direct[A](xs: _*)
-  def view[A](xs: A*): View[A]                                  = Direct[A](xs: _*).m
+  def pMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]      = xs.m.pmap
+  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]     = xs.m.pmap
+  def exSet[A: HashEq](xs: A*): exSet[A]                = xs.m.pset
+  def exSeq[A](xs: A*): Each[A]                         = xs.m.pseq
+  def fview[A](mf: Suspended[A]): View[A]               = Each[A](mf).m
+  def inSet[A: HashEq](p: Predicate[A]): inSet[A]       = p.inSet
+  def pList[A](xs: A*): pList[A]                        = xs.m.plist
+  def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
+  def view[A](xs: A*): View[A]                          = Direct[A](xs: _*).m
 
   def indexedView[A, Repr](size: Precise, f: Index => A): IndexedView[A, Repr] = new IndexedView[A, Repr](Direct.pure(size, f))
 
@@ -208,7 +206,7 @@ package object std extends psp.std.StdPackage {
   def newArray[A: CTag](size: Precise): Array[A]            = new Array[A](size.intSize)
   def newSize(n: Long): Precise                             = if (n < 0) Precise(0) else if (n > MaxInt) Precise(n) else Precise(n.toInt)
 
-  def directlySlice[A](xs: Foreach[A], range: IndexRange, f: A => Unit): Unit = xs match {
+  def directlySlice[A](xs: Each[A], range: IndexRange, f: A => Unit): Unit = xs match {
     case xs: Direct[_] => range foreach (i => f(xs(i)))
     case _             =>
       var dropping = range.precedingSize

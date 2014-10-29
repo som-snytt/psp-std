@@ -125,7 +125,7 @@ trait DocSeqCommonOps extends Any {
 }
 
 final class DocSeqOps(val docs: DocSeq) extends AnyVal with DocSeqCommonOps
-final class ShowableSeqOps[A: Show](xs: pSeq[A]) extends AnyRef with DocSeqCommonOps {
+final class ShowableSeqOps[A: Show](xs: Each[A]) extends AnyRef with DocSeqCommonOps {
   def docs: DocSeq                = xs map (_.doc)
 }
 final class IndexRangeOps(xs: IndexRange) {
@@ -160,7 +160,7 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
   def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
   def isSubsetOf(ys: inSet[A]): Boolean    = xs.contained forall ys
 
-  def mapContained(f: pSeq[A] => pSeq[A]): exSet[A] = f(xs.contained).pset
+  def mapContained(f: Each[A] => Each[A]): exSet[A] = f(xs.contained).pset
 }
 
 trait HasPreciseSizeMethods extends Any {
@@ -208,8 +208,8 @@ final class PreciseOps(val size: Precise) extends AnyRef with HasPreciseSizeMeth
   def increment: Precise          = newSize(longSize + 1L)
   def decrement: Precise          = newSize(longSize - 1L)
 
-  def timesConst[A](elem: A): pSeq[A]   = Foreach constant elem take size
-  def timesEval[A](body: => A): pSeq[A] = Foreach continually body take size
+  def timesConst[A](elem: A): Each[A]   = Each constant elem take size
+  def timesEval[A](body: => A): Each[A] = Each continually body take size
 
   def toIntRange                           = intRange(0, intSize)
   def padLeft(s: String, ch: Char): String = if (s.length >= longSize) s else (this - s.length timesConst ch mkString "") ~ s

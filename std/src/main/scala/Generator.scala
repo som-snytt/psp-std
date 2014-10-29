@@ -11,7 +11,7 @@ object Generator {
   val Empty: Gen[Nothing] = create[Nothing](_ => throw EOS)
 
   def apply[A](xs: jIterable[A]): Gen[A]         = new JavaGenerator(xs.iterator)
-  def apply[A](xs: Foreach[A]): Gen[A]           = new ForeachGenerator(xs)
+  def apply[A](xs: Each[A]): Gen[A]           = new ForeachGenerator(xs)
   def apply[A](xs: scTraversableOnce[A]): Gen[A] = apply[A](xs.toIterator)
   def apply[A](it: scIterator[A]): Gen[A]        = new IteratorGenerator[A](it)
   def apply[A](xs: sciLinearSeq[A]): Gen[A]      = new LinearGenerator[A](xs)
@@ -85,7 +85,7 @@ object Generator {
   final class StreamGenerator[A](val xs: sciStream[A]) extends AnyVal with Gen[A] {
     def apply(f: A => Unit): Gen[A] = if (xs.isEmpty) Empty else try Generator(xs.tail) finally f(xs.head)
   }
-  final class ForeachGenerator[A](val xs: Foreach[A]) extends AnyVal with Gen[A] {
+  final class ForeachGenerator[A](val xs: Each[A]) extends AnyVal with Gen[A] {
     def apply(f: A => Unit): Gen[A] = if (xs.isEmpty) Empty else try Generator(xs.tail) finally f(xs.head)
   }
   final class JavaGenerator[A](val it: jIterator[A]) extends AnyVal with Gen[A] {

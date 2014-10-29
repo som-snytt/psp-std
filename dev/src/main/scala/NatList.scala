@@ -12,7 +12,7 @@ trait LowPriorityNatList {
   }
 }
 
-sealed trait NatList[N <: Nat, A] extends Foreach[A] with HasStaticSize[N] {
+sealed trait NatList[N <: Nat, A] extends Each[A] with HasStaticSize[N] {
   def isEmpty: Boolean
   def unsafeHead: A
   def unsafeTail: NatList[N#Prev, A]
@@ -28,10 +28,10 @@ sealed trait NatList[N <: Nat, A] extends Foreach[A] with HasStaticSize[N] {
 
 object NatList extends LowPriorityNatList with GeneralizedApply {
   trait Poly2[A, B] {
-    def apply[R](f: (A, B) => R): Foreach[R]
+    def apply[R](f: (A, B) => R): Each[R]
   }
   trait Poly3[A, B, C] {
-    def apply[R](f: (A, B, C) => R): Foreach[R]
+    def apply[R](f: (A, B, C) => R): Each[R]
   }
 
   def map2[N <: Nat, A, B, C](xs: NatList[N, A], ys: NatList[N, B])(f: (A, B) => C): NatList[N, C] = (xs, ys) match {
@@ -46,12 +46,12 @@ object NatList extends LowPriorityNatList with GeneralizedApply {
   }
 
   class SafeZipped2[N <: Nat, A, B](xs: NatList[N, A], ys: NatList[N, B]) {
-    def map = new Poly2[A, B] { def apply[R](f: (A, B) => R): Foreach[R] = map2(xs, ys)(f) }
+    def map = new Poly2[A, B] { def apply[R](f: (A, B) => R): Each[R] = map2(xs, ys)(f) }
     def zip[C](zs: NatList[N, C]): SafeZipped3[N, A, B, C] = new SafeZipped3(xs, ys, zs)
   }
 
   class SafeZipped3[N <: Nat, A, B, C](xs: NatList[N, A], ys: NatList[N, B], zs: NatList[N, C]) {
-    def map = new Poly3[A, B, C] { def apply[R](f: (A, B, C) => R): Foreach[R] = map3(xs, ys, zs)(f) }
+    def map = new Poly3[A, B, C] { def apply[R](f: (A, B, C) => R): Each[R] = map3(xs, ys, zs)(f) }
   }
 
   implicit class NatListOps[N <: Nat, A](xs: NatList[N, A]) {

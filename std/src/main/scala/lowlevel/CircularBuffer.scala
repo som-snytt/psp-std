@@ -20,7 +20,7 @@ final class CircularBuffer[A](capacity: Precise) extends Direct.DirectImpl[A] wi
   def isFull                         = seen >= cap
   def elemAt(index: Index): A        = buffer((readPointer + index.safeToInt) % cap).castTo[A]
   def size: Precise                  = capacity min Size(seen)
-  def ++=(xs: Foreach[A]): this.type = andThis(xs foreach setHead)
+  def ++=(xs: Each[A]): this.type = andThis(xs foreach setHead)
   def += (x: A): this.type           = andThis(this setHead x)
   def push(x: A): A                  = if (isFull) head sideEffect setHead(x) else abort("push on non-full buffer")
 

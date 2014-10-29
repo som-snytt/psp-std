@@ -20,7 +20,7 @@ class InferenceSpec extends ScalacheckBundle {
 
   val as: Array[Int]     = Array(1, 2, 3)
   val ds: pVector[Int]   = Direct(1, 2, 3)
-  val fs: pSeq[Int]      = Foreach(ds foreach _)
+  val fs: Each[Int]      = Each(ds foreach _)
   val ls: sciList[Int]   = sciList(1, 2, 3)
   val ss: String         = "123"
   val vs: sciVector[Int] = sciVector(1, 2, 3)
@@ -37,7 +37,7 @@ class InferenceSpec extends ScalacheckBundle {
   def ptBuild = sciList[NamedProp](
     expectType[Array[Int]](b1),
     expectType[pVector[Int]](b2),
-    expectType[pSeq[Int]](b3),
+    expectType[Each[Int]](b3),
     expectType[sciList[Int]](b4),
     expectType[String](b5),
     expectType[sciVector[Int]](b6)
@@ -88,8 +88,8 @@ class InferenceSpec extends ScalacheckBundle {
     expectType[String]        (ss.m map identity force),
     expectType[View[Char]]    (ss.m map identity),
     expectType[exSet[Int]]    (xs.m map identity force),
-    expectType[pSeq[Int]]     (fs map identity),
-    expectType[pSeq[Int]]     (fs.m map identity force),
+    expectType[Each[Int]]     (fs map identity),
+    expectType[Each[Int]]     (fs.m map identity force),
     expectType[pVector[Int]]  (ds map identity),
     expectType[pVector[Int]]  (ds.m map identity force),
     expectType[pVector[Int]]  (vs.m map identity force),

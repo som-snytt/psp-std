@@ -6,9 +6,9 @@ import java.util.concurrent.SynchronousQueue
 import lowlevel.CircularBuffer
 
 object FView {
-  type MapTo[X] = Foreach[X]
+  type MapTo[X] = Each[X]
 
-  trait ForView[+A] extends Foreach[A]
+  trait ForView[+A] extends Each[A]
 
   final case class Split[A](left: View[A], right: View[A]) {
     def mapLeft[A1 >: A](f: Unary[View[A1]]): Split[A1]  = new Split(f(left), right)

@@ -19,7 +19,7 @@ trait Read[A] extends Any { def read(x: String): A }
 
 /** The collections builder type class. Not especially classic in this presentation.
  */
-trait Builds[-Elem, +To] extends Any { def build(xs: Foreach[Elem]): To }
+trait Builds[-Elem, +To] extends Any { def build(xs: Each[Elem]): To }
 
 /** Contravariance vs. implicits, the endless battle.
  *  We return a java three-value enum from compare in preference
@@ -41,16 +41,16 @@ trait OptLong extends Any with Opt[Long] { def get: Long        }
 
 /** Collections interfaces.
  */
-trait Foreach[+A] extends Any with HasSize                        { def foreach(f: A => Unit): Unit   }
-trait Direct[+A]  extends Any with Foreach[A] with HasPreciseSize { def elemAt(i: Index): A           }
-trait Linear[+A]  extends Any with Foreach[A] with IsEmpty        { def head: A ; def tail: Linear[A] }
+trait Each[+A] extends Any with HasSize                        { def foreach(f: A => Unit): Unit   }
+trait Direct[+A]  extends Any with Each[A] with HasPreciseSize { def elemAt(i: Index): A           }
+trait Linear[+A]  extends Any with Each[A] with IsEmpty        { def head: A ; def tail: Linear[A] }
 
 trait Intensional[-K, +V] extends Any                              { def apply(x: K): V              }
 trait InSet[-A]           extends Any with Intensional[A, Boolean] { def apply(x: A): Boolean        }
 trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def keySet: InSet[K]            }
 
 trait Extensional[+A]     extends Any with HasSize
-trait ExSet[+A]           extends Any with Extensional[A]      { def contained: Foreach[A]       }
+trait ExSet[+A]           extends Any with Extensional[A]      { def contained: Each[A]       }
 trait ExMap[K, +V]        extends Any with Extensional[(K, V)] { def keySet: ExSet[K]            }
 
 /** Ennhanced value representations.

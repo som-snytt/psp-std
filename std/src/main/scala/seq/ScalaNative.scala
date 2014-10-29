@@ -12,7 +12,7 @@ final class ScalaNative[+A] private (val xs: scIterable[A], val counter: Recorde
 
   private implicit def lift[B](result: scIterable[B]): MapTo[B]           = new ScalaNative(result, counter)
   private implicit def liftPair[B](xs: PairOf[scIterable[B]]): SplitTo[B] = Split(lift(xs._1) -> lift(xs._2))
-  private implicit def lower[A](x: View[A]): scIterable[A]                = new Foreach.ToScala(x)
+  private implicit def lower[A](x: View[A]): scIterable[A]                = new Each.ToScala(x)
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]          = xs ++ that
   def collect[B](pf: A ?=> B): MapTo[B]               = xs collect pf
@@ -21,7 +21,7 @@ final class ScalaNative[+A] private (val xs: scIterable[A], val counter: Recorde
   def dropWhile(p: Predicate[A]): MapTo[A]            = xs dropWhile p
   def filter(p: Predicate[A]): MapTo[A]               = xs filter p
   def filterNot(p: Predicate[A]): MapTo[A]            = xs filterNot p
-  def flatMap[B](f: A => pSeq[B]): MapTo[B]           = xs flatMap (x => BiIterable(f(x)))
+  def flatMap[B](f: A => Each[B]): MapTo[B]           = xs flatMap (x => BiIterable(f(x)))
   def foreach(f: A => Unit): Unit                     = xs foreach f
   def intersperse[A1 >: A](that: View[A1]): MapTo[A1] = ??? // TODO
   def map[B](f: A => B): MapTo[B]                     = xs map f

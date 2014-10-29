@@ -80,7 +80,7 @@ object BiIterable {
   private class JavaBased[A](xs: jIterable[A])   extends BiIterableImpl(xs.iterator |> (it => new Impl(it.hasNext, it.next)))
   private class ScalaBased[A](xs: scIterable[A]) extends BiIterableImpl(xs.iterator |> (it => new Impl(it.hasNext, it.next)))
 
-  def apply[A](xs: pSeq[A]): BiIterable[A]       = new ScalaBased(xs.toScalaStream) // XXX
+  def apply[A](xs: Each[A]): BiIterable[A]       = new ScalaBased(xs.toScalaStream) // XXX
   def apply[A](xs: pList[A]): BiIterable[A]      = new LinearBased(xs)
   def apply[A](xs: pVector[A]): BiIterable[A]    = new VectorBased(xs)
   def apply[A](xs: Array[A]): BiIterable[A]      = new ArrayBased(xs)

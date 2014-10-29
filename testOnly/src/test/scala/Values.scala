@@ -38,9 +38,9 @@ class ValuesSpec extends ScalacheckBundle {
   }
 
   // generate from the full range of uints
-  def fullRangeOps: pSeq[NamedProp] = {
+  def fullRangeOps: Each[NamedProp] = {
     implicit def arbUInt = Arbitrary(genUInt)
-    def qualities: pSeq[Quality] = pSeq(
+    def qualities: Each[Quality] = exSeq(
       Quality("& |   max min    ", "^ + * / -", x => forAll(idempotence(x.op)), "idempotent", "NOT idempotent"),
       Quality("& | ^ max min + *", "      / -", x => forAll(commutative(x.op)), "commutes  ", "does NOT commute"),
       Quality("& | ^ max min + *", "        -", x => forAll(associative(x.op)), "associates", "does NOT associate")
@@ -56,7 +56,7 @@ class ValuesSpec extends ScalacheckBundle {
   }
 
   // generate from uints <= IntMax
-  def smallishOps: pSeq[NamedProp] = {
+  def smallishOps: Each[NamedProp] = {
     implicit val arbUInt = Arbitrary(genPosInt map UInt)
     named("on \"small\" uints, x <= x + y" -> forAll((x: UInt, y: UInt) => x <= (x + y) && y <= (x + y)))
   }

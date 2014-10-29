@@ -15,13 +15,13 @@ final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPrecise
 }
 
 trait ConversionOps[A] extends Any {
-  def xs: Foreach[A]
+  def xs: Each[A]
 
   def to[CC[X]](implicit z: Builds[A, CC[A]]): CC[A]        = z build xs
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
   def toPolicyList: pList[A]                                            = PolicyList.builder[A] build xs
-  def toPolicySeq: pSeq[A]                                              = Foreach.builder[A] build xs
+  def toPolicySeq: Each[A]                                              = Each.builder[A] build xs
   def toPolicySet(implicit z: HashEq[A]): exSet[A]                      = PolicySet.builder[A] build xs
   def toPolicyVector: pVector[A]                                        = Direct.builder[A] build xs
   def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): exMap[K, V] = PolicyMap.builder[K, V] build (xs map ev)
@@ -49,18 +49,18 @@ trait ConversionOps[A] extends Any {
   def generator: Generator[A]                                          = Generator(xs)
   def plist: pList[A]                                                  = toPolicyList
   def pvec: pVector[A]                                                 = toPolicyVector
-  def pseq: pSeq[A]                                                    = toPolicySeq
+  def pseq: Each[A]                                                    = toPolicySeq
   def pset(implicit z: HashEq[A]): exSet[A]                            = toPolicySet
   def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): exMap[K, V] = toPolicyMap[K, V]
 
   def naturalMap[K, V](implicit ev: A <:< (K, V)): exMap[K, V] = toPolicyMap[K, V](HashEq.natural(), ev)
   def naturalSet: exSet[A]                                     = toPolicySet(HashEq.natural())
 
-  def seq: sciSeq[A] = toScalaSeq // new Foreach.ToScala(xs) // varargs
+  def seq: sciSeq[A] = toScalaSeq // new Each.ToScala(xs) // varargs
 }
 
-final class ForeachOps[A](val xs: Foreach[A]) extends AnyVal with ConversionOps[A] {
-  def sized(size: Precise): Foreach[A] = new Foreach.Sized(xs, size)
+final class ForeachOps[A](val xs: Each[A]) extends AnyVal with ConversionOps[A] {
+  def sized(size: Precise): Each[A] = new Each.Sized(xs, size)
 }
 
 final class DirectOps[A](val xs: Direct[A]) extends AnyVal with ConversionOps[A] {

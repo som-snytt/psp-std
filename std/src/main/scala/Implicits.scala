@@ -33,7 +33,7 @@ abstract class StdPackage
   implicit class BuildsOps[Elem, To](z: Builds[Elem, To]) {
     def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))
     def map[Next](f: To => Next): Builds[Elem, Next]   = Builds(xs => f(z build xs))
-    def direct: Suspended[Elem] => To                  = mf => z build Foreach(mf)
+    def direct: Suspended[Elem] => To                  = mf => z build Each(mf)
     def scalaBuilder: scmBuilder[Elem, To]                = sciVector.newBuilder[Elem] mapResult (xs => z build xs)
   }
   implicit class JavaEnumerationOps[A](it: jEnumeration[A]) {
@@ -50,14 +50,14 @@ abstract class StdPackage
       h(f(lhs._1, rhs._1), g(lhs._2, rhs._2))
   }
   implicit class AnyTargetSeqOps[A: HashEq](root: A) {
-    def transitiveDepth(maxDepth: Int, expand: A => pSeq[A]): pSeq[A] = {
+    def transitiveDepth(maxDepth: Int, expand: A => Each[A]): Each[A] = {
       var seen = PolicySet.elems[A]()
       def loop(depth: Int, root: A, f: A => Unit): Unit = if (depth < maxDepth && !seen(root)) {
         seen = seen union exSet(root)
         f(root)
         expand(root) |> (xs => if (xs != null) xs foreach (x => loop(depth + 1, x, f)))
       }
-      Foreach(f => loop(0, root, f))
+      Each(f => loop(0, root, f))
     }
     def transitiveClosure(expand: A => View[A]): View[A] = fview { f =>
       var seen = exSet[A]()
@@ -74,7 +74,7 @@ abstract class StdPackage
   implicit def intToPreciseSize(n: Int): IntSize                  = Precise(n)
   implicit def convertNilSeq[A](x: scala.Nil.type): pVector[A]    = Direct[A]()
 
-  implicit def convertPolicySeq[A, B](xs: pSeq[A])(implicit conversion: A => B): pSeq[B] = xs map (x => conversion(x))
+  implicit def convertPolicySeq[A, B](xs: Each[A])(implicit conversion: A => B): Each[B] = xs map (x => conversion(x))
 
   implicit def conforms[A] : (A <:< A) = new conformance[A]
 }

@@ -1,7 +1,7 @@
 package psp
 package tests
 
-import psp.std._
+import psp.std._, api._
 import org.scalacheck.Test
 import scala.Console.{ println => _, _ }
 
@@ -44,7 +44,7 @@ final class NamedProp(val label: String, p: Prop) {
 }
 object NamedProp {
   def apply(label: String, p: Prop): NamedProp                 = new NamedProp(label, p)
-  implicit def liftSeqPair(x: (String, pSeq[Prop])): NamedProp = NamedProp(x._1, x._2 reducel (_ && _))
+  implicit def liftSeqPair(x: (String, Each[Prop])): NamedProp = NamedProp(x._1, x._2 reducel (_ && _))
   implicit def liftPair(x: (String, Prop)): NamedProp          = NamedProp(x._1, x._2)
 }
 
