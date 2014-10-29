@@ -32,7 +32,7 @@ trait ClassLoaderTrait {
 
   def parentChain: Each[jClassLoader] = {
     def loop(cl: jClassLoader): View[jClassLoader] = cl match {
-      case null => view()
+      case null => exView()
       case _    => cl +: loop(cl.getParent)
     }
     loop(loader)

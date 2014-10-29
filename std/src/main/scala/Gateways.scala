@@ -145,7 +145,7 @@ trait StdOps extends Any with StdOps3 {
   implicit def apiIndexPromote(x: Index): IndexImpl                        = Index impl x
   implicit def apiIndexRangePromote(x: IndexRange): LongRange              = IndexRange impl x
   implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]            = Order(ord.compare)
-  implicit def directoryStreamView[A](stream: DirectoryStream[A]): View[A] = fview(BiIterable(stream) foreach _)
+  implicit def directoryStreamView[A](stream: DirectoryStream[A]): View[A] = inView(BiIterable(stream) foreach _)
 }
 
 // Prefer opsAnyRef.

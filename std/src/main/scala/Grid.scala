@@ -16,7 +16,7 @@ final case class FunctionGrid[A, B](values: View[A], functions: View[A => B]) {
 
 object Grid {
   def apply[A](f: A => (A, A)): A => View[A] = {
-    def loop(x: A): View[A] = f(x) |> { case (a, b) => view(a) ++ loop(b) }
+    def loop(x: A): View[A] = f(x) |> { case (a, b) => a +: loop(b) }
     loop
   }
 }

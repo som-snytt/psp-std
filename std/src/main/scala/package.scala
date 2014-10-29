@@ -15,6 +15,7 @@ package object std extends psp.std.StdPackage {
   type exSet[A]          = ExtensionalSet[A]
   type inMap[K, V]       = IntensionalMap[K, V]
   type exMap[K, V]       = ExtensionalMap[K, V]
+  type exSeq[+A]         = Each[A]
   type pMutableMap[K, V] = PolicyMutableMap[K, V]
   type DocSeq            = Each[Doc]
 
@@ -189,15 +190,15 @@ package object std extends psp.std.StdPackage {
   }
   def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
 
-  def pMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]      = xs.m.pmap
   def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]     = xs.m.pmap
-  def exSet[A: HashEq](xs: A*): exSet[A]                = xs.m.pset
   def exSeq[A](xs: A*): Each[A]                         = xs.m.pseq
-  def fview[A](mf: Suspended[A]): View[A]               = Each[A](mf).m
+  def exSet[A: HashEq](xs: A*): exSet[A]                = xs.m.pset
+  def exView[A](xs: A*): View[A]                        = Direct[A](xs: _*).m
   def inSet[A: HashEq](p: Predicate[A]): inSet[A]       = p.inSet
+  def inView[A](mf: Suspended[A]): View[A]              = Each[A](mf).m
+
   def pList[A](xs: A*): pList[A]                        = xs.m.plist
   def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
-  def view[A](xs: A*): View[A]                          = Direct[A](xs: _*).m
 
   def indexedView[A, Repr](size: Precise, f: Index => A): IndexedView[A, Repr] = new IndexedView[A, Repr](Direct.pure(size, f))
 

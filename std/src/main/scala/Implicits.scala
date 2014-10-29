@@ -59,7 +59,7 @@ abstract class StdPackage
       }
       Each(f => loop(0, root, f))
     }
-    def transitiveClosure(expand: A => View[A]): View[A] = fview { f =>
+    def transitiveClosure(expand: A => View[A]): View[A] = inView { f =>
       var seen = exSet[A]()
       def loop(root: A, f: A => Unit): Unit = if (!seen(root)) {
         seen = seen add root

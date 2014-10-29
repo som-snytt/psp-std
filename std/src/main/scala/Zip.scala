@@ -21,8 +21,8 @@ trait StdZipped {
     def find(p: (A1, A2) => Boolean)                 = pairs find p.tupled
     def mapLeft[B1](g: A1 => B1)                     = new MappedZip2Ops(this, g, identity[A2])
     def mapRight[B2](g: A2 => B2)                    = new MappedZip2Ops(this, identity[A1], g)
-    def map[C](g: (A1, A2) => C): View[C]            = fview(f => foreach((x, y) => f(g(x, y))))
-    def pairs: View[(A1, A2)]                        = fview(mf => foreach((x, y) => mf(x -> y)))
+    def map[C](g: (A1, A2) => C): View[C]            = inView(f => foreach((x, y) => f(g(x, y))))
+    def pairs: View[(A1, A2)]                        = inView(mf => foreach((x, y) => mf(x -> y)))
     def toMap: sciMap[A1, A2]                        = map(_ -> _).toScalaMap
     def withFilter(q: Predicate2[A1, A2]): This      = new Zip2Ops(xs, ys, (x, y) => p(x, y) && q(x, y))
 

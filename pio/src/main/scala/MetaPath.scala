@@ -21,7 +21,7 @@ final case class SinglePaths(singles: pVector[SinglePath]) extends Direct[Single
   def elemAt(idx: Index)             = singles(idx)
   def length                         = singles.length
   def paths                          = singles map (_.path)
-  def entries                        = paths flatMap (p => Try(p.entries) | view())
+  def entries                        = paths flatMap (p => Try(p.entries) | exView())
   def deepEntries                    = paths flatMap (_.deepEntries)
   def packageNames                   = deepEntries flatMap (x => pathToPackage(x)) sortDistinct
 
@@ -46,7 +46,7 @@ case class MetaPath(path: Path, style: MetaStyle) {
   private def single(s: String): MetaPath = copy(path = newPath(s))
 
   def isComposite             = chars containsChar sep
-  def flatten: View[MetaPath] = if (isComposite) singles else view(this)
+  def flatten: View[MetaPath] = if (isComposite) singles else exView(this)
   def expanded: SinglePaths   = MetaPath expansion this
   def entries: View[Path]     = expanded flatMap (_.entries)
 }

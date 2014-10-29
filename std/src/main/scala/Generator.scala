@@ -129,7 +129,7 @@ package ops {
     // @tailrec
     def foreach(f: A => Unit): Unit = if (nonEmpty) g(f) foreach f
     def iterator: scIterator[A] = new GeneratorBasedIterator(g)
-    def view = fview(foreach)
+    def view = inView(foreach)
 
     @inline def reduce(f: (A, A) => A): A = {
       var nonEmpty = false

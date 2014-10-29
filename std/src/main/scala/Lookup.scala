@@ -46,6 +46,6 @@ final class Lookup[K, V](pf: K ?=> V, fallback: Lookup.Default[K, V]) extends (K
   def isDefinedAt(key: K): Boolean                               = pf isDefinedAt key
   def map[V1](f: V => V1): Lookup[K, V1]                         = new Lookup(pf andThen f, default map f)
   def orElse(that: Lookup[K, V]): Lookup[K, V]                   = new Lookup(pf orElse that.pf, default orElse that.default)
-  def put(key: K, value: V)(implicit z: HashEq[K]): Lookup[K, V] = new Lookup(pMap(key -> value).partial orElse pf, default)
+  def put(key: K, value: V)(implicit z: HashEq[K]): Lookup[K, V] = new Lookup(exMap(key -> value).partial orElse pf, default)
   def withDefault(default: Default[K, V]): Lookup[K, V]          = new Lookup(pf, default)
 }

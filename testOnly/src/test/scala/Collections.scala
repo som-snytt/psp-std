@@ -54,7 +54,7 @@ class PolicyBasic extends ScalacheckBundle {
   def pseq    = Each[Int](parray foreach _)
   def punfold = Each from 1
 
-  def closure   = parray transitiveClosure (x => view(x.init.force, x.tail.force)) mk_s ", "
+  def closure   = parray transitiveClosure (x => exView(x.init.force, x.tail.force)) mk_s ", "
   def xxNumbers = (Each from 0).m grep """^(.*)\1""".r
 
   def props: sciList[NamedProp] = sciList(

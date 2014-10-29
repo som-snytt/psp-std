@@ -23,7 +23,7 @@ trait JavaPathMethods extends Any {
   def toPioJar(): Jar  = PathJars(path)
 
   def foreach(f: Path => Unit): Unit = walk(PathVisitor(f))
-  def map[A](f: Path => A): View[A]  = fview(foreach) map f
+  def map[A](f: Path => A): View[A]  = inView(foreach) map f
   def indices: IndexRange            = indexRange(0, path.getNameCount)
   def to_s: String                   = path.toString
 
@@ -90,7 +90,7 @@ trait JavaPathMethods extends Any {
   def walk(f: (Path, BasicFileAttributes) => FileVisitResult): Unit = walk(PathVisitor(f))
   def walk(visitor: PathVisitor): Unit                              = Files.walkFileTree(path, visitor)
 
-  def filterDeepFiles(p: PathPredicate): Paths = fview { f =>
+  def filterDeepFiles(p: PathPredicate): Paths = inView { f =>
     def loop(path: Path): Unit = if (path.isDir) path.entries() foreach loop else if (p(path)) f(path)
     loop(path)
   }
@@ -125,8 +125,8 @@ trait JavaPathMethods extends Any {
     if (path.isReadable && isDir)
       filterChildren(pathFs, path, p)
     else if (path.isFile && isJarOrZip)
-      Try(getOrCreateFs(jarUri("")) |> (fs => filterChildren(fs, fs.provider getPath jarUri("!/"), p))) | view()
+      Try(getOrCreateFs(jarUri("")) |> (fs => filterChildren(fs, fs.provider getPath jarUri("!/"), p))) | exView()
     else
-      view()
+      exView()
   )
 }

@@ -47,10 +47,10 @@ package object pio {
     def manifestMainClass = noNull(jar.manifestMap(Name.MAIN_CLASS), "")
     def manifestClassPath = noNull(jar.manifestMap(Name.CLASS_PATH), "")
 
-    def mapNames[A](f: String => A): View[A]                   = fview(g => jar  foreachEntry(e => g(f(e.getName))))
-    def mapEntries[A](f: JarEntry => A): View[A]               = fview(g => jar  foreachEntry(f map g))
-    def mapBytes[A](f: (JarEntry, Bytes) => A): View[A]        = fview(g => jar  foreachBytes(f map g))
-    def mapStream[A](f: (JarEntry, InputStream) => A): View[A] = fview(g => jar foreachStream(f map g))
+    def mapNames[A](f: String => A): View[A]                   = inView(g => jar  foreachEntry(e => g(f(e.getName))))
+    def mapEntries[A](f: JarEntry => A): View[A]               = inView(g => jar  foreachEntry(f map g))
+    def mapBytes[A](f: (JarEntry, Bytes) => A): View[A]        = inView(g => jar  foreachBytes(f map g))
+    def mapStream[A](f: (JarEntry, InputStream) => A): View[A] = inView(g => jar foreachStream(f map g))
 
     def newLoader: PolicyLoader             = new PolicyLoader(newClassMap)
     def paths: View[Path]                   = mapEntries(e => path(e.getName))

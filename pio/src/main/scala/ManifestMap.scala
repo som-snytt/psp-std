@@ -8,7 +8,7 @@ import scala.util.Properties._
 import Unsafe.universalEq
 
 object ManifestMap {
-  def initialMainAttrs: View[(Name, String)] = view(
+  def initialMainAttrs: View[(Name, String)] = exView(
     Name.MANIFEST_VERSION -> "1.0",
     ScalaCompilerVersion  -> versionNumberString
   )

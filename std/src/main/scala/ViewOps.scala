@@ -39,7 +39,7 @@ trait ApiViewOps[+A] extends Any {
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
   def indexAtWhich(p: Predicate[A]): Index                       = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): View[C] = xs map (f => ev(f)(x))
-  def mapWithIndex[B](f: (A, Index) => B): View[B]               = fview[B](mf => xs.foldl(0)((res, x) => try res + 1 finally mf(f(x, Index(res))))) withSize xs.size
+  def mapWithIndex[B](f: (A, Index) => B): View[B]               = inView[B](mf => xs.foldl(0)((res, x) => try res + 1 finally mf(f(x, Index(res))))) withSize xs.size
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
   def mkString(sep: String): String                              = stringed(sep)(_.any_s)
@@ -64,8 +64,8 @@ trait ApiViewOps[+A] extends Any {
 }
 
 trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
-  def +:(elem: A): View[A] = view(elem) ++ xs
-  def :+(elem: A): View[A] = xs ++ view(elem)
+  def +:(elem: A): View[A] = exView(elem) ++ xs
+  def :+(elem: A): View[A] = xs ++ exView(elem)
 
   def contains(x: A)(implicit z: Eq[A]): Boolean                = exists (_ === x)
   def containsByEquals(x: A): Boolean                           = exists (_ == x)
@@ -86,7 +86,7 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
    */
   def safeReduce(f: (A, A) => A)(implicit z: Zero[A]): A = if (isEmpty) z.zero else reducel(f)
 
-  def distinctBy[B: HashEq](f: A => B): View[A] = fview { mf =>
+  def distinctBy[B: HashEq](f: A => B): View[A] = inView { mf =>
     var seen: exSet[B] = exSet[B]()
     xs foreach { x =>
       val y = f(x)

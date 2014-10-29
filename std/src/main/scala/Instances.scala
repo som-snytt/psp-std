@@ -83,7 +83,7 @@ trait ZeroInstances {
   implicit def shownZero: Zero[Shown]                        = Zero(Shown.empty)
   implicit def stringZero: Zero[String]                      = Zero("")
   implicit def unitZero: Zero[Unit]                          = Zero(())
-  implicit def viewZero[A] : Zero[View[A]]                   = Zero(view())
+  implicit def viewZero[A] : Zero[View[A]]                   = Zero(exView())
 }
 
 trait EqInstances {
