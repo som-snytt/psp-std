@@ -21,6 +21,7 @@ trait ApiViewOps[+A] extends Any {
   def tail: View[A]        = xs drop      1
   def toRefs: View[AnyRef] = xs map (_.toRef)
 
+  def slice(range: IndexRange): View[A]                = new LabeledView(xs drop range.precedingSize take range.size, xs.viewOps :+ pp"slice $range")
   def filter(p: Predicate[A]): View[A]                 = xs withFilter p
   def filterNot(p: Predicate[A]): View[A]              = xs withFilter !p
   def distinct(implicit z: HashEq[A]): View[A]         = xs.pset

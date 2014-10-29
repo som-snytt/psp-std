@@ -77,9 +77,6 @@ object Size {
     case (Bounded(l1, h1), Bounded(l2, h2)) => Bounded(l1, h2)
   }
 
-  def sliced(size: Precise, range: IndexRange): Precise = (size - range.precedingSize) min range.size
-  def sliced(size: Size, range: IndexRange): Size       = (size - range.precedingSize) min range.size
-
   final class Ops(val lhs: Size) extends AnyVal {
     def isNonZero    = !loBound.isZero
     def isZero       = lhs match {
@@ -109,8 +106,6 @@ object Size {
     def union(rhs: Size): Size     = bounded(lhs max rhs, lhs + rhs)
     def intersect(rhs: Size): Size = bounded(0.size, lhs min rhs)
     def diff(rhs: Size): Size      = bounded(lhs - rhs, lhs)
-
-    def slice(range: IndexRange): Size = (lhs - range.precedingSize) min range.size
 
     def * (m: Long): Size = lhs match {
       case Precise(n)                        => newSize(n * m)

@@ -34,28 +34,9 @@ object FView {
     }
   }
 
-  sealed class SlicedDirect[A](xs: Direct[A], range: IndexRange) extends ForView[A] with Direct[A] {
-    def isEmpty = size.isZero
-    def size    = Size.sliced(xs.size, range)
-    def elemAt(index: Index): A     = xs(index + range.startInt)
-    def foreach(f: A => Unit): Unit = range foreach (i => f(xs(i)))
-  }
-
   sealed abstract class Sliced[A](xs: MapTo[A], range: IndexRange) extends ForView[A] {
-    def size = xs.size slice range
-    def foreach(f: A => Unit): Unit = {
-      var dropping = range.precedingSize
-      var taking   = range.size
-
-      xs foreach { x =>
-        if (dropping > 0)
-          dropping = dropping - 1
-        else if (taking > 0)
-          try f(x) finally taking = taking - 1
-        else
-          return
-      }
-    }
+    def size                        = (xs.size - range.precedingSize) min range.size
+    def foreach(f: A => Unit): Unit = directlySlice(xs, range, f)
   }
   sealed abstract class Filtered[A, B](xs: MapTo[A], p: A => Boolean, f: A => B, val size: Size) extends ForView[B] {
     def foreach(g: B => Unit): Unit = xs foreach (x => if (p(x)) g(f(x)))

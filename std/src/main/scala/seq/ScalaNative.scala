@@ -24,7 +24,6 @@ final class ScalaNative[+A] private (val xs: scIterable[A], val counter: Recorde
   def intersperse[A1 >: A](that: View[A1]): MapTo[A1] = ??? // TODO
   def map[B](f: A => B): MapTo[B]                     = xs map f
   def size: IntSize                                   = Precise(xs.size)
-  def slice(range: IndexRange): MapTo[A]              = xs.slice(range.startInt, range.endInt)
   def take(n: Precise): MapTo[A]                      = xs take n.intSize
   def takeRight(n: Precise): MapTo[A]                 = xs takeRight n.intSize
   def takeWhile(p: Predicate[A]): MapTo[A]            = xs takeWhile p

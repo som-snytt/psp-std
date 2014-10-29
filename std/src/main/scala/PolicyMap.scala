@@ -112,7 +112,7 @@ object PolicyMap {
 
     def drop(n: Precise): Us         = new Us(keys drop n.intSize, values drop n.intSize)
     def take(n: Precise): Us         = new Us(keys take n.intSize, values take n.intSize)
-    def slice(range: IndexRange): Us = new Us(keys.slice(range.startInt, range.endInt), values.slice(range.startInt, range.endInt))
+    def slice(range: IndexRange): Us = this drop range.precedingSize take range.size
     def dropRight(n: Precise): Us    = new Us(keys dropRight n.intSize, values dropRight n.intSize)
     def takeRight(n: Precise): Us    = new Us(keys takeRight n.intSize, values takeRight n.intSize)
 

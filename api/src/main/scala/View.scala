@@ -40,7 +40,6 @@ trait ExSeq[+A] extends Any {
   def dropWhile(p: Predicate[A]): MapTo[A]
   def flatMap[B](f: A => Each[B]): MapTo[B]
   def map[B](f: A => B): MapTo[B]
-  def slice(range: IndexRange): MapTo[A]
   def span(p: Predicate[A]): SplitTo[A]
   def splitAt(index: Index): SplitTo[A]
   def take(n: Precise): MapTo[A]
