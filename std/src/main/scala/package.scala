@@ -102,7 +102,7 @@ package object std extends psp.std.StdPackage {
   def loaderOf[A: CTag] : ClassLoader       = noNull(classLoaderOf[A], nullLoader)
   def nullLoader(): ClassLoader             = NullClassLoader
   def pClassOf[A: CTag](): PolicyClass      = new PolicyClass(classOf[A])
-  def resource(name: String): Array[Byte]   = Try(noNull(currentThread.getContextClassLoader, nullLoader)) || loaderOf[this.type] fold (_ getResourceAsStream name slurp, _ => Array.empty)
+  def resource(name: String): Array[Byte]   = Try(noNull(contextClassLoader, nullLoader)) || loaderOf[this.type] fold (_ => Array.empty, _ getResourceAsStream name slurp)
   def resourceString(name: String): String  = utf8(resource(name)).to_s
 
   def path(s: String, ss: String*): Path          = ss.foldLeft(Paths get s)(_ resolve _)

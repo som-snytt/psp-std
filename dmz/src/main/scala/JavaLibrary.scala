@@ -17,15 +17,16 @@ trait JavaLibrary extends Any {
   def unsupportedOperationException(msg: String): Nothing = throw new UnsupportedOperationException(msg)
 
   // A selection of popular static methods from javaland.
-  def classpathSeparator: String     = java.io.File.pathSeparator
-  def currentThread: Thread          = java.lang.Thread.currentThread
-  def defaultCharset: Charset        = java.nio.charset.Charset.defaultCharset
-  def fileSeparator: String          = java.io.File.separator
-  def identityHashCode[A](x: A): Int = java.lang.System.identityHashCode(x)
-  def milliTime: Long                = java.lang.System.currentTimeMillis
-  def nanoTime: Long                 = java.lang.System.nanoTime
-  def systemClassLoader: ClassLoader = java.lang.ClassLoader.getSystemClassLoader
-  def utf8Charset: Charset           = java.nio.charset.Charset forName "UTF-8"
+  def classpathSeparator: String      = java.io.File.pathSeparator
+  def currentThread: Thread           = java.lang.Thread.currentThread
+  def defaultCharset: Charset         = java.nio.charset.Charset.defaultCharset
+  def fileSeparator: String           = java.io.File.separator
+  def identityHashCode[A](x: A): Int  = java.lang.System.identityHashCode(x)
+  def milliTime: Long                 = java.lang.System.currentTimeMillis
+  def nanoTime: Long                  = java.lang.System.nanoTime
+  def systemClassLoader: ClassLoader  = java.lang.ClassLoader.getSystemClassLoader
+  def contextClassLoader: ClassLoader = currentThread.getContextClassLoader
+  def utf8Charset: Charset            = java.nio.charset.Charset forName "UTF-8"
 
   // Exceptions and Throwables.
   type AssertionError                = java.lang.AssertionError

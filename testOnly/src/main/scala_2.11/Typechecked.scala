@@ -50,7 +50,7 @@ package macros {
       def good(tree: Tree)    = q"Typechecked.typed($code, ${tree.toString}, ${tree.tpe.toString})"
       def bad(t: Throwable)   = q"Typechecked.error($code, ${t.getMessage})"
 
-      c.Expr(typed().fold(good, bad))
+      c.Expr(typed().fold(bad, good))
     }
 
     def typecheckedLines(exprs: c.Expr[String]): c.Expr[sciVector[Typechecked]] = {

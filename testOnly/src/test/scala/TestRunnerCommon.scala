@@ -27,7 +27,7 @@ abstract class TestRunnerCommon {
     case t: Throwable           => scala.util.Failure(t)
   }
 
-  def wrapRun(b: Bundle): Boolean = Try(b.run).fold(x => x, t => andFalse(println(s"Caught $t running $b")))
+  def wrapRun(b: Bundle): Boolean = Try(b.run) fold (t => andFalse(println(s"Caught $t running $b")), identity)
 
   def main(args: Array[String]): Unit = {
     bundles filter shouldRun mapOnto wrapRun filterValues (x => !x) match {

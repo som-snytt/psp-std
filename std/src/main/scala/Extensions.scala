@@ -81,9 +81,9 @@ final class TryOps[A](val x: Try[A]) extends AnyVal {
     case x @ Success(_) => x
     case Failure(_)     => Try(expr)
   }
-  def fold[B](f: A => B, g: Throwable => B): B = x match {
-    case Success(x) => f(x)
-    case Failure(t) => g(t)
+  def fold[B](f: Throwable => B, g: A => B): B = x match {
+    case Success(x) => g(x)
+    case Failure(t) => f(t)
   }
 }
 
