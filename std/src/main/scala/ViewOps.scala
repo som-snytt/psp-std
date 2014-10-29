@@ -21,7 +21,7 @@ trait ApiViewOps[+A] extends Any {
   def tail: View[A]        = xs drop      1
   def toRefs: View[AnyRef] = xs map (_.toRef)
 
-  def distinct(implicit z: HashEq[A]): View[A]         = xs.pset.contained
+  def distinct(implicit z: HashEq[A]): View[A]         = xs.pset
   def max(implicit ord: Order[A]): A                   = xs reducel (_ max2 _)
   def min(implicit ord: Order[A]): A                   = xs reducel (_ min2 _)
   def sortDistinct(implicit ord: Order[A]): pVector[A] = xs.toScalaVector.distinct sorted ord.toScalaOrdering

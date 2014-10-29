@@ -88,12 +88,12 @@ final class LinearView[A, Repr](ys: Each[A]) extends AtomicView[A, Repr] {
   }
 }
 
-final class SetView[A, Repr](ys: ExtensionalSet[A]) extends AtomicView[A, Repr] {
-  type This = SetView[A, Repr]
+final class ExSetView[A, Repr](ys: ExtensionalSet[A]) extends AtomicView[A, Repr] with SetView[A] {
+  type This = ExSetView[A, Repr]
   def viewOps                                             = Direct("<set>")
   def size                                                = ys.size
   @inline def foreach(f: A => Unit): Unit                 = foreachSlice(IndexRange.full)(f)
-  def foreachSlice(range: IndexRange)(f: A => Unit): Unit = ys.contained slice range foreach f
+  def foreachSlice(range: IndexRange)(f: A => Unit): Unit = ys slice range foreach f
 }
 
 final class IndexedView[A, Repr](ys: Direct[A]) extends AtomicView[A, Repr] with Direct[A] with ops.HasPreciseSizeMethods {

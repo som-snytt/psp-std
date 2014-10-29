@@ -4,16 +4,27 @@ package api
 
 import ApiAliases._
 
-trait MapView[-K, +V] extends Any with Intensional[K, V] {
-  type CoMapTo[-X] <: MapView[X, V]
-  type MapTo[+X] <: MapView[K, X]
+trait AnyView[+A] extends Any with Each[A] {
 
-  def comap[K1](f: K1 => K): CoMapTo[K1]
-  def filter(p: Predicate[V]): MapTo[V]
-  def map[V1](f: V => V1): MapTo[V1]
 }
 
-trait View[+A] extends Any with Each[A] {
+trait SetView[+A] extends Any with AnyView[A] with ExSet[A] {
+
+}
+
+trait View[+A] extends Any with AnyView[A] with ExSeq[A] {
+}
+
+// trait MapView[K, +V] extends Any with AnyView[V] with ExMap[K, V] {
+//   // type CoMapTo[-X] <: MapView[X, V]
+//   // type MapTo[+X] <: MapView[K, X]
+
+//   // def comap[K1](f: K1 => K): CoMapTo[K1]
+//   // def filter(p: Predicate[V]): MapTo[V]
+//   // def map[V1](f: V => V1): MapTo[V1]
+// }
+
+trait ExSeq[+A] extends Any {
   type   MapTo[+X] <: View[X]
   type SplitTo[+X] <: View.Split[X]
 
@@ -38,6 +49,7 @@ trait View[+A] extends Any with Each[A] {
   def withFilter(p: Predicate[A]): MapTo[A]
   def zip[B](that: View[B]): MapTo[(A, B)]
 }
+
 
 object View {
   trait Atomic[+A] extends Any with View[A]

@@ -89,6 +89,10 @@ final class TryOps[A](val x: Try[A]) extends AnyVal {
 
 /*** Java ***/
 
+final class JavaIteratorOps[A](it: jIterator[A]) {
+  def foreach(f: A => Unit): Unit = while (it.hasNext) f(it.next)
+}
+
 final class FileTimeOps(val time: jFileTime) extends AnyVal {
   def isNewer(that: jFileTime) = (time compareTo that) > 0
   def isOlder(that: jFileTime) = (time compareTo that) < 0

@@ -71,7 +71,7 @@ trait StdOps1 extends Any with StdOps0 {
   implicit def unViewify0[A, CC[A]](xs: View[A])(implicit z: Builds[A, CC[A]]): CC[A] = z build xs
 
   implicit class ForeachableSetOps[A, Repr](repr: Repr)(implicit z: ForeachableSet.Coll[A, Repr]) {
-    def m: SetView[A, Repr] = z wrap repr
+    def m: ExSetView[A, Repr] = z wrap repr
   }
 }
 trait StdOps2 extends Any with StdOps1 {
@@ -120,6 +120,7 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsFunction2[T1, T2, R](f: (T1, T2) => R): ops.Function2Ops[T1, T2, R]                    = new ops.Function2Ops(f)
   implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]                                     = new ops.GeneratorOps(x)
   implicit def opsHasPreciseSize(x: HasPreciseSize): ops.HasPreciseSizeOps                               = new ops.HasPreciseSizeOps(x)
+  implicit def opsJavaIterator[A](x: jIterator[A]): ops.JavaIteratorOps[A]                               = new ops.JavaIteratorOps[A](x)
   implicit def opsIndexRange(x: IndexRange): ops.IndexRangeOps                                           = new ops.IndexRangeOps(x)
   implicit def opsInputStream(x: InputStream): ops.InputStreamOps                                        = new ops.InputStreamOps(x)
   implicit def opsInt(x: Int): ops.IntOps                                                                = new ops.IntOps(x)

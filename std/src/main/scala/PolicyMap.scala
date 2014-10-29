@@ -18,25 +18,26 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Looku
 
   def +(key: K, value: V): This             = newLookup(lookup.put(key, value)(keySet.hashEq))
   def ++(map: This): This                   = newMap(keySet union map.keySet, map.lookup orElse lookup)
-  def contained: View[Entry]                = keys mapZip lookup
+  def entries: View[Entry]                  = keys mapZip lookup
   def filterKeys(p: Predicate[K]): This     = newKeys(keySet filter p)
+  def foreach(f: ((K, V)) => Unit): Unit    = foreachKey(k => f(k -> apply(k)))
   def foreachEntry(f: (K, V) => Unit): Unit = foreachKey(k => f(k, apply(k)))
   def foreachKey(f: K => Unit): Unit        = keys foreach f
   def isEmpty: Boolean                      = keySet.isEmpty
   def iterator: scIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
   def keyVector: pVector[K]                 = keys.pvec
-  def keys: View[K]                         = keySet.contained
+  def keys: View[K]                         = keySet
   def keysIterator: scIterator[K]           = keys.iterator
   def map[V1](f: V => V1): exMap[K, V1]     = newLookup(lookup map f)
-  def reverseKeys                           = newKeys(keySet mapContained (_.pvec.reverse))
-  def seq: scSeq[Entry]                     = contained.seq
+  def reverseKeys                           = newKeys(keySet.reverse)
+  def seq: scSeq[Entry]                     = entries.seq
   def size: Precise                         = keyVector.size
   def values: View[V]                       = keys map (x => lookup(x))
   def valuesIterator: scIterator[V]         = keysIterator map (x => lookup(x))
   def withDefaultValue(v: V): This          = newLookup(lookup withDefault ConstantDefault(v))
 
   def merge(that: This)(implicit z: Sums[V]): This =
-    that.keySet.contained.foldl(this)((res, key) =>
+    that.keySet.foldl(this)((res, key) =>
       if (res contains key)
         res + (key, z.sum(res(key), that(key)))
       else

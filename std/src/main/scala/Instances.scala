@@ -3,6 +3,7 @@ package std
 
 import api._
 import psp.std.scalac.token.Keyword
+import StdShow.stringShow
 
 trait AlgebraInstances {
   implicit def identityAlgebra : BooleanAlgebra[Boolean]           = Algebras.Identity
@@ -171,19 +172,12 @@ trait ShowInstances extends ShowForeach {
 }
 
 
-trait ShowForeach {
-  self: ShowInstances =>
-
+trait ShowForeach0 {
   def maxElements: Precise = 10
   def minElements: Precise = 3
 
-  implicit def jCollectionShow[A: Show] : Show[jIterable[A]]       = showBy[jIterable[A]](fromJava)
-  implicit def sCollectionShow[A: Show] : Show[sCollection[A]]     = showBy[sCollection[A]](fromScala)
-  implicit def arrayShow[A: Show] : Show[Array[A]]                 = showBy[Array[A]](Direct.fromArray)
-  implicit def policySeqShow[A: Show] : Show[Each[A]]           = Show(foreachString[A])
-  implicit def policySetShow[A: Show] : Show[inSet[A]]             = Show(inSetString[A])
-  implicit def policyMapShow[K: Show, V: Show] : Show[exMap[K, V]] = Show(m => m.contained.tabular(_._1.to_s, _ => "->", _._2.to_s))
-  implicit def policyViewShow[A] : Show[View[A]]                   = Show(_.viewOps.joinWords.render)
+  implicit def exViewShow[A] : Show[View[A]]      = Show(_.viewOps mk_s " ")
+  implicit def exSeqShow[A: Show] : Show[Each[A]] = Show(foreachString[A])
 
   def foreachString[A: Show](xs: Each[A]): String = xs match {
     case xs: ShowDirect => xs.to_s
@@ -193,11 +187,15 @@ trait ShowForeach {
         case SplitView(xs, _)                => "[ " ~ (xs take minElements mk_s ", ") ~ ", ... ]"
       }
   }
+}
+
+trait ShowForeach1 extends ShowForeach0 {
+  implicit def inSetShow[A: Show] : Show[inSet[A]] = Show(inSetString[A])
 
   def inSetString[A: Show](xs: inSet[A]): String = {
     import IntensionalSet._
     xs match {
-      case xs: ExtensionalSet[A] => show"${xs.contained}"
+      case xs: ExtensionalSet[A] => (xs: Each[A]).to_s //show"$xs"
       case Complement(xs)        => show"Not($xs)"
       case Intersect(lhs, rhs)   => show"Intersect($lhs, $rhs)"
       case Union(lhs, rhs)       => show"Union($lhs, $rhs)"
@@ -206,4 +204,14 @@ trait ShowForeach {
       case Impl(member, heq)     => pp"Impl($member, $heq)"
     }
   }
+}
+
+trait ShowForeach extends ShowForeach1 {
+  self: ShowInstances =>
+
+  implicit def jCollectionShow[A: Show] : Show[jIterable[A]]   = showBy[jIterable[A]](fromJava)
+  implicit def sCollectionShow[A: Show] : Show[sCollection[A]] = showBy[sCollection[A]](fromScala)
+  implicit def arrayShow[A: Show] : Show[Array[A]]             = showBy[Array[A]](Direct.fromArray)
+  implicit def exSetShow[A: Show] : Show[exSet[A]]             = showBy(x => x: Each[A])
+  implicit def exMapShow[K: Show, V: Show] : Show[exMap[K, V]] = Show(_.entries.tabular(_._1.to_s, _ => "->", _._2.to_s))
 }

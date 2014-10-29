@@ -146,8 +146,6 @@ final class IntensionalSetOps[A](xs: inSet[A]) {
 final class ExtensionalSetOps[A](xs: exSet[A]) {
   private implicit def heq: HashEq[A] = xs.hashEq
 
-  def isEmpty: Boolean                    = xs.contained.isEmpty
-  def exists(p: Predicate[A]): Boolean    = xs.contained exists p
   def add(x: A): exSet[A]                 = if (xs(x)) xs else xs union exSet(x)
   def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
   def intersect(that: exSet[A]): exSet[A] = ExtensionalSet.Intersect(xs, that)
@@ -158,9 +156,8 @@ final class ExtensionalSetOps[A](xs: exSet[A]) {
   def filterNot(p: Predicate[A]): exSet[A] = ExtensionalSet.Filtered(xs, !p)
   def filter(p: Predicate[A]): exSet[A]    = ExtensionalSet.Filtered(xs, p)
   def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
-  def isSubsetOf(ys: inSet[A]): Boolean    = xs.contained forall ys
-
-  def mapContained(f: Each[A] => Each[A]): exSet[A] = f(xs.contained).pset
+  def isSubsetOf(ys: inSet[A]): Boolean    = xs forall ys
+  def reverse: exSet[A]                    = xs
 }
 
 trait HasPreciseSizeMethods extends Any {

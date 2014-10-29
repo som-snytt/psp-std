@@ -147,25 +147,21 @@ package object std extends psp.std.StdPackage {
   def show[A: Show] : Show[A]                           = ?
   def zero[A](implicit z: Zero[A]): A                   = z.zero
 
-  def fromScala[A](xs: sCollection[A]): Each[A] = xs match {
-    case xs: sciIndexedSeq[_] => new Direct.FromScala(xs)
-    case xs: sciLinearSeq[_]  => new PolicyList.FromScala(xs)
-    // case xs: sciSet[A]        => new PolicySet.FromScala(xs)
-    case _                    => new Each.FromScala(xs)
+  def fromScala[A](xs: sCollection[A]): AnyView[A] = xs match {
+    case xs: sciIndexedSeq[_] => new Direct.FromScala(xs) m
+    case xs: sciLinearSeq[_]  => new PolicyList.FromScala(xs) m
+    case xs: sciSet[_]        => new PolicySet.FromScala(xs) m
+    case _                    => new Each.FromScala(xs) m
   }
-  def fromJava[A](xs: jIterable[A]): Each[A] = xs match {
-    case xs: jList[_] => new Direct.FromJava[A](xs)
-    // case xs: jSet[_]  => new PolicySet.FromJava[A](xs)
-    case xs           => new Each.FromJava[A](xs)
+  def fromJava[A](xs: jIterable[A]): AnyView[A] = xs match {
+    case xs: jList[_] => new Direct.FromJava[A](xs) m
+    case xs: jSet[_]  => new PolicySet.FromJava[A](xs) m
+    case xs           => new Each.FromJava[A](xs) m
   }
   def fromElems[A](xs: A*): Direct[A] = new Direct.FromScala(xs.toVector)
 
-  // def mapBuilder[K, V](xs: (K, V)*): scmBuilder[(K, V), scMap[K, V]] = sciMap.newBuilder[K, V] ++= xs
-  // def setBuilder[A](xs: A*): scmBuilder[A, sciSet[A]]                = sciSet.newBuilder[A] ++= xs
-  // def listBuilder[A](xs: A*): scmBuilder[A, sciList[A]]              = sciList.newBuilder[A] ++= xs
-  // def mapToList[K, V](): scmMap[K, sciList[V]]                       = scmMap[K, sciList[V]]() withDefaultValue Nil
-  def arrayBuilder[A: CTag](xs: A*): scmBuilder[A, Array[A]]         = scala.Array.newBuilder[A] ++= xs
-  def vectorBuilder[A](xs: A*): scmBuilder[A, sciVector[A]]          = sciVector.newBuilder[A] ++= xs
+  def arrayBuilder[A: CTag](xs: A*): scmBuilder[A, Array[A]] = scala.Array.newBuilder[A] ++= xs
+  def vectorBuilder[A](xs: A*): scmBuilder[A, sciVector[A]]  = sciVector.newBuilder[A] ++= xs
 
   // Java.
   def jConcurrentMap[K, V](xs: (K, V)*): jConcurrentMap[K, V] = new jConcurrentHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))
