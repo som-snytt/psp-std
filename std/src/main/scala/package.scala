@@ -191,8 +191,6 @@ package object std extends psp.std.StdPackage {
   def pList[A](xs: A*): pList[A]                        = xs.m.plist
   def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
 
-  def indexedView[A, Repr](size: Precise, f: Index => A): DirectView[A, Repr] = new DirectView[A, Repr](Direct.pure(size, f))
-
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
   def newArray[A: CTag](size: Precise): Array[A]            = new Array[A](size.intSize)

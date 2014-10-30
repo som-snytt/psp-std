@@ -45,13 +45,13 @@ trait Each[+A] extends Any with HasSize                       { def foreach(f: A
 trait Direct[+A] extends Any with Each[A] with HasPreciseSize { def elemAt(i: Index): A           }
 trait Linear[+A] extends Any with Each[A] with IsEmpty        { def head: A ; def tail: Linear[A] }
 
-trait Intensional[-K, +V] extends Any                              { def apply(x: K): V              }
-trait InSet[-A]           extends Any with Intensional[A, Boolean] { def apply(x: A): Boolean        }
-trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def keySet: InSet[K]            }
+trait Intensional[-K, +V] extends Any                              { def apply(x: K): V       }
+trait InSet[-A]           extends Any with Intensional[A, Boolean] { def apply(x: A): Boolean }
+trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def domain: InSet[K]     }
 
 trait Extensional[+A]     extends Any with Each[A]
 trait ExSet[+A]           extends Any with Extensional[A]
-trait ExMap[K, +V]        extends Any with Extensional[(K, V)] { def keySet: ExSet[K] }
+trait ExMap[K, +V]        extends Any with Extensional[(K, V)] { def domain: ExSet[K] }
 
 /** Ennhanced value representations.
  */

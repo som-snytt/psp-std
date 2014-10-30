@@ -4,40 +4,41 @@ package std
 import api._, StdShow._
 import Lookup._
 
-final class IntensionalMap[K, V](val keySet: inSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](keySet, lookup) with InMap[K, V] {
+final class IntensionalMap[K, V](val domain: inSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with InMap[K, V] {
   type This = inMap[K, V]
-  def filterKeys(p: Predicate[K]): This = new IntensionalMap(keySet filter p, lookup)
+  def filterKeys(p: Predicate[K]): This = new IntensionalMap(domain filter p, lookup)
 }
-final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](keySet, lookup) with ExMap[K, V] {
+final class ExtensionalMap[K, V](val domain: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
   type Entry = (K, V)
   type This  = exMap[K, V]
 
-  private[this] def newMap[V1](keySet: exSet[K], lookup: Lookup[K, V1]): exMap[K, V1] = new ExtensionalMap(keySet, lookup)
-  private[this] def newKeys(keySet: exSet[K]): This                                   = newMap(keySet, lookup)
-  private[this] def newLookup[V1](lookup: Lookup[K, V1]): exMap[K, V1]                = newMap(keySet, lookup)
+  private[this] def newMap[V1](domain: exSet[K], lookup: Lookup[K, V1]): exMap[K, V1] = new ExtensionalMap(domain, lookup)
+  private[this] def newKeys(domain: exSet[K]): This                                   = newMap(domain, lookup)
+  private[this] def newLookup[V1](lookup: Lookup[K, V1]): exMap[K, V1]                = newMap(domain, lookup)
 
-  def +(key: K, value: V): This             = newLookup(lookup.put(key, value)(keySet.hashEq))
-  def ++(map: This): This                   = newMap(keySet union map.keySet, map.lookup orElse lookup)
+  def +(key: K, value: V): This             = newLookup(lookup.put(key, value)(domain.hashEq))
+  def ++(map: This): This                   = newMap(domain union map.domain, map.lookup orElse lookup)
   def entries: View[Entry]                  = keys mapZip lookup
-  def filterKeys(p: Predicate[K]): This     = newKeys(keySet filter p)
+  def filterKeys(p: Predicate[K]): This     = newKeys(domain filter p)
   def foreach(f: ((K, V)) => Unit): Unit    = foreachKey(k => f(k -> apply(k)))
   def foreachEntry(f: (K, V) => Unit): Unit = foreachKey(k => f(k, apply(k)))
   def foreachKey(f: K => Unit): Unit        = keys foreach f
-  def isEmpty: Boolean                      = keySet.isEmpty
+  def isEmpty: Boolean                      = domain.isEmpty
   def iterator: scIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
-  def keyVector: Direct[K]                 = keys.pvec
-  def keys: View[K]                         = keySet
+  def keyVector: Direct[K]                  = keys.pvec
+  def keys: View[K]                         = domain
   def keysIterator: scIterator[K]           = keys.iterator
   def map[V1](f: V => V1): exMap[K, V1]     = newLookup(lookup map f)
-  def reverseKeys                           = newKeys(keySet.reverse)
+  def reverseKeys                           = newKeys(domain.reverse)
   def seq: scSeq[Entry]                     = entries.seq
   def size: Precise                         = keyVector.size
   def values: View[V]                       = keys map (x => lookup(x))
   def valuesIterator: scIterator[V]         = keysIterator map (x => lookup(x))
   def withDefaultValue(v: V): This          = newLookup(lookup withDefault ConstantDefault(v))
+  def withDefaultFunction(f: K => V)        = newLookup(lookup withDefault FunctionDefault(f))
 
   def merge(that: This)(implicit z: Sums[V]): This =
-    that.keySet.foldl(this)((res, key) =>
+    that.domain.foldl(this)((res, key) =>
       if (res contains key)
         res + (key, z.sum(res(key), that(key)))
       else
@@ -50,13 +51,13 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Looku
  *  It's true one could say its ordering is Ordering[Int] on indexOf.
  *  Maybe that will seem like a good idea at some point.
  */
-sealed abstract class PolicyMap[K, V](keySet: PolicySet[K], lookup: Lookup[K, V]) extends Intensional[K, V] {
+sealed abstract class PolicyMap[K, V](domain: PolicySet[K], lookup: Lookup[K, V]) extends Intensional[K, V] {
   type This <: PolicyMap[K, V]
 
   def filterKeys(p: Predicate[K]): This
   def filterValues(p: Predicate[V]): This = filterKeys(k => p(apply(k)))
   def apply(key: K): V                    = lookup(key)
-  def contains(key: K): Boolean           = keySet(key)
+  def contains(key: K): Boolean           = domain(key)
   def get(key: K): Option[V]              = lookup get key
   def getOr(key: K, alt: => V): V         = lookup.getOr(key, alt)
   def partial: K ?=> V                    = newPartial(contains, apply)
@@ -155,20 +156,21 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
   def update(key: K, value: V)         = andThis(jmap.put(key, value))
   def clear()                          = andThis(jmap.clear())
   def containsValue(value: V): Boolean = jmap containsValue value
-  def keySet: exSet[K]                 = jmap.keySet.m.naturalSet
+  def domain: exSet[K]                 = jmap.keySet.m.naturalSet
 
   def remove(k: K, v: V): Boolean                      = jmap.remove(k, v)
   def replace(k: K, oldvalue: V, newvalue: V): Boolean = jmap.replace(k, oldvalue, newvalue)
   def replace(k: K, v: V): Option[V]                   = Option(jmap.replace(k, v))
   def putIfAbsent(k: K, v: V): Option[V]               = Option(jmap.putIfAbsent(k, v))
 
-  def -=(key: K): this.type        = try this finally jmap remove key
-  def +=(kv: (K, V)): this.type    = try this finally jmap.put(kv._1, kv._2)
-  def get(key: K): Option[V]       = Option(jmap get key)
-  def iterator: scIterator[(K, V)] = Generator(jmap.keySet).iterator map (k => (k, apply(k)))
-  def contains(key: K): Boolean    = jmap containsKey key
-  def apply(key: K): V             = get(key) | default(key)
-  def withDefaultValue(value: V)   = new PolicyMutableMap(jmap, ConstantDefault(value))
+  def -=(key: K): this.type          = andThis(jmap remove key)
+  def +=(kv: (K, V)): this.type      = andThis(jmap.put(kv._1, kv._2))
+  def get(key: K): Option[V]         = Option(jmap get key)
+  def iterator: scIterator[(K, V)]   = (domain mapZip apply).iterator
+  def contains(key: K): Boolean      = jmap containsKey key
+  def apply(key: K): V               = get(key) | default(key)
+  def withDefaultValue(value: V)     = new PolicyMutableMap(jmap, ConstantDefault(value))
+  def withDefaultFunction(f: K => V) = new PolicyMutableMap(jmap, FunctionDefault(f))
 }
 
 /** TODO - possible map related methods.
