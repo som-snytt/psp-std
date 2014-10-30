@@ -7,9 +7,9 @@ import psp.std.scalac.token.Keyword
 import StdShow.stringShow
 
 trait AlgebraInstances {
-  implicit def identityAlgebra : BooleanAlgebra[Boolean]                    = Algebras.Identity
-  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]]           = new Algebras.Predicate[A]
-  implicit def intensionalSetAlgebra[A] : BooleanAlgebra[IntensionalSet[A]] = new Algebras.InSetAlgebra[A]
+  implicit def identityAlgebra : BooleanAlgebra[Boolean]           = Algebras.Identity
+  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]]  = new Algebras.Predicate[A]
+  implicit def intensionalSetAlgebra[A] : BooleanAlgebra[InSet[A]] = new Algebras.InSetAlgebra[A]
 }
 
 trait ReadInstances {
@@ -193,22 +193,16 @@ trait ShowForeach0 {
 trait ShowForeach1 extends ShowForeach0 {
   self: ShowInstances =>
 
-  implicit def inSetShow[A: Show] : Show[IntensionalSet[A]] = Show(inSetString[A])
+  import IntensionalSet._
 
-  def inSetString[A: Show](xs: IntensionalSet[A]): String = {
-    import IntensionalSet._
-
-    implicitly[Show[IntensionalSet[A]]]
-
-    xs match {
-      case Complement(xs)      => show"Not($xs)"
-      case Intersect(lhs, rhs) => show"Intersect($lhs, $rhs)"
-      case Union(lhs, rhs)     => show"Union($lhs, $rhs)"
-      case Diff(lhs, rhs)      => show"Diff($lhs, $rhs)"
-      case Filtered(lhs, rhs)  => pp"Filtered($lhs, $rhs)"
-      case Impl(member)        => pp"Impl($member)"
-      case xs                  => pp"$xs"
-    }
+  implicit def inSetShow[A] : Show[InSet[A]] = Show {
+    case Complement(xs)      => show"Not($xs)"
+    case Intersect(lhs, rhs) => show"Intersect($lhs, $rhs)"
+    case Union(lhs, rhs)     => show"Union($lhs, $rhs)"
+    case Diff(lhs, rhs)      => show"Diff($lhs, $rhs)"
+    case Filtered(lhs, rhs)  => pp"Filtered($lhs, $rhs)"
+    case Impl(member)        => pp"Impl($member)"
+    case xs                  => pp"$xs"
   }
 }
 

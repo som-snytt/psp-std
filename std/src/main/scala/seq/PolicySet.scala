@@ -79,27 +79,17 @@ object ExtensionalSet {
   }
 }
 object IntensionalSet {
-  def apply[A](p: Predicate[A]): IntensionalSet[A] = new Impl[A](p)
+  def apply[A](p: Predicate[A]): InSet[A] = new Impl[A](p)
 
   val Zero = apply[Any](ConstantFalse)
   val One  = apply[Any](ConstantTrue)
 
-  final case class Filtered[A](lhs: IntensionalSet[A], p: Predicate[A]) extends IntensionalSet[A] {
-    def apply(elem: A) = lhs(elem) && p(elem)
-  }
-  final case class Complement[A](xs: IntensionalSet[A]) extends IntensionalSet[A] {
-    def apply(elem: A) = !xs(elem)
-  }
-  final case class Intersect[A](lhs: IntensionalSet[A], rhs: IntensionalSet[A]) extends IntensionalSet[A] {
-    def apply(elem: A) = lhs(elem) && rhs(elem)
-  }
-  final case class Union[A](lhs: IntensionalSet[A], rhs: IntensionalSet[A]) extends IntensionalSet[A] {
-    def apply(elem: A) = lhs(elem) && !rhs(elem)
-  }
-  final case class Diff[A](lhs: IntensionalSet[A], rhs: IntensionalSet[A]) extends IntensionalSet[A] {
-    def apply(elem: A) = lhs(elem) && !rhs(elem)
-  }
-  final case class Impl[A](isMember: Predicate[A]) extends IntensionalSet[A] {
-    def apply(elem: A): Boolean = isMember(elem)
-  }
+  abstract class IntensionalImpl[A](p: Predicate[A]) extends IntensionalSet[A] { def apply(x: A) = p(x) }
+
+  final case class Filtered[A](lhs: InSet[A], p: Predicate[A]) extends IntensionalImpl[A](x => lhs(x) && p(x))
+  final case class Complement[A](lhs: InSet[A])                extends IntensionalImpl[A](x => !lhs(x))
+  final case class Intersect[A](lhs: InSet[A], rhs: InSet[A])  extends IntensionalImpl[A](x => lhs(x) && rhs(x))
+  final case class Union[A](lhs: InSet[A], rhs: InSet[A])      extends IntensionalImpl[A](x => lhs(x) || rhs(x))
+  final case class Diff[A](lhs: InSet[A], rhs: InSet[A])       extends IntensionalImpl[A](x => lhs(x) && !rhs(x))
+  final case class Impl[A](isMember: Predicate[A])             extends IntensionalImpl[A](isMember)
 }

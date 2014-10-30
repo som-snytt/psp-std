@@ -21,8 +21,8 @@ package object tests {
 
   def arb[A](implicit z: Arbitrary[A]): Arbitrary[A] = z
 
-  implicit def arbitraryIntensionalSet[A : Arbitrary : HashEq] : Arbitrary[IntensionalSet[A]] = arb[sciSet[A]] map (_.m.toPolicySet)
-  implicit def arbitraryPint: Arbitrary[Pint]                                                 = Arbitrary(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
+  implicit def arbitraryInSet[A : Arbitrary : HashEq] : Arbitrary[InSet[A]] = arb[sciSet[A]] map (_.m.toPolicySet)
+  implicit def arbitraryPint: Arbitrary[Pint]                               = Arbitrary(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
 
   def showsAs[A: Show](expected: String, x: A): NamedProp         = expected -> (expected =? show"$x")
   def seqShows[A: Show](expected: String, xs: Each[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))

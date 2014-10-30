@@ -9,9 +9,17 @@ import psp.std.lowlevel._
 import psp.std.StdShow._
 
 package object std extends psp.std.StdPackage {
-  type pList[A]  = PolicyList[A]
-  type exSeq[+A] = Each[A]
-  type DocSeq    = Each[Doc]
+  type pList[A]    = PolicyList[A]
+  type exSeq[+A]   = Each[A]
+  type DocSeq      = Each[Doc]
+
+  /** Scala, so aggravating.
+   *  [error] could not find implicit value for parameter equiv: psp.std.api.Eq[psp.tests.Pint => psp.std.Boolean]
+   *  The parameter can be given explicitly, it just won't be found unless the function type is invariant.
+   *  The same issue arises with intensional sets.
+   */
+  type InvariantPredicate[A] = A => Boolean
+  type InvariantInSet[A]     = InSet[A]
 
   // Inlinable.
   final val InputStreamBufferSize = 8192
