@@ -12,7 +12,7 @@ import scala.math.Numeric
 trait StdGateways extends Any
       with StdBuilds
       with StdOps
-      with SetOps
+      with SetAndMapOps
       with StdUniversal {
 
   self =>
@@ -45,12 +45,12 @@ trait StdTypeclasses {
   implicit def linearSeqPairDown[A] : PairDown[Linear[A], A, Linear[A]]        = PairDown(_.head, _.tail)
 }
 
-trait SetOps1 extends Any {
-  implicit def opsIntensionalSet[A](x: InSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps(x)
+trait SetAndMapOps1 extends Any {
+  implicit def opsIntensionalSet[A](x: InSet[A]): ops.InSetOps[A]          = new ops.InSetOps(x)
   implicit def opsIntensionalMap[K, V](x: InMap[K, V]): ops.InMapOps[K, V] = new ops.InMapOps(x)
 }
-trait SetOps extends Any with SetOps1 {
-  implicit def opsExtensionalSet[A](x: ExSet[A]): ops.ExtensionalSetOps[A] = new ops.ExtensionalSetOps[A](x)
+trait SetAndMapOps extends Any with SetAndMapOps1 {
+  implicit def opsExtensionalSet[A](x: ExSet[A]): ops.ExSetOps[A]          = new ops.ExSetOps(x)
   implicit def opsExtensionalMap[K, V](x: ExMap[K, V]): ops.ExMapOps[K, V] = new ops.ExMapOps(x)
 }
 

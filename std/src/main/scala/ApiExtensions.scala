@@ -135,15 +135,9 @@ final class IndexRangeOps(xs: IndexRange) {
 final class InMapOps[K, V](xs: InMap[K, V]) {
 }
 final class ExMapOps[K, V](xs: ExMap[K, V]) {
-  // def keys    = xs.domain
-  // def values  = xs.domain map xs.apply
-  // def partial: K ?=> V = newPartial(xs.domain.apply, xs.apply)
-
-  // def contains(key: K): Boolean = keys(key)
 }
 
-
-final class IntensionalSetOps[A](xs: InSet[A]) {
+final class InSetOps[A](xs: InSet[A]) {
   def mapOnto[B](f: A => B): InMap[A, B]  = new IntensionalMap(xs, Lookup total f)
   def diff(that: InSet[A]): InSet[A]      = this filter that
   def filter(p: Predicate[A]): InSet[A]   = IntensionalSet.Filtered(xs, p)
@@ -154,7 +148,7 @@ final class IntensionalSetOps[A](xs: InSet[A]) {
     case _                             => IntensionalSet.Complement(xs)
   }
 }
-final class ExtensionalSetOps[A](xs: ExSet[A]) {
+final class ExSetOps[A](xs: ExSet[A]) {
   private implicit def heq: HashEq[A] = xs.hashEq
 
   def add(x: A): ExSet[A]                 = if (xs(x)) xs else xs union exSet(x)
@@ -169,6 +163,25 @@ final class ExtensionalSetOps[A](xs: ExSet[A]) {
   def union(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Union(xs, that)
   def isSubsetOf(ys: InSet[A]): Boolean    = xs forall ys.apply
   def reverse: ExSet[A]                    = xs // XXX
+
+
+  /*** TODO - salvage.
+
+  //   def addIfAbsent(elem: A): PolicySet[A]  = if (contains(elem)) this else this + elem
+  //   def addOrReplace(elem: A): PolicySet[A] = if (contains(elem)) (this - elem) + elem else this + elem
+
+  //   def by[B : HashEq](f: A => B): PolicySet[A]    = PolicySet[A](basis)(hashEqBy[A](f))
+  //   def byNatural                                  = PolicySet.natural[A](basis)
+  //   def byReference(implicit ev: A <:< AnyRef)     = PolicySet.reference(basis map ev)
+  //   def byShown(implicit z: Show[A]): PolicySet[A] = PolicySet.shown[A](basis)
+  //   implicit def scalaSetEq[CC[X] <: sciSet[X], A : Eq] : Eq[CC[A]] = Eq[CC[A]] {
+  //     case (Complement(xs), Complement(ys)) => isSubSet(xs, ys) && isSubSet(ys, xs)
+  //     case (Complement(xs), y)              => false
+  //     case (x, Complement(ys))              => false
+  //     case (xs, ys)                         => isSubSet(xs, ys) && isSubSet(ys, xs)
+  //   }
+
+  ***/
 }
 
 trait HasPreciseSizeMethods extends Any {

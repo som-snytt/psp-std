@@ -103,21 +103,3 @@ object IntensionalSet {
     def apply(elem: A): Boolean = isMember(elem)
   }
 }
-
-/*** TODO - salvage.
-
-//   def addIfAbsent(elem: A): PolicySet[A]  = if (contains(elem)) this else this + elem
-//   def addOrReplace(elem: A): PolicySet[A] = if (contains(elem)) (this - elem) + elem else this + elem
-
-//   def by[B : HashEq](f: A => B): PolicySet[A]    = PolicySet[A](basis)(hashEqBy[A](f))
-//   def byNatural                                  = PolicySet.natural[A](basis)
-//   def byReference(implicit ev: A <:< AnyRef)     = PolicySet.reference(basis map ev)
-//   def byShown(implicit z: Show[A]): PolicySet[A] = PolicySet.shown[A](basis)
-//   implicit def scalaSetEq[CC[X] <: sciSet[X], A : Eq] : Eq[CC[A]] = Eq[CC[A]] {
-//     case (Complement(xs), Complement(ys)) => isSubSet(xs, ys) && isSubSet(ys, xs)
-//     case (Complement(xs), y)              => false
-//     case (x, Complement(ys))              => false
-//     case (xs, ys)                         => isSubSet(xs, ys) && isSubSet(ys, xs)
-//   }
-
-***/
