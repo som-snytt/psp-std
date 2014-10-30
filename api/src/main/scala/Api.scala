@@ -47,11 +47,11 @@ trait Linear[+A] extends Any with Each[A] with IsEmpty        { def head: A ; de
 
 trait Intensional[-K, +V] extends Any                              { def apply(x: K): V       }
 trait InSet[-A]           extends Any with Intensional[A, Boolean] { def apply(x: A): Boolean }
-trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def domain: InSet[K]     }
+trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def domain: InSet[K] ; def apply(key: K): V }
 
 trait Extensional[+A]     extends Any with Each[A]
-trait ExSet[+A]           extends Any with Extensional[A]
-trait ExMap[K, +V]        extends Any with Extensional[(K, V)] { def domain: ExSet[K] }
+trait ExSet[A]            extends Any with Extensional[A]      { def hashEq: HashEq[A] }
+trait ExMap[K, +V]        extends Any with Extensional[(K, V)] { def domain: ExSet[K] ; def apply(key: K): V }
 
 /** Ennhanced value representations.
  */

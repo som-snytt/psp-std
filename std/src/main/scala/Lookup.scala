@@ -1,7 +1,7 @@
 package psp
 package std
 
-import Lookup._
+import api._, Lookup._
 
 /** This class separates the notion of having or not having a default from the
  *  actual lookup process. Failure to do this is the cause of many many bugs and

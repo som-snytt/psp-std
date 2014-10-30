@@ -4,16 +4,17 @@ package std
 import api._, StdShow._
 import Lookup._
 
-final class IntensionalMap[K, V](val domain: inSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with InMap[K, V] {
-  type This = inMap[K, V]
+final class IntensionalMap[K, V](val domain: IntensionalSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with InMap[K, V] {
+  type This = IntensionalMap[K, V]
   def filterKeys(p: Predicate[K]): This = new IntensionalMap(domain filter p, lookup)
 }
-final class ExtensionalMap[K, V](val domain: exSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
-  type Entry = (K, V)
-  type This  = exMap[K, V]
+final class ExtensionalMap[K, V](val domain: ExtensionalSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
+  type Entry     = (K, V)
+  type This      = ExtensionalMap[K, V]
+  type MapTo[V1] = ExtensionalMap[K, V1]
 
-  private[this] def newMap[V1](domain: exSet[K], lookup: Lookup[K, V1]): exMap[K, V1] = new ExtensionalMap(domain, lookup)
-  private[this] def newKeys(domain: exSet[K]): This                                   = newMap(domain, lookup)
+  private[this] def newMap[V1](domain: ExSet[K], lookup: Lookup[K, V1]): exMap[K, V1] = new ExtensionalMap(domain, lookup)
+  private[this] def newKeys(domain: ExSet[K]): This                                   = newMap(domain, lookup)
   private[this] def newLookup[V1](lookup: Lookup[K, V1]): exMap[K, V1]                = newMap(domain, lookup)
 
   def +(key: K, value: V): This             = newLookup(lookup.put(key, value)(domain.hashEq))
@@ -28,7 +29,7 @@ final class ExtensionalMap[K, V](val domain: exSet[K], private val lookup: Looku
   def keyVector: Direct[K]                  = keys.pvec
   def keys: View[K]                         = domain
   def keysIterator: scIterator[K]           = keys.iterator
-  def map[V1](f: V => V1): exMap[K, V1]     = newLookup(lookup map f)
+  def map[V1](f: V => V1): MapTo[V1]        = newLookup(lookup map f)
   def reverseKeys                           = newKeys(domain.reverse)
   def seq: scSeq[Entry]                     = entries.seq
   def size: Precise                         = keyVector.size

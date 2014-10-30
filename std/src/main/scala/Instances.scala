@@ -119,9 +119,9 @@ trait EqInstances {
   // Since Sets are created with their own notion of equality, you can't pass
   // an Eq instance. Map keys are also a set.
   implicit def arrayHashEq[A: HashEq] : HashEq[Array[A]]       = hashEqBy[Array[A]](_.pvec)
-  implicit def vectorHashEq[A: Eq] : HashEq[Direct[A]]        = HashEq((xs, ys) => (xs.toScalaVector corresponds ys.toScalaVector)(_ === _), _.toScalaVector.##)
-  implicit def exSetEq[A] : Eq[exSet[A]]                       = Eq(symmetrically[exSet[A]](_ isSubsetOf _))
-  implicit def exMapEq[K, V: Eq] : Eq[exMap[K, V]]             = Eq((xs, ys) => xs.domain === ys.domain && (equalizer(xs.apply, ys.apply) forall xs.keys))
+  implicit def vectorHashEq[A: Eq] : HashEq[Direct[A]]         = HashEq((xs, ys) => (xs.toScalaVector corresponds ys.toScalaVector)(_ === _), _.toScalaVector.##)
+  implicit def exSetEq[A] : Eq[ExSet[A]]                       = Eq(symmetrically[ExSet[A]](_ isSubsetOf _))
+  implicit def exMapEq[K, V: Eq] : Eq[ExMap[K, V]]             = Eq((xs, ys) => xs.domain === ys.domain && (equalizer(xs.apply, ys.apply) forall xs.domain))
   implicit def tuple2Eq[A: HashEq, B: HashEq] : HashEq[(A, B)] = HashEq[(A, B)]({ case ((x1, y1), (x2, y2)) => x1 === x2 && y1 === y2 }, x => x._1.hash + x._2.hash)
 
   implicit def equivFromOrder[A: Order] : Eq[A] = Eq[A](_ compare _ eq Cmp.EQ)

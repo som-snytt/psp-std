@@ -3,8 +3,6 @@ package std
 
 import api._
 
-trait HashEq[-A] extends Any with Hash[A] with Eq[A]
-
 /** A bad idea in general, but so much less ceremony for limted-use classes.
  */
 trait NaturalHashEq

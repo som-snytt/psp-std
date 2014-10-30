@@ -49,7 +49,7 @@ trait SetOps1 extends Any {
   implicit def opsIntensionalSet[A](x: IntensionalSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps[A](x)
 }
 trait SetOps extends Any with SetOps1 {
-  implicit def opsExtensionalSet[A](x: ExtensionalSet[A]): ops.ExtensionalSetOps[A] = new ops.ExtensionalSetOps[A](x)
+  implicit def opsExtensionalSet[A](x: ExSet[A]): ops.ExtensionalSetOps[A] = new ops.ExtensionalSetOps[A](x)
 }
 
 trait StdOps0 extends Any {
@@ -147,6 +147,11 @@ trait StdOps extends Any with StdOps3 {
   implicit def apiIndexRangePromote(x: IndexRange): LongRange              = IndexRange impl x
   implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]            = Order(ord.compare)
   implicit def directoryStreamView[A](stream: DirectoryStream[A]): View[A] = inView(BiIterable(stream) foreach _)
+
+  implicit def apiExSetPromote[A](x: ExSet[A]): ExtensionalSet[A] = x match {
+    case xs: ExtensionalSet[A] => xs
+    case _                     => ExtensionalSet(x)(x.hashEq)
+  }
 }
 
 // Prefer opsAnyRef.

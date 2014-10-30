@@ -14,6 +14,8 @@ trait Hash[-A] extends Any      { def hash(x: A): Int                     }
 trait Sums[A] extends Any       { def zero: A ; def sum(x: A, y: A): A    }
 trait Products[A] extends Any   { def one: A ; def product(x: A, y: A): A }
 
+trait HashEq[-A] extends Any with Hash[A] with Eq[A]
+
 /** The classic type class for encoding string representations.
  */
 trait Show[-A] extends Any { def show(x: A): String }

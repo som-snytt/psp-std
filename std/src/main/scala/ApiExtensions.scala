@@ -143,21 +143,21 @@ final class IntensionalSetOps[A](xs: inSet[A]) {
     case _                             => IntensionalSet.Complement(xs)
   }
 }
-final class ExtensionalSetOps[A](xs: exSet[A]) {
+final class ExtensionalSetOps[A](xs: ExSet[A]) {
   private implicit def heq: HashEq[A] = xs.hashEq
 
-  def add(x: A): exSet[A]                 = if (xs(x)) xs else xs union exSet(x)
+  def add(x: A): ExSet[A]                 = if (xs(x)) xs else xs union exSet(x)
   def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
-  def intersect(that: exSet[A]): exSet[A] = ExtensionalSet.Intersect(xs, that)
-  def diff(that: exSet[A]): exSet[A]      = ExtensionalSet.Diff(xs, that)
-  def intersect(that: inSet[A]): exSet[A] = filter(that)
-  def diff(that: inSet[A]): exSet[A]      = filterNot(that)
+  def intersect(that: ExSet[A]): ExSet[A] = ExtensionalSet.Intersect(xs, that)
+  def diff(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Diff(xs, that)
+  def intersect(that: inSet[A]): ExSet[A] = filter(that)
+  def diff(that: inSet[A]): ExSet[A]      = filterNot(that)
 
-  def filterNot(p: Predicate[A]): exSet[A] = ExtensionalSet.Filtered(xs, !p)
-  def filter(p: Predicate[A]): exSet[A]    = ExtensionalSet.Filtered(xs, p)
-  def union(that: exSet[A]): exSet[A]      = ExtensionalSet.Union(xs, that)
+  def filterNot(p: Predicate[A]): ExSet[A] = ExtensionalSet.Filtered(xs, !p)
+  def filter(p: Predicate[A]): ExSet[A]    = ExtensionalSet.Filtered(xs, p)
+  def union(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Union(xs, that)
   def isSubsetOf(ys: inSet[A]): Boolean    = xs forall ys
-  def reverse: exSet[A]                    = xs
+  def reverse: ExSet[A]                    = xs // XXX
 }
 
 trait HasPreciseSizeMethods extends Any {

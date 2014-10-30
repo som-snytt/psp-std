@@ -62,6 +62,7 @@ final class ExSetView[A, Repr](underlying: ExtensionalSet[A]) extends AtomicView
   type This                                                     = ExSetView[A, Repr]
   def viewOps                                                   = Direct("<set>")
   def size                                                      = underlying.size
+  def hashEq                                                    = underlying.hashEq
   @inline def foreach(f: A => Unit): Unit                       = linearlySlice(underlying, IndexRange.full, f)
   def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange = linearlySlice(underlying, range, f)
 }

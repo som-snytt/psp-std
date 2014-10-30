@@ -11,7 +11,7 @@ trait AnyView[+A] extends Any with Each[A] {
   def partition(p: Predicate[A]): SplitTo[A]
 }
 
-trait SetView[+A] extends Any with AnyView[A] with ExSet[A] {
+trait SetView[A] extends Any with AnyView[A] with ExSet[A] {
   // type MapTo[+X] <: SetView[X]
 }
 
