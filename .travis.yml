@@ -1,7 +1,7 @@
 language: scala
-script: bin/test
+script: bin/run-travis
 jdk:
   - oraclejdk7
   - oraclejdk8
 scala:
-  - 2.11.2
+  - 2.11.4
