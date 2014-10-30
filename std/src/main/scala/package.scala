@@ -188,7 +188,7 @@ package object std extends psp.std.StdPackage {
   def exSeq[A](xs: A*): Each[A]                             = xs.m.pseq
   def exSet[A: HashEq](xs: A*): ExSet[A]                    = xs.m.pset
   def exView[A](xs: A*): View[A]                            = Direct[A](xs: _*).m
-  def inSet[A: HashEq](p: Predicate[A]): InSet[A]           = p.inSet
+  def inSet[A](p: Predicate[A]): InSet[A]                   = p.inSet
   def inView[A](mf: Suspended[A]): View[A]                  = Each[A](mf).m
   def mutableMap[K, V](xs: (K, V)*): PolicyMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
   def pList[A](xs: A*): pList[A]                            = xs.m.plist
