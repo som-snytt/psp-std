@@ -23,10 +23,10 @@ object TestRunner_211 extends TestRunnerCommon {
     (Test check prop)(identity).passed
   }
 
-  implicit def pintHashEq: HashEq[Pint]                               = HashEq.natural[Pint]()
-  implicit def pintShow: Show[Pint]                                   = Show.natural[Pint]()
-  implicit def predicateEq[A : Arbitrary] : Eq[InvariantPredicate[A]] = observationalEq[InvariantPredicate, A, Boolean](_ apply _)
-  implicit def intensionalEq[A : Arbitrary : HashEq] : Eq[inSet[A]]   = observationalEq[inSet, A, Boolean](_ apply _)
+  implicit def pintHashEq: HashEq[Pint]                                      = HashEq.natural[Pint]()
+  implicit def pintShow: Show[Pint]                                          = Show.natural[Pint]()
+  implicit def predicateEq[A : Arbitrary] : Eq[InvariantPredicate[A]]        = observationalEq[InvariantPredicate, A, Boolean](_ apply _)
+  implicit def intensionalEq[A : Arbitrary : HashEq] : Eq[IntensionalSet[A]] = observationalEq[IntensionalSet, A, Boolean](_ apply _)
 
   override def bundles = Direct[Bundle](
     new Typecheck,

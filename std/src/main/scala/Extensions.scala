@@ -53,7 +53,7 @@ final class BiFunctionOps[T, R](val f: (T, T) => R) extends AnyVal {
   // def on[S](g: S => T): (S, S) => R = (x, y) => f(g(x), g(y))
 }
 final class PredicateOps[A](val p: Predicate[A]) extends AnyVal {
-  def inSet(implicit z: HashEq[A]): inSet[A] = IntensionalSet(p)
+  def inSet(implicit z: HashEq[A]): InSet[A] = IntensionalSet(p)
 }
 final class PartialFunctionOps[A, B](val pf: A ?=> B) extends AnyVal {
   def comap[A1](f: A1 => A): A1 ?=> B           = new ComapPartial(pf, f)

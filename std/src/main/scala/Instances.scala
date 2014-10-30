@@ -3,12 +3,13 @@ package std
 
 import api._
 import psp.std.scalac.token.Keyword
+// import StdShow._
 import StdShow.stringShow
 
 trait AlgebraInstances {
-  implicit def identityAlgebra : BooleanAlgebra[Boolean]           = Algebras.Identity
-  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]]  = new Algebras.Predicate[A]
-  implicit def intensionalSetAlgebra[A] : BooleanAlgebra[inSet[A]] = new Algebras.inSetAlgebra[A]
+  implicit def identityAlgebra : BooleanAlgebra[Boolean]                    = Algebras.Identity
+  implicit def predicateAlgebra[A] : BooleanAlgebra[Predicate[A]]           = new Algebras.Predicate[A]
+  implicit def intensionalSetAlgebra[A] : BooleanAlgebra[IntensionalSet[A]] = new Algebras.InSetAlgebra[A]
 }
 
 trait ReadInstances {
@@ -69,7 +70,7 @@ trait ZeroInstances {
   implicit def optionZero[A] : Zero[Option[A]]               = Zero(None)
   implicit def pVectorZero[A] : Zero[Direct[A]]             = Zero(Direct())
   implicit def pSeqZero[A] : Zero[Each[A]]                   = Zero(Each.elems())
-  implicit def exSetZero[A: HashEq] : Zero[exSet[A]]         = Zero(exSet[A]())
+  implicit def exSetZero[A: HashEq] : Zero[ExSet[A]]         = Zero(exSet[A]())
   implicit def exMapZero[K: HashEq, V] : Zero[exMap[K, V]]   = Zero(exMap[K, V]())
   implicit def scIterableZero[A] : Zero[scIterable[A]]       = Zero(Nil)
   implicit def scIteratorZero[A] : Zero[scIterator[A]]       = Zero(scIterator.empty)
@@ -190,18 +191,23 @@ trait ShowForeach0 {
 }
 
 trait ShowForeach1 extends ShowForeach0 {
-  implicit def inSetShow[A: Show] : Show[inSet[A]] = Show(inSetString[A])
+  self: ShowInstances =>
 
-  def inSetString[A: Show](xs: inSet[A]): String = {
+  implicit def inSetShow[A: Show] : Show[IntensionalSet[A]] = Show(inSetString[A])
+
+  def inSetString[A: Show](xs: IntensionalSet[A]): String = {
     import IntensionalSet._
+
+    implicitly[Show[IntensionalSet[A]]]
+
     xs match {
-      case xs: ExtensionalSet[A] => (xs: Each[A]).to_s //show"$xs"
-      case Complement(xs)        => show"Not($xs)"
-      case Intersect(lhs, rhs)   => show"Intersect($lhs, $rhs)"
-      case Union(lhs, rhs)       => show"Union($lhs, $rhs)"
-      case Diff(lhs, rhs)        => show"Diff($lhs, $rhs)"
-      case Filtered(lhs, rhs)    => pp"Filtered($lhs, $rhs)"
-      case Impl(member, heq)     => pp"Impl($member, $heq)"
+      case Complement(xs)      => show"Not($xs)"
+      case Intersect(lhs, rhs) => show"Intersect($lhs, $rhs)"
+      case Union(lhs, rhs)     => show"Union($lhs, $rhs)"
+      case Diff(lhs, rhs)      => show"Diff($lhs, $rhs)"
+      case Filtered(lhs, rhs)  => pp"Filtered($lhs, $rhs)"
+      case Impl(member)        => pp"Impl($member)"
+      case xs                  => pp"$xs"
     }
   }
 }
@@ -212,6 +218,6 @@ trait ShowForeach extends ShowForeach1 {
   implicit def jCollectionShow[A: Show] : Show[jIterable[A]]   = showBy[jIterable[A]](fromJava)
   implicit def sCollectionShow[A: Show] : Show[sCollection[A]] = showBy[sCollection[A]](fromScala)
   implicit def arrayShow[A: Show] : Show[Array[A]]             = showBy[Array[A]](Direct.fromArray)
-  implicit def exSetShow[A: Show] : Show[exSet[A]]             = showBy(x => x: Each[A])
+  implicit def exSetShow[A: Show] : Show[ExSet[A]]             = showBy(x => x: Each[A])
   implicit def exMapShow[K: Show, V: Show] : Show[exMap[K, V]] = Show(_.entries.tabular(_._1.to_s, _ => "->", _._2.to_s))
 }

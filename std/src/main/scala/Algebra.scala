@@ -73,28 +73,28 @@ object Algebras {
       case _                      => PredicateComplement(f)
     }
   }
-  final class inSetAlgebra[A] extends BooleanAlgebra[inSet[A]] {
+  final class InSetAlgebra[A] extends BooleanAlgebra[IntensionalSet[A]] {
     import IntensionalSet._
 
-    def and(x: inSet[A], y: inSet[A]): inSet[A] = (x, y) match {
+    def and(x: IntensionalSet[A], y: IntensionalSet[A]): IntensionalSet[A] = (x, y) match {
       case (Complement(xs), Complement(ys)) => not(Union(xs, ys))
       case (Complement(xs), ys)             => Diff(ys, xs)
       case (xs, Complement(ys))             => Diff(xs, ys)
       case _                                => Intersect(x, y)
     }
-    def or(x: inSet[A], y: inSet[A]): inSet[A] = (x, y) match {
+    def or(x: IntensionalSet[A], y: IntensionalSet[A]): IntensionalSet[A] = (x, y) match {
       case (Complement(xs), Complement(ys)) => not(Intersect(xs, ys))
       case (Complement(xs), ys)             => not(Diff(xs, ys))
       case (xs, Complement(ys))             => not(Diff(ys, xs))
       case _                                => Union(x, y)
     }
-    def not(x: inSet[A]): inSet[A] = x match {
+    def not(x: IntensionalSet[A]): IntensionalSet[A] = x match {
       case Zero           => one
       case One            => zero
       case Complement(xs) => xs            // unwrap
       case _              => Complement(x) // wrap
     }
-    def zero: inSet[A] = Zero.castTo
-    def one: inSet[A]  = One.castTo
+    def zero: IntensionalSet[A] = Zero.castTo
+    def one: IntensionalSet[A]  = One.castTo
   }
 }

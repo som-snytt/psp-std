@@ -40,6 +40,9 @@ trait OptInt extends Any with Opt[Int]   { def get: Int         }
 trait OptLong extends Any with Opt[Long] { def get: Long        }
 
 /** Collections interfaces.
+ *  We'd much prefer not to extend Function1 here, but the consequences
+ *  for type inference are too severe, and the last thing we want to do is
+ *  create disincentives to work in terms of the API types.
  */
 trait Each[+A] extends Any with HasSize                       { def foreach(f: A => Unit): Unit   }
 trait Direct[+A] extends Any with Each[A] with HasPreciseSize { def elemAt(i: Index): A           }
@@ -47,11 +50,11 @@ trait Linear[+A] extends Any with Each[A] with IsEmpty        { def head: A ; de
 
 trait Intensional[-K, +V] extends Any                              { def apply(x: K): V       }
 trait InSet[-A]           extends Any with Intensional[A, Boolean] { def apply(x: A): Boolean }
-trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def domain: InSet[K] ; def apply(key: K): V }
+trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def domain: InSet[K]     }
 
 trait Extensional[+A]     extends Any with Each[A]
-trait ExSet[A]            extends Any with Extensional[A]      { def hashEq: HashEq[A] }
-trait ExMap[K, +V]        extends Any with Extensional[(K, V)] { def domain: ExSet[K] ; def apply(key: K): V }
+trait ExSet[A]            extends Any with Extensional[A]                             { def hashEq: HashEq[A] }
+trait ExMap[K, +V]        extends Any with Extensional[(K, V)] with Intensional[K, V] { def domain: ExSet[K]  }
 
 /** Ennhanced value representations.
  */

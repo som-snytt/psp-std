@@ -4,11 +4,11 @@ package std
 import api._, StdShow._
 import Lookup._
 
-final class IntensionalMap[K, V](val domain: IntensionalSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with InMap[K, V] {
+final class IntensionalMap[K, V](val domain: InSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with InMap[K, V] {
   type This = IntensionalMap[K, V]
   def filterKeys(p: Predicate[K]): This = new IntensionalMap(domain filter p, lookup)
 }
-final class ExtensionalMap[K, V](val domain: ExtensionalSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
+final class ExtensionalMap[K, V](val domain: ExSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
   type Entry     = (K, V)
   type This      = ExtensionalMap[K, V]
   type MapTo[V1] = ExtensionalMap[K, V1]
@@ -52,7 +52,7 @@ final class ExtensionalMap[K, V](val domain: ExtensionalSet[K], private val look
  *  It's true one could say its ordering is Ordering[Int] on indexOf.
  *  Maybe that will seem like a good idea at some point.
  */
-sealed abstract class PolicyMap[K, V](domain: PolicySet[K], lookup: Lookup[K, V]) extends Intensional[K, V] {
+sealed abstract class PolicyMap[K, V](domain: InSet[K], lookup: Lookup[K, V]) extends Intensional[K, V] {
   type This <: PolicyMap[K, V]
 
   def filterKeys(p: Predicate[K]): This
@@ -68,7 +68,7 @@ object PolicyMap {
   type BuildsMap[K, V] = Builds[(K, V), exMap[K, V]]
 
   def builder[K : HashEq, V] : BuildsMap[K, V]                  = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, Lookup(kvs.toPartial)))
-  def apply[K, V](keys: exSet[K], pf: K ?=> V): exMap[K, V]     = new ExtensionalMap(keys, Lookup(pf))
+  def apply[K, V](keys: ExSet[K], pf: K ?=> V): exMap[K, V]     = new ExtensionalMap(keys, Lookup(pf))
   def unapplySeq[K, V](map: exMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
 
   /** An immutable scala Map with keys and values in parallel vectors.
@@ -157,7 +157,7 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
   def update(key: K, value: V)         = andThis(jmap.put(key, value))
   def clear()                          = andThis(jmap.clear())
   def containsValue(value: V): Boolean = jmap containsValue value
-  def domain: exSet[K]                 = jmap.keySet.m.naturalSet
+  def domain: ExSet[K]                 = jmap.keySet.m.naturalSet
 
   def remove(k: K, v: V): Boolean                      = jmap.remove(k, v)
   def replace(k: K, oldvalue: V, newvalue: V): Boolean = jmap.replace(k, oldvalue, newvalue)

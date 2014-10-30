@@ -136,11 +136,11 @@ class Collections extends ScalacheckBundle {
     val pseq = exSeq("a" -> 1, "b" -> 2, "c" -> 3)
 
     sciList(
-      expectTypes[exSet[_]](
+      expectTypes[ExSet[_]](
         pset.m map identity build,
         pset.m.build,
         pset.m map identity build,
-        pset.m.map(_._1).map(paired).force[exSet[_]]
+        pset.m.map(_._1).map(paired).force[ExSet[_]]
       ),
       expectTypes[Each[_]](
         pseq map identity,

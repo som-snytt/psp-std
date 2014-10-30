@@ -24,7 +24,7 @@ class InferenceSpec extends ScalacheckBundle {
   val ls: sciList[Int]   = sciList(1, 2, 3)
   val ss: String         = "123"
   val vs: sciVector[Int] = sciVector(1, 2, 3)
-  val xs: exSet[Int]     = exSet(1, 2, 3)
+  val xs: ExSet[Int]     = exSet(1, 2, 3)
 
   val b1 = as map identity build
   val b2 = ds map identity build
@@ -87,7 +87,7 @@ class InferenceSpec extends ScalacheckBundle {
     // expectType[String]        (ss.m map identity),
     expectType[String]        (ss.m map identity force),
     expectType[View[Char]]    (ss.m map identity),
-    expectType[exSet[Int]]    (xs.m map identity force),
+    expectType[ExSet[Int]]    (xs.m map identity force),
     expectType[Each[Int]]     (fs map identity),
     expectType[Each[Int]]     (fs.m map identity force),
     expectType[Direct[Int]]  (ds map identity),

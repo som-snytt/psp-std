@@ -91,7 +91,7 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def safeReduce(f: (A, A) => A)(implicit z: Zero[A]): A = if (isEmpty) z.zero else reducel(f)
 
   def distinctBy[B: HashEq](f: A => B): View[A] = inView { mf =>
-    var seen: exSet[B] = exSet[B]()
+    var seen: ExSet[B] = exSet[B]()
     xs foreach { x =>
       val y = f(x)
       if (!seen(y)) {

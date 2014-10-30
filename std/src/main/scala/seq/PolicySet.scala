@@ -4,12 +4,12 @@ package std
 import api._
 
 object PolicySet {
-  def builder[A: HashEq] : Builds[A, exSet[A]]                             = Builds(ExtensionalSet[A](_))
-  def natural[A](xs: Each[A]): exSet[A]                                    = ExtensionalSet[A](xs)(HashEq.natural[A])
-  def reference[A <: AnyRef](xs: Each[A]): exSet[A]                        = ExtensionalSet[A](xs)(HashEq.reference[A])
-  def shown[A: Show](xs: Each[A]): exSet[A]                                = ExtensionalSet[A](xs)(HashEq.shown[A])
-  def direct[A](xs: Each[A])(equiv: Relation[A], hash: A => Int): exSet[A] = ExtensionalSet[A](xs)(HashEq(equiv, hash))
-  def elems[A: HashEq](xs: A*): exSet[A]                                   = ExtensionalSet[A](Direct(xs: _*))
+  def builder[A: HashEq] : Builds[A, ExSet[A]]                             = Builds(ExtensionalSet[A](_))
+  def natural[A](xs: Each[A]): ExSet[A]                                    = ExtensionalSet[A](xs)(HashEq.natural[A])
+  def reference[A <: AnyRef](xs: Each[A]): ExSet[A]                        = ExtensionalSet[A](xs)(HashEq.reference[A])
+  def shown[A: Show](xs: Each[A]): ExSet[A]                                = ExtensionalSet[A](xs)(HashEq.shown[A])
+  def direct[A](xs: Each[A])(equiv: Relation[A], hash: A => Int): ExSet[A] = ExtensionalSet[A](xs)(HashEq(equiv, hash))
+  def elems[A: HashEq](xs: A*): ExSet[A]                                   = ExtensionalSet[A](Direct(xs: _*))
 
   class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
     def size: IntSize         = Precise(xs.size)
@@ -25,17 +25,16 @@ object PolicySet {
   }
 }
 
-sealed trait PolicySet[-A] extends (A => Boolean)
-sealed trait IntensionalSet[A] extends PolicySet[A] with InSet[A]
+sealed trait IntensionalSet[A] extends InSet[A] with (A => Boolean)
 sealed trait ExtensionalSet[A] extends IntensionalSet[A] with ExSet[A] {
   def hash(x: A): Int             = hashEq hash x
   def equiv(x: A, y: A): Boolean  = hashEq.equiv(x, y)
 }
 
 object ExtensionalSet {
-  def apply[A: HashEq](xs: Each[A]): exSet[A] = new Impl[A](xs, implicitly)
+  def apply[A: HashEq](xs: Each[A]): ExSet[A] = new Impl[A](xs, implicitly)
 
-  sealed trait Derived[A] extends AnyRef with ExtensionalSet[A] with IntensionalSet.Derived[A] {
+  sealed trait Derived[A] extends ExtensionalSet[A] {
     protected def underlying: ExSet[A]
     def hashEq = underlying.hashEq
   }
@@ -80,38 +79,28 @@ object ExtensionalSet {
   }
 }
 object IntensionalSet {
-  def apply[A: HashEq](p: Predicate[A]): inSet[A] = new Impl[A](p, implicitly)
+  def apply[A](p: Predicate[A]): IntensionalSet[A] = new Impl[A](p)
 
-  val Zero = Impl[Any](ConstantFalse, HashEq((x, y) => true, _ => 0))
-  val One  = Impl[Any](ConstantTrue, HashEq((x, y) => true, _ => 0))
+  val Zero = apply[Any](ConstantFalse)
+  val One  = apply[Any](ConstantTrue)
 
-  sealed trait Derived[A] extends AnyRef with inSet[A] {
-    protected def underlying: inSet[A]
+  final case class Filtered[A](lhs: IntensionalSet[A], p: Predicate[A]) extends IntensionalSet[A] {
+    def apply(elem: A) = lhs(elem) && p(elem)
   }
-  final case class Filtered[A](lhs: inSet[A], p: Predicate[A]) extends Derived[A] {
-    protected def underlying = lhs
-    def apply(elem: A)       = lhs(elem) && p(elem)
+  final case class Complement[A](xs: IntensionalSet[A]) extends IntensionalSet[A] {
+    def apply(elem: A) = !xs(elem)
   }
-  final case class Complement[A](xs: inSet[A]) extends Derived[A] {
-    protected def underlying = xs
-    def apply(elem: A)       = !xs(elem)
+  final case class Intersect[A](lhs: IntensionalSet[A], rhs: IntensionalSet[A]) extends IntensionalSet[A] {
+    def apply(elem: A) = lhs(elem) && rhs(elem)
   }
-  final case class Intersect[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
-    protected def underlying = lhs
-    def apply(elem: A)       = lhs(elem) && rhs(elem)
+  final case class Union[A](lhs: IntensionalSet[A], rhs: IntensionalSet[A]) extends IntensionalSet[A] {
+    def apply(elem: A) = lhs(elem) && !rhs(elem)
   }
-  final case class Union[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
-    protected def underlying = lhs
-    def apply(elem: A)       = lhs(elem) && !rhs(elem)
+  final case class Diff[A](lhs: IntensionalSet[A], rhs: IntensionalSet[A]) extends IntensionalSet[A] {
+    def apply(elem: A) = lhs(elem) && !rhs(elem)
   }
-  final case class Diff[A](lhs: inSet[A], rhs: inSet[A]) extends Derived[A] {
-    protected def underlying = lhs
-    def apply(elem: A)       = lhs(elem) && !rhs(elem)
-  }
-  final case class Impl[A](member: Predicate[A], heq: HashEq[A]) extends IntensionalSet[A] {
-    def equiv(x: A, y: A) = heq.equiv(x, y)
-    def hash(x: A): Int   = heq.hash(x)
-    def apply(elem: A)    = member(elem)
+  final case class Impl[A](isMember: Predicate[A]) extends IntensionalSet[A] {
+    def apply(elem: A): Boolean = isMember(elem)
   }
 }
 

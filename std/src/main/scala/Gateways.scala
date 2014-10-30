@@ -27,7 +27,7 @@ trait StdGateways extends Any
 trait StdBuilds0 extends Any                 { implicit def implicitBuildsFromCBF[A, That](implicit z: CanBuild[A, That]): Builds[A, That] = Builds wrap z          }
 trait StdBuilds1 extends Any with StdBuilds0 { implicit def implicitBuildsArray[A: CTag] : Builds[A, Array[A]]                             = Direct.arrayBuilder[A] }
 trait StdBuilds2 extends Any with StdBuilds1 { implicit def implicitBuildsList[A] : Builds[A, Each[A]]                                     = PolicyList.builder[A]  }
-trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, exSet[A]]                             = PolicySet.builder[A]   }
+trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, ExSet[A]]                             = PolicySet.builder[A]   }
 trait StdBuilds4 extends Any with StdBuilds3 { implicit def implicitBuildsDirect[A] : Builds[A, Direct[A]]                                 = Direct.builder[A]      }
 trait StdBuilds  extends Any with StdBuilds4 { implicit def implicitBuildsString: Builds[Char, String]                                     = Direct.stringBuilder() }
 
@@ -46,7 +46,7 @@ trait StdTypeclasses {
 }
 
 trait SetOps1 extends Any {
-  implicit def opsIntensionalSet[A](x: IntensionalSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps[A](x)
+  implicit def opsIntensionalSet[A](x: InSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps[A](x)
 }
 trait SetOps extends Any with SetOps1 {
   implicit def opsExtensionalSet[A](x: ExSet[A]): ops.ExtensionalSetOps[A] = new ops.ExtensionalSetOps[A](x)
@@ -134,6 +134,11 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsStdOpt[A](x: Opt[A]): ops.StdOptOps[A]                                                 = new ops.StdOptOps[A](x)
   implicit def opsTry[A](x: Try[A]): ops.TryOps[A]                                                       = new ops.TryOps[A](x)
   implicit def opsUnit(x: Unit): ops.UnitOps.type                                                        = ops.UnitOps
+
+  implicit def apiInSetPromote[A](x: InSet[A]): IntensionalSet[A] = x match {
+    case xs: IntensionalSet[A] => xs
+    case _                     => IntensionalSet(x)
+  }
 }
 
 trait StdOps extends Any with StdOps3 {

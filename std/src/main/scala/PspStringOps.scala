@@ -53,9 +53,9 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def format(args : Any*): String = java.lang.String.format(self, args map unwrapArg: _*)
   def length                      = self.length
 
-  def bytes: Array[Byte]              = self.getBytes
-  def chars: Array[Char]              = self.toCharArray
-  def wordSet: exSet[String]          = words.naturalSet
+  def bytes: Array[Byte]             = self.getBytes
+  def chars: Array[Char]             = self.toCharArray
+  def wordSet: ExSet[String]         = words.naturalSet
   def lineVector: Direct[String]     = splitChar('\n')
   def dollarSegments: Direct[String] = splitChar('$')
   def dottedSegments: Direct[String] = splitChar('.')

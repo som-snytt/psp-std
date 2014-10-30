@@ -132,13 +132,13 @@ final class IndexRangeOps(xs: IndexRange) {
   def *(n: Int): IndexRange = indexRange(xs.startInt * n, xs.endInt * n)
 }
 
-final class IntensionalSetOps[A](xs: inSet[A]) {
-  def mapOnto[B](f: A => B): inMap[A, B]  = new IntensionalMap(xs, Lookup total f)
-  def diff(that: inSet[A]): inSet[A]      = this filter that
-  def filter(p: Predicate[A]): inSet[A]   = IntensionalSet.Filtered(xs, p)
-  def union(that: inSet[A]): inSet[A]     = IntensionalSet.Union(xs, that)
-  def intersect(that: inSet[A]): inSet[A] = IntensionalSet.Intersect(xs, that)
-  def complement: inSet[A] = (xs: inSet[A]) match {
+final class IntensionalSetOps[A](xs: InSet[A]) {
+  def mapOnto[B](f: A => B): InMap[A, B]  = new IntensionalMap(xs, Lookup total f)
+  def diff(that: InSet[A]): InSet[A]      = this filter that
+  def filter(p: Predicate[A]): InSet[A]   = IntensionalSet.Filtered(xs, p)
+  def union(that: InSet[A]): InSet[A]     = IntensionalSet.Union(xs, that)
+  def intersect(that: InSet[A]): InSet[A] = IntensionalSet.Intersect(xs, that)
+  def complement: InSet[A] = xs match {
     case IntensionalSet.Complement(xs) => xs
     case _                             => IntensionalSet.Complement(xs)
   }
@@ -150,13 +150,13 @@ final class ExtensionalSetOps[A](xs: ExSet[A]) {
   def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
   def intersect(that: ExSet[A]): ExSet[A] = ExtensionalSet.Intersect(xs, that)
   def diff(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Diff(xs, that)
-  def intersect(that: inSet[A]): ExSet[A] = filter(that)
-  def diff(that: inSet[A]): ExSet[A]      = filterNot(that)
+  def intersect(that: InSet[A]): ExSet[A] = filter(that)
+  def diff(that: InSet[A]): ExSet[A]      = filterNot(that)
 
   def filterNot(p: Predicate[A]): ExSet[A] = ExtensionalSet.Filtered(xs, !p)
   def filter(p: Predicate[A]): ExSet[A]    = ExtensionalSet.Filtered(xs, p)
   def union(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Union(xs, that)
-  def isSubsetOf(ys: inSet[A]): Boolean    = xs forall ys
+  def isSubsetOf(ys: InSet[A]): Boolean    = xs forall ys.apply
   def reverse: ExSet[A]                    = xs // XXX
 }
 

@@ -34,14 +34,14 @@ object Foreachable extends ForeachableCompanion[Foreachable] {
 }
 
 object ForeachableSet extends ForeachableCompanion[ForeachableSet] {
-  def apply[A, Repr](f: Repr => ExtensionalSet[A]): Coll[A, Repr] = new ForeachableSet[Repr] {
+  def apply[A, Repr](f: Repr => ExSet[A]): Coll[A, Repr] = new ForeachableSet[Repr] {
     type Elem = A
     def wrap(repr: Repr) = new ExSetView(f(repr))
   }
-  implicit def PolicySetIs[A, CC[X] <: ExtensionalSet[X]] : Coll[A, CC[A]] = apply[A, CC[A]](xs => xs)
-  implicit def JavaSetIs[A, CC[X] <: jSet[X]] : Coll[A, CC[A]]             = apply[A, CC[A]](xs => new PolicySet.FromJava(xs))
-  implicit def ScalaSetIs[A, CC[X] <: scSet[X]] : Coll[A, CC[A]]           = apply[A, CC[A]](xs => new PolicySet.FromScala(xs.toSet))
-  implicit def ScalaBitSetIs: Coll[Int, sciBitSet]                         = apply[Int, sciBitSet](xs => new PolicySet.FromScala(xs))
+  implicit def PolicySetIs[A, CC[X] <: ExSet[X]] : Coll[A, CC[A]] = apply[A, CC[A]](xs => xs)
+  implicit def JavaSetIs[A, CC[X] <: jSet[X]] : Coll[A, CC[A]]    = apply[A, CC[A]](xs => new PolicySet.FromJava(xs))
+  implicit def ScalaSetIs[A, CC[X] <: scSet[X]] : Coll[A, CC[A]]  = apply[A, CC[A]](xs => new PolicySet.FromScala(xs.toSet))
+  implicit def ScalaBitSetIs: Coll[Int, sciBitSet]                = apply[Int, sciBitSet](xs => new PolicySet.FromScala(xs))
 }
 
 object ForeachableLinear extends ForeachableCompanion[ForeachableLinear] {

@@ -10,8 +10,6 @@ import psp.std.StdShow._
 
 package object std extends psp.std.StdPackage {
   type pList[A]          = PolicyList[A]
-  type inSet[A]          = IntensionalSet[A]
-  type exSet[A]          = ExtensionalSet[A]
   type inMap[K, V]       = IntensionalMap[K, V]
   type exMap[K, V]       = ExtensionalMap[K, V]
   type exSeq[+A]         = Each[A]
@@ -181,12 +179,12 @@ package object std extends psp.std.StdPackage {
   }
   def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
 
-  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V]     = xs.m.pmap
-  def exSeq[A](xs: A*): Each[A]                         = xs.m.pseq
-  def exSet[A: HashEq](xs: A*): exSet[A]                = xs.m.pset
-  def exView[A](xs: A*): View[A]                        = Direct[A](xs: _*).m
-  def inSet[A: HashEq](p: Predicate[A]): inSet[A]       = p.inSet
-  def inView[A](mf: Suspended[A]): View[A]              = Each[A](mf).m
+  def exMap[K: HashEq, V](xs: (K, V)*): exMap[K, V] = xs.m.pmap
+  def exSeq[A](xs: A*): Each[A]                     = xs.m.pseq
+  def exSet[A: HashEq](xs: A*): ExSet[A]            = xs.m.pset
+  def exView[A](xs: A*): View[A]                    = Direct[A](xs: _*).m
+  def inSet[A: HashEq](p: Predicate[A]): InSet[A]   = p.inSet
+  def inView[A](mf: Suspended[A]): View[A]          = Each[A](mf).m
 
   def pList[A](xs: A*): pList[A]                        = xs.m.plist
   def pMutableMap[K, V](xs: (K, V)*): pMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
