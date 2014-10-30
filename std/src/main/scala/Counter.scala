@@ -25,8 +25,9 @@ object Counter {
 }
 
 class RecorderCounter() {
-  private[this] val seen = jSet[Any]()
+  private[this] val seen = scmMap[Any, Int]() withDefaultValue 0
   def count: Int = seen.size
-  def record[A](x: A): A = try x finally seen add x
-  override def toString = s"$count"
+  def hits: Int = seen.values.sum
+  def record[A](x: A): A = try x finally seen(x) += 1
+  override def toString = s"$count/$hits"
 }

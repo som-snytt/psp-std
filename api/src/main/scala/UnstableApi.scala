@@ -10,6 +10,7 @@ import java.lang.String
 
 trait Generator[+A] extends Any { def apply(f: A => Unit): Generator[A]   }
 trait Zero[A] extends Any       { def zero: A ; def isZero(x: A): Boolean }
+trait Empty[A] extends Any      { def empty: A                            }
 trait Hash[-A] extends Any      { def hash(x: A): Int                     }
 trait Sums[A] extends Any       { def zero: A ; def sum(x: A, y: A): A    }
 trait Products[A] extends Any   { def one: A ; def product(x: A, y: A): A }

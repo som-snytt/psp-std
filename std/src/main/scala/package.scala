@@ -132,7 +132,6 @@ package object std extends psp.std.StdPackage {
   def nullAs[A] : A                        = asExpected[A](null)
   def asExpected[A](body: Any): A          = body.castTo[A]
 
-  def partial[A, B](f: A ?=> B): A ?=> B                = f
   def ?[A](implicit value: A): A                        = value
   def andFalse(x: Unit): Boolean                        = false
   def andTrue(x: Unit): Boolean                         = true
@@ -145,9 +144,11 @@ package object std extends psp.std.StdPackage {
   def offset(x: Int): Offset                            = Offset(x)
   def option[A](p: Boolean, x: => A): Option[A]         = if (p) Some(x) else None
   def ordering[A: Order] : Ordering[A]                  = ?[Order[A]].toScalaOrdering
+  def partial[A, B](f: A ?=> B): A ?=> B                = f
   def regex(re: String): Regex                          = Regex(re)
   def show[A: Show] : Show[A]                           = ?
   def zero[A](implicit z: Zero[A]): A                   = z.zero
+  def emptyValue[A](implicit z: Empty[A]): A            = z.empty
 
   def fromScala[A](xs: sCollection[A]): AnyView[A] = xs match {
     case xs: sciIndexedSeq[_] => new Direct.FromScala(xs) m
@@ -188,6 +189,7 @@ package object std extends psp.std.StdPackage {
   def exSeq[A](xs: A*): Each[A]                             = xs.m.pseq
   def exSet[A: HashEq](xs: A*): ExSet[A]                    = xs.m.pset
   def exView[A](xs: A*): View[A]                            = Direct[A](xs: _*).m
+  def inMap[K, V](p: Predicate[K], f: K => V): InMap[K, V]  = new IntensionalMap(inSet(p), Lookup total f)
   def inSet[A](p: Predicate[A]): InSet[A]                   = p.inSet
   def inView[A](mf: Suspended[A]): View[A]                  = Each[A](mf).m
   def mutableMap[K, V](xs: (K, V)*): PolicyMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))

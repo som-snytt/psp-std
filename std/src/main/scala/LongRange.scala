@@ -2,7 +2,6 @@ package psp
 package std
 
 import api._
-import IndexRange.{ undefined, empty }
 import lowlevel.ExclusiveIntRange
 
 final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.DirectImpl[Index] with IndexRange with ForceShowDirect {
@@ -47,4 +46,22 @@ object IndexRange {
   def apply(range: ExclusiveIntRange): IndexRange = apply(range.start.zeroPlus, range.end.zeroPlus)
   def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else new LongRange(start join64 end)
   def impl(x: IndexRange): LongRange              = new LongRange(x.start.safeToInt join64 x.end.safeToInt)
+}
+
+/*** Wip.
+ */
+trait Ranged[A] {
+  type Range <: Direct[A]
+  def inclusive(start: A, end: A): Range
+  def exclusive(start: A, end: A): Range
+}
+object Ranged {
+  def inclusive[A: Ranged](start: A, end: A) = ?[Ranged[A]].inclusive(start, end)
+  def exclusive[A: Ranged](start: A, end: A) = ?[Ranged[A]].exclusive(start, end)
+
+  implicit object IndexRanged extends Ranged[Index] {
+    type Range = IndexRange
+    def inclusive(start: Index, end: Index): IndexRange = start until end.next
+    def exclusive(start: Index, end: Index): IndexRange = start until end
+  }
 }

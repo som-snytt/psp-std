@@ -25,12 +25,12 @@ trait ApiViewOps[+A] extends Any {
   def tail: View[A]        = xs drop      1
   def toRefs: View[AnyRef] = xs map (_.toRef)
 
-  def slice(range: IndexRange): View[A]                = new LabeledView(xs drop range.precedingSize take range.size, xs.viewOps :+ pp"slice $range")
-  def filter(p: Predicate[A]): View[A]                 = xs withFilter p
-  def filterNot(p: Predicate[A]): View[A]              = xs withFilter !p
-  def distinct(implicit z: HashEq[A]): View[A]         = xs.pset
-  def max(implicit ord: Order[A]): A                   = xs reducel (_ max2 _)
-  def min(implicit ord: Order[A]): A                   = xs reducel (_ min2 _)
+  def slice(range: IndexRange): View[A]               = new LabeledView(xs drop range.precedingSize take range.size, xs.viewOps :+ pp"slice $range")
+  def filter(p: Predicate[A]): View[A]                = xs withFilter p
+  def filterNot(p: Predicate[A]): View[A]             = xs withFilter !p
+  def distinct(implicit z: HashEq[A]): View[A]        = xs.pset
+  def max(implicit ord: Order[A]): A                  = xs reducel (_ max2 _)
+  def min(implicit ord: Order[A]): A                  = xs reducel (_ min2 _)
   def sortDistinct(implicit ord: Order[A]): Direct[A] = xs.toScalaVector.distinct sorted ord.toScalaOrdering
   def sorted(implicit ord: Order[A]): Direct[A]       = xs.toScalaVector sorted ord.toScalaOrdering
 
@@ -40,15 +40,15 @@ trait ApiViewOps[+A] extends Any {
   def forall(p: Predicate[A]): Boolean = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
 
   def collectFirst[B](pf: A ?=> B): Option[B]                    = find(pf.isDefinedAt) map pf
-  def firstOrZero[B](pf: A ?=> B)(implicit z: Zero[B]): B        = find(pf.isDefinedAt).fold(z.zero)(pf)
-  def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap pf.applyOrZero
+  def firstOrEmpty[B](pf: A ?=> B)(implicit z: Empty[B]): B      = find(pf.isDefinedAt).fold(z.empty)(pf)
+  def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap pf.applyOrEmpty
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): View[C] = xs map (f => ev(f)(x))
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
   def mkString(sep: String): String                              = stringed(sep)(_.any_s)
   def mk_s(sep: String)(implicit z: Show[A]): String             = stringed(sep)(_.to_s)
-  def sortOrder[B: Order](f: A => B): Direct[A]                 = sorted(orderBy[A](f))
+  def sortOrder[B: Order](f: A => B): Direct[A]                  = sorted(orderBy[A](f))
   def tabular(columns: Shower[A]*): String                       = if (xs.nonEmpty && columns.nonEmpty) FunctionGrid(xs.pvec, columns.m).render else ""
 
   def reverseForeach(f: A => Unit): Unit = xs match {
@@ -96,14 +96,9 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
   def product(implicit z: Products[A]): A                       = xs.foldl(z.one)(z.product)
   def reducel(f: (A, A) => A): A                                = tail.foldl(head)(f)
+  def safeReduce(f: (A, A) => A)(implicit z: Empty[A]): A       = if (isEmpty) emptyValue[A] else reducel(f)
   def sum(implicit z: Sums[A]): A                               = xs.foldl(z.zero)(z.sum)
   def without(x: A): View[A]                                    = xs filterNot (_ id_== x)
-
-  /** FIXME - zero is a property of the reduction operation, not the type.
-   *  For instance if you're folding a bunch of booleans with && then zero is true,
-   *  but with || zero is false.
-   */
-  def safeReduce(f: (A, A) => A)(implicit z: Zero[A]): A = if (isEmpty) z.zero else reducel(f)
 
   def distinctBy[B: HashEq](f: A => B): View[A] = inView { mf =>
     var seen: ExSet[B] = exSet[B]()

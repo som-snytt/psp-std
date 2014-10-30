@@ -81,7 +81,7 @@ package object tests {
 
   def genPrecise: Gen[Precise]               = chooseNum(1, MaxInt / 2) map (x => newSize(x))
   def genBounded: Gen[Bounded]               = genPrecise flatMap (lo => genAtomic map (hi => bounded(lo, hi))) collect { case b: Bounded => b }
-  def genAtomic: Gen[Atomic]                 = frequency(10 -> genPrecise, 1 -> Empty, 1 -> Infinite)
+  def genAtomic: Gen[Atomic]                 = frequency(10 -> genPrecise, 1 -> Size.Empty, 1 -> Infinite)
   def genSize: Gen[Size]                     = oneOf(genAtomic, genBounded)
   def genLong: Gen[Long]                     = Gen.choose(MinLong, MaxLong)
   def genInt: Gen[Int]                       = Gen.choose(MinInt, MaxInt)

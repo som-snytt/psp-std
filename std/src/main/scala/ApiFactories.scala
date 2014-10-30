@@ -49,6 +49,11 @@ object Zero {
   }
 }
 
+object Empty {
+  def apply[A](empty: A): Impl[A] = new Impl[A](empty)
+  final class Impl[A](val empty: A) extends AnyVal with Empty[A]
+}
+
 object Sums {
   final class Impl[A](f: BinOp[A], z: Zero[A]) extends Sums[A] {
     def zero: A = z.zero
