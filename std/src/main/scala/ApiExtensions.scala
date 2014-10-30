@@ -132,6 +132,16 @@ final class IndexRangeOps(xs: IndexRange) {
   def *(n: Int): IndexRange = indexRange(xs.startInt * n, xs.endInt * n)
 }
 
+final class InMapOps[K, V](xs: InMap[K, V]) {
+}
+final class ExMapOps[K, V](xs: ExMap[K, V]) {
+  def keys   = xs.domain
+  def values = xs.domain map xs.apply
+
+  def contains(key: K): Boolean = keys(key)
+}
+
+
 final class IntensionalSetOps[A](xs: InSet[A]) {
   def mapOnto[B](f: A => B): InMap[A, B]  = new IntensionalMap(xs, Lookup total f)
   def diff(that: InSet[A]): InSet[A]      = this filter that

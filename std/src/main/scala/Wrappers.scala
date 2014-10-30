@@ -82,8 +82,8 @@ final class PolicyClass(val clazz: jClass) extends AnyVal with ForceShowDirect {
   def unqualifiedName: String                  = decodeName(nameSegments.last)
 }
 
-final class PolicyLoader(val classMap: exMap[String, Bytes]) extends ClassLoader {
-  private val keys        = classMap.keyVector
+final class PolicyLoader(val classMap: ExMap[String, Bytes]) extends ClassLoader {
+  private val keys        = classMap.domain.pvec
   private val instanceMap = scmMap[String, jClass]()
   private val errorMap    = scmMap[String, LinkageError]()
   private def isNoClassDefFoundError(t: Throwable) = t match {
@@ -93,7 +93,7 @@ final class PolicyLoader(val classMap: exMap[String, Bytes]) extends ClassLoader
 
   def totalClasses = classMap.size
   def names        = keys
-  def classes      = names map findClass
+  def classes      = names map (x => findClass(x))
   def errors       = errorMap.toMap
   def missing      = errorMap.m.pmap filterValues isNoClassDefFoundError keys
   def otherErrors  = errorMap.m.pmap filterValues !(isNoClassDefFoundError _)
@@ -107,7 +107,7 @@ final class PolicyLoader(val classMap: exMap[String, Bytes]) extends ClassLoader
     case t: Throwable    => println(s"Caught $t") ; null
   }
 
-  override def findClass(name: String) = instanceMap.getOrElse(name,
+  override def findClass(name: String): jClass = instanceMap.getOrElse(name,
     findLoadedClass(name) match {
       case cl: jClass                     => cl
       case _ if !(classMap contains name) => super.findClass(name)  /** NoClassDefFound */

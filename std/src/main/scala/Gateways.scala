@@ -46,10 +46,12 @@ trait StdTypeclasses {
 }
 
 trait SetOps1 extends Any {
-  implicit def opsIntensionalSet[A](x: InSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps[A](x)
+  implicit def opsIntensionalSet[A](x: InSet[A]): ops.IntensionalSetOps[A] = new ops.IntensionalSetOps(x)
+  implicit def opsIntensionalMap[K, V](x: InMap[K, V]): ops.InMapOps[K, V] = new ops.InMapOps(x)
 }
 trait SetOps extends Any with SetOps1 {
   implicit def opsExtensionalSet[A](x: ExSet[A]): ops.ExtensionalSetOps[A] = new ops.ExtensionalSetOps[A](x)
+  implicit def opsExtensionalMap[K, V](x: ExMap[K, V]): ops.ExMapOps[K, V] = new ops.ExMapOps(x)
 }
 
 trait StdOps0 extends Any {
