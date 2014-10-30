@@ -14,7 +14,7 @@ object IntViews {
   def pfn[A](f: Int ?=> A): Int ?=> A   = f
   def vfn[A](f: IntViewFun): IntViewFun = f
 
-  lazy val tupleFlatMap: Int => Each[Int] = "(x, x)" |: fn(x => fromElems(x, x))
+  lazy val tupleFlatMap: Int => Each[Int] = "(x, x)" |: fn(x => Direct(x, x))
   lazy val isEven: IntPred                = "isEven" |: divisibleBy(2)
   lazy val timesThree: Int => Int         = "*3"     |: fn(_ * 3)
   lazy val collectDivSix: Int ?=> Int     = "%/6"    |: pfn({ case x if x % 6 == 0 => x / 6 })

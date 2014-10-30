@@ -134,7 +134,7 @@ package object std extends psp.std.StdPackage {
   def andFalse(x: Unit): Boolean                        = false
   def andTrue(x: Unit): Boolean                         = true
   def direct[A](xs: A*): Direct[A]                      = new Direct.FromScala(xs.toVector)
-  def each[A](xs: sCollection[A]): Each[A]           = fromScala(xs)
+  def each[A](xs: sCollection[A]): Each[A]              = fromScala(xs)
   def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)
   def intRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end)
   def nthRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end + 1)
@@ -157,10 +157,6 @@ package object std extends psp.std.StdPackage {
     case xs: jSet[_]  => new PolicySet.FromJava[A](xs) m
     case xs           => new Each.FromJava[A](xs) m
   }
-  def fromElems[A](xs: A*): Direct[A] = new Direct.FromScala(xs.toVector)
-
-  def arrayBuilder[A: CTag](xs: A*): scmBuilder[A, Array[A]] = scala.Array.newBuilder[A] ++= xs
-  def vectorBuilder[A](xs: A*): scmBuilder[A, sciVector[A]]  = sciVector.newBuilder[A] ++= xs
 
   // Java.
   def jConcurrentMap[K, V](xs: (K, V)*): jConcurrentMap[K, V] = new jConcurrentHashMap[K, V] doto (b => for ((k, v) <- xs) b.put(k, v))

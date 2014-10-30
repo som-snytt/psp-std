@@ -101,8 +101,8 @@ class Collections extends ScalacheckBundle {
     expectTypes[Array[Int]](
       arr mapInPlace identity,
       arr.m.build,
-      arr.m flatMap (x => fromElems(x)) build,
-      arr.flatMap(x => fromElems(x)).force[Array[Int]]
+      arr.m flatMap (x => Direct(x)) build,
+      arr.flatMap(x => Direct(x)).force[Array[Int]]
     ),
     expectTypes[sciSet[_]](
       sset map identity,

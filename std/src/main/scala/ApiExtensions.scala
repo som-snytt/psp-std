@@ -232,7 +232,7 @@ final class InputStreamOps(val in: InputStream) extends AnyVal {
   }
   def slurp(): Array[Byte] = slurp(-1)
   def slurp(len: Int): Array[Byte] = {
-    val buf = arrayBuilder[Byte]()
+    val buf = scala.Array.newBuilder[Byte]
     if (len >= 0) buf sizeHint len
     wrap { in =>
       var offset = 0

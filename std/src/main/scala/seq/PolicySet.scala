@@ -9,7 +9,7 @@ object PolicySet {
   def reference[A <: AnyRef](xs: Each[A]): exSet[A]                        = ExtensionalSet[A](xs)(HashEq.reference[A])
   def shown[A: Show](xs: Each[A]): exSet[A]                                = ExtensionalSet[A](xs)(HashEq.shown[A])
   def direct[A](xs: Each[A])(equiv: Relation[A], hash: A => Int): exSet[A] = ExtensionalSet[A](xs)(HashEq(equiv, hash))
-  def elems[A: HashEq](xs: A*): exSet[A]                                   = ExtensionalSet[A](fromElems(xs: _*))
+  def elems[A: HashEq](xs: A*): exSet[A]                                   = ExtensionalSet[A](Direct(xs: _*))
 
   class FromScala[A](xs: sciSet[A]) extends ExtensionalSet[A] {
     def size: IntSize         = Precise(xs.size)

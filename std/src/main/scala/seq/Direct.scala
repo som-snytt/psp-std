@@ -24,7 +24,7 @@ object Direct {
   def arrayBuilder[A: CTag]: Builds[A, Array[A]] = Builds[A, Array[A]](xs =>
     xs.size match {
       case size: Precise => newArray[A](size) doto (arr => xs foreachWithIndex ((x, i) => arr(i.safeToInt) = x))
-      case _             => psp.std.arrayBuilder[A]() doto (b => xs foreach b.+=) result
+      case _             => scala.Array.newBuilder[A] doto (b => xs foreach b.+=) result
     }
   )
   final class FromJava[A](xs: jList[A]) extends Leaf[A](xs.size) {
@@ -69,6 +69,7 @@ object Direct {
   }
   def empty[A] : Direct[A]                             = Empty
   def join[A](xs: Direct[A], ys: Direct[A]): Direct[A] = Joined(xs, ys)
+  def fromScala[A](xs: sciIndexedSeq[A]): Direct[A]    = new FromScala(xs)
   def fromString(xs: String): Direct[Char]             = new WrapString(xs)
   def fromArray[A](xs: Array[A]): Direct[A]            = new WrapArray[A](xs)
   def pure[A](size: Precise, f: Index => A): Direct[A] = new Impl(size, f)
