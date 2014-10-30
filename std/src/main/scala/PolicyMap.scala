@@ -25,7 +25,7 @@ final class ExtensionalMap[K, V](val keySet: exSet[K], private val lookup: Looku
   def foreachKey(f: K => Unit): Unit        = keys foreach f
   def isEmpty: Boolean                      = keySet.isEmpty
   def iterator: scIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
-  def keyVector: pVector[K]                 = keys.pvec
+  def keyVector: Direct[K]                 = keys.pvec
   def keys: View[K]                         = keySet
   def keysIterator: scIterator[K]           = keys.iterator
   def map[V1](f: V => V1): exMap[K, V1]     = newLookup(lookup map f)

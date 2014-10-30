@@ -12,7 +12,7 @@ trait ForeachableLinear[Repr] extends Foreachable[Repr] {
   def wrap(repr: Repr): LinearView[Elem, Repr]
 }
 trait ForeachableIndexed[Repr] extends Foreachable[Repr] {
-  def wrap(repr: Repr): IndexedView[Elem, Repr]
+  def wrap(repr: Repr): DirectView[Elem, Repr]
 }
 trait ForeachableSet[Repr] extends Foreachable[Repr] {
   def wrap(repr: Repr): ExSetView[Elem, Repr]
@@ -57,7 +57,7 @@ object ForeachableLinear extends ForeachableCompanion[ForeachableLinear] {
 object ForeachableIndexed extends ForeachableCompanion[ForeachableIndexed] {
   def apply[A, Repr](f: Repr => Direct[A]): Coll[A, Repr] = new ForeachableIndexed[Repr] {
     type Elem = A
-    def wrap(repr: Repr): IndexedView[A, Repr] = new IndexedView[A, Repr](f(repr))
+    def wrap(repr: Repr): DirectView[A, Repr] = new DirectView[A, Repr](f(repr))
   }
 
   implicit def ArrayIs[A] : Coll[A, Array[A]]                                  = apply[A, Array[A]](Direct fromArray _)

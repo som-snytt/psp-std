@@ -24,7 +24,7 @@ object BiIterator {
   def mapped[A, B](it: BiIterator[A], f: A => B): BiIterator[B]      = new Mapped(it, f)
   def array[A](xs: Array[A]): BiIterator[A]                          = new ArrayIterator(xs)
   def linear[A](xs: Linear[A]): BiIterator[A]                        = new LinearIterator(xs)
-  def vector[A](xs: pVector[A]): BiIterator[A]                       = new VectorIterator(xs)
+  def vector[A](xs: Direct[A]): BiIterator[A]                       = new VectorIterator(xs)
   def enumeration[A](enum: jEnumeration[A]): BiIterator[A]           = new EnumerationIterator(enum)
 
   final class EnumerationIterator[A](enum: jEnumeration[A]) extends BiIterator[A] {
@@ -55,7 +55,7 @@ object BiIterator {
     def hasNext   = index < xs.length
     def next(): A = try xs(index) finally index += 1
   }
-  private class VectorIterator[A](xs: pVector[A]) extends BiIterator[A] {
+  private class VectorIterator[A](xs: Direct[A]) extends BiIterator[A] {
     private[this] var index: Index = 0.index
     def hasNext   = xs.size containsIndex index
     def next(): A = try xs(index) finally index += 1
@@ -74,7 +74,7 @@ object BiIterable {
     def next(): A = nextFn
   }
 
-  private class VectorBased[A](xs: pVector[A])   extends BiIterableImpl(BiIterator vector xs)
+  private class VectorBased[A](xs: Direct[A])   extends BiIterableImpl(BiIterator vector xs)
   private class LinearBased[A](xs: Linear[A])    extends BiIterableImpl(BiIterator linear xs)
   private class ArrayBased[A](xs: Array[A])      extends BiIterableImpl(BiIterator array xs)
   private class JavaBased[A](xs: jIterable[A])   extends BiIterableImpl(xs.iterator |> (it => new Impl(it.hasNext, it.next)))
@@ -82,7 +82,7 @@ object BiIterable {
 
   def apply[A](xs: Each[A]): BiIterable[A]       = new ScalaBased(xs.toScalaStream) // XXX
   def apply[A](xs: pList[A]): BiIterable[A]      = new LinearBased(xs)
-  def apply[A](xs: pVector[A]): BiIterable[A]    = new VectorBased(xs)
+  def apply[A](xs: Direct[A]): BiIterable[A]    = new VectorBased(xs)
   def apply[A](xs: Array[A]): BiIterable[A]      = new ArrayBased(xs)
   def apply[A](xs: jIterable[A]): BiIterable[A]  = new JavaBased(xs)
   def apply[A](xs: scIterable[A]): BiIterable[A] = new ScalaBased(xs)

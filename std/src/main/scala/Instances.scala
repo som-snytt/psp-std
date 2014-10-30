@@ -47,7 +47,7 @@ trait MonoidInstances {
   import StdZero._
 
   implicit def seqAddition[A] : Sums[Each[A]]       = Sums(_ ++ _)
-  implicit def vectorAddition[A] : Sums[pVector[A]] = Sums(_ ++ _)
+  implicit def vectorAddition[A] : Sums[Direct[A]] = Sums(_ ++ _)
 }
 
 trait ZeroInstances {
@@ -67,7 +67,7 @@ trait ZeroInstances {
   implicit def intZero: Zero[Int]                            = Zero(0)
   implicit def longZero: Zero[Long]                          = Zero(0L)
   implicit def optionZero[A] : Zero[Option[A]]               = Zero(None)
-  implicit def pVectorZero[A] : Zero[pVector[A]]             = Zero(Direct())
+  implicit def pVectorZero[A] : Zero[Direct[A]]             = Zero(Direct())
   implicit def pSeqZero[A] : Zero[Each[A]]                   = Zero(Each.elems())
   implicit def exSetZero[A: HashEq] : Zero[exSet[A]]         = Zero(exSet[A]())
   implicit def exMapZero[K: HashEq, V] : Zero[exMap[K, V]]   = Zero(exMap[K, V]())
@@ -119,7 +119,7 @@ trait EqInstances {
   // Since Sets are created with their own notion of equality, you can't pass
   // an Eq instance. Map keys are also a set.
   implicit def arrayHashEq[A: HashEq] : HashEq[Array[A]]       = hashEqBy[Array[A]](_.pvec)
-  implicit def vectorHashEq[A: Eq] : HashEq[pVector[A]]        = HashEq((xs, ys) => (xs.toScalaVector corresponds ys.toScalaVector)(_ === _), _.toScalaVector.##)
+  implicit def vectorHashEq[A: Eq] : HashEq[Direct[A]]        = HashEq((xs, ys) => (xs.toScalaVector corresponds ys.toScalaVector)(_ === _), _.toScalaVector.##)
   implicit def exSetEq[A] : Eq[exSet[A]]                       = Eq(symmetrically[exSet[A]](_ isSubsetOf _))
   implicit def exMapEq[K, V: Eq] : Eq[exMap[K, V]]             = Eq((xs, ys) => xs.keySet === ys.keySet && (equalizer(xs.apply, ys.apply) forall xs.keys))
   implicit def tuple2Eq[A: HashEq, B: HashEq] : HashEq[(A, B)] = HashEq[(A, B)]({ case ((x1, y1), (x2, y2)) => x1 === x2 && y1 === y2 }, x => x._1.hash + x._2.hash)

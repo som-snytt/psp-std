@@ -56,25 +56,25 @@ final class PolicyClass(val clazz: jClass) extends AnyVal with ForceShowDirect {
   def isPrimitive      = clazz.isPrimitive
   def isSynthetic      = clazz.isSynthetic
 
-  def ancestorNames: pVector[String]           = ancestors map (_.rawName)
-  def ancestors: pVector[PolicyClass]          = this transitiveClosure (_.parents) pvec
+  def ancestorNames: Direct[String]           = ancestors map (_.rawName)
+  def ancestors: Direct[PolicyClass]          = this transitiveClosure (_.parents) pvec
   def exists                                   = clazz != null
-  def fields: pVector[jField]                  = clazz.getFields.pvec
+  def fields: Direct[jField]                  = clazz.getFields.pvec
   def getCanonicalName: String                 = clazz.getCanonicalName
   def getClassLoader: ClassLoader              = clazz.getClassLoader
-  def getClasses: pVector[PolicyClass]         = clazz.getClasses.pvec map toPolicy
+  def getClasses: Direct[PolicyClass]         = clazz.getClasses.pvec map toPolicy
   def getComponentType: PolicyClass            = clazz.getComponentType
-  def getDeclaredClasses: pVector[PolicyClass] = clazz.getDeclaredClasses.pvec map toPolicy
+  def getDeclaredClasses: Direct[PolicyClass] = clazz.getDeclaredClasses.pvec map toPolicy
   def getDeclaringClass: PolicyClass           = clazz.getDeclaringClass
   def getEnclosingClass: PolicyClass           = clazz.getEnclosingClass
-  def getInterfaces: pVector[PolicyClass]      = clazz.getInterfaces.pvec map toPolicy
+  def getInterfaces: Direct[PolicyClass]      = clazz.getInterfaces.pvec map toPolicy
   def getSuperclass: Option[PolicyClass]       = Option(clazz.getSuperclass) map toPolicy
   def hasModuleName: Boolean                   = rawName endsWith "$"
-  def methods: pVector[jMethod]                = clazz.getMethods.pvec
-  def nameSegments: pVector[String]            = rawName.dottedSegments
+  def methods: Direct[jMethod]                = clazz.getMethods.pvec
+  def nameSegments: Direct[String]            = rawName.dottedSegments
   def pClass: PolicyClass                      = this
-  def parentInterfaces: pVector[PolicyClass]   = clazz.getInterfaces.pvec map toPolicy
-  def parents: pVector[PolicyClass]            = getSuperclass.pvec ++ parentInterfaces
+  def parentInterfaces: Direct[PolicyClass]   = clazz.getInterfaces.pvec map toPolicy
+  def parents: Direct[PolicyClass]            = getSuperclass.pvec ++ parentInterfaces
   def qualifiedName: String                    = rawName.mapSplit('.')(decodeName)
   def rawName: String                          = clazz.getName
   def shortName: String                        = unqualifiedName

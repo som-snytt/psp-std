@@ -56,15 +56,15 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def bytes: Array[Byte]              = self.getBytes
   def chars: Array[Char]              = self.toCharArray
   def wordSet: exSet[String]          = words.naturalSet
-  def lineVector: pVector[String]     = splitChar('\n')
-  def dollarSegments: pVector[String] = splitChar('$')
-  def dottedSegments: pVector[String] = splitChar('.')
-  def slashSegments: pVector[String]  = splitChar('/')
+  def lineVector: Direct[String]     = splitChar('\n')
+  def dollarSegments: Direct[String] = splitChar('$')
+  def dottedSegments: Direct[String] = splitChar('.')
+  def slashSegments: Direct[String]  = splitChar('/')
 
   def containsChar(ch: Char): Boolean       = chars.m contains ch
-  def splitChar(ch: Char): pVector[String]  = splitRegex(Regex quote ch.toString)
-  def splitRegex(r: Regex): pVector[String] = r.pattern split self pvec
-  def words: pVector[String]                = splitRegex(whitespace)
+  def splitChar(ch: Char): Direct[String]  = splitRegex(Regex quote ch.toString)
+  def splitRegex(r: Regex): Direct[String] = r.pattern split self pvec
+  def words: Direct[String]                = splitRegex(whitespace)
 
   def mapChars(pf: Char ?=> Char): String          = self map (c => if (pf isDefinedAt c) pf(c) else c) build
   def mapLines(f: Unary[String]): String           = mapSplit('\n')(f)

@@ -15,6 +15,7 @@ trait ApiViewOps[+A] extends Any {
 
   def foreachWithIndex(f: (A, Index) => Unit): Unit = foldl(0.index)((idx, x) => try idx.next finally f(x, idx))
   def mapWithIndex[B](f: (A, Index) => B): View[B]  = inView[B](mf => foreachWithIndex(f andThen mf))
+  def indexAtWhich(p: Predicate[A]): Index          = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
 
   def isEmpty: Boolean     = xs.size.isZero || directIsEmpty
   def nonEmpty: Boolean    = xs.size.isNonZero || !directIsEmpty
@@ -30,8 +31,8 @@ trait ApiViewOps[+A] extends Any {
   def distinct(implicit z: HashEq[A]): View[A]         = xs.pset
   def max(implicit ord: Order[A]): A                   = xs reducel (_ max2 _)
   def min(implicit ord: Order[A]): A                   = xs reducel (_ min2 _)
-  def sortDistinct(implicit ord: Order[A]): pVector[A] = xs.toScalaVector.distinct sorted ord.toScalaOrdering
-  def sorted(implicit ord: Order[A]): pVector[A]       = xs.toScalaVector sorted ord.toScalaOrdering
+  def sortDistinct(implicit ord: Order[A]): Direct[A] = xs.toScalaVector.distinct sorted ord.toScalaOrdering
+  def sorted(implicit ord: Order[A]): Direct[A]       = xs.toScalaVector sorted ord.toScalaOrdering
 
   def count(p: Predicate[A]): Int      = foldl[Int](0)((res, x) => if (p(x)) res + 1 else res)
   def exists(p: Predicate[A]): Boolean = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
@@ -42,13 +43,12 @@ trait ApiViewOps[+A] extends Any {
   def firstOrZero[B](pf: A ?=> B)(implicit z: Zero[B]): B        = find(pf.isDefinedAt).fold(z.zero)(pf)
   def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap pf.applyOrZero
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
-  def indexAtWhich(p: Predicate[A]): Index                       = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): View[C] = xs map (f => ev(f)(x))
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
   def mkString(sep: String): String                              = stringed(sep)(_.any_s)
   def mk_s(sep: String)(implicit z: Show[A]): String             = stringed(sep)(_.to_s)
-  def sortOrder[B: Order](f: A => B): pVector[A]                 = sorted(orderBy[A](f))
+  def sortOrder[B: Order](f: A => B): Direct[A]                 = sorted(orderBy[A](f))
   def tabular(columns: Shower[A]*): String                       = if (xs.nonEmpty && columns.nonEmpty) FunctionGrid(xs.pvec, columns.m).render else ""
 
   def reverseForeach(f: A => Unit): Unit = xs match {

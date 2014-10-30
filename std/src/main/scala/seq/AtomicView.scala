@@ -37,7 +37,7 @@ final case class SplitView[+A, Repr](left: BaseView[A, Repr], right: BaseView[A,
 
 object FlattenSlice {
   def unapply[A, Repr](xs: BaseView[A, Repr]): Option[(BaseView[A, Repr], IndexRange)] = xs match {
-    case xs: IndexedView[_, _] => Some(xs -> xs.indices)
+    case xs: DirectView[_, _] => Some(xs -> xs.indices)
     case LabeledView(xs, _)    => unapply(xs)
     case Mapped(xs, f)         => unapply(xs) map { case (xs, range) => (xs map f, range) }
     case DroppedR(xs, n)       => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
@@ -66,8 +66,8 @@ final class ExSetView[A, Repr](underlying: ExtensionalSet[A]) extends AtomicView
   def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange = linearlySlice(underlying, range, f)
 }
 
-final class IndexedView[A, Repr](underlying: Direct[A]) extends AtomicView[A, Repr] with Direct[A] with ops.HasPreciseSizeMethods {
-  type This = IndexedView[A, Repr]
+final class DirectView[A, Repr](underlying: Direct[A]) extends AtomicView[A, Repr] with Direct[A] with ops.HasPreciseSizeMethods {
+  type This = DirectView[A, Repr]
 
   def viewOps                                                   = Direct("<vector>")
   def size: Precise                                             = underlying.size

@@ -87,7 +87,7 @@ class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
   // (max / 5)      |> (n => vfn(_ span lessThan(n) right) :| "span (_ < $n) right"),
 
   def policyList: pList[Int]         = (1 to max).plist
-  def policyVector: pVector[Int]     = (1 to max).pvec
+  def policyVector: Direct[Int]     = (1 to max).pvec
   def policyMixed1: Each[Int]        = Each.join((1 until max / 2).pvec, (max / 2 to max).plist)
   def policyMixed2: Each[Int]        = Each.join((1 until max / 2).plist, (max / 2 to max).pvec)
   def scalaIntRange: sciRange        = sciRange.inclusive(1, max, 1)

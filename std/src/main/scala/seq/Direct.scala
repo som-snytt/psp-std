@@ -73,8 +73,8 @@ object Direct {
   def fromArray[A](xs: Array[A]): Direct[A]            = new WrapArray[A](xs)
   def pure[A](size: Precise, f: Index => A): Direct[A] = new Impl(size, f)
 
-  def from(start: Long): IndexedView[Long, Direct[Long]] =
-    new IndexedView(new Impl(Precise(MaxLong), n => start + n.indexValue)) //:| s"Direct.from($start)"
+  def from(start: Long): DirectView[Long, Direct[Long]] =
+    new DirectView(new Impl(Precise(MaxLong), n => start + n.indexValue)) //:| s"Direct.from($start)"
 
   def unapplySeq[A](xs: Direct[A]): scala.Some[sciIndexedSeq[A]] = Some(new ToScala(xs))
 }

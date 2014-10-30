@@ -28,7 +28,7 @@ trait StdBuilds0 extends Any                 { implicit def implicitBuildsFromCB
 trait StdBuilds1 extends Any with StdBuilds0 { implicit def implicitBuildsArray[A: CTag] : Builds[A, Array[A]]                             = Direct.arrayBuilder[A] }
 trait StdBuilds2 extends Any with StdBuilds1 { implicit def implicitBuildsList[A] : Builds[A, Each[A]]                                     = PolicyList.builder[A]  }
 trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, exSet[A]]                             = PolicySet.builder[A]   }
-trait StdBuilds4 extends Any with StdBuilds3 { implicit def implicitBuildsDirect[A] : Builds[A, pVector[A]]                                = Direct.builder[A]      }
+trait StdBuilds4 extends Any with StdBuilds3 { implicit def implicitBuildsDirect[A] : Builds[A, Direct[A]]                                = Direct.builder[A]      }
 trait StdBuilds  extends Any with StdBuilds4 { implicit def implicitBuildsString: Builds[Char, String]                                     = Direct.stringBuilder() }
 
 trait GlobalShow0 {
@@ -92,13 +92,13 @@ trait StdOps2 extends Any with StdOps1 {
 
 trait StdOps3 extends Any with StdOps2 {
   implicit class ForeachableIndexedOps[A, Repr](repr: Repr)(implicit z: ForeachableIndexed.Coll[A, Repr]) {
-    def m: IndexedView[A, Repr] = z wrap repr
+    def m: DirectView[A, Repr] = z wrap repr
   }
 
-  implicit def directScalaIndexedIs[A, CC[X] <: sciIndexedSeq[X]](xs: CC[A]): IndexedView[A, CC[A]] = new IndexedView(new Direct.FromScala(xs))
-  implicit def directIndexedIs[A, CC[X] <: Direct[X]](xs: CC[A]): IndexedView[A, CC[A]]             = new IndexedView(xs)
-  implicit def directArrayIs[A](xs: Array[A]): IndexedView[A, Array[A]]                             = new IndexedView(Direct fromArray xs)
-  implicit def directStringIs(xs: String): IndexedView[Char, String]                                = new IndexedView(Direct fromString xs)
+  implicit def directScalaIndexedIs[A, CC[X] <: sciIndexedSeq[X]](xs: CC[A]): DirectView[A, CC[A]] = new DirectView(new Direct.FromScala(xs))
+  implicit def directIndexedIs[A, CC[X] <: Direct[X]](xs: CC[A]): DirectView[A, CC[A]]             = new DirectView(xs)
+  implicit def directArrayIs[A](xs: Array[A]): DirectView[A, Array[A]]                             = new DirectView(Direct fromArray xs)
+  implicit def directStringIs(xs: String): DirectView[Char, String]                                = new DirectView(Direct fromString xs)
 
   implicit def infixOpsPartialOrder[A: PartialOrder](x: A): infix.PartialOrderOps[A] = new infix.PartialOrderOps[A](x)
   implicit def infixOpsOrder[A: Order](x: A): infix.OrderOps[A]                      = new infix.OrderOps[A](x)

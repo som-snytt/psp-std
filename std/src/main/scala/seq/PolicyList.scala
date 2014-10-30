@@ -59,7 +59,7 @@ object PolicyList {
 /** A wrapper so a fixed-size sequence can linearly be decomposed with a bit less
  *  allocation overhead.
  */
-final class Linearized[A](xs: pVector[A], startIndex: Index) extends Linear[A] with HasPreciseSize {
+final class Linearized[A](xs: Direct[A], startIndex: Index) extends Linear[A] with HasPreciseSize {
   def foreach(f: A => Unit): Unit = xs.indices drop startIndex.indexValue.size foreach (i => f(xs(i)))
 
   def size = xs.size - startIndex.indexValue.size

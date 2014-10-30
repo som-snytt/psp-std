@@ -24,7 +24,7 @@ final case class Opt[A](get: A) extends AnyVal {
   def map[B](f: A => B): Opt[B] = if (isEmpty) this.asInstanceOf[Opt[B]] else new Opt[B](f(get))
 }
 
-final class CursorExtractor[A](xs: pVector[A]) {
+final class CursorExtractor[A](xs: Direct[A]) {
   type C = Cursor[this.type]
 
   def isEmpty        = xs.isEmpty

@@ -69,7 +69,7 @@ final class OptionOps[A](val x: Option[A]) extends AnyVal {
 
   def or(alt: => A): A       = x getOrElse alt
   def orFail(msg: String): A = x getOrElse abort(msg)
-  def pvec: pVector[A]       = if (x.isEmpty) Direct() else Direct(x.get)
+  def pvec: Direct[A]       = if (x.isEmpty) Direct() else Direct(x.get)
 }
 
 final class TryOps[A](val x: Try[A]) extends AnyVal {

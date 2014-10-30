@@ -14,7 +14,7 @@ final case class SinglePath(path: Path) extends AnyVal {
 
   override def toString = path.toString
 }
-final case class SinglePaths(singles: pVector[SinglePath]) extends Direct[SinglePath] {
+final case class SinglePaths(singles: Direct[SinglePath]) extends Direct[SinglePath] {
   def isEmpty                        = singles.isEmpty
   def size                           = singles.size
   def foreach(f: SinglePath => Unit) = singles foreach f
@@ -26,7 +26,7 @@ final case class SinglePaths(singles: pVector[SinglePath]) extends Direct[Single
   def packageNames                   = deepEntries flatMap (x => pathToPackage(x)) sortDistinct
 
   val pathToPackage: exMap[Path, View[String]] = paths mapOnto (_.deepPackageNames)
-  // val packageToPath: exMap[String, pVector[Path]] =
+  // val packageToPath: exMap[String, Direct[Path]] =
   //   pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p).m containsByEquals pkg))
 }
 

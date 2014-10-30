@@ -6,10 +6,10 @@ import StdShow._
 
 package repl {
   trait TargetCommon[A] {
-    def target: pVector[A]
-    def >(implicit z: Show[A]): pVector[A]     = target doto (_ map z.show foreach println)
-    def >>(implicit z: TryShow[A]): pVector[A] = target doto (_ map z.show foreach println)
-    def !>(implicit z: Show[A]): pVector[A]    = target doto (xs => (xs map z.show).sorted.m foreach println)
+    def target: Direct[A]
+    def >(implicit z: Show[A]): Direct[A]     = target doto (_ map z.show foreach println)
+    def >>(implicit z: TryShow[A]): Direct[A] = target doto (_ map z.show foreach println)
+    def !>(implicit z: Show[A]): Direct[A]    = target doto (xs => (xs map z.show).sorted.m foreach println)
   }
 
   trait ReplImportLow {

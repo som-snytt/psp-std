@@ -36,9 +36,9 @@ package object tests {
   implicit def buildsToBuildable[A, CC[X]](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
     new Buildable[A, CC] { def builder: scmBuilder[A, CC[A]] = z.scalaBuilder }
 
-  def pvectorOf[A: Arbitrary](g: Gen[A]): Gen[pVector[A]]          = containerOf[pVector, A](g)(?, _.toScalaTraversable)
+  def pvectorOf[A: Arbitrary](g: Gen[A]): Gen[Direct[A]]          = containerOf[Direct, A](g)(?, _.toScalaTraversable)
   def pseqOf[A: Arbitrary](g: Gen[A]): Gen[Each[A]]                = containerOf[Each, A](g)(?, _.toScalaTraversable)
-  def pvectorOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[pVector[A]] = containerOfN[pVector, A](n, g)(?, _.toScalaTraversable)
+  def pvectorOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[Direct[A]] = containerOfN[Direct, A](n, g)(?, _.toScalaTraversable)
   def pseqOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[Each[A]]       = containerOfN[Each, A](n, g)(?, _.toScalaTraversable)
 
   implicit class ArbitraryOps[A](x: Arbitrary[A]) {
@@ -49,7 +49,7 @@ package object tests {
     def collect[B](pf: A ?=> B): Gen[B]                                          = gen suchThat pf.isDefinedAt map pf.apply
     def collectN[B](n: Int)(pf: Each[A] ?=> B)(implicit z: Arbitrary[A]): Gen[B] = pseqOfN(n, gen) collect pf
     def stream: Each[A]                                                          = Each continually gen.sample flatMap (_.pvec)
-    def take(n: Int): pVector[A]                                                 = stream take n pvec
+    def take(n: Int): Direct[A]                                                 = stream take n pvec
   }
   implicit class PropOps(p: Prop) {
     def unary_! : Prop = p map (r => !r)
@@ -76,7 +76,7 @@ package object tests {
   implicit def chooseSize: Choose[Precise] = Choose.xmap[Long, Precise](newSize, _.value)
   implicit def chooseNth: Choose[Nth]      = Choose.xmap[Long, Nth](_.nth, _.nthValue)
 
-  def randomGen[A](xs: pVector[Gen[A]]): Gen[A] = indexRangeGen(xs.indices) flatMap xs.elemAt
+  def randomGen[A](xs: Direct[Gen[A]]): Gen[A] = indexRangeGen(xs.indices) flatMap xs.elemAt
   def randomGen[A](xs: Gen[A]*): Gen[A]         = randomGen(xs.m.pvec)
 
   def genPrecise: Gen[Precise]               = chooseNum(1, MaxInt / 2) map (x => newSize(x))
@@ -91,7 +91,7 @@ package object tests {
   def genWord: Gen[String]                   = choose(1, 10) flatMap genWordOfLength
   def genLine: Gen[String]                   = choose(3, 7) flatMap (n => listOfN(n, genWord)) map (_ mkString " ")
   def genWordOfLength(n: Int): Gen[String]   = listOfN(n, genLetter) map (_.mkString)
-  def genLines(n: Int): Gen[pVector[String]] = choose(3, 7) flatMap (n => pvectorOfN(n, genLine))
+  def genLines(n: Int): Gen[Direct[String]] = choose(3, 7) flatMap (n => pvectorOfN(n, genLine))
   def letterFrom(s: String): Gen[Char]       = frequency(s.toCharArray map (c => 1 -> (c: Gen[Char])) seq: _*)
 
   object genregex {
