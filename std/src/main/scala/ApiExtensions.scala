@@ -135,10 +135,11 @@ final class IndexRangeOps(xs: IndexRange) {
 final class InMapOps[K, V](xs: InMap[K, V]) {
 }
 final class ExMapOps[K, V](xs: ExMap[K, V]) {
-  def keys   = xs.domain
-  def values = xs.domain map xs.apply
+  // def keys    = xs.domain
+  // def values  = xs.domain map xs.apply
+  // def partial: K ?=> V = newPartial(xs.domain.apply, xs.apply)
 
-  def contains(key: K): Boolean = keys(key)
+  // def contains(key: K): Boolean = keys(key)
 }
 
 
@@ -157,7 +158,7 @@ final class ExtensionalSetOps[A](xs: ExSet[A]) {
   private implicit def heq: HashEq[A] = xs.hashEq
 
   def add(x: A): ExSet[A]                 = if (xs(x)) xs else xs union exSet(x)
-  def mapOnto[B](f: A => B): exMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
+  def mapOnto[B](f: A => B): ExMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
   def intersect(that: ExSet[A]): ExSet[A] = ExtensionalSet.Intersect(xs, that)
   def diff(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Diff(xs, that)
   def intersect(that: InSet[A]): ExSet[A] = filter(that)

@@ -8,14 +8,14 @@ final class IntensionalMap[K, V](val domain: InSet[K], private val lookup: Looku
   type This = IntensionalMap[K, V]
   def filterKeys(p: Predicate[K]): This = new IntensionalMap(domain filter p, lookup)
 }
-final class ExtensionalMap[K, V](val domain: ExSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
+final class ExtensionalMap[K, V](val domain: ExSet[K], val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
   type Entry     = (K, V)
   type This      = ExtensionalMap[K, V]
-  type MapTo[V1] = ExtensionalMap[K, V1]
+  type MapTo[V1] = ExMap[K, V1]
 
-  private[this] def newMap[V1](domain: ExSet[K], lookup: Lookup[K, V1]): exMap[K, V1] = new ExtensionalMap(domain, lookup)
-  private[this] def newKeys(domain: ExSet[K]): This                                   = newMap(domain, lookup)
-  private[this] def newLookup[V1](lookup: Lookup[K, V1]): exMap[K, V1]                = newMap(domain, lookup)
+  private[this] def newMap[V1](domain: ExSet[K], lookup: Lookup[K, V1]): MapTo[V1] = new ExtensionalMap(domain, lookup)
+  private[this] def newKeys(domain: ExSet[K]): This                                = newMap(domain, lookup)
+  private[this] def newLookup[V1](lookup: Lookup[K, V1]): MapTo[V1]                = newMap(domain, lookup)
 
   def +(key: K, value: V): This             = newLookup(lookup.put(key, value)(domain.hashEq))
   def ++(map: This): This                   = newMap(domain union map.domain, map.lookup orElse lookup)
@@ -65,11 +65,11 @@ sealed abstract class PolicyMap[K, V](domain: InSet[K], lookup: Lookup[K, V]) ex
 }
 
 object PolicyMap {
-  type BuildsMap[K, V] = Builds[(K, V), exMap[K, V]]
+  type BuildsMap[K, V] = Builds[(K, V), ExtensionalMap[K, V]]
 
   def builder[K : HashEq, V] : BuildsMap[K, V]                  = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, Lookup(kvs.toPartial)))
-  def apply[K, V](keys: ExSet[K], pf: K ?=> V): exMap[K, V]     = new ExtensionalMap(keys, Lookup(pf))
-  def unapplySeq[K, V](map: exMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
+  def apply[K, V](keys: ExSet[K], pf: K ?=> V): ExMap[K, V]     = new ExtensionalMap(keys, Lookup(pf))
+  def unapplySeq[K, V](map: ExMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
 
   /** An immutable scala Map with keys and values in parallel vectors.
    *  It is a "sorted" map in the sense that whatever order the keys are in, that's the sort.
@@ -176,13 +176,13 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
 
 /** TODO - possible map related methods.
 
-def ascendingFrequency: exMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
-def descendingFrequency: exMap[A, Int]                    = ascendingFrequency.reverse
+def ascendingFrequency: ExMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
+def descendingFrequency: ExMap[A, Int]                    = ascendingFrequency.reverse
 def unsortedFrequencyMap: Map[A, Int]                     = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
-def mapFrom[B](f: A => B): exMap[B, A]                    = newMap(toScalaVector map (x => f(x) -> x): _*)
-def mapToAndOnto[B, C](k: A => B, v: A => C): exMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
-def mapToMapPairs[B, C](f: A => (B, C)): exMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
-def groupBy[B, C](f: A => B)(g: Each[A] => C): exMap[B, C] = {
+def mapFrom[B](f: A => B): ExMap[B, A]                    = newMap(toScalaVector map (x => f(x) -> x): _*)
+def mapToAndOnto[B, C](k: A => B, v: A => C): ExMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
+def mapToMapPairs[B, C](f: A => (B, C)): ExMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
+def groupBy[B, C](f: A => B)(g: Each[A] => C): ExMap[B, C] = {
   val buf = scmMap[B, pList[A]]() withDefaultValue newList[A]()
   pseq foreach (x => buf(f(x)) ::= x)
   newMap((buf.toMap mapValues g).toSeq: _*)
@@ -190,8 +190,8 @@ def groupBy[B, C](f: A => B)(g: Each[A] => C): exMap[B, C] = {
 
 final class Map[K, V](val map: scMap[K, V]) extends AnyVal {
   def sortedKeys(implicit ord: Order[K])               = map.keys.sorted
-  // def orderByKey(implicit ord: Order[K]): exMap[K, V]   = newMap(sortedKeys, map.toMap)
-  // def orderByValue(implicit ord: Order[V]): exMap[K, V] = newMap(sortedKeys(ord on map), map.toMap)
+  // def orderByKey(implicit ord: Order[K]): ExMap[K, V]   = newMap(sortedKeys, map.toMap)
+  // def orderByValue(implicit ord: Order[V]): ExMap[K, V] = newMap(sortedKeys(ord on map), map.toMap)
 }
 final class SortedMap[K, V](val map: scSortedMap[K, V]) extends AnyVal {
   private def ord: Order[K]     = Order create map.ordering

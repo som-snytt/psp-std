@@ -77,8 +77,8 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def findOr(p: Predicate[A], alt: => A): A                     = find(p) | alt
   def findOrZero(p: Predicate[A])(implicit z: Zero[A]): A       = find(p) | z.zero
   def indexByEquals(x: A): Index                                = indexAtWhich(_ == x)
-  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): exMap[B, A] = xs map (x => f(x) -> x) pmap
-  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): exMap[A, B] = xs.pset mapOnto f
+  def mapFrom[B](f: A => B)(implicit z: HashEq[B]): ExMap[B, A] = xs map (x => f(x) -> x) pmap
+  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
   def product(implicit z: Products[A]): A                       = xs.foldl(z.one)(z.product)
   def reducel(f: (A, A) => A): A                                = tail.foldl(head)(f)
   def sum(implicit z: Sums[A]): A                               = xs.foldl(z.zero)(z.sum)

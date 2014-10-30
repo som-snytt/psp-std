@@ -159,6 +159,10 @@ trait StdOps extends Any with StdOps3 {
     case xs: ExtensionalSet[A] => xs
     case _                     => ExtensionalSet(x)(x.hashEq)
   }
+  implicit def apiExMapPromote[K, V](x: ExMap[K, V]): ExtensionalMap[K, V] = x match {
+    case xs: ExtensionalMap[K, V] => xs
+    case _                        => new ExtensionalMap(x.domain, Lookup(newPartial(x.domain.apply, x.apply)))
+  }
 }
 
 // Prefer opsAnyRef.

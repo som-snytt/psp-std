@@ -22,11 +22,11 @@ trait ConversionOps[A] extends Any {
 
   // XXX Let's have all these converters return the internal type,
   // not the API type, as a reward for the verbosity.
-  def toPolicyList: pList[A]                                            = PolicyList.builder[A] build xs
-  def toPolicySeq: Each[A]                                              = Each.builder[A] build xs
-  def toPolicySet(implicit z: HashEq[A]): ExtensionalSet[A]             = PolicySet.builder[A] build xs
-  def toPolicyVector: Direct[A]                                         = Direct.builder[A] build xs
-  def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): exMap[K, V] = PolicyMap.builder[K, V] build (xs map ev)
+  def toPolicyList: pList[A]                                                     = PolicyList.builder[A] build xs
+  def toPolicySeq: Each[A]                                                       = Each.builder[A] build xs
+  def toPolicySet(implicit z: HashEq[A]): ExtensionalSet[A]                      = PolicySet.builder[A] build xs
+  def toPolicyVector: Direct[A]                                                  = Direct.builder[A] build xs
+  def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): ExtensionalMap[K, V] = PolicyMap.builder[K, V] build (xs map ev)
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
   def toScalaList: sciList[A]                                   = toScala[sciList]
@@ -53,9 +53,9 @@ trait ConversionOps[A] extends Any {
   def pvec: Direct[A]                                                  = toPolicyVector
   def pseq: Each[A]                                                    = toPolicySeq
   def pset(implicit z: HashEq[A]): ExSet[A]                            = toPolicySet
-  def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): exMap[K, V] = toPolicyMap[K, V]
+  def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): ExMap[K, V] = toPolicyMap[K, V]
 
-  def naturalMap[K, V](implicit ev: A <:< (K, V)): exMap[K, V] = toPolicyMap[K, V](HashEq.natural(), ev)
+  def naturalMap[K, V](implicit ev: A <:< (K, V)): ExMap[K, V] = toPolicyMap[K, V](HashEq.natural(), ev)
   def naturalSet: ExSet[A]                                     = toPolicySet(HashEq.natural())
 
   def seq: sciSeq[A] = toScalaSeq // new Each.ToScala(xs) // varargs

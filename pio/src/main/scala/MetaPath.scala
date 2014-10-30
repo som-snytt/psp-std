@@ -25,8 +25,8 @@ final case class SinglePaths(singles: Direct[SinglePath]) extends Direct[SingleP
   def deepEntries                    = paths flatMap (_.deepEntries)
   def packageNames                   = deepEntries flatMap (x => pathToPackage(x)) sortDistinct
 
-  val pathToPackage: exMap[Path, View[String]] = paths mapOnto (_.deepPackageNames)
-  // val packageToPath: exMap[String, Direct[Path]] =
+  val pathToPackage: ExMap[Path, View[String]] = paths mapOnto (_.deepPackageNames)
+  // val packageToPath: ExMap[String, Direct[Path]] =
   //   pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p).m containsByEquals pkg))
 }
 

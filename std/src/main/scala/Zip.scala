@@ -8,7 +8,7 @@ trait StdZipped {
   def zip2[A, B](xs: Each[A], ys: Each[B]): Zip2Ops[A, B] = new Zip2Ops(xs, ys, (x, y) => true)
 
   class MappedZip2Ops[A1, A2, B1, B2](zops: Zip2Ops[A1, A2], f: A1 => B1, g: A2 => B2) {
-    def toMap(implicit z: HashEq[B1]): exMap[B1, B2] = zops map ((k, v) => f(k) -> g(v)) pmap
+    def toMap(implicit z: HashEq[B1]): ExMap[B1, B2] = zops map ((k, v) => f(k) -> g(v)) pmap
   }
 
   final class Zip2Ops[A1, A2](xs: Each[A1], ys: Each[A2], p: Predicate2[A1, A2]) {
