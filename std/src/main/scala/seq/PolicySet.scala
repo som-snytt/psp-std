@@ -3,6 +3,12 @@ package std
 
 import api._
 
+sealed trait IntensionalSet[A] extends InSet[A] with (A => Boolean)
+sealed trait ExtensionalSet[A] extends IntensionalSet[A] with ExSet[A] {
+  def hash(x: A): Int             = hashEq hash x
+  def equiv(x: A, y: A): Boolean  = hashEq.equiv(x, y)
+}
+
 object PolicySet {
   def builder[A: HashEq] : Builds[A, ExSet[A]]                             = Builds(ExtensionalSet[A](_))
   def natural[A](xs: Each[A]): ExSet[A]                                    = ExtensionalSet[A](xs)(HashEq.natural[A])
@@ -23,12 +29,6 @@ object PolicySet {
     def apply(elem: A)        = xs contains elem
     def hashEq                = HashEq.natural()
   }
-}
-
-sealed trait IntensionalSet[A] extends InSet[A] with (A => Boolean)
-sealed trait ExtensionalSet[A] extends IntensionalSet[A] with ExSet[A] {
-  def hash(x: A): Int             = hashEq hash x
-  def equiv(x: A, y: A): Boolean  = hashEq.equiv(x, y)
 }
 
 object ExtensionalSet {

@@ -3,11 +3,11 @@ package std
 
 import api._, Lookup._
 
-/** This class separates the notion of having or not having a default from the
- *  actual lookup process. Failure to do this is the cause of many many bugs and
- *  unexpected behaviors in scala maps.
- */
 object Lookup {
+  /** This class separates the notion of having or not having a default from the
+   *  actual lookup process. Failure to do this is the cause of many many bugs and
+   *  unexpected behaviors in scala maps.
+   */
   sealed trait Default[-K, +V] extends (K => V) {
     def isEmpty = this == NoDefault
     def orElse[K1 <: K, V1 >: V](that: Default[K1, V1]): Default[K1, V1] = if (isEmpty) that else this
@@ -31,21 +31,21 @@ object Lookup {
   final case class ConstantDefault[+V](value: V) extends Default[Any, V]
   final case class FunctionDefault[-K, +V](f: K => V) extends Default[K, V]
 
-  def total[K, V](f: K => V): Lookup[K, V]   = new Lookup[K, V](f.partial, NoDefault)
-  def apply[K, V](pf: K ?=> V): Lookup[K, V] = new Lookup[K, V](pf, NoDefault)
+  def total[K, V](f: K => V): Lookup[K, V]                           = apply[K, V](f.partial, NoDefault)
+  def apply[K, V](pf: K ?=> V): Lookup[K, V]                         = apply[K, V](pf, NoDefault)
+  def apply[K, V](pf: K ?=> V, default: Default[K, V]): Lookup[K, V] = new Lookup[K, V](pf, default)
 }
 
-final class Lookup[K, V](pf: K ?=> V, fallback: Lookup.Default[K, V]) extends (K ?=> V) {
-  def default                                                    = fallback
+final class Lookup[K, V] private (private val pf: K ?=> V, val default: Default[K, V]) extends (K ?=> V) {
   def apply(key: K): V                                           = getOr(key, default(key))
-  def comap[K1](f: K1 => K): Lookup[K1, V]                       = new Lookup(pf comap f, default comap f)
+  def comap[K1](f: K1 => K): Lookup[K1, V]                       = Lookup(pf comap f, default comap f)
   def contains(key: K): Boolean                                  = pf isDefinedAt key
-  def copmap[K1](pg: K1 ?=> K): Lookup[K1, V]                    = new Lookup(pf copmap pg, default comap pg)
+  def copmap[K1](pg: K1 ?=> K): Lookup[K1, V]                    = Lookup(pf copmap pg, default comap pg)
   def get(key: K): Option[V]                                     = pf lift key
-  def getOr[V1 >: V](key: K, alt: => V1): V1                     = if (isDefinedAt(key)) pf(key) else alt
+  def getOr[V1 >: V](key: K, alt: => V1): V1                     = if (contains(key)) pf(key) else alt
   def isDefinedAt(key: K): Boolean                               = pf isDefinedAt key
-  def map[V1](f: V => V1): Lookup[K, V1]                         = new Lookup(pf andThen f, default map f)
-  def orElse(that: Lookup[K, V]): Lookup[K, V]                   = new Lookup(pf orElse that.pf, default orElse that.default)
-  def put(key: K, value: V)(implicit z: HashEq[K]): Lookup[K, V] = new Lookup(exMap(key -> value).partial orElse pf, default)
-  def withDefault(default: Default[K, V]): Lookup[K, V]          = new Lookup(pf, default)
+  def map[V1](f: V => V1): Lookup[K, V1]                         = Lookup(pf andThen f, default map f)
+  def orElse(that: Lookup[K, V]): Lookup[K, V]                   = Lookup(pf orElse that.pf, default orElse that.default)
+  def put(key: K, value: V)(implicit z: HashEq[K]): Lookup[K, V] = Lookup(exMap(key -> value).partial orElse pf, default)
+  def withDefault(default: Default[K, V]): Lookup[K, V]          = Lookup(pf, default)
 }

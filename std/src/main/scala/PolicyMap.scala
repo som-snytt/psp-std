@@ -8,7 +8,7 @@ final class IntensionalMap[K, V](val domain: InSet[K], private val lookup: Looku
   type This = IntensionalMap[K, V]
   def filterKeys(p: Predicate[K]): This = new IntensionalMap(domain filter p, lookup)
 }
-final class ExtensionalMap[K, V](val domain: ExSet[K], val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
+final class ExtensionalMap[K, V](val domain: ExSet[K], private val lookup: Lookup[K, V]) extends PolicyMap[K, V](domain, lookup) with ExMap[K, V] {
   type Entry     = (K, V)
   type This      = ExtensionalMap[K, V]
   type MapTo[V1] = ExMap[K, V1]
