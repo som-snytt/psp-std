@@ -65,6 +65,21 @@ trait ApiViewOps[+A] extends Any {
     reverseForeach(x => result = f(x, result))
     result
   }
+
+  /** TODO - possible map-creation methods.
+
+  def ascendingFrequency: ExMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
+  def descendingFrequency: ExMap[A, Int]                    = ascendingFrequency.reverse
+  def unsortedFrequencyMap: Map[A, Int]                     = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
+  def mapToAndOnto[B, C](k: A => B, v: A => C): ExMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
+  def mapToMapPairs[B, C](f: A => (B, C)): ExMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
+  def groupBy[B, C](f: A => B)(g: Each[A] => C): ExMap[B, C] = {
+    val buf = scmMap[B, pList[A]]() withDefaultValue newList[A]()
+    pseq foreach (x => buf(f(x)) ::= x)
+    newMap((buf.toMap mapValues g).toSeq: _*)
+  }
+
+  **/
 }
 
 trait InvariantViewOps[A] extends Any with ApiViewOps[A] {

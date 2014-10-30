@@ -36,16 +36,16 @@ object Lookup {
   def apply[K, V](pf: K ?=> V, default: Default[K, V]): Lookup[K, V] = new Lookup[K, V](pf, default)
 }
 
-final class Lookup[K, V] private (private val pf: K ?=> V, val default: Default[K, V]) extends (K ?=> V) {
-  def apply(key: K): V                                           = getOr(key, default(key))
-  def comap[K1](f: K1 => K): Lookup[K1, V]                       = Lookup(pf comap f, default comap f)
-  def contains(key: K): Boolean                                  = pf isDefinedAt key
-  def copmap[K1](pg: K1 ?=> K): Lookup[K1, V]                    = Lookup(pf copmap pg, default comap pg)
-  def get(key: K): Option[V]                                     = pf lift key
-  def getOr[V1 >: V](key: K, alt: => V1): V1                     = if (contains(key)) pf(key) else alt
-  def isDefinedAt(key: K): Boolean                               = pf isDefinedAt key
-  def map[V1](f: V => V1): Lookup[K, V1]                         = Lookup(pf andThen f, default map f)
-  def orElse(that: Lookup[K, V]): Lookup[K, V]                   = Lookup(pf orElse that.pf, default orElse that.default)
-  def put(key: K, value: V)(implicit z: HashEq[K]): Lookup[K, V] = Lookup(exMap(key -> value).partial orElse pf, default)
-  def withDefault(default: Default[K, V]): Lookup[K, V]          = Lookup(pf, default)
+final class Lookup[-K, +V] private (private val pf: K ?=> V, val default: Default[K, V]) extends (K ?=> V) {
+  def apply(key: K): V                                                                  = getOr(key, default(key))
+  def comap[K1](f: K1 => K): Lookup[K1, V]                                              = Lookup(pf comap f, default comap f)
+  def contains(key: K): Boolean                                                         = pf isDefinedAt key
+  def copmap[K1](pg: K1 ?=> K): Lookup[K1, V]                                           = Lookup(pf copmap pg, default comap pg)
+  def get(key: K): Option[V]                                                            = pf lift key
+  def getOr[V1 >: V](key: K, alt: => V1): V1                                            = if (contains(key)) pf(key) else alt
+  def isDefinedAt(key: K): Boolean                                                      = pf isDefinedAt key
+  def map[V1](f: V => V1): Lookup[K, V1]                                                = Lookup(pf andThen f, default map f)
+  def orElse[K1 <: K, V1 >: V](that: Lookup[K1, V1]): Lookup[K1, V1]                    = Lookup(pf orElse that.pf, default orElse that.default)
+  def put[K1 <: K, V1 >: V](key: K1, value: V1)(implicit z: HashEq[K1]): Lookup[K1, V1] = Lookup(exMap(key -> value).partial orElse pf, default)
+  def withDefault[K1 <: K, V1 >: V](default: Default[K1, V1]): Lookup[K1, V1]           = Lookup(pf, default)
 }

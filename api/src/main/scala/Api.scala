@@ -53,8 +53,8 @@ trait InSet[-A]           extends Any with Intensional[A, Boolean] { def apply(x
 trait InMap[-K, +V]       extends Any with Intensional[K, V]       { def domain: InSet[K]     }
 
 trait Extensional[+A]     extends Any with Each[A]
-trait ExSet[A]            extends Any with Extensional[A]                             { def hashEq: HashEq[A] }
-trait ExMap[K, +V]        extends Any with Extensional[(K, V)] with Intensional[K, V] { def domain: ExSet[K]  }
+trait ExSet[A]            extends Any with Extensional[A] with InSet[A]         { def hashEq: HashEq[A] }
+trait ExMap[K, +V]        extends Any with Extensional[(K, V)] with InMap[K, V] { def domain: ExSet[K]  }
 
 /** Ennhanced value representations.
  */

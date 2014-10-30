@@ -59,10 +59,12 @@ final class LinearView[A, Repr](underlying: Each[A]) extends AtomicView[A, Repr]
 }
 
 final class ExSetView[A, Repr](underlying: ExSet[A]) extends AtomicView[A, Repr] with SetView[A] {
-  type This                                                     = ExSetView[A, Repr]
-  def viewOps                                                   = Direct("<set>")
-  def size                                                      = underlying.size
-  def hashEq                                                    = underlying.hashEq
+  type This       = ExSetView[A, Repr]
+  def viewOps     = Direct("<set>")
+  def size        = underlying.size
+  def hashEq      = underlying.hashEq
+  def apply(x: A) = underlying(x)
+
   @inline def foreach(f: A => Unit): Unit                       = linearlySlice(underlying, IndexRange.full, f)
   def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange = linearlySlice(underlying, range, f)
 }
