@@ -4,26 +4,15 @@ package ops
 
 import api._
 
-final class FunctionAsPartial[-T, +R](f: T => R) extends (T ?=> R) {
-  def isDefinedAt(x: T) = true
+abstract class PartialImpl[-T, +R](contains: T => Boolean, f: T => R) extends (T ?=> R) {
+  def isDefinedAt(x: T) = contains(x)
   def apply(x: T): R    = f(x)
 }
-final class PairPartial[-T : Eq, +R](key: T, value: R) extends (T ?=> R) {
-  def isDefinedAt(x: T) = key === x
-  def apply(x: T): R    = value
-}
-final class JoinPartial[-T, +R](pf1: T ?=> R, pf2: T ?=> R) extends (T ?=> R) {
-  def isDefinedAt(x: T) = (pf1 isDefinedAt x) || (pf2 isDefinedAt x)
-  def apply(x: T): R    = if (pf1 isDefinedAt x) pf1(x) else pf2(x)
-}
-final class ComapPartial[T1, -T, +R](pf: T ?=> R, g: T1 => T) extends (T1 ?=> R) {
-  def isDefinedAt(x: T1) = pf isDefinedAt g(x)
-  def apply(x: T1): R    = pf(g(x))
-}
-final class CopmapPartial[T1, -T, +R](pf: T ?=> R, pg: T1 ?=> T) extends (T1 ?=> R) {
-  def isDefinedAt(x: T1) = (pg isDefinedAt x) && (pf isDefinedAt pg(x))
-  def apply(x: T1): R    = pf(pg(x))
-}
+final class FunctionAsPartial[-T, +R](f: T => R)                 extends PartialImpl[T, R](true, f)
+final class PairPartial[-T : Eq, +R](key: T, value: R)           extends PartialImpl[T, R](key === _, _ => value)
+final class JoinPartial[-T, +R](pf1: T ?=> R, pf2: T ?=> R)      extends PartialImpl[T, R](x => (pf1 contains x) && (pf2 contains x), x => (pf1 lift x) | pf2(x))
+final class ComapPartial[T1, -T, +R](pf: T ?=> R, g: T1 => T)    extends PartialImpl[T1, R](x => pf contains g(x), x => pf(g(x)))
+final class CopmapPartial[T1, -T, +R](pf: T ?=> R, pg: T1 ?=> T) extends PartialImpl[T1, R](x => (pg contains x) && (pf contains pg(x)), x => pf(pg(x)))
 
 /** "Extensions" are classes which only exist to add methods to
  *  built-in types from the scala standard library. As we phase
@@ -56,6 +45,7 @@ final class PredicateOps[A](val p: Predicate[A]) extends AnyVal {
   def inSet: InSet[A] = IntensionalSet(p)
 }
 final class PartialFunctionOps[A, B](val pf: A ?=> B) extends AnyVal {
+  def contains(x: A)                            = pf isDefinedAt x
   def comap[A1](f: A1 => A): A1 ?=> B           = new ComapPartial(pf, f)
   def copmap[A1](pg: A1 ?=> A): A1 ?=> B        = new CopmapPartial(pf, pg)
   def applyOrZero(x: A)(implicit z: Zero[B]): B = if (pf isDefinedAt x) pf(x) else z.zero
