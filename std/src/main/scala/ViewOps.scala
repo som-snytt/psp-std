@@ -109,16 +109,14 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def ztail: View[A]                                  = if (isEmpty) emptyValue else tail
   def zapply(i: Index)(implicit z: Empty[A]): A       = xs drop i.toSize zhead
 
-  def distinctBy[B: HashEq](f: A => B): View[A] = inView { mf =>
-    var seen: ExSet[B] = exSet[B]()
-    xs foreach { x =>
-      val y = f(x)
-      if (!seen(y)) {
-        seen = seen add y
-        mf(x)
-      }
-    }
-  }
+  def distinctBy[B: HashEq](f: A => B): View[A] = inView(mf =>
+    zfoldl[ExSet[B]]((seen, x) =>
+      f(x) |> (y =>
+        if (seen(y)) seen
+        else mf(x) thenReturn (seen add y)
+      )
+    )
+  )
 }
 
 final class WeakApiViewOps[A](val xs: View[A]) extends AnyVal with InvariantViewOps[A] {
