@@ -90,6 +90,7 @@ trait StdOps2 extends Any with StdOps1 {
   implicit def sCollectionIs[A, CC[X] <: sCollection[X]](xs: CC[A]): LinearView[A, CC[A]] = new LinearView[A, CC[A]](fromScala(xs))
   implicit def jIterableIs[A, CC[X] <: jIterable[X]](xs: CC[A]): LinearView[A, CC[A]]     = new LinearView[A, CC[A]](fromJava(xs))
   implicit def atomicForeachIs[A, CC[X] <: Each[X]](xs: CC[A]): LinearView[A, CC[A]]      = new LinearView[A, CC[A]](xs)
+  implicit def opsEachView[A](x: View[A]): ops.EachApiViewOps[A]                          = new ops.EachApiViewOps(x)
 }
 
 trait StdOps3 extends Any with StdOps2 {
@@ -108,7 +109,7 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def infixOpsEq[A: Eq](x: A): infix.EqOps[A]                               = new infix.EqOps[A](x)
   implicit def infixOpsHash[A: Hash](x: A): infix.HashOps[A]                         = new infix.HashOps[A](x)
 
-  implicit def opsApiView[A](x: View[A]): ops.WeakApiViewOps[A]                                          = new ops.WeakApiViewOps(x)
+  implicit def opsDirectView[A, Repr](x: DirectView[A, Repr]): ops.DirectApiViewOps[A, Repr]             = new ops.DirectApiViewOps(x)
   implicit def opsPairView[R, A, B](x: View[R])(implicit z: PairDown[R, A, B]): ops.PairViewOps[R, A, B] = new ops.PairViewOps(x)
   implicit def opsBiFunction[T, R](f: (T, T) => R): ops.BiFunctionOps[T, R]                              = new ops.BiFunctionOps(f)
   implicit def opsBoolean(x: Boolean): ops.BooleanOps                                                    = new ops.BooleanOps(x)

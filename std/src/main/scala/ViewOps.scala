@@ -4,6 +4,20 @@ package ops
 
 import api._, StdShow._, StdZero._
 
+trait DirectViewOps[A, Repr] extends Any {
+  def xs: DirectView[A, Repr]
+  type MapTo = View[A] // XXX
+
+  def distinct(implicit z: HashEq[A]): MapTo = xs withFilter xs.pset
+  def sorted(implicit ord: Order[A]): MapTo = {
+    val arr: Array[Object] = xs.castTo[View[Object]].toArray
+    java.util.Arrays.sort(arr, ord.toScalaOrdering.castTo[Ordering[Object]])
+    new DirectView(new Direct.WrapArray[A](arr))
+  }
+  def sortBy[B](f: A => B)(implicit ord: Order[B]): MapTo = sorted(orderBy[A](f))
+  def sortDistinct(implicit ord: Order[A]): MapTo         = sorted distinct ord.toHashEq
+}
+
 trait ApiViewOps[+A] extends Any {
   def xs: View[A]
 
@@ -25,14 +39,14 @@ trait ApiViewOps[+A] extends Any {
   def tail: View[A]        = xs drop      1
   def toRefs: View[AnyRef] = xs map (_.toRef)
 
-  def slice(range: IndexRange): View[A]               = new LabeledView(xs drop range.precedingSize take range.size, xs.viewOps :+ pp"slice $range")
-  def filter(p: Predicate[A]): View[A]                = xs withFilter p
-  def filterNot(p: Predicate[A]): View[A]             = xs withFilter !p
-  def distinct(implicit z: HashEq[A]): View[A]        = xs.pset
-  def max(implicit ord: Order[A]): A                  = xs reducel (_ max2 _)
-  def min(implicit ord: Order[A]): A                  = xs reducel (_ min2 _)
-  def sortDistinct(implicit ord: Order[A]): Direct[A] = xs.toScalaVector.distinct sorted ord.toScalaOrdering
-  def sorted(implicit ord: Order[A]): Direct[A]       = xs.toScalaVector sorted ord.toScalaOrdering
+  def slice(range: IndexRange): View[A]             = new LabeledView(xs drop range.precedingSize take range.size, xs.viewOps :+ pp"slice $range")
+  def filter(p: Predicate[A]): View[A]              = xs withFilter p
+  def filterNot(p: Predicate[A]): View[A]           = xs withFilter !p
+  def max(implicit ord: Order[A]): A                = xs reducel (_ max2 _)
+  def min(implicit ord: Order[A]): A                = xs reducel (_ min2 _)
+  def distinct(implicit z: HashEq[A]): View[A]      = xs.pset
+  def sortDistinct(implicit ord: Order[A]): View[A] = new DirectApiViewOps(xs.pvec) sortDistinct
+  def sorted(implicit ord: Order[A]): View[A]       = new DirectApiViewOps(xs.pvec) sorted
 
   def count(p: Predicate[A]): Int      = foldl[Int](0)((res, x) => if (p(x)) res + 1 else res)
   def exists(p: Predicate[A]): Boolean = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
@@ -47,7 +61,6 @@ trait ApiViewOps[+A] extends Any {
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
   def mkString(sep: String): String                              = stringed(sep)(_.any_s)
   def mk_s(sep: String)(implicit z: Show[A]): String             = stringed(sep)(_.to_s)
-  def sortOrder[B: Order](f: A => B): Direct[A]                  = sorted(orderBy[A](f))
   def tabular(columns: Shower[A]*): String                       = if (xs.nonEmpty && columns.nonEmpty) FunctionGrid(xs.pvec, columns.m).render else ""
 
   def reverseForeach(f: A => Unit): Unit = xs match {
@@ -117,12 +130,13 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
       )
     )
   )
-}
 
-final class WeakApiViewOps[A](val xs: View[A]) extends AnyVal with InvariantViewOps[A] {
   def boundedClosure(maxDepth: Precise, f: A => View[A]): View[A] =
     if (maxDepth.isZero) xs else xs ++ (xs flatMap f).boundedClosure(maxDepth - 1, f)
 }
+
+final class DirectApiViewOps[A, Repr](val xs: DirectView[A, Repr]) extends AnyVal with DirectViewOps[A, Repr] {}
+final class EachApiViewOps[A](val xs: View[A]) extends AnyVal with InvariantViewOps[A] { }
 
 final class PairViewOps[R, A, B](val xs: View[R])(implicit paired: PairDown[R, A, B]) {
   // We should be able to write these method on the normal ViewOps and take the implicit

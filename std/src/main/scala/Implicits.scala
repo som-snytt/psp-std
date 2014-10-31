@@ -27,6 +27,8 @@ abstract class StdPackage
          with PolicyDmz {
 
   implicit class ApiOrderOps[A](val ord: Order[A]) {
+    def toEq: Eq[A]                = Eq[A]((x, y) => ord.compare(x, y) == Cmp.EQ)
+    def toHashEq: HashEq[A]        = HashEq natural toEq
     def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
     def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
   }

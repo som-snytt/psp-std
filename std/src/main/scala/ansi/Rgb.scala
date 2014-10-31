@@ -22,13 +22,13 @@ final class RGB private (val bits: Int) extends AnyVal {
 }
 
 final class RgbMap(val keys: Direct[ColorName], val lookup: ColorName => RGB, val palette: Direct[RGB]) {
-  def grouped = (keys.toScalaVector groupBy nearestIndex).values.map(_.m.pvec) sortOrder (x => (x.length, x.head.name.length)) map (_.joinWords)
+  def grouped = (keys.toScalaVector groupBy nearestIndex).values.map(_.m.pvec).m.pvec.m sortBy (x => (x.length, x.head.name.length)) map (_.joinWords)
 
-  def get(key: ColorName): Option[Index]    = Try(nearestIndex(key)).toOption
+  def get(key: ColorName): Option[Index]   = Try(nearestIndex(key)).toOption
   def namesOf(rgb: RGB): Direct[ColorName] = keys filter (k => nearest(rgb) == nearest(lookup(k)))
-  def nearestIndex(key: ColorName): Index   = nearestIndex(lookup(key))
-  def nearest(rgb: RGB): RGB                = palette.toScalaVector minBy rgb.distanceTo
-  def nearestIndex(rgb: RGB): Index         = palette.indices.toScalaVector minBy (i => rgb distanceTo palette(i))
+  def nearestIndex(key: ColorName): Index  = nearestIndex(lookup(key))
+  def nearest(rgb: RGB): RGB               = palette.toScalaVector minBy rgb.distanceTo
+  def nearestIndex(rgb: RGB): Index        = palette.indices.toScalaVector minBy (i => rgb distanceTo palette(i))
 
   override def toString = "RgbMap(%s color names, _, %s in palette)".format(keys.length, palette.length)
 }
@@ -51,7 +51,7 @@ object RgbMap {
 
   def ShowRgbMap2: Show[RgbMap] = Show[RgbMap] { x =>
     import x._
-    val pairs = keys sortOrder nearestIndex map { k =>
+    val pairs = keys.m sortBy nearestIndex map { k =>
       val v1       = lookup(k)
       val v2       = nearest(v1)
       val distance = "%.3f" format (v1 distanceTo v2)

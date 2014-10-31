@@ -46,7 +46,7 @@ object Direct {
   private class WrapString(xs: String) extends Leaf[Char](xs.length) {
     def elemAt(i: Index): Char = xs charAt i.safeToInt
   }
-  private class WrapArray[A](xs: Array[_]) extends Leaf[A](xs.length) {
+  final class WrapArray[A](xs: Array[_]) extends Leaf[A](xs.length) {
     def elemAt(i: Index): A = xs(i.safeToInt).castTo[A]
   }
   final case class Joined[A](xs: Direct[A], ys: Direct[A]) extends DirectImpl[A] {
