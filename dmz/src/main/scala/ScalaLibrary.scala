@@ -19,10 +19,14 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Function1[-T, +R]               = scala.Function1[T, R]
   type Function2[-T1, -T2, +R]         = scala.Function2[T1, T2, R]
   type Function3[-T1, -T2, -T3, +R]    = scala.Function3[T1, T2, T3, R]
+  type GenTraversableLike[+A, +Repr]   = scala.collection.GenTraversableLike[A, Repr]
+  type GenSeqLike[+A, +Repr]           = scala.collection.GenSeqLike[A, Repr]
+  type SeqLike[+A, +Repr]              = scala.collection.SeqLike[A, Repr]
+  type IsTraversableLike[Repr]         = scala.collection.generic.IsTraversableLike[Repr]
   type Option[+A]                      = scala.Option[A]
   type Ordered[A]                      = scala.math.Ordered[A]
   type Ordering[A]                     = scala.math.Ordering[A]
-  type StringBuilder                   = scala.StringBuilder
+  type StringBuilder                   = scala.collection.mutable.StringBuilder
   type Success[+A]                     = scala.util.Success[A]
   type Try[+A]                         = scala.util.Try[A]
 
@@ -43,6 +47,7 @@ trait ScalaLibrary extends Any with ApiAliases {
   type scLinearSeq[+A]        = sc.LinearSeq[A]
   type scMap[K, +V]           = sc.Map[K, V]
   type scSeq[+A]              = sc.Seq[A]
+  type scSeqLike[+A, +Repr]   = sc.SeqLike[A, Repr]
   type scSet[A]               = sc.Set[A]
   type scSortedMap[K, +V]     = sc.SortedMap[K, V]
   type scTraversableOnce[+A]  = sc.TraversableOnce[A]

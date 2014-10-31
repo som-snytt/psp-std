@@ -53,6 +53,7 @@ package object std extends psp.std.StdPackage {
   final val Some            = scala.Some
   final val StringContext   = scala.StringContext
   final val scIterator      = sc.Iterator
+  final val scSeq           = sc.Seq
   final val sciBitSet       = sci.BitSet
   final val sciIndexedSeq   = sci.IndexedSeq
   final val sciIterable     = sci.Iterable
