@@ -3,130 +3,90 @@ package tests
 
 import compat.ScalaNative
 import psp.std._, api._, StdShow._, StdEq._
+import lowlevel.ExclusiveIntRange
+import scala.{ collection => sc }
+import sc.{ mutable => scm, immutable => sci }
 
-object IntViews {
-  type IntView    = View[Int]
-  type IntViewFun = IntView => IntView
-  type IntPred    = Predicate[Int]
+class OperationCounts extends ScalacheckBundle {
+  type IntView    = TestedViewMethods
+  type IntViewFun = Unary[IntView]
 
-  // Type inference buddies.
-  def fn[A](f: Int => A): Int => A      = f
-  def pfn[A](f: Int ?=> A): Int ?=> A   = f
   def vfn[A](f: IntViewFun): IntViewFun = f
 
-  lazy val tupleFlatMap: Int => Each[Int] = "(x, x)" |: fn(x => Direct(x, x))
-  lazy val isEven: IntPred                = "isEven" |: divisibleBy(2)
-  lazy val timesThree: Int => Int         = "*3"     |: fn(_ * 3)
-  lazy val collectDivSix: Int ?=> Int     = "%/6"    |: pfn({ case x if x % 6 == 0 => x / 6 })
-  lazy val isOdd: IntPred                 = "isOdd"  |: !isEven
+  final case class CompositeFun(fs: Direct[IntViewFun]) extends ForceShowDirect {
+    val to_s = "%-47s" format (fs map ("%-15s" format _.try_s) mk_s " ")
+    val f: IntViewFun = fs reducel (_ andThen _)
 
-  def divisibleBy(n: Int): IntPred            = s"/$n"             |: fn(_ % n == 0)
-  def lessThan(n: Int): IntPred               = s"<$n"             |: fn(_ < n)
-  def fizzbuzz(fizz: Int, buzz: Int): IntPred = s"fb[$fizz/$buzz]" |: !(divisibleBy(fizz) ^ divisibleBy(buzz))
-}
-import IntViews._
+    def apply(xs: IntView): IntView = f(xs)
+  }
+  class CollectionResult(viewFn: CompositeFun, testedFn: RecorderCounter => TestedViewMethods) extends ForceShowDirect {
+    val counter = new RecorderCounter
+    val xs      = testedFn(counter)
+    val name    = xs.name
+    val applied = viewFn(xs) take 3
+    val result  = applied.to_s
+    val calls   = counter.distinctCalls
+    val hits    = counter.totalCalls
 
-class CollectionResult(viewFn: IntViewFun, nxs: NamedView) extends ForceShowDirect {
-  val name        = nxs.name
-  val xs          = nxs.view.counting
-  val applied     = viewFn(xs)
-  val result      = (applied take 3).to_s
-  val calls       = xs.calls
-
-  lazy val description = xs.to_s
-  lazy val size        = xs.size
-
-  def to_s    = fshow"$name%12s  $result%s"
-  def debug_s = show"$name $xs size=$size calls=$calls // $result"
-}
-
-final case class NamedView(name: String, view: IntView) extends NaturalHashEq {
-  override def toString = show"$name: $view"
-}
-
-class OperationCounts(scalaVersion: String) extends ScalacheckBundle {
-  def bundle      = "Operation Counts"
-  def max         = 100
-  def numOps      = 3
-  def collections = Direct[NamedView](
-    NamedView("p/linear", policyList.m),
-    NamedView("p/sized", policyList.m sized max),
-    NamedView("p/direct", policyVector.m),
-    NamedView("p/mixed1", policyMixed1.m),
-    NamedView("s/listv", ScalaNative(scalaIntList.view)),
-    NamedView("s/stream", ScalaNative(scalaIntStream)),
-    NamedView("s/streamv", ScalaNative(scalaIntStream.view)),
-    NamedView("s/vectorv", ScalaNative(scalaIntVector.view))
-  )
-  def control = NamedView("EAGER", ScalaNative(scalaIntList))
-  def basicOps = if (scalaVersion == "2.11") basicOps211 else basicOps210
-
-  private def basicOps210 = sciList[IntViewFun](
-    _ collect collectDivSix,
-    _ drop 5,
-    _ dropWhile lessThan(max / 3),
-    _ withFilter isEven,
-    _ flatMap tupleFlatMap,
-    _ map timesThree,
-    _ take 13,
-    _ takeWhile lessThan(max / 3)
-  )
-  /** Can't use dropRight and takeRight in 2.10 without the scala library
-   *  implementations going off the rails entirely.
-   */
-  private def basicOps211 = basicOps210 ++ sciList[IntViewFun](
-    _ dropRight 11,
-    _ takeRight 17
-  )
-
-  // TODO
-  // _ dropIndex 2.index,
-  // Index(max / 2) |> (i => vfn(_ splitAt i left) :| "splitAt($i).left"),
-  // Index(max / 3) |> (i => vfn(_ splitAt i right) :| "splitAt($i).right"),
-  // (max / 4)      |> (n => vfn(_ span lessThan(n) left) :| "span (_ < $n) left"),
-  // (max / 5)      |> (n => vfn(_ span lessThan(n) right) :| "span (_ < $n) right"),
-
-  def policyList: pList[Int]         = (1 to max).plist
-  def policyVector: Direct[Int]     = (1 to max).pvec
-  def policyMixed1: Each[Int]        = Each.join((1 until max / 2).pvec, (max / 2 to max).plist)
-  def policyMixed2: Each[Int]        = Each.join((1 until max / 2).plist, (max / 2 to max).pvec)
-  def scalaIntRange: sciRange        = sciRange.inclusive(1, max, 1)
-  def scalaIntList: sciList[Int]     = scalaIntRange.toList
-  def scalaIntStream: sciStream[Int] = scalaIntRange.toStream
-  def scalaIntVector: sciVector[Int] = scalaIntRange.toVector
-
-  def compositesOfN(n: Int): sciList[IntViewFun] = (
-    (basicOps combinations n flatMap (_.permutations.toList)).toList.distinct
-      map (xss => xss reduceLeft (_ andThen _))
-  )
-  class CompositeOp(viewFn: IntViewFun) {
-    val eager        = NamedView("EAGER", ScalaNative(scalaIntList))
-    val eagerOutcome = new CollectionResult(viewFn, eager)
-    val expected     = eagerOutcome.result
-    val indices      = collections.indices
-    val outcomes     = collections map (xs => new CollectionResult(viewFn, xs)) pvec
-    val counts       = outcomes map (r => "%-3s".format(r.calls)) mkString " "
-    val ops          = viewFn(exView[Int]()).viewOps without "<vector>"
-    val passOps      = ops map ("%-15s" format _) mk_s " "
-    val failOps      = ops mk_s " "
-
-    def description    = if (passed) s"$passOps  $counts  // $expected" else failure
-    def failure        = fshow"Inconsistent results for $failOps%s:\n  " + (outcomes mk_s "\n  ") + "\n"
-    def passed         = outcomes.map(_.result).distinct.size == 1.size
-    def distinctCounts = outcomes.map(_.calls).distinct.pvec
-    def isInteresting  = !passed || distinctCounts.size >= 2.size || isTestDebug
-
-    override def toString = (
-      description.asis <@> indices.tabular(
-        i => collections(i).name,
-        i => outcomes(i).calls.to_s,
-        i => (outcomes(i).result |> (r => if (r == expected) "" else s"  // !!! found: $r"))
-      ).asis render
-    )
-
+    def counted = if (isTestDebug) countedDebug else "%3s".format(calls)
+    def countedDebug = "%3s/%-4s".format(calls, if (hits == calls) "" else hits)
+    def to_s    = fshow"$name%12s  $result%s"
   }
 
-  lazy val results = compositesOfN(numOps) map (fn => new CompositeOp(fn)) filter (_.isInteresting)
+  def bundle      = "Operation Counts"
+  def max         = 100
+  def half        = max / 2
+  def third       = max / 3
+  def numOps      = 3
+  def collections = Direct[RecorderCounter => TestedViewMethods](
+    c => TestPolicyView("p/linear", Probe.Linear(1 to max, c).view),
+    c => TestScalaView("s/linear",  Probe.ScalaLinear(1 to max, c).view),
+    c => TestPolicyView("p/direct", Probe.Direct(1 to max, c).view),
+    c => TestScalaView("s/direct",  Probe.ScalaDirect(1 to max, c).view)
+  )
+  // c => TestScalaView("s/stream",  Stream from 1 take 100 map c.record),
+  // c => TestScalaView("s/streamv", (Stream from 1 take 100).view map c.record),
+  // c => TestPolicyView("p/sized",  new LinearView(Probe.Sized(1 to max, c))),
+  // c => TestPolicyView("p/mixed1", new DirectView(Probe.Direct(1 until half, c)) ++ new LinearView(Probe.Linear(half to max, c))),
 
-  def props(): sciList[NamedProp] = results map (r => NamedProp(r.description, r.passed))
+  private def basicOps = sciList[IntViewFun](
+    "%/2"            |: vfn(_ collect { case x if x % 2 == 0 => x / 2 }),
+    "drop 5"         |: vfn(_ drop 5),
+    "drop 25"        |: vfn(_ drop 25),
+    s"dropW <$third" |: vfn(_ dropWhile (_ < third)),
+    "isEven"         |: vfn(_ withFilter (_ % 2 == 0)),
+    "x=>(x, x)"      |: vfn(_ flatMap (x => Direct(x, x))),
+    "map *3"         |: vfn(_ map (_ * 3)),
+    "take 13"        |: vfn(_ take 13),
+    "take 42"        |: vfn(_ take 42),
+    s"takeW <$third" |: vfn(_ takeWhile (_ < third)),
+    "dropR 11"       |: vfn(_ dropRight 11),
+    "takeR 17"       |: vfn(_ takeRight 17)
+  )
+
+  def compositesOfN(n: Int): Direct[CompositeFun] = (
+    (basicOps combinations n flatMap (_.permutations)).toList.m.pvec.map(_.m.pvec).distinctByEquals map CompositeFun
+  )
+  class CompositeOp(viewFn: CompositeFun) {
+    val outcomes  = collections map (collectionFn => new CollectionResult(viewFn, collectionFn)) pvec
+    val Direct(usLinear, themLinear, usDirect, themDirect) = outcomes
+
+    def compare(lhs: Int, rhs: Int): String = "%3s %-2s %-3s".format(lhs, if (lhs <= rhs) "<=" else ">", rhs)
+
+    val counts    = "%s  %s".format(compare(usLinear.calls, themLinear.calls), compare(usDirect.calls, themDirect.calls))
+    val results   = outcomes map (_.result) pvec
+
+    def description    = if (passed) show"$viewFn  $counts  // ${results.head}" else show"Inconsistent results for $viewFn:\n  ${outcomes mk_s "\n  "}"
+    def passed         = results.distinct.size == 1.size && (usLinear.calls <= themLinear.calls) && (usDirect.calls <= themDirect.calls)
+    def distinctCounts = outcomes.map(_.calls).distinct.pvec
+    def isInteresting  = !passed || distinctCounts.size >= 3.size || isTestDebug
+  }
+
+  lazy val results = Direct(1, 2, 3) flatMap compositesOfN map (fn => new CompositeOp(fn)) filter (_.isInteresting)
+
+  def props(): sciList[NamedProp] = {
+    NamedProp("%-49s %-12s %s".format("", "Linear", "Direct"), Prop(true)) :: (
+      results.toScalaList map (r => NamedProp(r.description, r.passed))
+    )
+  }
 }

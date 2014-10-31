@@ -7,21 +7,7 @@ import psp.std.StdShow._
 
 sealed abstract class AtomicView[A, Repr] extends View.Atomic[A] with BaseView[A, Repr] with ops.InvariantViewOps[A] {
   type This <: AtomicView[A, Repr]
-  def counting: CounterView[A, Repr, This] = new CounterView(this.castTo[This], new RecorderCounter)
   def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange
-}
-
-final class CounterView[A, Repr, V <: AtomicView[A, Repr]](val underlying: V, val counter: RecorderCounter) extends AtomicView[A, Repr] {
-  type This = CounterView[A, Repr, V]
-
-  def calls   = counter.count
-  def viewOps = underlying.viewOps
-  def size    = underlying.size
-
-  @inline def foreach(f: A => Unit): Unit                               = underlying foreach (x => f(counter record x))
-  @inline def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange = underlying.foreachSlice(range)(x => f(counter record x))
-
-  def debug_s = underlying.debug_s
 }
 
 final case class SplitView[+A, Repr](left: BaseView[A, Repr], right: BaseView[A, Repr]) extends View.Split[A] {
@@ -128,7 +114,8 @@ sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[
         dropping = dropping - 1
       else if (remaining > 0)
         try f(x) finally remaining -= 1
-      else
+
+      if (remaining == 0)
         return nextRange
     }
     nextRange

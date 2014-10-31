@@ -20,8 +20,8 @@ class TryShow[-A](shows: Show[A]) {
 object TryShow {
   implicit def apply[A](implicit z: Show[A] = Show.natural()): TryShow[A] = new TryShow[A](z)
 }
-final case class TryShown(try_s: String) extends AnyVal {
-  override def toString = try_s
+final case class TryShown(__shown_rep: String) extends AnyVal {
+  override def toString = __shown_rep
 }
 
 /** Used to achieve type-safety in the show interpolator.

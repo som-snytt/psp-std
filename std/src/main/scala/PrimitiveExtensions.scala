@@ -42,7 +42,10 @@ final class AnyOps[A](val x: A) extends AnyVal {
   def optionally[B](pf: A ?=> B): Option[B] = if (pf isDefinedAt x) Some(pf(x)) else None
   def requiring(p: Predicate[A]): Option[A] = if (p(x)) Some(x) else None
   def matchOr[B](alt: => B)(pf: A ?=> B): B = if (pf isDefinedAt x) pf(x) else alt
-  def try_s(implicit z: TryShow[A]): String = z show x
+  def try_s(implicit z: Show[A] = null): String = if (!z.isNull) z show x else x match {
+    case x: ShowDirect => x.to_s
+    case _             => any_s
+  }
   def any_s: String = "" + x
 }
 

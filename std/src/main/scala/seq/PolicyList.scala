@@ -62,8 +62,8 @@ object PolicyList {
 final class Linearized[A](xs: Direct[A], startIndex: Index) extends Linear[A] with HasPreciseSize {
   def foreach(f: A => Unit): Unit = xs.indices drop startIndex.indexValue.size foreach (i => f(xs(i)))
 
-  def size = xs.size - startIndex.indexValue.size
-  def isEmpty  = startIndex.isUndefined || xs.lastIndex < startIndex
-  def head     = xs(startIndex)
-  def tail     = new Linearized(xs, startIndex.next)
+  def size    = xs.size - startIndex.indexValue.size
+  def isEmpty = startIndex.isUndefined || xs.lastIndex < startIndex
+  def head    = xs(startIndex)
+  def tail    = new Linearized(xs, startIndex.next)
 }

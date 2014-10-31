@@ -45,6 +45,7 @@ trait ApiViewOps[+A] extends Any {
   def max(implicit ord: Order[A]): A                = xs reducel (_ max2 _)
   def min(implicit ord: Order[A]): A                = xs reducel (_ min2 _)
   def distinct(implicit z: HashEq[A]): View[A]      = xs.pset
+  def distinctByEquals: View[A]                     = distinct(HashEq.natural())
   def sortDistinct(implicit ord: Order[A]): View[A] = new DirectApiViewOps(xs.pvec) sortDistinct
   def sorted(implicit ord: Order[A]): View[A]       = new DirectApiViewOps(xs.pvec) sorted
 

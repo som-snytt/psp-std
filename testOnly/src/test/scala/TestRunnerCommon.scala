@@ -19,7 +19,7 @@ abstract class TestRunnerCommon {
     new InferenceSpec,
     new Collections,
     new SliceSpec,
-    new OperationCounts(scalaVersion)
+    new OperationCounts
   )
 
   def Try[A](expr: => A): Try[A] = try scala.util.Success(expr) catch {
