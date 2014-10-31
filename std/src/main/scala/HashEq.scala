@@ -16,11 +16,11 @@ object Hash {
 }
 
 object Eq {
-  final class Impl[-A](val f: (A, A) => Boolean) extends AnyVal with Eq[A] { def equiv(x: A, y: A) = f(x, y) }
+  final class Impl[-A](val f: Relation[A]) extends AnyVal with Eq[A] { def equiv(x: A, y: A) = f(x, y) }
 
-  def reference[A](): Eq[A with AnyRef]     = new Impl[A with AnyRef](_ id_== _)
-  def natural[A](): Eq[A]                   = new Impl[A](_ == _)
-  def apply[A](f: (A, A) => Boolean): Eq[A] = new Impl[A](f)
+  def reference[A](): Eq[A with AnyRef] = new Impl[A with AnyRef](_ id_== _)
+  def natural[A](): Eq[A]               = new Impl[A](_ == _)
+  def apply[A](f: Relation[A]): Eq[A]   = new Impl[A](f)
 }
 
 trait HashEqLow {
@@ -30,7 +30,7 @@ trait HashEqLow {
 object HashEq extends HashEqLow {
   implicit def composeHashEq[A](implicit eqs: Eq[A], hash: Hash[A]): HashEq[A] = new Impl[A](eqs.equiv, hash.hash)
 
-  def apply[A](cmp: (A, A) => Boolean, hashFn: A => Int): HashEq[A] = new Impl[A](cmp, hashFn)
+  def apply[A](cmp: Relation[A], hashFn: A => Int): HashEq[A] = new Impl[A](cmp, hashFn)
 
   def natural[A](eqs: Eq[A]): HashEq[A]   = apply[A](eqs.equiv, _.##)
   def natural[A](): HashEq[A]             = apply[A](_ == _, _.##)
@@ -45,7 +45,7 @@ object HashEq extends HashEqLow {
     }
     override def toString = pp"$value"
   }
-  final class Impl[-A](isEquiv: (A, A) => Boolean, hashFn: A => Int) extends HashEq[A] {
+  final class Impl[-A](isEquiv: Relation[A], hashFn: A => Int) extends HashEq[A] {
     def equiv(x: A, y: A) = isEquiv(x, y)
     def hash(x: A)        = hashFn(x)
   }

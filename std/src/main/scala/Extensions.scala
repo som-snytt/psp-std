@@ -45,10 +45,10 @@ final class PredicateOps[A](val p: Predicate[A]) extends AnyVal {
   def inSet: InSet[A] = IntensionalSet(p)
 }
 final class PartialFunctionOps[A, B](val pf: A ?=> B) extends AnyVal {
-  def contains(x: A)                              = pf isDefinedAt x
-  def comap[A1](f: A1 => A): A1 ?=> B             = new ComapPartial(pf, f)
-  def copmap[A1](pg: A1 ?=> A): A1 ?=> B          = new CopmapPartial(pf, pg)
-  def applyOrEmpty(x: A)(implicit z: Empty[B]): B = if (pf isDefinedAt x) pf(x) else z.empty
+  def contains(x: A)                        = pf isDefinedAt x
+  def comap[A1](f: A1 => A): A1 ?=> B       = new ComapPartial(pf, f)
+  def copmap[A1](pg: A1 ?=> A): A1 ?=> B    = new CopmapPartial(pf, pg)
+  def zapply(x: A)(implicit z: Empty[B]): B = if (pf isDefinedAt x) pf(x) else z.empty
 }
 
 final class OptionOps[A](val x: Option[A]) extends AnyVal {

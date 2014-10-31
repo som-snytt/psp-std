@@ -33,7 +33,7 @@ final case class Shown(to_s: String) extends AnyVal with ForceShowDirect {
 
 object Shown {
   def empty: Shown             = new Shown("")
-  def apply(ss: Shown*): Shown = ss.m safeReduce (_ ~ _)
+  def apply(ss: Shown*): Shown = ss.m zreduce (_ ~ _)
 }
 
 final class ShowDirectOps(val x: ShowDirect) extends AnyVal {

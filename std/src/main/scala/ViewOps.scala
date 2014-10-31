@@ -7,7 +7,7 @@ import api._, StdShow._, StdZero._
 trait ApiViewOps[+A] extends Any {
   def xs: View[A]
 
-  private def stringed(sep: String)(f: Shower[A]): String = xs map f safeReduce (_ ~ sep ~ _)
+  private def stringed(sep: String)(f: Shower[A]): String = xs map f zreduce (_ ~ sep ~ _)
   private def directIsEmpty: Boolean = {
     xs foreach (_ => return false)
     true
@@ -39,9 +39,8 @@ trait ApiViewOps[+A] extends Any {
   def find(p: Predicate[A]): Option[A] = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
   def forall(p: Predicate[A]): Boolean = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
 
-  def collectFirst[B](pf: A ?=> B): Option[B]                    = find(pf.isDefinedAt) map pf
-  def firstOrEmpty[B](pf: A ?=> B)(implicit z: Empty[B]): B      = find(pf.isDefinedAt).fold(z.empty)(pf)
-  def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap pf.applyOrEmpty
+  def first[B](pf: A ?=> B): Option[B]                           = find(pf.isDefinedAt) map pf
+  def flatCollect[B](pf: A ?=> View[B]): View[B]                 = xs flatMap pf.zapply
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): View[C] = xs map (f => ev(f)(x))
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
@@ -65,6 +64,10 @@ trait ApiViewOps[+A] extends Any {
     reverseForeach(x => result = f(x, result))
     result
   }
+
+  def zfoldl[B](f: (B, A) => B)(implicit z: Empty[B]): B = foldl(z.empty)(f)
+  def zfoldr[B](f: (A, B) => B)(implicit z: Empty[B]): B = foldr(z.empty)(f)
+  def zfirst[B](pf: A ?=> B)(implicit z: Empty[B]): B    = find(pf.isDefinedAt).fold(z.empty)(pf)
 
   /** TODO - possible map-creation methods.
 
@@ -90,15 +93,21 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def containsByEquals(x: A): Boolean                           = exists (_ == x)
   def containsRef(x: A with Object): Boolean                    = exists (_ id_== x)
   def findOr(p: Predicate[A], alt: => A): A                     = find(p) | alt
-  def findOrZero(p: Predicate[A])(implicit z: Zero[A]): A       = find(p) | z.zero
   def indexByEquals(x: A): Index                                = indexAtWhich(_ == x)
   def mapFrom[B](f: A => B)(implicit z: HashEq[B]): ExMap[B, A] = xs map (x => f(x) -> x) pmap
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
   def product(implicit z: Products[A]): A                       = xs.foldl(z.one)(z.product)
-  def reducel(f: (A, A) => A): A                                = tail.foldl(head)(f)
-  def safeReduce(f: (A, A) => A)(implicit z: Empty[A]): A       = if (isEmpty) emptyValue[A] else reducel(f)
+  def reducel(f: BinOp[A]): A                                   = tail.foldl(head)(f)
   def sum(implicit z: Sums[A]): A                               = xs.foldl(z.zero)(z.sum)
   def without(x: A): View[A]                                    = xs filterNot (_ id_== x)
+
+  def zfind(p: Predicate[A])(implicit z: Empty[A]): A = find(p) | z.empty
+  def zreduce(f: BinOp[A])(implicit z: Empty[A]): A   = if (isEmpty) z.empty else reducel(f)
+  def zhead(implicit z: Empty[A]): A                  = if (isEmpty) z.empty else head
+  def zlast(implicit z: Empty[A]): A                  = if (isEmpty) z.empty else last
+  def zinit: View[A]                                  = if (isEmpty) emptyValue else init
+  def ztail: View[A]                                  = if (isEmpty) emptyValue else tail
+  def zapply(i: Index)(implicit z: Empty[A]): A       = xs drop i.toSize zhead
 
   def distinctBy[B: HashEq](f: A => B): View[A] = inView { mf =>
     var seen: ExSet[B] = exSet[B]()

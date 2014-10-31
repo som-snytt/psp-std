@@ -8,9 +8,8 @@ import StdShow._
 package object tests {
   lazy val isTestDebug = sys.props contains "psp.test.debug"
 
-  type Relation[A]        = (A, A) => Boolean
-  type Forall1[-A]        = A => Boolean
-  type Forall2[-A]        = (A, A) => Boolean
+  type Forall1[-A]        = Predicate[A]
+  type Forall2[-A]        = Relation[A]
   type Forall3[-A]        = (A, A, A) => Boolean
   type Prop               = org.scalacheck.Prop
   val Prop                = org.scalacheck.Prop

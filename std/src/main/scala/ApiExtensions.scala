@@ -109,8 +109,8 @@ trait DocSeqCommonOps extends Any {
 
   // Empty if the seq is empty, otherwise apply the function.
   def opt(f: DocSeq => Doc): Doc = if (docs.isEmpty) empty else f(docs)
-  def join(sep: Doc): Doc        = docs safeReduce (_ <> sep <> _)
-  def joinSpaced(sep: Doc): Doc  = docs safeReduce (_ <+> sep <+> _)
+  def join(sep: Doc): Doc        = docs zreduce (_ <> sep <> _)
+  def joinSpaced(sep: Doc): Doc  = docs zreduce (_ <+> sep <+> _)
 
   def inBracesBlock: Doc = if (isOnlyEmpties) lbrace <> space <> rbrace else joinLines.indent() surround (lbrace, line <> rbrace)
   def inBracesList: Doc  = joinComma surround (lbrace <> space, space <> rbrace)

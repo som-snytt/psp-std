@@ -131,7 +131,7 @@ package ops {
     def iterator: scIterator[A] = new GeneratorBasedIterator(g)
     def view = inView(foreach)
 
-    @inline def reduce(f: (A, A) => A): A = {
+    @inline def reduce(f: BinOp[A]): A = {
       var nonEmpty = false
       var first = nullAs[A]
       val result = g(x => try first = x finally nonEmpty = true).fold(first)(f)
