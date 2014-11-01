@@ -18,7 +18,7 @@ package object ansi extends BasicAtoms[Ansi] {
   lazy val colorMap: RgbMap = {
     val map = (
       actualLines("xkcd-colors.txt") map (_.words) map {
-        case PSeq(name, r, g, b) => ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
+        case Each(name, r, g, b) => ColorName(name) -> RGB(r.toInt, g.toInt, b.toInt)
       }
     ).pmap
     val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.readAs[RGB]) pvec;

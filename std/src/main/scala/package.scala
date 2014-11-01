@@ -172,9 +172,6 @@ package object std extends psp.std.StdPackage {
   def jUri(x: String): jUri                                   = java.net.URI create x
   def jUrl(x: String): jUrl                                   = jUri(x).toURL
 
-  object PSeq {
-    def unapplySeq[A](xs: Each[A]): scala.Some[scSeq[A]] = Some(xs.seq)
-  }
   object Pair {
     def apply[R, A, B](x: A, y: B)(implicit z: PairUp[R, A, B]): R                = z.create(x, y)
     def unapply[R, A, B](x: R)(implicit z: PairDown[R, A, B]): scala.Some[(A, B)] = Some((z left x, z right x))

@@ -5,7 +5,7 @@ import api._, StdEq._
 
 object +: {
   def unapply[A](xs: Array[A])       = if (xs.length == 0) None else Some(xs(0) -> (xs drop 1))
-  def unapply[A](xs: Each[A])        = xs match { case PSeq(hd, _*) => Some(hd -> (xs drop 1)) ; case _ => None }
+  def unapply[A](xs: Each[A])        = xs match { case Each(hd, _*) => Some(hd -> (xs drop 1)) ; case _ => None }
   def unapply[A](xs: sCollection[A]) = if (xs.isEmpty) None else Some(xs.head -> xs.tail)
 }
 

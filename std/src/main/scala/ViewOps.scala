@@ -33,9 +33,9 @@ trait ApiViewOps[+A] extends Any {
 
   def isEmpty: Boolean     = xs.size.isZero || directIsEmpty
   def nonEmpty: Boolean    = xs.size.isNonZero || !directIsEmpty
-  def head: A              = xs take      1 optionally { case PSeq(x) => x } orFail "empty.head"
+  def head: A              = xs take      1 optionally { case Each(x) => x } orFail "empty.head"
   def init: View[A]        = xs dropRight 1
-  def last: A              = xs takeRight 1 optionally { case PSeq(x) => x } orFail "empty.last"
+  def last: A              = xs takeRight 1 optionally { case Each(x) => x } orFail "empty.last"
   def tail: View[A]        = xs drop      1
   def toRefs: View[AnyRef] = xs map (_.toRef)
 

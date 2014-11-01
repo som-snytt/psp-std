@@ -85,7 +85,6 @@ object Each {
   }
 
   def elems[A](xs: A*): Each[A]                                = apply[A](xs foreach _)
-  def apply[A](mf: Suspended[A]): Each[A]                      = new Impl[A](Size.unknown, mf)
   def constant[A](elem: A): Constant[A]                        = Constant[A](elem)
   def continuallySpan[A](p: Predicate[A])(expr: => A): Each[A] = continually(expr) takeWhile p
   def continually[A](elem: => A): Continually[A]               = Continually[A](() => elem)
@@ -95,4 +94,7 @@ object Each {
   def from(n: Long): Each[Long]                                = unfold(n)(_ + 1)
   def join[A](xs: Each[A], ys: Each[A]): Each[A]               = Joined[A](xs, ys)
   def unfold[A](start: A)(next: A => A): Unfold[A]             = Unfold[A](start)(next)
+
+  def apply[A](mf: Suspended[A]): Each[A]              = new Impl[A](Size.unknown, mf)
+  def unapplySeq[A](xs: Each[A]): scala.Some[scSeq[A]] = Some(xs.seq)
 }
