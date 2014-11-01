@@ -13,6 +13,7 @@ abstract class TestRunnerCommon {
 
   def bundles = Direct[Bundle](
     new StringExtensions,
+    new GridSpec,
     new PolicyBasic,
     new ValuesSpec,
     new SizeSpec,

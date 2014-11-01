@@ -136,11 +136,18 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def zreduce(f: BinOp[A])(implicit z: Empty[A]): A   = if (isEmpty) z.empty else reducel(f)
 
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
-  def zinit: View[A]                                            = if (isEmpty) emptyValue else init
-  def ztail: View[A]                                            = if (isEmpty) emptyValue else tail
-  def prepend(x: A): View[A]                                    = exView(x) ++ xs
-  def append(x: A): View[A]                                     = xs ++ exView(x)
-  def intersperse(ys: View[A]): View[A]                         = xs zip ys flatMap ((x, y) => Direct(x, y))
+
+  def zinit: View[A]                    = if (isEmpty) emptyValue else init
+  def ztail: View[A]                    = if (isEmpty) emptyValue else tail
+  def prepend(x: A): View[A]            = exView(x) ++ xs
+  def append(x: A): View[A]             = xs ++ exView(x)
+  def intersperse(ys: View[A]): View[A] = xs zip ys flatMap ((x, y) => Direct(x, y))
+
+  def transpose[B](implicit ev: A <:< View[B]): View[View[B]] = {
+    val grid = xs map ev
+    def col(n: Index) = grid map (_ drop n.sizeExcluding head)
+    Each.indices map col
+  }
 
   def mpartition(p: View[A] => Predicate[A]): View[View[A]] =
     inView[View[A]](mf => xs partition p(xs.memo) match { case Split(xs, ys) => mf(xs) ; ys mpartition p foreach mf })

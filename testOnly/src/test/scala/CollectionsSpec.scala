@@ -1,16 +1,15 @@
 package psp
 package tests
 
+import scala.collection.immutable.StringOps
 import psp.std._, api._
 import org.scalacheck._, Prop._
-import StdEq._
+import StdEq._, StdShow._
 
 class StringExtensions extends ScalacheckBundle {
-  import scala.collection.immutable.StringOps
-  import StdEq._
-
   def bundle = "String Extensions"
-  val s = "123 monkey dog ^^.* hello mother 456"
+  def s = "123 monkey dog ^^.* hello mother 456"
+
   implicit def arbWord: Arbitrary[String] = Arbitrary(genWord)
   implicit def throwableEq: Eq[Throwable] = eqBy[Throwable](_.getClass)
 
@@ -44,9 +43,43 @@ class StringExtensions extends ScalacheckBundle {
   )
 }
 
+class GridSpec extends ScalacheckBundle {
+  def bundle = "Policy, Grid Operations"
+
+  def primePartition = Each from 2 mpartition (xs => _ % xs.head == 0)
+  def primePartitionGrid(n: Int): View2D[Int]   = primePartition take n map (_ take n)
+  def primePartitionGrid_t(n: Int): View2D[Int] = primePartition.transpose take n map (_ take n)
+  def showGrid(xss: View2D[Int]): String = {
+    val yss = xss mmap (_.to_s)
+    val width = yss.flatten.map(_.length).max.size
+    (yss mmap (x => width.leftFormatString format x) map (_ mk_s " ") mk_s "\n").trim.trimLines
+  }
+  def primePartition6 = sm"""
+    |2   4   6   8   10  12
+    |3   9   15  21  27  33
+    |5   25  35  55  65  85
+    |7   49  77  91  119 133
+    |11  121 143 187 209 253
+    |13  169 221 247 299 377
+  """
+  def primePartition6_t = sm"""
+    |2   3   5   7   11  13
+    |4   9   25  49  121 169
+    |6   15  35  77  143 221
+    |8   21  55  91  187 247
+    |10  27  65  119 209 299
+    |12  33  85  133 253 377
+  """
+
+  def props = sciList(
+    seqShows("[ 2, 4, 6, ... ], [ 3, 9, 15, ... ], [ 5, 25, 35, ... ]", Each from 2 mpartition (xs => _ % xs.head == 0) take 3),
+    showsAs(primePartition6, showGrid(primePartitionGrid(6))),
+    showsAs(primePartition6_t, showGrid(primePartitionGrid_t(6)))
+  )
+}
+
 class PolicyBasic extends ScalacheckBundle {
   def bundle = "Policy, Basic Collections Operations"
-  import StdShow._
 
   def plist   = PolicyList(1, 2, 3)
   def pvector = Direct(1, 2, 3)
@@ -68,8 +101,7 @@ class PolicyBasic extends ScalacheckBundle {
     showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure),
     seqShows("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _)),
     seqShows("11, 22, 33, 44", indexRange(1, 50).pvec.m grep """(.)\1""".r),
-    seqShows("99, 1010, 1111", xxNumbers drop 8 take 3),
-    seqShows("[ 2, 4, 6, ... ], [ 3, 9, 15, ... ], [ 5, 25, 35, ... ]", Each from 2 mpartition (xs => _ % xs.head == 0) take 3)
+    seqShows("99, 1010, 1111", xxNumbers drop 8 take 3)
   )
 }
 

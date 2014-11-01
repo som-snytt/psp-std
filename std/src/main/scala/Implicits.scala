@@ -75,6 +75,12 @@ abstract class StdPackage
       loop(root, f)
     }
   }
+
+  implicit class View2DOps[+A](val xs: View2D[A]) {
+    def flatten: View[A]                  = xs flatMap identity
+    def mmap[B](f: A => B): View[View[B]] = xs map (_ map f)
+  }
+
   implicit def booleanToPredicate(value: Boolean): Predicate[Any] = if (value) ConstantTrue else ConstantFalse
   implicit def jClassToPolicyClass(x: jClass): PolicyClass        = new PolicyClass(x)
   implicit def intToPreciseSize(n: Int): IntSize                  = Precise(n)

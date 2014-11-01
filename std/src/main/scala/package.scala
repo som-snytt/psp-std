@@ -20,6 +20,7 @@ package object std extends psp.std.StdPackage {
    */
   type InvariantPredicate[A] = A => Boolean
   type InvariantInSet[A]     = InSet[A]
+  type View2D[+A]            = View[View[A]]
 
   // Inlinable.
   final val InputStreamBufferSize = 8192

@@ -60,20 +60,35 @@ final class ShowDirectOps(val x: ShowDirect) extends AnyVal {
   def + [A](that: A)(implicit z: Show[A]): ShowDirect = Shown(x.to_s + (z show that))
 }
 
-final class ShowInterpolator(val x: StringContext) extends AnyVal {
+final class ShowInterpolator(val stringContext: StringContext) extends AnyVal {
   /** The type of args forces all the interpolation variables to
    *  be of a type which is implicitly convertible to Shown, which
    *  means they have a Show[A] in scope.
    */
-  def show(args: Shown*): String  = StringContext(x.parts: _*).raw(args: _*)
-  def pp(args: TryShown*): String = StringContext(x.parts: _*).raw(args: _*)
+  def show(args: Shown*): String  = StringContext(stringContext.parts: _*).raw(args: _*)
+  def pp(args: TryShown*): String = StringContext(stringContext.parts: _*).raw(args: _*)
   def shown(args: Shown*): Shown  = Shown(show(args: _*))
-  def doc(args: Doc*): Doc        = x.parts.m.map(_.asis) intersperse args.m joinChars
+  def doc(args: Doc*): Doc        = stringContext.parts.m.map(_.asis) intersperse args.m joinChars
 
   /** Can't see any way to reuse the standard (type-safe) f-interpolator, will
    *  apparently have to reimplement it entirely.
    */
-  def fshow(args: Shown*): String = (x.parts map (_.processEscapes) mkString "").format(args: _*)
+  def fshow(args: Shown*): String = (stringContext.parts map (_.processEscapes) mkString "").format(args: _*)
+
+  final def sm(args: Any*): String = {
+    def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
+    def stripTrailingPart(s: String) = {
+      val index: Int   = (s indexWhere isLineBreak).safeToInt
+      val pre: String  = s take index force
+      val post: String = s drop index force;
+      pre ~ post.stripMargin
+    }
+    val stripped: sciList[String] = stringContext.parts.toList match {
+      case head :: tail => head.stripMargin :: (tail map stripTrailingPart)
+      case Nil          => Nil
+    }
+    (new StringContext(stripped: _*).raw(args: _*)).trim
+  }
 }
 
 object Show {

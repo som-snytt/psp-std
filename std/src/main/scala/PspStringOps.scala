@@ -61,7 +61,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def dottedSegments: Direct[String] = splitChar('.')
   def slashSegments: Direct[String]  = splitChar('/')
 
-  def containsChar(ch: Char): Boolean       = chars.m contains ch
+  def containsChar(ch: Char): Boolean      = chars.m contains ch
   def splitChar(ch: Char): Direct[String]  = splitRegex(Regex quote ch.toString)
   def splitRegex(r: Regex): Direct[String] = r.pattern split self pvec
   def words: Direct[String]                = splitRegex(whitespace)
@@ -90,7 +90,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def stripPrefix(prefix: String): String                             = foldPrefix(prefix)(self, s => s)
   def stripSuffix(suffix: String): String                             = foldSuffix(suffix)(self, s => s)
 
-  def trimLines: String    = mapLines(_.trim)
+  def trimLines: String    = mapLines(_.trim).trim
   def trimTrailing: String = mapLines(_ remove whitespace.ends)
   def trimLeading: String  = mapLines(_ remove whitespace.starts)
 

@@ -23,8 +23,9 @@ package object tests {
   implicit def arbitraryInSet[A : Arbitrary : HashEq] : Arbitrary[InSet[A]] = arb[sciSet[A]] map (_.m.toPolicySet)
   implicit def arbitraryPint: Arbitrary[Pint]                               = Arbitrary(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
 
-  def showsAs[A: Show](expected: String, x: A): NamedProp         = expected -> (expected =? show"$x")
-  def seqShows[A: Show](expected: String, xs: Each[A]): NamedProp = expected -> (expected =? (xs mk_s ", "))
+  def preNewline(s: String) = if (s contains "\n") "\n" + s.mapLines("| " ~ _) else s
+  def showsAs[A: Show](expected: String, x: A): NamedProp         = preNewline(expected) -> (expected =? show"$x")
+  def seqShows[A: Show](expected: String, xs: Each[A]): NamedProp = preNewline(expected) -> (expected =? (xs mk_s ", "))
 
   def expectType(expected: jClass, found: jClass): NamedProp        = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
   def expectTypes(expected: jClass, found: Each[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
@@ -36,9 +37,9 @@ package object tests {
     new Buildable[A, CC] { def builder: scmBuilder[A, CC[A]] = z.scalaBuilder }
 
   def pvectorOf[A: Arbitrary](g: Gen[A]): Gen[Direct[A]]          = containerOf[Direct, A](g)(?, _.toScalaTraversable)
-  def pseqOf[A: Arbitrary](g: Gen[A]): Gen[Each[A]]                = containerOf[Each, A](g)(?, _.toScalaTraversable)
+  def pseqOf[A: Arbitrary](g: Gen[A]): Gen[Each[A]]               = containerOf[Each, A](g)(?, _.toScalaTraversable)
   def pvectorOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[Direct[A]] = containerOfN[Direct, A](n, g)(?, _.toScalaTraversable)
-  def pseqOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[Each[A]]       = containerOfN[Each, A](n, g)(?, _.toScalaTraversable)
+  def pseqOfN[A: Arbitrary](n: Int, g: Gen[A]): Gen[Each[A]]      = containerOfN[Each, A](n, g)(?, _.toScalaTraversable)
 
   implicit class ArbitraryOps[A](x: Arbitrary[A]) {
     def map[B](f: A => B): Arbitrary[B]       = Arbitrary(x.arbitrary map f)
