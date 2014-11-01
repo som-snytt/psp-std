@@ -3,12 +3,6 @@ package std
 
 import api._, StdEq._
 
-object +: {
-  def unapply[A](xs: Array[A])       = if (xs.length == 0) None else Some(xs(0) -> (xs drop 1))
-  def unapply[A](xs: Each[A])        = xs match { case Each(hd, _*) => Some(hd -> (xs drop 1)) ; case _ => None }
-  def unapply[A](xs: sCollection[A]) = if (xs.isEmpty) None else Some(xs.head -> xs.tail)
-}
-
 class FunctionEqualizer[A, B : Eq](f: A => B, g: A => B) extends (A ?=> B) {
   def isDefinedAt(x: A) = f(x) === g(x)
   def apply(x: A): B    = f(x)
@@ -21,65 +15,6 @@ final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T ?=> 
     case _                        => true
   }
   def apply(x: T): R = f(x)
-}
-final class Utf8(val bytes: Array[Byte]) extends AnyVal with ForceShowDirect {
-  def chars: Chars = scala.io.Codec fromUTF8 bytes
-  def to_s: String = new String(chars)
-}
-
-trait ClassLoaderTrait {
-  def loader: jClassLoader
-
-  def parentChain: Each[jClassLoader] = {
-    def loop(cl: jClassLoader): View[jClassLoader] = cl match {
-      case null => exView()
-      case _    => cl +: loop(cl.getParent)
-    }
-    loop(loader)
-  }
-  def uris: Each[jUri] = loader match {
-    case cl: URLClassLoader => cl.getURLs.pseq map (_.toURI)
-    case _                  => Nil
-  }
-}
-
-final class PolicyClass(val clazz: jClass) extends AnyVal with ForceShowDirect {
-  private def toPolicy(x: jClass): PolicyClass = new PolicyClass(x)
-
-  def isAnnotation     = clazz.isAnnotation
-  def isAnonymousClass = clazz.isAnonymousClass
-  def isArray          = clazz.isArray
-  def isEnum           = clazz.isEnum
-  def isInterface      = clazz.isInterface
-  def isLocalClass     = clazz.isLocalClass
-  def isMemberClass    = clazz.isMemberClass
-  def isPrimitive      = clazz.isPrimitive
-  def isSynthetic      = clazz.isSynthetic
-
-  def ancestorNames: Direct[String]           = ancestors map (_.rawName)
-  def ancestors: Direct[PolicyClass]          = this transitiveClosure (_.parents) pvec
-  def exists                                   = clazz != null
-  def fields: Direct[jField]                  = clazz.getFields.pvec
-  def getCanonicalName: String                 = clazz.getCanonicalName
-  def getClassLoader: ClassLoader              = clazz.getClassLoader
-  def getClasses: Direct[PolicyClass]         = clazz.getClasses.pvec map toPolicy
-  def getComponentType: PolicyClass            = clazz.getComponentType
-  def getDeclaredClasses: Direct[PolicyClass] = clazz.getDeclaredClasses.pvec map toPolicy
-  def getDeclaringClass: PolicyClass           = clazz.getDeclaringClass
-  def getEnclosingClass: PolicyClass           = clazz.getEnclosingClass
-  def getInterfaces: Direct[PolicyClass]      = clazz.getInterfaces.pvec map toPolicy
-  def getSuperclass: Option[PolicyClass]       = Option(clazz.getSuperclass) map toPolicy
-  def hasModuleName: Boolean                   = rawName endsWith "$"
-  def methods: Direct[jMethod]                = clazz.getMethods.pvec
-  def nameSegments: Direct[String]            = rawName.dottedSegments
-  def pClass: PolicyClass                      = this
-  def parentInterfaces: Direct[PolicyClass]   = clazz.getInterfaces.pvec map toPolicy
-  def parents: Direct[PolicyClass]            = getSuperclass.pvec ++ parentInterfaces
-  def qualifiedName: String                    = rawName.mapSplit('.')(decodeName)
-  def rawName: String                          = clazz.getName
-  def shortName: String                        = unqualifiedName
-  def to_s                                     = s"$clazz"
-  def unqualifiedName: String                  = decodeName(nameSegments.last)
 }
 
 final class PolicyLoader(val classMap: ExMap[String, Bytes]) extends ClassLoader {

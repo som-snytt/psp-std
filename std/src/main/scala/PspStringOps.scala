@@ -10,7 +10,7 @@ import java.util.regex.{ Pattern, Matcher }
 /** Rather than struggle with ambiguities with Predef.augmentString, we'll
  *  bury it and reimplement what we want.
  */
-final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps {
+final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps with ForceShowDirect {
   def r: Regex = Regex(self)
   def u: jUrl  = jUrl(self)
 
@@ -108,5 +108,5 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
     "\\s+"      -> " "
   )
 
-  override def toString = self
+  def to_s = self
 }

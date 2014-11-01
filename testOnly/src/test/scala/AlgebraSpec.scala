@@ -5,7 +5,7 @@ import org.scalacheck._
 import org.scalacheck.Prop.forAll
 import psp.std._, api._
 
-class AlgebraPoliceman[A](name: String)(implicit algebra: BooleanAlgebra[A], arb: Arbitrary[A], equiv: Eq[A]) extends AlgebraLaws[A] with ScalacheckBundle {
+class AlgebraSpec[A](name: String)(implicit algebra: BooleanAlgebra[A], arb: Arbitrary[A], equiv: Eq[A]) extends AlgebraLaws[A] with ScalacheckBundle {
   def bundle = s"Boolean Algebra laws for type $name"
   import algebra._
 

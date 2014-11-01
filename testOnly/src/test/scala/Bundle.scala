@@ -5,10 +5,12 @@ import psp.std._, api._
 import org.scalacheck.Test
 import scala.Console.{ println => _, _ }
 
-trait Bundle {
+trait Bundle extends ForceShowDirect {
+  def bundle: String
+  def run(): Boolean
+
   private var count = 0
   private var passed = 0
-  def bundle: String
 
   def assert(body: => Boolean, msg: => Any): Unit = {
     count += 1
@@ -31,9 +33,8 @@ trait Bundle {
   }
   def finish(): Boolean = finish(this.shortClass stripSuffix "$")
 
-  def run(): Boolean
 
-  override def toString = bundle
+  def to_s = bundle
 }
 
 /** Needed because scalacheck doesn't expose the label if you add

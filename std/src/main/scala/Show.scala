@@ -5,6 +5,23 @@ import api._
 import StdEq.stringEq
 import StdZero._
 
+final class Label(val label: String) extends AnyVal {
+  def matches(r: Regex)   = r isMatch label
+  def contains(s: String) = label contains s
+  def containsOp          = contains("&&") || contains("||") || (label startsWith "!")
+  def isSafe              = matches("""^[(](.*?)[)]$""".r) || !containsOp
+  def isBool              = isZero || isOne
+  def isZero              = label eq Label.Zero.label
+  def isOne               = label eq Label.One.label
+
+  override def toString = label
+}
+object Label {
+  val Zero = new Label(new String(""))
+  val One  = new Label(new String(""))
+  def apply(s: String) = new Label(s)
+}
+
 /** When a type class is more trouble than it's worth.
  *  Not overriding toString here to leave open the possibility of
  *  using a synthetic toString, e.g. of case classes.
@@ -67,13 +84,12 @@ object Show {
 
   /** This of course is not implicit as that would defeat the purpose of the endeavor.
    */
-  private object ToString extends Show[Any] {
+  private case object ToString extends Show[Any] {
     def show(x: Any): String = x match {
       case null          => ""
       case x: ShowDirect => x.to_s
       case x             => x.toString
     }
-    override def toString = "ToString"
   }
 }
 

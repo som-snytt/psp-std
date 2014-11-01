@@ -24,8 +24,8 @@ object TestRunner_211 extends TestRunnerCommon {
   override def bundles = Direct[Bundle](
     new Typecheck,
     new Collections_211,
-    new AlgebraPoliceman[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
-    new AlgebraPoliceman[InvariantPredicate[Pint]]("InvariantPredicate[Pint]"),
-    new AlgebraPoliceman[InvariantInSet[Pint]]("InvariantInSet[Pint]")
+    new AlgebraSpec[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
+    new AlgebraSpec[InvariantPredicate[Pint]]("InvariantPredicate[Pint]"),
+    new AlgebraSpec[InvariantInSet[Pint]]("InvariantInSet[Pint]")
   ) ++ super.bundles
 }

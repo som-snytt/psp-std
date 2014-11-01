@@ -1,5 +1,6 @@
 package psp
 package std
+package lowlevel
 
 import scala.Tuple2
 import ArrowAssoc.Types

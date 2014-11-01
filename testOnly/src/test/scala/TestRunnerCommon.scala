@@ -17,7 +17,7 @@ abstract class TestRunnerCommon {
     new ValuesSpec,
     new SizeSpec,
     new InferenceSpec,
-    new Collections,
+    new CollectionsSpec,
     new SliceSpec,
     new OperationCounts
   )

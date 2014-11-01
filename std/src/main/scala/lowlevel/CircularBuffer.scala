@@ -23,8 +23,6 @@ final class CircularBuffer[A](capacity: Precise) extends Direct.DirectImpl[A] wi
   def ++=(xs: Each[A]): this.type = andThis(xs foreach setHead)
   def += (x: A): this.type           = andThis(this setHead x)
   def push(x: A): A                  = if (isFull) head sideEffect setHead(x) else abort("push on non-full buffer")
-
-  override def toString = s"CircularBuffer($size/$capacity)"
 }
 
 object CircularBuffer {

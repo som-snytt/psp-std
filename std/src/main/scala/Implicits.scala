@@ -22,7 +22,7 @@ abstract class StdPackage
          with AlgebraInstances
          with GlobalShow
          with StdGateways
-         with StdArrowAssoc
+         with lowlevel.StdArrowAssoc
          with PolicyDmz {
 
   implicit class ApiOrderOps[A](val ord: Order[A]) {

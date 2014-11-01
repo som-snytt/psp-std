@@ -3,23 +3,6 @@ package std
 
 import api._
 
-final class Label(val label: String) extends AnyVal {
-  def matches(r: Regex)   = r isMatch label
-  def contains(s: String) = label contains s
-  def containsOp          = contains("&&") || contains("||") || (label startsWith "!")
-  def isSafe              = matches("""^[(](.*?)[)]$""".r) || !containsOp
-  def isBool              = isZero || isOne
-  def isZero              = label eq Label.Zero.label
-  def isOne               = label eq Label.One.label
-
-  override def toString = label
-}
-object Label {
-  val Zero = new Label(new String(""))
-  val One  = new Label(new String(""))
-  def apply(s: String) = new Label(s)
-}
-
 /** TODO - how to abstract the entire notion of a Complement class and the
  *  always-the-same logic which accompanies it, without virtual classes?
  */
@@ -49,9 +32,9 @@ object Algebras {
     def one                            = Label.One
   }
 
-  final case class PredicateComplement[A](f: psp.std.Predicate[A]) extends psp.std.Predicate[A] {
+  final case class PredicateComplement[A](f: psp.std.Predicate[A]) extends psp.std.Predicate[A] with ForceShowDirect {
     def apply(x: A): Boolean = !f(x)
-    override def toString = "!" + f
+    def to_s = "!" + f
   }
   final class Predicate[A] extends BooleanAlgebra[psp.std.Predicate[A]] {
     private type R = psp.std.Predicate[A]

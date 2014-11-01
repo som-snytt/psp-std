@@ -73,7 +73,7 @@ class PolicyBasic extends ScalacheckBundle {
   )
 }
 
-class Collections extends ScalacheckBundle {
+class CollectionsSpec extends ScalacheckBundle {
   def bundle = "Type Inference, General"
 
   val bits = sciBitSet(1, 2, 3)

@@ -35,3 +35,16 @@ final class Ansi private (val atoms: sciVector[Atom]) extends BasicAttributes[An
 
   override def toString = atoms mkString ("\\" + "e[", ";", "m")
 }
+
+/** One piece of an ansi control sequence.  Either a color
+ *  (foreground or background) or an attribute (e.g. bright, underline.)
+ *  Control sequences are created from Atoms with the / operator.
+ */
+final class Atom private (val value: Int) extends AnyVal {
+  def code: Int = value
+  override def toString = s"$code"
+}
+
+object Atom extends (Int => Atom) {
+  def apply(n: Int): Atom = if (n < 0) illegalArgumentException(s"$n") else new Atom(n)
+}
