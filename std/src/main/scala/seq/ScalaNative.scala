@@ -11,7 +11,7 @@ final class ScalaNative[+A] private (val xs: scIterable[A], val counter: Recorde
   type SplitTo[+X] = ScalaNative.Split[X]
 
   private implicit def lift[B](result: scIterable[B]): MapTo[B]           = new ScalaNative(result, counter)
-  private implicit def liftPair[B](xs: PairOf[scIterable[B]]): SplitTo[B] = Split(lift(xs._1) -> lift(xs._2))
+  private implicit def liftPair[B](xs: PairOf[scIterable[B]]): SplitTo[B] = ScalaNative.Split(lift(xs._1) -> lift(xs._2))
   private implicit def lower[A](x: View[A]): scIterable[A]                = new Each.ToScala(x)
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]          = xs ++ that

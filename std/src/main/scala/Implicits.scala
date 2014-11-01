@@ -27,10 +27,15 @@ abstract class StdPackage
          with PolicyDmz {
 
   implicit class ApiOrderOps[A](val ord: Order[A]) {
+    // def |[B: Order](f: A => B): Order[A] = Order[A]((x, y) => ord.compare(x, y) |> (r => if (r != Cmp.EQ) r else f(x) compare f(y)))
+
     def toEq: Eq[A]                = Eq[A]((x, y) => ord.compare(x, y) == Cmp.EQ)
     def toHashEq: HashEq[A]        = HashEq natural toEq
     def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
     def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
+  }
+  implicit class CmpEnumOps(val cmp: Cmp) {
+    def || (that: Cmp): Cmp = if (cmp == Cmp.EQ) that else cmp
   }
   implicit class BuildsOps[Elem, To](z: Builds[Elem, To]) {
     def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))

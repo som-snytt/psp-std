@@ -62,7 +62,7 @@ trait ApiViewOps[+A] extends Any {
   def init: View[A]                                              = xs dropRight 1
   def labelOp[B](label: String)(f: View[A] => View[B]): View[B]  = new LabeledView(f(xs), xs.viewOps :+ label)
   def mapApply[B, C](x: B)(implicit ev: A <:< (B => C)): View[C] = xs map (f => ev(f)(x))
-  def mapWithIndex[B](f: (A, Index) => B): View[B]               = inView[B](mf => foreachWithIndex(f andThen mf))
+  def mapWithIndex[B](f: (A, Index) => B): View[B]               = inView[B](mf => foldWithIndex(())((res, x, i) => mf(f(x, i))))
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
   def slice(range: IndexRange): View[A]                          = labelOp(pp"slice $range")(_ drop range.toDrop take range.toTake)
   def sortDistinct(implicit ord: Order[A]): View[A]              = new DirectApiViewOps(xs.pvec) sortDistinct
@@ -71,6 +71,15 @@ trait ApiViewOps[+A] extends Any {
   def toRefs: View[AnyRef]                                       = xs map (_.toRef)
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
 
+  def foldWithIndex[B](zero: B)(f: (B, A, Index) => B): B = {
+    var res = zero
+    var index = Index(0)
+    xs foreach { x =>
+      res = f(res, x, index)
+      index += 1
+    }
+    res
+  }
   def foldl[B](zero: B)(f: (B, A) => B): B = {
     var res = zero
     xs foreach (x => res = f(res, x))
@@ -81,7 +90,6 @@ trait ApiViewOps[+A] extends Any {
     reverseForeach(x => result = f(x, result))
     result
   }
-
 
   /** TODO - possible map-creation methods.
 
@@ -114,15 +122,15 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def withoutRef(x: A): View[A]                  = xs filterNot (_ id_== x)
   def withoutByEquals(x: A): View[A]             = xs filterNot (_ == x)
 
-  def findOr(p: Predicate[A], alt: => A): A                     = find(p) | alt
-  def product(implicit z: Products[A]): A                       = xs.foldl(z.one)(z.product)
-  def reducel(f: BinOp[A]): A                                   = tail.foldl(head)(f)
-  def sum(implicit z: Sums[A]): A                               = xs.foldl(z.zero)(z.sum)
-  def zapply(i: Index)(implicit z: Empty[A]): A                 = xs drop i.toSize zhead
-  def zfind(p: Predicate[A])(implicit z: Empty[A]): A           = findOr(p, z.empty)
-  def zhead(implicit z: Empty[A]): A                            = if (isEmpty) z.empty else head
-  def zlast(implicit z: Empty[A]): A                            = if (isEmpty) z.empty else last
-  def zreduce(f: BinOp[A])(implicit z: Empty[A]): A             = if (isEmpty) z.empty else reducel(f)
+  def findOr(p: Predicate[A], alt: => A): A           = find(p) | alt
+  def product(implicit z: Products[A]): A             = xs.foldl(z.one)(z.product)
+  def reducel(f: BinOp[A]): A                         = tail.foldl(head)(f)
+  def sum(implicit z: Sums[A]): A                     = xs.foldl(z.zero)(z.sum)
+  def zapply(i: Index)(implicit z: Empty[A]): A       = xs drop i.toSize zhead
+  def zfind(p: Predicate[A])(implicit z: Empty[A]): A = findOr(p, z.empty)
+  def zhead(implicit z: Empty[A]): A                  = if (isEmpty) z.empty else head
+  def zlast(implicit z: Empty[A]): A                  = if (isEmpty) z.empty else last
+  def zreduce(f: BinOp[A])(implicit z: Empty[A]): A   = if (isEmpty) z.empty else reducel(f)
 
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
   def zinit: View[A]                                            = if (isEmpty) emptyValue else init

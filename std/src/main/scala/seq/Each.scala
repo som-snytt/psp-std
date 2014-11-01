@@ -10,7 +10,7 @@ final class LongSizeException(msg: String) extends CollectionSizeException(msg)
 trait FromScala[Repr] extends Any { def scalaCollection: Repr }
 object FromScala {
   def apply[A, CC[X] <: sCollection[X]](xs: CC[A]): FromScala[CC[A]] = new FromScala[CC[A]] { def scalaCollection = xs }
-  def unapply[Repr](wrapped: FromScala[Repr]): scala.Some[Repr]      = Some(wrapped.scalaCollection)
+  def unapply[Repr](wrapped: FromScala[Repr]): Some[Repr]            = Some(wrapped.scalaCollection)
 }
 
 object Each {
@@ -95,6 +95,6 @@ object Each {
   def join[A](xs: Each[A], ys: Each[A]): Each[A]               = Joined[A](xs, ys)
   def unfold[A](start: A)(next: A => A): Unfold[A]             = Unfold[A](start)(next)
 
-  def apply[A](mf: Suspended[A]): Each[A]              = new Impl[A](Size.unknown, mf)
-  def unapplySeq[A](xs: Each[A]): scala.Some[scSeq[A]] = Some(xs.seq)
+  def apply[A](mf: Suspended[A]): Each[A]        = new Impl[A](Size.unknown, mf)
+  def unapplySeq[A](xs: Each[A]): Some[scSeq[A]] = Some(xs.seq)
 }

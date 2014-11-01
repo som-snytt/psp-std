@@ -89,9 +89,9 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
 object PolicyMap {
   type BuildsMap[K, V] = Builds[(K, V), ExMap[K, V]]
 
-  def builder[K : HashEq, V] : BuildsMap[K, V]                  = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, Lookup(kvs.toPartial)))
-  def apply[K, V](keys: ExSet[K], pf: K ?=> V): ExMap[K, V]     = new ExtensionalMap(keys, Lookup(pf))
-  def unapplySeq[K, V](map: ExMap[K, V]): scala.Some[sciSeq[K]] = Some(map.keyVector.seq)
+  def builder[K : HashEq, V] : BuildsMap[K, V]              = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, Lookup(kvs.toPartial)))
+  def apply[K, V](keys: ExSet[K], pf: K ?=> V): ExMap[K, V] = new ExtensionalMap(keys, Lookup(pf))
+  def unapplySeq[K, V](map: ExMap[K, V]): Some[sciSeq[K]]   = Some(map.keyVector.seq)
 
   /** An immutable scala Map with keys and values in parallel vectors.
    *  It is a "sorted" map in the sense that whatever order the keys are in, that's the sort.

@@ -6,7 +6,7 @@ import java.text.DateFormat._
 
 class DelayedLog {
   val counter = Counter(1)
-  private[this] var toLog: sciList[Message[_]] = Nil
+  private[this] var toLog: Each[Message[_]] = Direct()
 
   def timeString(timeStyle: Int = MEDIUM): String = getTimeInstance(timeStyle) format new jDate()
   def stackString(frames: Int   = 50): String = (new Throwable).getStackTrace drop 3 take frames mkString EOL
@@ -20,11 +20,11 @@ class DelayedLog {
     override def toString = message
   }
 
-  def purge() = try dump() finally toLog = Nil
+  def purge() = try dump() finally toLog = Direct()
 
   def batch[T](body: => T): T = {
     val saved = toLog
-    toLog = Nil
+    toLog = Direct()
     try body finally {
       try dump() finally toLog = saved
     }
@@ -45,5 +45,5 @@ class DelayedLog {
   }
 
   def record[A: Show](body: => A): Unit               = recordIf(body) { case x => x.to_s }
-  def recordIf[A](body: => A)(pf: A ?=> String): Unit = toLog ::= new Message[A](body, pf)
+  def recordIf[A](body: => A)(pf: A ?=> String): Unit = toLog :+= new Message[A](body, pf)
 }

@@ -26,6 +26,7 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Option[+A]                      = scala.Option[A]
   type Ordered[A]                      = scala.math.Ordered[A]
   type Ordering[A]                     = scala.math.Ordering[A]
+  type Some[+A]                        = scala.Some[A]
   type StringBuilder                   = scala.collection.mutable.StringBuilder
   type Success[+A]                     = scala.util.Success[A]
   type Try[+A]                         = scala.util.Try[A]
