@@ -24,7 +24,7 @@ object BiIterator {
   def mapped[A, B](it: BiIterator[A], f: A => B): BiIterator[B]      = new Mapped(it, f)
   def array[A](xs: Array[A]): BiIterator[A]                          = new ArrayIterator(xs)
   def linear[A](xs: Linear[A]): BiIterator[A]                        = new LinearIterator(xs)
-  def vector[A](xs: Direct[A]): BiIterator[A]                       = new VectorIterator(xs)
+  def vector[A](xs: Direct[A]): BiIterator[A]                        = new VectorIterator(xs)
   def enumeration[A](enum: jEnumeration[A]): BiIterator[A]           = new EnumerationIterator(enum)
 
   final class EnumerationIterator[A](enum: jEnumeration[A]) extends BiIterator[A] {

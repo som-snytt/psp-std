@@ -6,3 +6,4 @@ import psp.std.repl.ReplImport._
 
 def flongs = Each from 0L map (n => printResult(s"> $n")(n))
 def dlongs = Direct from 0L map (n => printResult(s"> $n")(n))
+def int20  = 1 to 20 map (x => printResult(s"> $x")(x))

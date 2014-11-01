@@ -133,15 +133,17 @@ final class IndexRangeOps(xs: IndexRange) {
 }
 
 final class InMapOps[K, V](xs: InMap[K, V]) {
-  def partial: K ?=> V                   = newPartial(contains, xs.apply)
-  def contains(key: K): Boolean          = xs domain key
-  def ++(that: InMap[K, V]): InMap[K, V] = new IntensionalMap(xs.domain union that.domain, xs.lookup orElse that.lookup)
+  def comap[K1](f: K1 => K): InMap[K1, V] = new IntensionalMap(xs.domain comap f, xs.lookup comap f)
+  def partial: K ?=> V                    = newPartial(contains, xs.apply)
+  def contains(key: K): Boolean           = xs domain key
+  def ++(that: InMap[K, V]): InMap[K, V]  = new IntensionalMap(xs.domain union that.domain, xs.lookup orElse that.lookup)
 }
 final class ExMapOps[K, V](xs: ExMap[K, V]) {
   def ++(that: ExMap[K, V]): ExMap[K, V] = new ExtensionalMap(xs.domain union that.domain, xs.lookup orElse that.lookup)
 }
 
 final class InSetOps[A](xs: InSet[A]) {
+  def comap[A1](f: A1 => A): InSet[A1]     = IntensionalSet(f andThen xs)
   def mapOnto[B](f: A => B): InMap[A, B]   = new IntensionalMap(xs, Lookup total f)
   def diff(that: InSet[A]): InSet[A]       = IntensionalSet.Diff(xs, that)
   def filter(p: Predicate[A]): InSet[A]    = IntensionalSet.Filtered(xs, p)

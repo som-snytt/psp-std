@@ -45,7 +45,6 @@ trait ExSeq[+A] extends Any {
   def takeRight(n: Precise): MapTo[A]
   def takeWhile(p: Predicate[A]): MapTo[A]
   def withFilter(p: Predicate[A]): MapTo[A]
-  def zip[B](that: View[B]): MapTo[(A, B)]
 }
 
 

@@ -177,6 +177,9 @@ package object std extends psp.std.StdPackage {
   def jUri(x: String): jUri                                   = java.net.URI create x
   def jUrl(x: String): jUrl                                   = jUri(x).toURL
 
+  def fst[A, B](x: scala.Product2[A, B]): A = x._1
+  def snd[A, B](x: scala.Product2[A, B]): B = x._2
+
   def PairDown[R, A, B](l: R => A, r: R => B): PairDown[R, A, B] = new PairDown[R, A, B] {
     def left(x: R)  = l(x)
     def right(x: R) = r(x)

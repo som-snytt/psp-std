@@ -207,5 +207,5 @@ trait ShowForeach extends ShowForeach1 {
   implicit def sCollectionShow[A: Show] : Show[sCollection[A]] = showBy[sCollection[A]](fromScala)
   implicit def arrayShow[A: Show] : Show[Array[A]]             = showBy[Array[A]](Direct.fromArray)
   implicit def exSetShow[A: Show] : Show[ExSet[A]]             = showBy(x => x: Each[A])
-  implicit def exMapShow[K: Show, V: Show] : Show[ExMap[K, V]] = Show(_.entries.tabular(_._1.to_s, _ => "->", _._2.to_s))
+  implicit def exMapShow[K: Show, V: Show] : Show[ExMap[K, V]] = Show(_.entries.tabular(x => fst(x).to_s, _ => "->", x => snd(x).to_s))
 }

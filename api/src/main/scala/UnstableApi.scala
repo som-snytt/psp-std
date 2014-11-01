@@ -8,7 +8,6 @@ import java.lang.String
 /** Type classes I'm less certain about keeping.
  */
 
-trait Generator[+A] extends Any { def apply(f: A => Unit): Generator[A]   }
 trait Zero[A] extends Any       { def zero: A ; def isZero(x: A): Boolean }
 trait Empty[+A] extends Any     { def empty: A                            }
 trait Hash[-A] extends Any      { def hash(x: A): Int                     }

@@ -46,9 +46,10 @@ trait ConversionOps[A] extends Any {
 
   def iterator: scIterator[A] = xs match {
     case FromScala(xs: scIterable[A]) => xs.iterator
-    case _                            => generator.iterator
+    case xs: Direct[A]                => BiIterator vector xs
+    case xs: Linear[A]                => BiIterator linear xs
+    case _                            => xs.memo.iterator
   }
-  def generator: Generator[A]                                          = Generator(xs)
   def plist: pList[A]                                                  = toPolicyList
   def pvec: Direct[A]                                                  = toPolicyVector
   def pseq: Each[A]                                                    = toPolicySeq

@@ -41,7 +41,7 @@ trait GlobalShow extends GlobalShow0 {
 
 trait StdTypeclasses {
   implicit def tupleTwoPairUp[A, B] : PairUp[(A, B), A, B]                     = PairUp(_ -> _)
-  implicit def productTwoPairDown[A, B] : PairDown[scala.Product2[A, B], A, B] = PairDown(_._1, _._2)
+  implicit def productTwoPairDown[A, B] : PairDown[scala.Product2[A, B], A, B] = PairDown(fst, snd)
   implicit def linearSeqPairDown[A] : PairDown[Linear[A], A, Linear[A]]        = PairDown(_.head, _.tail)
 }
 
@@ -121,7 +121,6 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsFileTime(x: jFileTime): ops.FileTimeOps                                                = new ops.FileTimeOps(x)
   implicit def opsFunction1[T, R](f: T => R): ops.Function1Ops[T, R]                                     = new ops.Function1Ops(f)
   implicit def opsFunction2[T1, T2, R](f: (T1, T2) => R): ops.Function2Ops[T1, T2, R]                    = new ops.Function2Ops(f)
-  implicit def opsGenerator[A](x: Generator[A]): ops.GeneratorOps[A]                                     = new ops.GeneratorOps(x)
   implicit def opsHasPreciseSize(x: HasPreciseSize): ops.HasPreciseSizeOps                               = new ops.HasPreciseSizeOps(x)
   implicit def opsJavaIterator[A](x: jIterator[A]): ops.JavaIteratorOps[A]                               = new ops.JavaIteratorOps[A](x)
   implicit def opsIndexRange(x: IndexRange): ops.IndexRangeOps                                           = new ops.IndexRangeOps(x)

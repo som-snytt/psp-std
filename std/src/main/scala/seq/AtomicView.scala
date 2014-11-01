@@ -17,21 +17,20 @@ final case class SplitView[+A, Repr](left: BaseView[A, Repr], right: BaseView[A,
   def mapRight[A1 >: A](f: Single[A1] => Single[A1]): SplitView[A1, Repr] = SplitView(left, f(right))
   def join: Single[A]                                                     = Joined(left, right)
   def intersperse: Single[A]                                              = Interspersed(left, right)
-  def zipped: Single[(A, A)]                                              = Zipped(left, right)
   def force[That](implicit z: Builds[A, That]): That                      = z build join
 }
 
 object FlattenSlice {
   def unapply[A, Repr](xs: BaseView[A, Repr]): Option[(BaseView[A, Repr], IndexRange)] = xs match {
     case xs: DirectView[_, _] => Some(xs -> xs.indices)
-    case LabeledView(xs, _)    => unapply(xs)
-    case Mapped(xs, f)         => unapply(xs) map { case (xs, range) => (xs map f, range) }
-    case DroppedR(xs, n)       => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
-    case TakenR(xs, n)         => unapply(xs) map { case (xs, range) => (xs, range takeRight n) }
-    case Dropped(xs, n)        => unapply(xs) map { case (xs, range) => (xs, range drop n) }
-    case Taken(xs, n)          => unapply(xs) map { case (xs, range) => (xs, range take n) }
-    case HasSize(n: Precise)   => Some(xs -> n.indices)
-    case _                     => None
+    case LabeledView(xs, _)   => unapply(xs)
+    case Mapped(xs, f)        => unapply(xs) map { case (xs, range) => (xs map f, range) }
+    case DroppedR(xs, n)      => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
+    case TakenR(xs, n)        => unapply(xs) map { case (xs, range) => (xs, range takeRight n) }
+    case Dropped(xs, n)       => unapply(xs) map { case (xs, range) => (xs, range drop n) }
+    case Taken(xs, n)         => unapply(xs) map { case (xs, range) => (xs, range take n) }
+    case HasSize(n: Precise)  => Some(xs -> n.indices)
+    case _                    => None
   }
 }
 
@@ -95,7 +94,6 @@ sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[
   final def takeRight(n: Precise): MapTo[A]         = TakenR(this, n)
   final def takeWhile(p: Predicate[A]): MapTo[A]    = TakenWhile(this, p)
   final def withFilter(p: Predicate[A]): MapTo[A]   = Filtered(this, p)
-  final def zip[B](that: View[B]): MapTo[(A, B)]    = Zipped(this, that)
 
   final def dropIndex(index: Index): MapTo[A]      = s"dropIndex $index" |: (index.sizeExcluding |> (s => SplitView(take(s), drop(s.increment)).join))
   final def splitAt(index: Index): SplitTo[A]      = index.sizeExcluding |> (s => SplitView(take(s), drop(s)))
@@ -146,7 +144,6 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
       case TakenR(xs, n: Precise)          => foreachTakeRight(xs, f, n)
       case Dropped(xs, Precise(n))         => foreachSlice(xs, Index(n) until MaxIndex, f)
       case Taken(xs, n: Precise)           => foreachSlice(xs, n.indices, f)
-      case Zipped(_, _)                    => foreachSlice(xs, IndexRange.full, f)
       case xs: View[_]                     => xs foreach f
       case _                               => abort(pp"Unexpected view class ${xs.shortClass}")
     }
@@ -183,7 +180,6 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
     xs.foldl(CircularBuffer[A](n))((buf, x) => if (buf.isFull) try buf finally f(buf push x) else buf += x)
 
   private def foreachSlice[A](xs: View[A], range: IndexRange, f: A => Unit): Unit = xs match {
-    case Zipped(xs, ys)                                             => xs.iterator zip ys.iterator drop range.startInt take range.size.intSize foreach f
     case xs: AtomicView[_, _]                                       => xs.foreachSlice(range)(f)
     case Mapped(prev, g)                                            => foreachSlice(prev, range, g andThen f)
     case xs: Direct[_]                                              => directlySlice(xs, range, f)
@@ -196,7 +192,6 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
 }
 
 final case class Interspersed[A   , Repr](prev: BaseView[A, Repr], ys: View[A])     extends CompositeView[A, A, Repr](pp"intersperse $ys", _ + ys.size)
-final case class Zipped      [A, B, Repr](prev: BaseView[A, Repr], ys: View[B])     extends CompositeView[A, (A, B), Repr](pp"zip $ys", _ min ys.size)
 final case class Joined [A, B >: A, Repr](prev: BaseView[A, Repr], ys: View[B])     extends CompositeView[A, B, Repr](pp"++ $ys", _ + ys.size)
 final case class Filtered    [A   , Repr](prev: BaseView[A, Repr], p: Predicate[A]) extends CompositeView[A, A, Repr](pp"filter $p",    _.atMost)
 final case class Dropped     [A   , Repr](prev: BaseView[A, Repr], n: Precise)      extends CompositeView[A, A, Repr](pp"drop $n",      _ - n)

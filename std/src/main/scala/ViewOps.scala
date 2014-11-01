@@ -38,9 +38,10 @@ trait ApiViewOps[+A] extends Any {
   def exists(p: Predicate[A]): Boolean                   = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
   def find(p: Predicate[A]): Option[A]                   = foldl[Option[A]](None)((res, x) => if (p(x)) return Some(x) else res)
   def first[B](pf: A ?=> B): Option[B]                   = find(pf.isDefinedAt) map pf
+  def forallTrue(implicit ev: A <:< Boolean): Boolean    = forall(x => ev(x))
   def forall(p: Predicate[A]): Boolean                   = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
-  def head: A                                            = xs take      1 optionally { case Each(x) => x } orFail "empty.head"
-  def indexWhere(p: Predicate[A]): Index                 = zipIndex(xs).find((x, i) => p(x)).fold(NoIndex)(_._2)
+  def head: A                                            = xs take 1 optionally { case Each(x) => x } orFail "empty.head"
+  def indexWhere(p: Predicate[A]): Index                 = (zipIndex findLeft p map snd) | NoIndex
   def isEmpty: Boolean                                   = xs.size.isZero || directIsEmpty
   def last: A                                            = xs takeRight 1 optionally { case Each(x) => x } orFail "empty.last"
   def max(implicit ord: Order[A]): A                     = xs reducel (_ max2 _)
@@ -70,6 +71,8 @@ trait ApiViewOps[+A] extends Any {
   def tail: View[A]                                              = xs drop      1
   def toRefs: View[AnyRef]                                       = xs map (_.toRef)
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
+  def zip[B](ys: View[B]): ZipView[A, B]                         = new ZipView(xs, ys)
+  def zipIndex: ZipView[A, Index]                                = new ZipView(xs, Each.indices)
 
   def foldWithIndex[B](zero: B)(f: (B, A, Index) => B): B = {
     var res = zero
@@ -137,6 +140,7 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def ztail: View[A]                                            = if (isEmpty) emptyValue else tail
   def prepend(x: A): View[A]                                    = exView(x) ++ xs
   def append(x: A): View[A]                                     = xs ++ exView(x)
+  def intersperse(ys: View[A]): View[A]                         = xs zip ys flatMap ((x, y) => Direct(x, y))
 
   def mpartition(p: View[A] => Predicate[A]): View[View[A]] =
     inView[View[A]](mf => xs partition p(xs.memo) match { case Split(xs, ys) => mf(xs) ; ys mpartition p foreach mf })

@@ -34,7 +34,7 @@ object Each {
       case Precise(n) if n > MaxInt => throw new LongSizeException(s"$xs")
       case Precise(n)               => n.toInt
     }
-    def iterator: scIterator[A] = xs.generator.iterator
+    def iterator: scIterator[A] = xs.memo.iterator
     def apply(index: Int): A = xs drop index.size head
     override def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
@@ -84,14 +84,16 @@ object Each {
     }
   }
 
+  def from(n: BigInt): Each[BigInt] = unfold(n)(_ + 1)
+  def from(n: Int): Each[Int]       = unfold(n)(_ + 1)
+  def from(n: Long): Each[Long]     = unfold(n)(_ + 1)
+  def indices: Each[Index]          = unfold(Index(0))(_.next)
+
   def elems[A](xs: A*): Each[A]                                = apply[A](xs foreach _)
   def constant[A](elem: A): Constant[A]                        = Constant[A](elem)
   def continuallySpan[A](p: Predicate[A])(expr: => A): Each[A] = continually(expr) takeWhile p
   def continually[A](elem: => A): Continually[A]               = Continually[A](() => elem)
   def empty[A] : Each[A]                                       = Direct.Empty
-  def from(n: BigInt): Each[BigInt]                            = unfold(n)(_ + 1)
-  def from(n: Int): Each[Int]                                  = unfold(n)(_ + 1)
-  def from(n: Long): Each[Long]                                = unfold(n)(_ + 1)
   def join[A](xs: Each[A], ys: Each[A]): Each[A]               = Joined[A](xs, ys)
   def unfold[A](start: A)(next: A => A): Unfold[A]             = Unfold[A](start)(next)
 

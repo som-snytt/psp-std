@@ -149,7 +149,7 @@ object PolicyMap {
 
   object ToScala {
     def newBuilder[K, V] : scmBuilder[(K, V), ToScala[K, V]] = sciVector.newBuilder[(K, V)] mapResult apply
-    def apply[K, V](pairs: sciVector[(K, V)]): ToScala[K, V] = new ToScala[K, V](pairs map (_._1), pairs map (_._2))
+    def apply[K, V](pairs: sciVector[(K, V)]): ToScala[K, V] = new ToScala[K, V](pairs map fst, pairs map snd)
     def empty[K, V] : ToScala[K, V]                          = apply(sciVector())
 
     implicit def showToScala[K: Show, V: Show] = Show[ToScala[K, V]] { map =>

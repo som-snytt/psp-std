@@ -51,7 +51,7 @@ final class ShowInterpolator(val x: StringContext) extends AnyVal {
   def show(args: Shown*): String  = StringContext(x.parts: _*).raw(args: _*)
   def pp(args: TryShown*): String = StringContext(x.parts: _*).raw(args: _*)
   def shown(args: Shown*): Shown  = Shown(show(args: _*))
-  def doc(args: Doc*): Doc        = (Generator(x.parts.m map (_.asis)) intersperse Generator(args.m)).view.joinChars
+  def doc(args: Doc*): Doc        = x.parts.m.map(_.asis) intersperse args.m joinChars
 
   /** Can't see any way to reuse the standard (type-safe) f-interpolator, will
    *  apparently have to reimplement it entirely.
