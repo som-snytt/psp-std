@@ -135,6 +135,8 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
   def zinit: View[A]                                            = if (isEmpty) emptyValue else init
   def ztail: View[A]                                            = if (isEmpty) emptyValue else tail
+  def prepend(x: A): View[A]                                    = exView(x) ++ xs
+  def append(x: A): View[A]                                     = xs ++ exView(x)
 
   def distinctBy[B: HashEq](f: A => B): View[A] = inView(mf =>
     zfoldl[ExSet[B]]((seen, x) => f(x) |> (y => try seen add y finally seen(y) || mf(x)))

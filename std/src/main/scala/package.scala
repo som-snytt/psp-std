@@ -183,7 +183,7 @@ package object std extends psp.std.StdPackage {
   def exView[A](xs: A*): View[A]                            = Direct[A](xs: _*).m
   def inMap[K, V](p: Predicate[K], f: K => V): InMap[K, V]  = new IntensionalMap(inSet(p), Lookup total f)
   def inSet[A](p: Predicate[A]): InSet[A]                   = p.inSet
-  def inView[A](mf: Suspended[A]): View[A]                  = Each[A](mf).m
+  def inView[A](mf: Suspended[A]): View[A]                  = Each(mf).m
   def mutableMap[K, V](xs: (K, V)*): PolicyMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
   def pList[A](xs: A*): pList[A]                            = xs.m.plist
 
