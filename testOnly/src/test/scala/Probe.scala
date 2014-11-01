@@ -1,7 +1,6 @@
 package psp
 package tests
 
-import compat.ScalaNative
 import psp.std._, api._
 import lowlevel.ExclusiveIntRange
 import scala.{ collection => sc }
