@@ -126,7 +126,7 @@ object PolicyMap {
     def iteratorFrom(start: K): scIterator[Pair]    = indicesFrom(start) map (i => keys(i) -> values(i))
     def keysIteratorFrom(start: K): scIterator[K]   = indicesFrom(start) map keys
     def reverseKeys: Us                             = new ToScala(keys.reverse, values.reverse)
-    def slice(range: IndexRange): Us                = this drop range.precedingSize take range.size
+    def slice(range: IndexRange): Us                = this drop range.toDrop take range.toTake
     def take(n: Precise): Us                        = new Us(keys take n.intSize, values take n.intSize)
     def takeRight(n: Precise): Us                   = new Us(keys takeRight n.intSize, values takeRight n.intSize)
     def valuesIteratorFrom(start: K): scIterator[V] = indicesFrom(start) map values

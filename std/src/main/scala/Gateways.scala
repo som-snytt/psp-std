@@ -57,10 +57,6 @@ trait SetAndMapOps extends Any with SetAndMapOps1 {
 trait StdOps0 extends Any {
   implicit def numericToSums[A](implicit z: Numeric[A]): Sums[A]         = Sums[A](z.plus)(Zero(z.zero))
   implicit def numericToProducts[A](implicit z: Numeric[A]): Products[A] = Products[A](z.times)(Zero(z.one))
-
-  implicit class ShowableToDocShown[A: Show](x: A) {
-    def doc: Doc = Doc.Shown[A](x, ?)
-  }
   implicit def opsForeach[A](xs: Each[A]): ops.ForeachOps[A]         = new ops.ForeachOps(xs)
 
   implicit class ForeachableOps[A, Repr](repr: Repr)(implicit z: Foreachable.Coll[A, Repr]) {
@@ -103,11 +99,15 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def directArrayIs[A](xs: Array[A]): DirectView[A, Array[A]]                             = new DirectView(Direct fromArray xs)
   implicit def directStringIs(xs: String): DirectView[Char, String]                                = new DirectView(Direct fromString xs)
 
+  // We're (sickly) using the context bound to reduce the applicability of the implicit,
+  // but then discarding it. The only way these can be value classes is if the type class
+  // arrives with the method call.
   implicit def infixOpsPartialOrder[A: PartialOrder](x: A): infix.PartialOrderOps[A] = new infix.PartialOrderOps[A](x)
   implicit def infixOpsOrder[A: Order](x: A): infix.OrderOps[A]                      = new infix.OrderOps[A](x)
   implicit def infixOpsAlgebra[A: BooleanAlgebra](x: A): infix.AlgebraOps[A]         = new infix.AlgebraOps[A](x)
   implicit def infixOpsEq[A: Eq](x: A): infix.EqOps[A]                               = new infix.EqOps[A](x)
   implicit def infixOpsHash[A: Hash](x: A): infix.HashOps[A]                         = new infix.HashOps[A](x)
+  implicit def infixOpsShow[A: Show](x: A): infix.ShowOps[A]                         = new infix.ShowOps[A](x)
 
   implicit def opsDirectView[A, Repr](x: DirectView[A, Repr]): ops.DirectApiViewOps[A, Repr]             = new ops.DirectApiViewOps(x)
   implicit def opsPairView[R, A, B](x: View[R])(implicit z: PairDown[R, A, B]): ops.PairViewOps[R, A, B] = new ops.PairViewOps(x)

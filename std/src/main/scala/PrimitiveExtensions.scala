@@ -51,8 +51,8 @@ final class AnyOps[A](val x: A) extends AnyVal {
 
 final class AnyRefOps[A <: AnyRef](val x: A) extends AnyVal {
   @inline def foldNull[B](zero: => B)(f: A => B): B = if (x eq null) zero else f(x)
-  @inline def doto(f: A => Unit): x.type     = sideEffect(f(x))
-  @inline def sideEffect(body: Unit): x.type = x
+  @inline def doto(f: A => Unit): x.type            = sideEffect(f(x))
+  @inline def sideEffect(body: Unit): x.type        = x
 
   def debug(implicit z: Show[A]): x.type = sideEffect(echoErr(z show x))
   def this_s(implicit z: Show[A]): Doc   = "[".asis <> x.shortClass.asis <> "]".asis <+> x.doc
@@ -77,6 +77,7 @@ final class CharOps(val ch: Char) extends AnyVal {
 final class BooleanOps(val self: Boolean) extends AnyVal {
   def toInt: Int   = if (self) 1 else 0
   def toLong: Long = if (self) 1L else 0L
+  def || (that: => Unit): Boolean = self || andFalse(that)
 }
 
 final class IntOps(val self: Int) extends AnyVal {

@@ -5,6 +5,10 @@ package infix
 import api._
 import java.{ lang => jl }
 
+final class ShowOps[A](val lhs: A) extends AnyVal {
+  def doc(implicit z: Show[A]): Doc = Doc(lhs)
+}
+
 final class OrderOps[A](val lhs: A) extends AnyVal {
   import Cmp._
   def compare(rhs: A)(implicit ord: Order[A]): Cmp = ord.compare(lhs, rhs)

@@ -151,18 +151,18 @@ final class InSetOps[A](xs: InSet[A]) {
 final class ExSetOps[A](xs: ExSet[A]) {
   private implicit def heq: HashEq[A] = xs.hashEq
 
-  def add(x: A): ExSet[A]                 = if (xs(x)) xs else xs union exSet(x)
-  def mapOnto[B](f: A => B): ExMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
-  def intersect(that: ExSet[A]): ExSet[A] = ExtensionalSet.Intersect(xs, that)
-  def diff(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Diff(xs, that)
-  def intersect(that: InSet[A]): ExSet[A] = filter(that)
-  def diff(that: InSet[A]): ExSet[A]      = filterNot(that)
-
-  def filterNot(p: Predicate[A]): ExSet[A] = ExtensionalSet.Filtered(xs, !p)
+  def add(x: A): ExSet[A]                  = if (xs(x)) xs else xs union exSet(x)
+  def canonicalize(x: A): A                = xs.findOr(_ === x, x)
+  def diff(that: ExSet[A]): ExSet[A]       = ExtensionalSet.Diff(xs, that)
+  def diff(that: InSet[A]): ExSet[A]       = filterNot(that)
   def filter(p: Predicate[A]): ExSet[A]    = ExtensionalSet.Filtered(xs, p)
-  def union(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Union(xs, that)
+  def filterNot(p: Predicate[A]): ExSet[A] = ExtensionalSet.Filtered(xs, !p)
+  def intersect(that: ExSet[A]): ExSet[A]  = ExtensionalSet.Intersect(xs, that)
+  def intersect(that: InSet[A]): ExSet[A]  = filter(that)
   def isSubsetOf(ys: InSet[A]): Boolean    = xs forall ys.apply
+  def mapOnto[B](f: A => B): ExMap[A, B]   = new ExtensionalMap(xs, Lookup total f)
   def reverse: ExSet[A]                    = xs // XXX
+  def union(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Union(xs, that)
 
 
   /*** TODO - salvage.

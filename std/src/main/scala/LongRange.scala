@@ -15,7 +15,9 @@ final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.D
   def end             = Index(endInt)
   def endInclusive    = if (end <= start) NoIndex else end.prev
   def size            = intRange.size
-  def precedingSize   = newSize(startInt)
+
+  def toDrop: Precise = Precise(startInt)
+  def toTake: Precise = intRange.size
 
   @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(Index(i)))
 
