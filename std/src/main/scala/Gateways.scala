@@ -142,6 +142,10 @@ trait StdOps3 extends Any with StdOps2 {
     case xs: IntensionalSet[A] => xs
     case _                     => IntensionalSet(x)
   }
+  implicit def apiInMapPromote[K, V](x: InMap[K, V]): IntensionalMap[K, V] = x match {
+    case xs: IntensionalMap[K, V] => xs
+    case _                        => new IntensionalMap(x.domain, Lookup(x))
+  }
 }
 
 trait StdOps extends Any with StdOps3 {
@@ -162,7 +166,7 @@ trait StdOps extends Any with StdOps3 {
   }
   implicit def apiExMapPromote[K, V](x: ExMap[K, V]): ExtensionalMap[K, V] = x match {
     case xs: ExtensionalMap[K, V] => xs
-    case _                        => new ExtensionalMap(x.domain, Lookup(newPartial(x.domain.apply, x.apply)))
+    case _                        => new ExtensionalMap(x.domain, Lookup(x))
   }
 }
 

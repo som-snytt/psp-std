@@ -34,6 +34,7 @@ object Lookup {
   def total[K, V](f: K => V): Lookup[K, V]                           = apply[K, V](f.partial, NoDefault)
   def apply[K, V](pf: K ?=> V): Lookup[K, V]                         = apply[K, V](pf, NoDefault)
   def apply[K, V](pf: K ?=> V, default: Default[K, V]): Lookup[K, V] = new Lookup[K, V](pf, default)
+  def apply[K, V](map: InMap[K, V]): Lookup[K, V]                    = apply(newPartial(map.domain.apply, map.apply))
 }
 
 final class Lookup[-K, +V] private (private val pf: K ?=> V, val default: Default[K, V]) extends (K ?=> V) {

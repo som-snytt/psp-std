@@ -4,13 +4,13 @@ package std
 import api._, StdShow._
 import Lookup._
 
-final class IntensionalMap[K, V](val domain: InSet[K], val lookup: Lookup[K, V]) extends PolicyMap[InSet, K, V](domain, lookup) with InMap[K, V] {
+final class IntensionalMap[K, V](domain: InSet[K], lookup: Lookup[K, V]) extends PolicyMap[InSet, K, V](domain, lookup) with InMap[K, V] {
   type NewMap[K1, V1] = InMap[K1, V1]
 
   protected[this] def newDomain(p: Predicate[K]) = domain filter p
   protected[this] def newMap[K1, V1](domain: InSet[K1], lookup: Lookup[K1, V1]): IntensionalMap[K1, V1] = new IntensionalMap(domain, lookup)
 }
-final class ExtensionalMap[K, V](val domain: ExSet[K], val lookup: Lookup[K, V]) extends PolicyMap[ExSet, K, V](domain, lookup) with ExMap[K, V] {
+final class ExtensionalMap[K, V](domain: ExSet[K], lookup: Lookup[K, V]) extends PolicyMap[ExSet, K, V](domain, lookup) with ExMap[K, V] {
   type Entry          = (K, V)
   type NewMap[K1, V1] = ExMap[K1, V1]
 
@@ -18,7 +18,6 @@ final class ExtensionalMap[K, V](val domain: ExSet[K], val lookup: Lookup[K, V])
   protected[this] def newMap[K1, V1](domain: ExSet[K1], lookup: Lookup[K1, V1]): ExtensionalMap[K1, V1] = new ExtensionalMap(domain, lookup)
 
   def +(key: K, value: V): This             = newMap(domain, lookup.put(key, value)(domain.hashEq))
-  def ++(map: This): This                   = newMap(domain union map.domain, map.lookup orElse lookup)
   def entries: View[Entry]                  = keys mapZip lookup
   def foreach(f: ((K, V)) => Unit): Unit    = foreachKey(k => f(k -> apply(k)))
   def foreachEntry(f: (K, V) => Unit): Unit = foreachKey(k => f(k, apply(k)))
@@ -43,7 +42,7 @@ final class ExtensionalMap[K, V](val domain: ExSet[K], val lookup: Lookup[K, V])
     )
 }
 
-sealed abstract class PolicyMap[Domain[X] <: InSet[X], K, V](domain: Domain[K], lookup: Lookup[K, V]) extends InMap[K, V] {
+sealed abstract class PolicyMap[Domain[X] <: InSet[X], K, V](val domain: Domain[K], val lookup: Lookup[K, V]) extends InMap[K, V] {
   type NewMap[K1, V1] <: InMap[K1, V1]
   type This = NewMap[K, V]
 
@@ -51,13 +50,11 @@ sealed abstract class PolicyMap[Domain[X] <: InSet[X], K, V](domain: Domain[K], 
   protected[this] def newMap[K1, V1](domain: Domain[K1], lookup: Lookup[K1, V1]): NewMap[K1, V1]
 
   def apply(key: K): V                     = lookup(key)
-  def contains(key: K): Boolean            = domain(key)
   def filterKeys(p: Predicate[K]): This    = newMap(newDomain(p), lookup)
   def filterValues(p: Predicate[V]): This  = filterKeys(k => p(apply(k)))
   def get(key: K): Option[V]               = lookup get key
   def getOr(key: K, alt: => V): V          = lookup.getOr(key, alt)
   def map[V1](f: V => V1): NewMap[K, V1]   = newMap(domain, lookup map f)
-  def partial: K ?=> V                     = newPartial(contains, apply)
   def withDefaultFunction(f: K => V): This = newMap(domain, lookup withDefault FunctionDefault(f))
   def withDefaultValue(v: V): This         = newMap(domain, lookup withDefault ConstantDefault(v))
   def withNoDefault: This                  = newMap(domain, lookup withDefault NoDefault)

@@ -133,16 +133,21 @@ final class IndexRangeOps(xs: IndexRange) {
 }
 
 final class InMapOps[K, V](xs: InMap[K, V]) {
+  def partial: K ?=> V                   = newPartial(contains, xs.apply)
+  def contains(key: K): Boolean          = xs domain key
+  def ++(that: InMap[K, V]): InMap[K, V] = new IntensionalMap(xs.domain union that.domain, xs.lookup orElse that.lookup)
 }
 final class ExMapOps[K, V](xs: ExMap[K, V]) {
+  def ++(that: ExMap[K, V]): ExMap[K, V] = new ExtensionalMap(xs.domain union that.domain, xs.lookup orElse that.lookup)
 }
 
 final class InSetOps[A](xs: InSet[A]) {
-  def mapOnto[B](f: A => B): InMap[A, B]  = new IntensionalMap(xs, Lookup total f)
-  def diff(that: InSet[A]): InSet[A]      = this filter that
-  def filter(p: Predicate[A]): InSet[A]   = IntensionalSet.Filtered(xs, p)
-  def union(that: InSet[A]): InSet[A]     = IntensionalSet.Union(xs, that)
-  def intersect(that: InSet[A]): InSet[A] = IntensionalSet.Intersect(xs, that)
+  def mapOnto[B](f: A => B): InMap[A, B]   = new IntensionalMap(xs, Lookup total f)
+  def diff(that: InSet[A]): InSet[A]       = IntensionalSet.Diff(xs, that)
+  def filter(p: Predicate[A]): InSet[A]    = IntensionalSet.Filtered(xs, p)
+  def filterNot(p: Predicate[A]): InSet[A] = IntensionalSet.Filtered(xs, !p)
+  def union(that: InSet[A]): InSet[A]      = IntensionalSet.Union(xs, that)
+  def intersect(that: InSet[A]): InSet[A]  = IntensionalSet.Intersect(xs, that)
   def complement: InSet[A] = xs match {
     case IntensionalSet.Complement(xs) => xs
     case _                             => IntensionalSet.Complement(xs)
@@ -151,37 +156,22 @@ final class InSetOps[A](xs: InSet[A]) {
 final class ExSetOps[A](xs: ExSet[A]) {
   private implicit def heq: HashEq[A] = xs.hashEq
 
+  /** replace adds the element, ejecting any existing element which measures === to it.
+   *  add adds the element only if no existing element is === to it.
+   */
+
   def add(x: A): ExSet[A]                  = if (xs(x)) xs else xs union exSet(x)
   def canonicalize(x: A): A                = xs.findOr(_ === x, x)
   def diff(that: ExSet[A]): ExSet[A]       = ExtensionalSet.Diff(xs, that)
-  def diff(that: InSet[A]): ExSet[A]       = filterNot(that)
   def filter(p: Predicate[A]): ExSet[A]    = ExtensionalSet.Filtered(xs, p)
   def filterNot(p: Predicate[A]): ExSet[A] = ExtensionalSet.Filtered(xs, !p)
   def intersect(that: ExSet[A]): ExSet[A]  = ExtensionalSet.Intersect(xs, that)
-  def intersect(that: InSet[A]): ExSet[A]  = filter(that)
   def isSubsetOf(ys: InSet[A]): Boolean    = xs forall ys.apply
   def mapOnto[B](f: A => B): ExMap[A, B]   = new ExtensionalMap(xs, Lookup total f)
+  def replace(x: A): ExSet[A]              = if (xs(x)) without(x) add x else this add x
   def reverse: ExSet[A]                    = xs // XXX
   def union(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Union(xs, that)
-
-
-  /*** TODO - salvage.
-
-  //   def addIfAbsent(elem: A): PolicySet[A]  = if (contains(elem)) this else this + elem
-  //   def addOrReplace(elem: A): PolicySet[A] = if (contains(elem)) (this - elem) + elem else this + elem
-
-  //   def by[B : HashEq](f: A => B): PolicySet[A]    = PolicySet[A](basis)(hashEqBy[A](f))
-  //   def byNatural                                  = PolicySet.natural[A](basis)
-  //   def byReference(implicit ev: A <:< AnyRef)     = PolicySet.reference(basis map ev)
-  //   def byShown(implicit z: Show[A]): PolicySet[A] = PolicySet.shown[A](basis)
-  //   implicit def scalaSetEq[CC[X] <: sciSet[X], A : Eq] : Eq[CC[A]] = Eq[CC[A]] {
-  //     case (Complement(xs), Complement(ys)) => isSubSet(xs, ys) && isSubSet(ys, xs)
-  //     case (Complement(xs), y)              => false
-  //     case (x, Complement(ys))              => false
-  //     case (xs, ys)                         => isSubSet(xs, ys) && isSubSet(ys, xs)
-  //   }
-
-  ***/
+  def without(x: A): ExSet[A]              = xs diff exSet(x)
 }
 
 trait HasPreciseSizeMethods extends Any {
