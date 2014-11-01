@@ -31,7 +31,7 @@ abstract class TestRunnerCommon {
 
   def main(args: Array[String]): Unit = {
     bundles filter shouldRun mapOnto wrapRun filterValues (x => !x) match {
-      case PolicyMap()        => println("\nAll tests passed.")
+      case PolicyMap()        => println("\nAll tests passed.") ; println(ansi.colorMap.to_s)
       case PolicyMap(ks @ _*) => println("Some tests failed in bundles: " + ks.mkString(", ")) ; throw new Exception
     }
   }

@@ -69,7 +69,7 @@ class OperationCounts extends ScalacheckBundle {
   )
   class CompositeOp(viewFn: CompositeFun) {
     val outcomes  = collections map (collectionFn => new CollectionResult(viewFn, collectionFn)) pvec
-    val Direct(usLinear, themLinear, usDirect, themDirect) = outcomes
+    val Each(usLinear, themLinear, usDirect, themDirect) = outcomes
 
     def compare(lhs: Int, rhs: Int): String = "%3s %-2s %-3s".format(lhs, if (lhs <= rhs) "<=" else ">", rhs)
 
