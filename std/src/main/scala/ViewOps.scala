@@ -138,6 +138,9 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def prepend(x: A): View[A]                                    = exView(x) ++ xs
   def append(x: A): View[A]                                     = xs ++ exView(x)
 
+  def mpartition(p: View[A] => Predicate[A]): View[View[A]] =
+    inView[View[A]](mf => xs partition p(xs) match { case Split(xs, ys) => mf(xs) ; ys mpartition p foreach mf })
+
   def distinctBy[B: HashEq](f: A => B): View[A] = inView(mf =>
     zfoldl[ExSet[B]]((seen, x) => f(x) |> (y => try seen add y finally seen(y) || mf(x)))
   )

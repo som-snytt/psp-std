@@ -68,7 +68,8 @@ class PolicyBasic extends ScalacheckBundle {
     showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure),
     seqShows("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _)),
     seqShows("11, 22, 33, 44", indexRange(1, 50).pvec.m grep """(.)\1""".r),
-    seqShows("99, 1010, 1111", xxNumbers drop 8 take 3)
+    seqShows("99, 1010, 1111", xxNumbers drop 8 take 3),
+    seqShows("[ 2, 4, 6, ... ], [ 3, 9, 15, ... ], [ 5, 25, 35, ... ]", Each from 2 mpartition (xs => _ % xs.head == 0) take 3)
   )
 }
 
