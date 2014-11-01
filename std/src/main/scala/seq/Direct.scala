@@ -76,6 +76,4 @@ object Direct {
 
   def from(start: Long): DirectView[Long, Direct[Long]] =
     new DirectView(new Impl(Precise(MaxLong), n => start + n.indexValue)) //:| s"Direct.from($start)"
-
-  def unapplySeq[A](xs: Direct[A]): scala.Some[sciIndexedSeq[A]] = Some(new ToScala(xs))
 }

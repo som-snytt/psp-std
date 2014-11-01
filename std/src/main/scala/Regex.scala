@@ -12,7 +12,7 @@ import api._
 //
 // The regular expression . matches any character except a line terminator unless the DOTALL flag is specified.
 final class Regex(val pattern: Pattern) extends AnyVal {
-  def matcher(input: CharSequence): Matcher = pattern matcher input useAnchoringBounds false
+  def matcher(input: CharSequence): Matcher = pattern matcher input
   def to_s = pattern.toString
 
   def flags: Int        = pattern.flags
@@ -37,11 +37,12 @@ final class Regex(val pattern: Pattern) extends AnyVal {
   def setFlag(flag: Int): Regex         = Regex(to_s, flags | flag)
   def mapRegex(f: Unary[String]): Regex = Regex(f(to_s), flags)
 
-  def isMatch[A: Show](x: A): Boolean       = isMatch(x.to_s)
-  def isMatch(input: CharSequence): Boolean = matcher(input).matches
-  def all(input: CharSequence)              = matcher(input) |> (m => option(m.matches(), 1 to m.groupCount map m.group))
-  def first(input: CharSequence)            = matcher(input) |> (m => option(m.find, m.group()))
-  def unapplySeq(input: CharSequence)       = all(input) map (_.seq)
+  def isMatch[A: Show](x: A): Boolean        = isMatch(x.to_s)
+  def isMatch(input: CharSequence): Boolean  = matcher(input).matches
+  def hasMatch(input: CharSequence): Boolean = matcher(input).find()
+  def all(input: CharSequence)               = matcher(input) |> (m => option(m.matches(), 1 to m.groupCount map m.group))
+  def first(input: CharSequence)             = matcher(input) |> (m => option(m.find, m.group()))
+  def unapplySeq(input: CharSequence)        = all(input) map (_.seq)
 
   override def toString = s"$pattern"
 }
@@ -51,7 +52,7 @@ object Regex extends (String => Regex) {
   def newlines   = apply("""[\n]+""")
   def ansiCodes  = apply("""\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]""")
 
-  implicit def regexPredicate(r: Regex): Predicate[String] = r.isMatch
+  implicit def regexPredicate(r: Regex): Predicate[String] = r.hasMatch
 
   def maybe(s: String): Option[Regex]     = try Some(apply(s)) catch { case _: PatternSyntaxException => None }
   def quote(s: String): Regex             = apply(Pattern quote s)
