@@ -63,6 +63,10 @@ trait ConversionOps[A] extends Any {
 
 final class ForeachOps[A](val xs: Each[A]) extends AnyVal with ConversionOps[A] {
   def sized(size: Precise): Each[A] = new Each.Sized(xs, size)
+  def memo: Indexed.Memo[A] = xs match {
+    case xs: Indexed.Memo[A] => xs
+    case _                   => new Indexed.Memo(xs)
+  }
 }
 
 final class DirectOps[A](val xs: Direct[A]) extends AnyVal with ConversionOps[A] {

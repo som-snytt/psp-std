@@ -44,9 +44,10 @@ trait OptLong extends Any with Opt[Long] { def get: Long        }
  *  for type inference are too severe, and the last thing we want to do is
  *  create disincentives to work in terms of the API types.
  */
-trait Each[+A] extends Any with HasSize                       { def foreach(f: A => Unit): Unit   }
-trait Direct[+A] extends Any with Each[A] with HasPreciseSize { def elemAt(i: Index): A           }
-trait Linear[+A] extends Any with Each[A] with IsEmpty        { def head: A ; def tail: Linear[A] }
+trait Each[+A] extends Any with HasSize                          { def foreach(f: A => Unit): Unit   }
+trait Indexed[+A] extends Any with Each[A]                       { def elemAt(i: Index): A           }
+trait Direct[+A] extends Any with Indexed[A] with HasPreciseSize
+trait Linear[+A] extends Any with Each[A] with IsEmpty           { def head: A ; def tail: Linear[A] }
 
 trait Intensional[-K, +V] extends Any                              { def apply(x: K): V       }
 trait InSet[-A]           extends Any with Intensional[A, Boolean] { def apply(x: A): Boolean }

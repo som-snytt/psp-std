@@ -97,8 +97,8 @@ sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[
   final def withFilter(p: Predicate[A]): MapTo[A]   = Filtered(this, p)
   final def zip[B](that: View[B]): MapTo[(A, B)]    = Zipped(this, that)
 
-  final def dropIndex(index: Index): MapTo[A]      = s"dropIndex $index" |: (index.toSize |> (s => SplitView(take(s), drop(s.increment)).join))
-  final def splitAt(index: Index): SplitTo[A]      = index.toSize |> (s => SplitView(take(s), drop(s)))
+  final def dropIndex(index: Index): MapTo[A]      = s"dropIndex $index" |: (index.sizeExcluding |> (s => SplitView(take(s), drop(s.increment)).join))
+  final def splitAt(index: Index): SplitTo[A]      = index.sizeExcluding |> (s => SplitView(take(s), drop(s)))
   final def span(p: Predicate[A]): SplitTo[A]      = SplitView(takeWhile(p), dropWhile(p))
   final def partition(p: Predicate[A]): SplitTo[A] = SplitView(withFilter(p), withFilter(!p))
 

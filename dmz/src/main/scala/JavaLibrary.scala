@@ -27,6 +27,8 @@ trait JavaLibrary extends Any {
   def systemClassLoader: ClassLoader  = java.lang.ClassLoader.getSystemClassLoader
   def contextClassLoader: ClassLoader = currentThread.getContextClassLoader
   def utf8Charset: Charset            = java.nio.charset.Charset forName "UTF-8"
+  def threadSleep(ms: Long): Unit     = java.lang.Thread.sleep(ms)
+  def threadYield(): Unit             = java.lang.Thread.`yield`
 
   // Exceptions and Throwables.
   type AssertionError                = java.lang.AssertionError

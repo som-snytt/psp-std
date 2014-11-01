@@ -126,7 +126,7 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def product(implicit z: Products[A]): A             = xs.foldl(z.one)(z.product)
   def reducel(f: BinOp[A]): A                         = tail.foldl(head)(f)
   def sum(implicit z: Sums[A]): A                     = xs.foldl(z.zero)(z.sum)
-  def zapply(i: Index)(implicit z: Empty[A]): A       = xs drop i.toSize zhead
+  def zapply(i: Index)(implicit z: Empty[A]): A       = xs drop i.sizeExcluding zhead
   def zfind(p: Predicate[A])(implicit z: Empty[A]): A = findOr(p, z.empty)
   def zhead(implicit z: Empty[A]): A                  = if (isEmpty) z.empty else head
   def zlast(implicit z: Empty[A]): A                  = if (isEmpty) z.empty else last
@@ -139,7 +139,7 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def append(x: A): View[A]                                     = xs ++ exView(x)
 
   def mpartition(p: View[A] => Predicate[A]): View[View[A]] =
-    inView[View[A]](mf => xs partition p(xs) match { case Split(xs, ys) => mf(xs) ; ys mpartition p foreach mf })
+    inView[View[A]](mf => xs partition p(xs.memo) match { case Split(xs, ys) => mf(xs) ; ys mpartition p foreach mf })
 
   def distinctBy[B: HashEq](f: A => B): View[A] = inView(mf =>
     zfoldl[ExSet[B]]((seen, x) => f(x) |> (y => try seen add y finally seen(y) || mf(x)))

@@ -150,6 +150,12 @@ package object std extends psp.std.StdPackage {
   def zero[A](implicit z: Zero[A]): A                   = z.zero
   def emptyValue[A](implicit z: Empty[A]): A            = z.empty
 
+  def spawn[A](body: => A): Unit = {
+    val t = new Thread() { override def run(): Unit = body }
+    t setDaemon true
+    t.start()
+  }
+
   def fromScala[A](xs: sCollection[A]): AnyView[A] = xs match {
     case xs: sciIndexedSeq[_] => new Direct.FromScala(xs) m
     case xs: sciLinearSeq[_]  => new PolicyList.FromScala(xs) m

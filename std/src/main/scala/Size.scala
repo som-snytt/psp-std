@@ -83,8 +83,9 @@ object Size {
       case Precise(0L) => true
       case _           => false
     }
-    def isFinite     = lhs.hiBound !== Infinite
-    def atMost: Size = bounded(Empty, lhs)
+    def isFinite      = lhs.hiBound !== Infinite
+    def atLeast: Size = bounded(lhs, Infinite)
+    def atMost: Size  = bounded(Empty, lhs)
     def hiBound: Atomic = lhs match {
       case Bounded(_, hi) => hi
       case x: Atomic      => x
