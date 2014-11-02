@@ -56,6 +56,9 @@ trait ConversionOps[A] extends Any {
   def pset(implicit z: HashEq[A]): ExSet[A]                            = toPolicySet
   def pmap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): ExMap[K, V] = toPolicyMap[K, V]
 
+  def toSetByEquals: ExSet[A]          = pset(HashEq.natural())
+  def toSetByRef: ExSet[AnyRef with A] = xs.toRefs.pset(HashEq.reference())
+
   def naturalMap[K, V](implicit ev: A <:< (K, V)): ExMap[K, V] = toPolicyMap[K, V](HashEq.natural(), ev)
   def naturalSet: ExSet[A]                                     = toPolicySet(HashEq.natural())
 

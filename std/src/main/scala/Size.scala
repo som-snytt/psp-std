@@ -4,9 +4,9 @@ package std
 import api._, StdEq._
 
 object Size {
-  val Empty    = newSize(0)
-  val NonEmpty = Bounded(newSize(1), Infinite)
-  val Unknown  = Bounded(Empty, Infinite)
+  val Empty    = 0.size
+  val NonEmpty = api.Size(1.size, Infinite)
+  val Unknown  = api.Size(Empty, Infinite)
 
   def empty: Size   = Empty
   def unknown: Size = Unknown
@@ -68,13 +68,13 @@ object Size {
 
   def bounded(lo: Size, hi: Size): Size = (lo, hi) match {
     case _ if lo === hi                     => lo
-    case (lo: Precise, hi: Atomic)          => Bounded(lo, hi)
-    case (l1: Precise, Bounded(l2, h2))     => Bounded(l1 min l2, h2)
+    case (lo: Precise, hi: Atomic)          => api.Size(lo, hi)
+    case (l1: Precise, Bounded(l2, h2))     => api.Size(l1 min l2, h2)
     case (Infinite, Bounded(_, Infinite))   => Infinite
     case (Infinite, _)                      => Empty
-    case (Bounded(l1, h1), Infinite)        => Bounded(l1, Infinite)
-    case (Bounded(l1, h1), h2: Precise)     => Bounded(l1, h2)
-    case (Bounded(l1, h1), Bounded(l2, h2)) => Bounded(l1, h2)
+    case (Bounded(l1, h1), Infinite)        => api.Size(l1, Infinite)
+    case (Bounded(l1, h1), h2: Precise)     => api.Size(l1, h2)
+    case (Bounded(l1, h1), Bounded(l2, h2)) => api.Size(l1, h2)
   }
 
   final class Ops(val lhs: Size) extends AnyVal {
@@ -83,9 +83,10 @@ object Size {
       case Precise(0L) => true
       case _           => false
     }
-    def isFinite      = lhs.hiBound !== Infinite
-    def atLeast: Size = bounded(lhs, Infinite)
-    def atMost: Size  = bounded(Empty, lhs)
+    def isFinite         = lhs.hiBound !== Infinite
+    def atLeast: Size    = bounded(lhs, Infinite)
+    def atMost: Size     = bounded(Empty, lhs)
+    def upTo(hi: Atomic) = bounded(lhs, hi)
     def hiBound: Atomic = lhs match {
       case Bounded(_, hi) => hi
       case x: Atomic      => x
@@ -97,7 +98,7 @@ object Size {
 
     def mapAtomic(f: Precise => Precise, g: Atomic => Atomic): Size = lhs match {
       case x: Atomic       => g(x)
-      case Bounded(lo, hi) => Bounded(f(lo), g(hi))
+      case Bounded(lo, hi) => bounded(f(lo), g(hi))
     }
 
     /** For instance taking the union of two sets. The new size is

@@ -89,13 +89,13 @@ object Each {
   def from(n: Long): Each[Long]     = unfold(n)(_ + 1)
   def indices: Each[Index]          = unfold(Index(0))(_.next)
 
-  def elems[A](xs: A*): Each[A]                                = apply[A](xs foreach _)
-  def constant[A](elem: A): Constant[A]                        = Constant[A](elem)
-  def continuallySpan[A](p: Predicate[A])(expr: => A): Each[A] = continually(expr) takeWhile p
-  def continually[A](elem: => A): Continually[A]               = Continually[A](() => elem)
-  def empty[A] : Each[A]                                       = Direct.Empty
-  def join[A](xs: Each[A], ys: Each[A]): Each[A]               = Joined[A](xs, ys)
-  def unfold[A](start: A)(next: A => A): Unfold[A]             = Unfold[A](start)(next)
+  def elems[A](xs: A*): Each[A]                                 = apply[A](xs foreach _)
+  def const[A](elem: A): Constant[A]                            = Constant[A](elem)
+  def continuallyWhile[A](p: Predicate[A])(expr: => A): Each[A] = continually(expr) takeWhile p
+  def continually[A](elem: => A): Continually[A]                = Continually[A](() => elem)
+  def empty[A] : Each[A]                                        = Direct.Empty
+  def join[A](xs: Each[A], ys: Each[A]): Each[A]                = Joined[A](xs, ys)
+  def unfold[A](start: A)(next: A => A): Unfold[A]              = Unfold[A](start)(next)
 
   def apply[A](mf: Suspended[A]): Each[A]        = new Impl[A](Size.unknown, mf)
   def unapplySeq[A](xs: Each[A]): Some[scSeq[A]] = Some(xs.seq)

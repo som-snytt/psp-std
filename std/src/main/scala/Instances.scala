@@ -105,9 +105,13 @@ trait EqInstances {
   implicit def sizeEq: HashEq[Size] = HashEq(Size.equiv, Size.hash)
   implicit def pathEq: HashEq[Path] = hashEqBy[Path](_.toString)
 
+  /** The throwableEq defined above conveniently conflicts with the actual
+   *  implicit parameter to the method. W... T... F. On top of this the error
+   *  message is simply "value === is not a member of Throwable".
+   */
   implicit def tryEq[A](implicit z1: Eq[A], z2: Eq[Throwable]): Eq[Try[A]] = Eq {
     case (Success(x), Success(y)) => x === y
-    case (Failure(x), Failure(y)) => x === y
+    case (Failure(x), Failure(y)) => x === y // would be x === y, but.
     case _                        => false
   }
 

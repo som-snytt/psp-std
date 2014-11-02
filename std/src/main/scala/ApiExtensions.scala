@@ -180,6 +180,8 @@ trait HasPreciseSizeMethods extends Any {
   def size: Precise
 
   def longSize: Long      = size.value
+  def getInt: Int         = intSize
+  def safeInt: Int        = intSize
   def intSize: Int        = longSize.safeToInt
   def isZero: Boolean     = longSize == 0L
   def isPositive: Boolean = longSize > 0L
@@ -198,8 +200,7 @@ final class HasPreciseSizeOps(val x: HasPreciseSize) extends HasPreciseSizeMetho
 }
 
 final class PreciseOps(val size: Precise) extends AnyRef with HasPreciseSizeMethods {
-  def get: Long   = longSize
-  def getInt: Int = intSize
+  def get: Long        = longSize
   def toDouble: Double = get.toDouble
 
   def + (n: Int): Precise = newSize(longSize + n)
@@ -221,7 +222,7 @@ final class PreciseOps(val size: Precise) extends AnyRef with HasPreciseSizeMeth
   def increment: Precise          = newSize(longSize + 1L)
   def decrement: Precise          = newSize(longSize - 1L)
 
-  def timesConst[A](elem: A): Each[A]   = Each constant elem take size
+  def timesConst[A](elem: A): Each[A]   = Each const elem take size
   def timesEval[A](body: => A): Each[A] = Each continually body take size
 
   def toIntRange                           = intRange(0, intSize)

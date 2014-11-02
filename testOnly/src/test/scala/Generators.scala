@@ -26,7 +26,7 @@ package object gen {
   def random[A](xs: Gen[A]*): Gen[A]        = random(xs.m.pvec)
 
   def precise: Gen[Precise]              = chooseNum(1, MaxInt / 2) map (_.size)
-  def bounded: Gen[Bounded]              = precise flatMap (lo => atomic map (hi => Size.bounded(lo, hi))) collect { case b: Bounded => b }
+  def bounded: Gen[Bounded]              = precise flatMap (lo => atomic map (hi => lo upTo hi)) collect classFilter[Bounded]
   def atomic: Gen[Atomic]                = frequency(10 -> precise, 1 -> 0.size, 1 -> Infinite)
   def size: Gen[Size]                    = oneOf(atomic, bounded)
   def long: Gen[Long]                    = Gen.choose(MinLong, MaxLong)

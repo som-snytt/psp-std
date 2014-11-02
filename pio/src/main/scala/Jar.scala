@@ -50,7 +50,7 @@ final case class StreamJar(instream: () => InputStream) extends Jar {
     }
     loop(0)
   }
-  private def entryStream(in: JarInputStream)        = Each.continuallySpan[JarEntry](_ ne null)(in.getNextJarEntry())
+  private def entryStream(in: JarInputStream)        = Each.continuallyWhile[JarEntry](_ ne null)(in.getNextJarEntry())
   private def onStream[A](f: JarInputStream => A): A = new JarInputStream(instream()) |> (in => try f(in) finally in.close())
 }
 final case object NoJar extends Jar {

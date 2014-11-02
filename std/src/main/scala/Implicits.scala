@@ -55,6 +55,9 @@ abstract class StdPackage
     def fold[C, D](rhs: (A, B))(f: (A, A) => C, g: (B, B) => C)(h: (C, C) => D): D =
       h(f(lhs._1, rhs._1), g(lhs._2, rhs._2))
   }
+  implicit class IsEmptyOps(val lhs: IsEmpty) {
+    def emptyOrNonEmpty: Size = if (lhs.isEmpty) Size.Empty else Size.NonEmpty
+  }
   implicit class AnyTargetSeqOps[A: HashEq](root: A) {
     def transitiveDepth(maxDepth: Int, expand: A => Each[A]): Each[A] = {
       var seen = PolicySet.elems[A]()

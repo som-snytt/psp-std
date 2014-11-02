@@ -20,9 +20,10 @@ final class AnyOps[A](val x: A) extends AnyVal {
   def shortPackage: String = x.getClass.getPackage.toString
 
   // "Maybe we can enforce good programming practice with annoyingly long method names."
-  def castTo[U] : U   = x.asInstanceOf[U]
-  def toRef: AnyRef   = castTo[AnyRef]
-  def isNull: Boolean = toRef eq null
+  def isClass[A: CTag] = classOf[A] isAssignableFrom x.getClass
+  def castTo[U] : U    = x.asInstanceOf[U]
+  def toRef: AnyRef    = castTo[AnyRef]
+  def isNull: Boolean  = toRef eq null
 
   def reflect[B](m: jMethod)(args: Any*): B = m.invoke(x, args.map(_.castTo[AnyRef]): _*).castTo[B]
 
