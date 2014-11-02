@@ -44,15 +44,22 @@ object :: {
   def unapply[A](xs: sci.List[A]) = if (xs.isEmpty) None else Some((xs.head, xs.tail))
 }
 object Try {
-  def apply[A](body: => A): scala.util.Try[A] = scala.util.Try[A](body)
+  def apply[A](body: => A): scala.util.Try[A] = try Success(body) catch {
+    case t: java.lang.ThreadDeath               => throw t
+    case t: java.lang.InterruptedException      => throw t
+    case t: scala.util.control.ControlThrowable => throw t
+    case t: Throwable                           => Failure(t)
+  }
 }
 object Success {
+  def apply[A](x: A) = scala.util.Success[A](x)
   def unapply[A](x: scala.util.Try[A]): Option[A] = x match {
     case scala.util.Success(x) => Some(x)
     case _                     => None
   }
 }
 object Failure {
+  def apply(x: Throwable) = scala.util.Failure(x)
   def unapply[A](x: scala.util.Try[A]): Option[Throwable] = x match {
     case scala.util.Failure(x) => Some(x)
     case _                     => None
