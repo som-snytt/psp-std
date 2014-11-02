@@ -22,7 +22,7 @@ object Build extends sbt.Build {
     def setup(text: String): Project = setup() also (description := text)
     def usesCompiler                 = p settings (libraryDependencies += Deps.scalaCompiler.value)
     def usesReflect                  = p settings (libraryDependencies += Deps.scalaReflect.value)
-    def usesGuava                    = p settings (libraryDependencies += "com.google.guava"% "guava" % "18.0")
+    def usesGuava                    = p settings (libraryDependencies += Deps.guava)
     def helper(): Project            = p.noArtifacts setup "helper project" dependsOn (classpathDeps: _*)
     def noSources                    = p in file("target/helper/" + p.id)
   }
@@ -30,7 +30,7 @@ object Build extends sbt.Build {
   private def commonSettings(p: Project) = standardSettings ++ Seq(
             resolvers +=  Resolver.mavenLocal,
               version :=  sbtBuildProps.buildVersion,
-         scalaVersion :=  "2.11.4",
+         scalaVersion :=  scalaVersionLatest,
    crossScalaVersions :=  Seq(scalaVersion.value),
              licenses :=  pspLicenses,
          organization :=  pspOrg,
@@ -104,11 +104,11 @@ object Build extends sbt.Build {
   )
 
   def testDependencies = Def setting Seq(
-    "org.scala-lang"  % "scala-reflect" % scalaVersion.value,
-    "org.scalacheck" %% "scalacheck"    %      "1.11.5"       % "test"
+    Deps.scalaReflect.value,
+    scalacheck
   )
   def consoleDependencies = Def setting Seq(
-    "org.scala-lang"            % "scala-compiler" % scalaVersion.value
+    Deps.scalaCompiler.value
     // "org.spire-math"           %% "spire"          %      "0.8.2",
     // "com.chuusai"              %% "shapeless"      %      "2.0.0",
     // "com.google.guava"          % "guava"          %       "18.0"
