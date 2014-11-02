@@ -21,11 +21,11 @@ object TestRunner_211 extends TestRunnerCommon {
   implicit def predicateEq[A : Arbitrary] : Eq[InvariantPredicate[A]]        = observationalEq[InvariantPredicate, A, Boolean](_ apply _)
   implicit def intensionalEq[A : Arbitrary : HashEq] : Eq[InvariantInSet[A]] = observationalEq[InvariantInSet, A, Boolean](_ apply _)
 
-  override def bundles = Direct[Bundle](
+  lazy val bundles = commonBundles ++ Direct[Bundle](
     new Typecheck,
     new Collections_211,
     new AlgebraSpec[Boolean]("Boolean") { override def join = "||" ; override def meet = "&&" },
     new AlgebraSpec[InvariantPredicate[Pint]]("InvariantPredicate[Pint]"),
     new AlgebraSpec[InvariantInSet[Pint]]("InvariantInSet[Pint]")
-  ) ++ super.bundles
+  )
 }

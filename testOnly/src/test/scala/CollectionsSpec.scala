@@ -8,14 +8,10 @@ import StdEq._, StdShow._
 
 class StringExtensions extends ScalacheckBundle {
   def bundle = "String Extensions"
+
   def s = "123 monkey dog ^^.* hello mother 456"
-
-  implicit def arbWord: Arb[String] = Arb(gen.word)
-  implicit def throwableEq: Eq[Throwable] = eqBy[Throwable](_.getClass)
-
   def scalaOps(s: String)  = new StringOps(s)
   def policyOps(s: String) = new PspStringOps(s)
-  def sameBehavior[A: Eq](expr1: => A, expr2: => A): Prop = Try(expr1) === Try(expr2)
 
   def newProp[A: Eq](f: StringOps => A, g: String => A): Prop = forAll((s: String) => sameBehavior(f(scalaOps(s)), g(s)))
 

@@ -1,6 +1,7 @@
 package psp
 
-import org.scalacheck._, Prop._
+import org.scalacheck._, Prop._, Gen.Choose
+import org.scalacheck.util.Pretty
 import psp.std._, api._
 import StdShow._
 
@@ -21,16 +22,35 @@ package object tests {
 
   def arb[A](implicit z: Arb[A]): Arb[A] = z
 
+  // When testing e.g. associativity and the sum overflows, we
+  // need to do more than compare values for equality.
+  def sameBehavior[T: Eq](p1: => T, p2: => T): Boolean = {
+    import StdEq._
+    implicit def t: Eq[Throwable] = eqBy[Throwable](_.getClass)
+    Try(p1) === Try(p2)
+  }
+
   implicit class ArbitraryOps[A](x: Arb[A]) {
     def map[B](f: A => B): Arb[B]       = Arb(x.arbitrary map f)
     def filter(p: Predicate[A]): Arb[A] = Arb(x.arbitrary filter p)
   }
+
+  implicit def arbWord: Arb[String]                             = Arb(gen.text.word)
   implicit def arbitraryInSet[A : Arb : HashEq] : Arb[InSet[A]] = arb[sciSet[A]] map (_.m.toPolicySet)
   implicit def arbitraryPint: Arb[Pint]                         = Arb(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
   implicit class LiftConverter[A](gen: Gen[A]) {
     def to[B](implicit f: A => B): Gen[B] = gen map f
   }
 
+  implicit class GenOps[A](g: Gen[A]) {
+    def collect[B](pf: A ?=> B): Gen[B]                                    = g suchThat pf.isDefinedAt map pf.apply
+    def collectN[B](n: Int)(pf: Each[A] ?=> B)(implicit z: Arb[A]): Gen[B] = gen.eachOfN(n, g) collect pf
+    def stream: Each[A]                                                    = Each continually g.sample flatMap (_.pvec)
+    def take(n: Int): Direct[A]                                            = stream take n pvec
+  }
+  implicit def chooseIndex: Choose[Index]  = Choose.xmap[Long, Index](_.index, _.indexValue)
+  implicit def chooseSize: Choose[Precise] = Choose.xmap[Long, Precise](newSize, _.value)
+  implicit def chooseNth: Choose[Nth]      = Choose.xmap[Long, Nth](_.nth, _.nthValue)
 
   def preNewline(s: String) = if (s contains "\n") "\n" + s.mapLines("| " ~ _) else s
   def showsAs[A: Show](expected: String, x: A): NamedProp         = preNewline(expected) -> (expected =? show"$x")

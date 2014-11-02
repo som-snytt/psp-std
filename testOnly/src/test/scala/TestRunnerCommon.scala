@@ -1,16 +1,18 @@
 package psp
 package tests
 
-import psp.std._
+import psp.std._, api._
 
 abstract class TestRunnerCommon {
   def scalaVersion: String
+  def bundles: Direct[Bundle]
+
   def shouldRun(b: Bundle) = sys.props get "psp.bundles" match {
     case Some(s) => b.bundle contains s
     case _       => true
   }
 
-  def bundles = Direct[Bundle](
+  def commonBundles = Direct[Bundle](
     new StringExtensions,
     new GridSpec,
     new PolicyBasic,
