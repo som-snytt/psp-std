@@ -3,14 +3,14 @@ package tests
 
 import scala.collection.immutable.StringOps
 import psp.std._, api._
-import org.scalacheck._, Prop._
+import Prop.forAll
 import StdEq._, StdShow._
 
 class StringExtensions extends ScalacheckBundle {
   def bundle = "String Extensions"
   def s = "123 monkey dog ^^.* hello mother 456"
 
-  implicit def arbWord: Arbitrary[String] = Arbitrary(genWord)
+  implicit def arbWord: Arb[String] = Arb(gen.word)
   implicit def throwableEq: Eq[Throwable] = eqBy[Throwable](_.getClass)
 
   def scalaOps(s: String)  = new StringOps(s)
@@ -20,13 +20,13 @@ class StringExtensions extends ScalacheckBundle {
   def newProp[A: Eq](f: StringOps => A, g: String => A): Prop = forAll((s: String) => sameBehavior(f(scalaOps(s)), g(s)))
 
   def newProp2[B] = new {
-    def apply[R](f: (StringOps, B) => R)(g: (String, B) => R)(implicit z1: Arbitrary[B], z2: Eq[R]): Prop =
+    def apply[R](f: (StringOps, B) => R)(g: (String, B) => R)(implicit z1: Arb[B], z2: Eq[R]): Prop =
       forAll((s: String, x: B) => sameBehavior(f(scalaOps(s), x), g(s, x)))
   }
 
   // dropRight and takeRight have the domain limited because of a scala bug with
   // take/dropRight with values around MinInt.
-  def mostInts = implicitly[Arbitrary[Int]] filter (_ > MinInt + 5000)
+  def mostInts = arb[Int] filter (_ > MinInt + 5000)
 
   def props: sciList[NamedProp] = sciList(
     "stripSuffix" -> newProp2[String](_ stripSuffix _)(_ stripSuffix _),

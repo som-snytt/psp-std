@@ -39,7 +39,7 @@ class ValuesSpec extends ScalacheckBundle {
 
   // generate from the full range of uints
   def fullRangeOps: Each[NamedProp] = {
-    implicit def arbUInt = Arbitrary(genUInt)
+    implicit def arbUInt = Arb(gen.uint)
     def qualities: Each[Quality] = exSeq(
       Quality("& |   max min    ", "^ + * / -", x => forAll(idempotence(x.op)), "idempotent", "NOT idempotent"),
       Quality("& | ^ max min + *", "      / -", x => forAll(commutative(x.op)), "commutes  ", "does NOT commute"),
@@ -52,12 +52,12 @@ class ValuesSpec extends ScalacheckBundle {
       val prop = qualities flatMap (q => q(op).pvec) reducel (_ && _)
       desc -> prop
     }
-    (allOps map one) ++ named("UInts are non-negative" -> forAll(genUInt)((x: UInt) => 0L <= x.longValue))
+    (allOps map one) ++ named("UInts are non-negative" -> forAll(gen.uint)((x: UInt) => 0L <= x.longValue))
   }
 
   // generate from uints <= IntMax
   def smallishOps: Each[NamedProp] = {
-    implicit val arbUInt = Arbitrary(genPosInt map UInt)
+    implicit val arbUInt = Arb(gen.posInt map UInt)
     named("on \"small\" uints, x <= x + y" -> forAll((x: UInt, y: UInt) => x <= (x + y) && y <= (x + y)))
   }
 

@@ -4,15 +4,12 @@ package tests
 import org.scalacheck._, Prop._, Gen._
 import psp.std._, api._
 
-trait PspArb1                 { implicit def arbSize: Arbitrary[Size]       = Arbitrary(genSize)     }
-trait PspArb2 extends PspArb1 { implicit def arbAtomic: Arbitrary[Atomic]   = Arbitrary(genAtomic)   }
-trait PspArb3 extends PspArb2 { implicit def arbPrecise: Arbitrary[Precise] = Arbitrary(genPrecise)  }
+trait PspArb1                 { implicit def arbSize: Arb[Size]       = Arb(gen.size)     }
+trait PspArb2 extends PspArb1 { implicit def arbAtomic: Arb[Atomic]   = Arb(gen.atomic)   }
+trait PspArb3 extends PspArb2 { implicit def arbPrecise: Arb[Precise] = Arb(gen.precise)  }
 
 class SizeSpec extends ScalacheckBundle with PspArb3 {
   def bundle = "Size laws"
-
-  type SI = Size
-  type Tried[T] = scala.Either[Throwable, T]
 
   private def tried[T](op: => T) = try scala.Right(op) catch { case t: Throwable => scala.Left(t) }
 
@@ -24,12 +21,11 @@ class SizeSpec extends ScalacheckBundle with PspArb3 {
     case _                                  => false
   }
 
-  def commutative[T: Arbitrary](op: BinOp[T]): Prop = forAll((p1: T, p2: T) => sameOutcome(op(p1, p2), op(p2, p1)))
-  def associative[T: Arbitrary](op: BinOp[T]): Prop = forAll((p1: T, p2: T, p3: T) => sameOutcome(op(op(p1, p2), p3), op(p1, op(p2, p3))))
-  def certain[T: Arbitrary, U: Arbitrary](f: (T, U) => Boolean): Prop = forAll((p1: T, p2: U) => f(p1, p2))
-
-  def associatives[A: Arbitrary](ops: BinOp[A]*): Prop = ops map (x => associative(x)) reduceLeft (_ && _)
-  def commutatives[A: Arbitrary](ops: BinOp[A]*): Prop = ops map (x => commutative(x)) reduceLeft (_ && _)
+  def certain[T: Arb, U: Arb](f: (T, U) => Boolean): Prop = forAll((p1: T, p2: U) => f(p1, p2))
+  def commutative[T: Arb](op: BinOp[T]): Prop             = forAll((p1: T, p2: T) => sameOutcome(op(p1, p2), op(p2, p1)))
+  def associative[T: Arb](op: BinOp[T]): Prop             = forAll((p1: T, p2: T, p3: T) => sameOutcome(op(op(p1, p2), p3), op(p1, op(p2, p3))))
+  def associatives[A: Arb](ops: BinOp[A]*): Prop          = ops map (x => associative(x)) reduceLeft (_ && _)
+  def commutatives[A: Arb](ops: BinOp[A]*): Prop          = ops map (x => commutative(x)) reduceLeft (_ && _)
 
   def flip(r: Prop.Result): Prop.Result = r match {
     case Prop.Result(Prop.True, _, _, _)  => r.copy(status = Prop.False)
@@ -39,12 +35,12 @@ class SizeSpec extends ScalacheckBundle with PspArb3 {
 
   // ...Aaaaand right on cue, a bunch of these tests broke until I added a type annotation.
   def props = sciList[NamedProp](
-    "s1 <= (s1 max s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 max s2)),
-    "s1 >= (s1 min s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_>= (s1 min s2)),
-    "s1 <= (s1 + s2)"                 -> certain[Atomic, Atomic]((s1, s2) => (s1: SI) p_<= (s1 + s2)),
-    "s1 >= (s1 - s2)"                 -> certain[Atomic, Precise]((s1, s2) => (s1: SI) p_>= (s1 - s2)),
-    "<inf> + n"                       -> forAll((s1: SI) => ((Infinite + s1) partialCompare Infinite) == PCmp.EQ),
-    "max, min, and + are associative" -> associatives[SI](_ + _, _ max _, _ min _),
-    "max, min, and + are commutative" -> commutatives[SI](_ + _, _ max _, _ min _)
+    "s1 <= (s1 max s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: Size) p_<= (s1 max s2)),
+    "s1 >= (s1 min s2)"               -> certain[Atomic, Atomic]((s1, s2) => (s1: Size) p_>= (s1 min s2)),
+    "s1 <= (s1 + s2)"                 -> certain[Atomic, Atomic]((s1, s2) => (s1: Size) p_<= (s1 + s2)),
+    "s1 >= (s1 - s2)"                 -> certain[Atomic, Precise]((s1, s2) => (s1: Size) p_>= (s1 - s2)),
+    "<inf> + n"                       -> forAll((s1: Size) => ((Infinite + s1) partialCompare Infinite) == PCmp.EQ),
+    "max, min, and + are associative" -> associatives[Size](_ + _, _ max _, _ min _),
+    "max, min, and + are commutative" -> commutatives[Size](_ + _, _ max _, _ min _)
   )
 }
