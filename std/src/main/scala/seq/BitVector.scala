@@ -28,7 +28,7 @@ object BitVector {
       (xs slice range).foldl(0L)((res, b) => (res << 1) | b.toLong)
     } toArray
   )
-  def apply(xs: Boolean*): BitVector = new BitVector(compress(xs.toArray), newSize(xs.size))
+  def apply(xs: Boolean*): BitVector = new BitVector(compress(xs.toArray), xs.size.size)
 }
 
 

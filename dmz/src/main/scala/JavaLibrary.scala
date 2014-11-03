@@ -50,6 +50,7 @@ trait JavaLibrary extends Any {
   type BufferedWriter          = java.io.BufferedWriter
   type ByteArrayInputStream    = java.io.ByteArrayInputStream
   type ByteArrayOutputStream   = java.io.ByteArrayOutputStream
+  type ByteBuffer              = java.nio.ByteBuffer
   type CharSequence            = java.lang.CharSequence
   type Charset                 = java.nio.charset.Charset
   type ClassLoader             = java.lang.ClassLoader

@@ -77,7 +77,7 @@ package object tests {
     def take(n: Int): Direct[A]                                            = stream take n pvec
   }
   implicit def chooseIndex: Choose[Index]  = Choose.xmap[Long, Index](_.index, _.indexValue)
-  implicit def chooseSize: Choose[Precise] = Choose.xmap[Long, Precise](newSize, _.value)
+  implicit def chooseSize: Choose[Precise] = Choose.xmap[Long, Precise](_.size, _.value)
   implicit def chooseNth: Choose[Nth]      = Choose.xmap[Long, Nth](_.nth, _.nthValue)
 
   def preNewline(s: String) = if (s contains "\n") "\n" + s.mapLines("| " ~ _) else s

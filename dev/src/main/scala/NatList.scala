@@ -22,7 +22,7 @@ sealed trait NatList[N <: Nat, A] extends Each[A] with HasStaticSize[N] {
   def ::[A1 >: A](hd: A1) = new NatList.::(hd, asTail[A1])
 
   def forgetSize: NatList[??, A]  = asExpected(this)
-  def size: Precise               = if (isEmpty) newSize(0) else unsafeTail.size + 1
+  def size: Precise               = if (isEmpty) 0.size else unsafeTail.size + 1
   def foreach(f: A => Unit): Unit = if (!isEmpty) { f(unsafeHead) ; unsafeTail foreach f }
 }
 

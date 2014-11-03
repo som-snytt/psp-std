@@ -202,24 +202,24 @@ final class PreciseOps(val size: Precise) extends AnyRef with HasPreciseSizeMeth
   def safeInt          = get.safeInt
   def toDouble: Double = get.toDouble
 
-  def + (n: Int): Precise = newSize(longSize + n)
-  def - (n: Int): Precise = newSize(longSize - n)
-  def * (n: Int): Precise = newSize(longSize * n)
-  def / (n: Int): Precise = newSize(longSize / n)
-  def % (n: Int): Precise = newSize(longSize % n)
+  def + (n: Int): Precise = (longSize + n).size
+  def - (n: Int): Precise = (longSize - n).size
+  def * (n: Int): Precise = (longSize * n).size
+  def / (n: Int): Precise = (longSize / n).size
+  def % (n: Int): Precise = (longSize % n).size
 
   def /+ (n: Int): Precise = (this / n) + ( if ((this % n).isZero) 0 else 1 )
 
-  def + (n: Precise): Precise = newSize(longSize + n.longSize)
-  def - (n: Precise): Precise = newSize(longSize - n.longSize)
-  def * (n: Precise): Precise = newSize(longSize * n.longSize)
-  def / (n: Precise): Precise = newSize(longSize / n.longSize)
-  def % (n: Precise): Precise = newSize(longSize % n.longSize)
+  def + (n: Precise): Precise = (longSize + n.longSize).size
+  def - (n: Precise): Precise = (longSize - n.longSize).size
+  def * (n: Precise): Precise = (longSize * n.longSize).size
+  def / (n: Precise): Precise = (longSize / n.longSize).size
+  def % (n: Precise): Precise = (longSize % n.longSize).size
 
-  def min(that: Precise): Precise = newSize(longSize min that.longSize)
-  def max(that: Precise): Precise = newSize(longSize max that.longSize)
-  def increment: Precise          = newSize(longSize + 1L)
-  def decrement: Precise          = newSize(longSize - 1L)
+  def min(that: Precise): Precise = (longSize min that.longSize).size
+  def max(that: Precise): Precise = (longSize max that.longSize).size
+  def increment: Precise          = (longSize + 1L).size
+  def decrement: Precise          = (longSize - 1L).size
 
   def timesConst[A](elem: A): Each[A]   = Each const elem take size
   def timesEval[A](body: => A): Each[A] = Each continually body take size
@@ -240,33 +240,14 @@ final class PreciseOps(val size: Precise) extends AnyRef with HasPreciseSizeMeth
 final class BooleanAlgebraOps[A](val algebra: BooleanAlgebra[A]) extends AnyVal {
   def map[B](f: B => A, g: A => B): BooleanAlgebra[B] = new Algebras.Mapped[A, B](algebra, f, g)
 }
+
 final class InputStreamOps(val in: InputStream) extends AnyVal {
-  private def wrap[A](f: InputStream => A): A = buffered |> (in => f(in) sideEffect in.close)
-  def buffered(): BufferedInputStream = in match {
-    case buf: BufferedInputStream => buf
-    case _                        => new BufferedInputStream(in)
+  def buffered: BufferedInputStream = in match {
+    case in: BufferedInputStream => in
+    case _                       => new BufferedInputStream(in)
   }
-  def slurp(): Array[Byte] = slurp(-1)
-  def slurp(len: Int): Array[Byte] = {
-    val buf = scala.Array.newBuilder[Byte]
-    if (len >= 0) buf sizeHint len
-    wrap { in =>
-      var offset = 0
-      val arr = new Array[Byte](InputStreamBufferSize)
-      def loop() {
-        if (offset < len || len < 0) {
-          val read = in.read(arr, 0, InputStreamBufferSize)
-          if (read >= 0) {
-            offset += read
-            buf ++= (arr take newSize(read)).seq
-            loop()
-          }
-        }
-      }
-      loop()
-      buf.result doto (xs => assert(len < 0 || xs.length == len, s"Could not read entire source ($offset of $len bytes)"))
-    }
-  }
+  def slurp(): Array[Byte]             = lowlevel.Streams slurp buffered
+  def slurp(len: Precise): Array[Byte] = lowlevel.Streams.slurp(buffered, len)
 }
 
 final class StdOptOps[A](val x: Opt[A]) extends AnyVal {

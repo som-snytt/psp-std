@@ -7,7 +7,7 @@ class SliceSpec extends ScalacheckBundle {
   def bundle = "Slice Operations"
   def checkSlice[A : Eq : Show](xs: Direct[A], start: Int, end: Int, expect: Direct[A]): sciList[NamedProp] = sciList(
     show"$xs.slice($start, $end) === $expect"              -> Prop((xs slice indexRange(start, end) force) === expect),
-    show"$xs drop $start take ($end - $start) === $expect" -> Prop((xs drop newSize(start) take newSize(end - start) force) === expect)
+    show"$xs drop $start take ($end - $start) === $expect" -> Prop((xs drop start.size take (end - start).size force) === expect)
   )
 
   def props = sciList(

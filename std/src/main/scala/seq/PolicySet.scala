@@ -74,7 +74,7 @@ object ExtensionalSet {
       override def toString = s"$unwrap (wrapped)"
     }
     def apply(elem: A)     = wrapSet contains wrap(elem)
-    def size: Precise      = newSize(wrapSet.size)
+    def size: Precise      = wrapSet.size.size
     def foreach(f: A => Unit): Unit  = wrapSet foreach (x => f(x.unwrap))
   }
 }

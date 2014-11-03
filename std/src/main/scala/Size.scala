@@ -29,8 +29,8 @@ object Size {
   def apply(n: Int): IntSize   = Precise(n)
   def apply(x: Any): Size = x match {
     case xs: HasSize                                => xs.size
-    case xs: jCollection[_]                         => newSize(xs.size)
-    case xs: scIndexedSeq[_]                        => newSize(xs.size)
+    case xs: jCollection[_]                         => xs.size.size
+    case xs: scIndexedSeq[_]                        => xs.size.size
     case xs: scTraversable[_] if xs.hasDefiniteSize => if (xs.isEmpty) Empty else NonEmpty
     case _                                          => Unknown
   }
@@ -110,9 +110,9 @@ object Size {
     def diff(rhs: Size): Size      = bounded(lhs - rhs, lhs)
 
     def * (m: Long): Size = lhs match {
-      case Precise(n)                        => newSize(n * m)
-      case Bounded(Precise(lo), Precise(hi)) => bounded(newSize(lo * m), newSize(hi * m))
-      case Bounded(Precise(lo), Infinite)    => if (m == 0L) unknown else bounded(newSize(lo * m), Infinite)
+      case Precise(n)                        => n * m size
+      case Bounded(Precise(lo), Precise(hi)) => bounded(lo * m size, hi * m size)
+      case Bounded(Precise(lo), Infinite)    => if (m == 0L) unknown else bounded(lo * m size, Infinite)
       case Infinite                          => if (m == 0L) unknown else Infinite
     }
     def * (rhs: Size): Size = lhs match {
@@ -124,7 +124,7 @@ object Size {
 
     def + (rhs: Size): Size = (lhs, rhs) match {
       case (Infinite, _) | (_, Infinite)            => Infinite
-      case (Precise(l), Precise(r))                 => newSize(l + r)
+      case (Precise(l), Precise(r))                 => l + r size
       case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 + l2, h1 + h2)
     }
     def - (rhs: Size): Size = (lhs, rhs) match {

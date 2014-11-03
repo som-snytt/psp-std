@@ -28,7 +28,7 @@ object Jar {
 final case class FileJar(path: Path) extends Jar  {
   def foreachEntry(f: JarEntry => Unit): Unit                 = onFile(jar => entryStream(jar) foreach f)
   def foreachStream(f: (JarEntry, InputStream) => Unit): Unit = onFile(jar => entryStream(jar) foreach (e => f(e, jar getInputStream e)))
-  def foreachBytes(f: (JarEntry, Bytes) => Unit): Unit        = foreachStream((entry, in) => f(entry, in slurp entry.intSize))
+  def foreachBytes(f: (JarEntry, Bytes) => Unit): Unit        = foreachStream((entry, in) => f(entry, in slurp entry.precise))
   def manifestMap                                             = onFile(in => ManifestMap(in.getManifest))
 
   private def entryStream(jar: JarFile)     = jar.entries().toIterator filter (_.isClassFile)
