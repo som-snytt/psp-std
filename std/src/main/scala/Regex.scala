@@ -15,27 +15,30 @@ final class Regex(val pattern: Pattern) extends AnyVal {
   def matcher(input: CharSequence): Matcher = pattern matcher input
   def to_s = pattern.toString
 
-  def flags: Int        = pattern.flags
-  def multiline         = setFlag(MULTILINE)
-  def caseInsensitive   = setFlag(CASE_INSENSITIVE)
-  def literal           = mapRegex("\\Q" + _ + "\\E") // Not setFlag(LITERAL) lest further regex additions be misinterpreted
-  def dotall            = setFlag(DOTALL)
-  def comments          = setFlag(COMMENTS)
-  def starts            = mapRegex("^" + _)
-  def ends              = mapRegex(_ + "$")
-  def anchors           = mapRegex("^" + _ + "$")
-  def noAnchors         = mapRegex(_ stripPrefix "^" stripSuffix "$")
-  def zeroOrMore        = mapRegex(_ + "*")
-  def oneOrMore         = mapRegex(_ + "+")
-  def characterClass    = mapRegex("[" + _ + "]")
-  def capturingGroup    = mapRegex("(" + _ + ")")
-  def nonCapturingGroup = mapRegex("(?:" + _ + ")")
+  def flags: Int      = pattern.flags
+  def multiline       = setFlag(MULTILINE)
+  def caseInsensitive = setFlag(CASE_INSENSITIVE)
+  def dotall          = setFlag(DOTALL)
+  def comments        = setFlag(COMMENTS)
+  def starts          = mapRegex("^" + _)
+  def noAnchors       = mapRegex(_ stripPrefix "^" stripSuffix "$")
+
+  def zeroOrMore        = append("*")
+  def oneOrMore         = append("+")
+  def ends              = append("$")
+  def anchors           = surround("^", "$")
+  def literal           = surround("\\Q", "\\E") // Not setFlag(LITERAL) lest further regex additions be misinterpreted
+  def characterClass    = surround("[", "]")
+  def capturingGroup    = surround("(", ")")
+  def nonCapturingGroup = surround("(?:", ")")
 
   def |(that: Regex): Regex = mapRegex(_ + "|" + that.pattern)
   def ~(that: Regex): Regex = mapRegex(_ + that.pattern)
 
-  def setFlag(flag: Int): Regex         = Regex(to_s, flags | flag)
-  def mapRegex(f: Unary[String]): Regex = Regex(f(to_s), flags)
+  def setFlag(flag: Int): Regex             = Regex(to_s, flags | flag)
+  def mapRegex(f: Unary[String]): Regex     = Regex(f(to_s), flags)
+  def surround(s: String, e: String): Regex = mapRegex(s + _ + e)
+  def append(e: String)                     = mapRegex(_ + e)
 
   def isMatch[A: Show](x: A): Boolean        = isMatch(x.to_s)
   def isMatch(input: CharSequence): Boolean  = matcher(input).matches
@@ -48,6 +51,7 @@ final class Regex(val pattern: Pattern) extends AnyVal {
 }
 
 object Regex extends (String => Regex) {
+  def alt(r1: Regex, r2: Regex): Regex = r1 | r2
   def whitespace = apply("""[\s]+""")
   def newlines   = apply("""[\n]+""")
   def ansiCodes  = apply("""\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]""")

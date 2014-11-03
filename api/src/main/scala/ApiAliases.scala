@@ -34,13 +34,12 @@ trait ApiAliases extends scala.Any {
 
   // policy-original type aliases which appear in api signatures or
   // which landed here to be near their buddy.
-  type ?=>[-A, +B]             = PartialFunction[A, B]
-  type Predicate[-A]           = A => Boolean
-  type Relation[-A]            = (A, A) => Boolean
-  type PairOf[+A]              = (A, A)
-  type Shower[-A]              = A => String
-  type Suspended[+A]           = (A => Unit) => Unit
-  type SuspendedTo[+A, CC[+X]] = (A => Unit) => CC[A]
+  type ?=>[-A, +B]   = PartialFunction[A, B]
+  type Predicate[-A] = A => Boolean
+  type Relation[-A]  = (A, A) => Boolean
+  type PairOf[+A]    = (A, A)
+  type Shower[-A]    = A => String
+  type Suspended[+A] = (A => Unit) => Unit
 }
 
 // Necessary to use those aliases within the api package.

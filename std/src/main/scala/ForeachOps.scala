@@ -62,7 +62,8 @@ trait ConversionOps[A] extends Any {
   def naturalMap[K, V](implicit ev: A <:< (K, V)): ExMap[K, V] = toPolicyMap[K, V](HashEq.natural(), ev)
   def naturalSet: ExSet[A]                                     = toPolicySet(HashEq.natural())
 
-  def seq: sciSeq[A] = toScalaSeq // new Each.ToScala(xs) // varargs
+  def trav: scTraversable[A] = toScalaTraversable
+  def seq: sciSeq[A]         = toScalaSeq // varargs
 }
 
 final class ForeachOps[A](val xs: Each[A]) extends AnyVal with ConversionOps[A] {

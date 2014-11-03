@@ -28,7 +28,7 @@ class OperationCounts extends ScalacheckBundle {
   def max                    = 100
   def minSuccessful: Precise = 1000.size
   def maxDisplay: Precise    = 20.size
-  def numComposite           = SizeRange(2, 4)
+  def numComposite           = 2 upTo 4
   def collections            = Direct[RecorderCounter => ViewClass](
     c => PolicyViewClass("p/linear", Probe.Linear(1 to max, c).view),
     c => ScalaViewClass("s/linear",  Probe.ScalaLinear(1 to max, c).view),
@@ -41,9 +41,8 @@ class OperationCounts extends ScalacheckBundle {
   def chooseSmall = choose(1, max / 20)
 
   private def vfn(f: ViewClass.Op): ViewClass.Op = f
-
-  private def divisibleBy(n: Int) = (_: Int) % n == 0
-  private def lessThan(n: Int)    = (_: Int) < n
+  private def divisibleBy(n: Int)                = (_: Int) % n == 0
+  private def lessThan(n: Int)                   = (_: Int) < n
 
   def viewMethod: Gen[ViewClass.Op] = oneOf(
     lowHalf       map (n => s"drop $n"   |: vfn(_ drop n)),
@@ -59,19 +58,16 @@ class OperationCounts extends ScalacheckBundle {
     chooseSmall   map (n => s"x=>(x, x)" |: vfn(_ flatMap (x => Direct(x, x)))),
     (lowHalf, chooseMax) map ((n1, n2) => s"slice($n1, $n2)" |: vfn(_ slice indexRange(n1, n2)))
   )
-
-  def viewMethods(size: SizeRange): Gen[Direct[ViewClass.Op]] = size.chooseInt flatMap (n => gen.directOfN(n, viewMethod))
-  def composite: Gen[CompositeOp]                             = viewMethods(numComposite) map (fs => new CompositeOp(fs))
-  def compositeProp: Prop                                     = forAll((_: CompositeOp).passed) minSuccessful minSuccessful
+  def composite: Gen[CompositeOp] = viewMethod * numComposite ^^ CompositeOp
+  def compositeProp: Prop         = forAll((_: CompositeOp).passed) minSuccessful minSuccessful
 
   implicit def arbComposite: Arbitrary[CompositeOp] = Arbitrary(composite)
 
-
-  class CompositeOp(ops: Direct[ViewClass.Op]) {
+  final case class CompositeOp(ops: Direct[ViewClass.Op]) {
     lazy val Each(usLinear, themLinear, usDirect, themDirect) = outcomes
 
     lazy val viewOp: ViewClass.Op               = xs => ops.foldl(xs)((res, f) => f(res))
-    lazy val outcomes: Direct[CollectionResult] = collections map (collectionFn => new CollectionResult(viewOp, collectionFn))
+    lazy val outcomes: Direct[CollectionResult] = collections map (f => new CollectionResult(viewOp, f))
     lazy val counts: String                     = "%s  %s".format(compare(usLinear.calls, themLinear.calls), compare(usDirect.calls, themDirect.calls))
     lazy val results: Direct[String]            = outcomes map (_.result)
 
@@ -94,12 +90,11 @@ class OperationCounts extends ScalacheckBundle {
 
     def compare(lhs: Int, rhs: Int): String = "%3s %-2s %-3s".format(lhs, if (lhs <= rhs) "<=" else ">", rhs)
 
-    def ops_s          = "%-63s" format (ops map ("%-15s" format _.try_s) mk_s " ")
-    def description    = if (passed) passString else failString
-    def passString     = show"| $ops_s  $counts  // ${results.head}"
-    def failString     = show"Inconsistent results for $ops_s:\n  ${outcomes mk_s "\n  "}" mapLines ("| " + _)
-    def distinctCounts = outcomes.map(_.calls).distinct.pvec
-    def isInteresting  = !passed || distinctCounts.size >= 3.size || isTestDebug
+    def ops_s             = "%-63s" format (ops map ("%-15s" format _.try_s) mk_s " ")
+    def description       = if (passed) passString else failString
+    def passString        = show"| $ops_s  $counts  // ${results.head}"
+    def failString        = show"Inconsistent results for $ops_s:\n  ${outcomes mk_s "\n  "}" mapLines ("| " + _)
+    def distinctCounts    = outcomes.map(_.calls).distinct.pvec
     override def toString = description
   }
 

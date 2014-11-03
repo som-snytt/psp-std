@@ -47,14 +47,29 @@ package object tests {
   }
 
   implicit class Gen2Ops[A, B](g: (Gen[A], Gen[B])) {
+    def filter(p: (A, B) => Boolean)   = Gen.zip(g._1, g._2) suchThat p.tupled
     def map[C](f: (A, B) => C): Gen[C] = Gen.zip(g._1, g._2) map f.tupled
+    def ^^[C](f: (A, B) => C): Gen[C]  = map(f)
   }
-
+  implicit class Gen3Ops[A, B, C](g: (Gen[A], Gen[B], Gen[C])) {
+    def filter(f: (A, B, C) => Boolean)   = Gen.zip(g._1, g._2, g._3) suchThat f.tupled
+    def map[D](f: (A, B, C) => D): Gen[D] = Gen.zip(g._1, g._2, g._3) map f.tupled
+    def ^^[D](f: (A, B, C) => D): Gen[D]  = map(f)
+  }
+  implicit class TestIntOps(val x: Int) extends AnyVal {
+    def upTo(max: Int): Gen[Int] = Gen.choose(x, max)
+  }
+  implicit class TestLongOps(val x: Long) extends AnyVal {
+    def upTo(max: Long): Gen[Long] = Gen.choose(x, max)
+  }
   implicit class GenOps[A](g: Gen[A]) {
-    def ^^[B](f: A => B): Gen[B]      = g map f
-    def >>[B](f: A => Gen[B]): Gen[B] = g flatMap f
-    def ^?[B](pf: A ?=> B): Gen[B]    = g collect pf
-    def *(n: Int): Gen[Direct[A]]     = gen.directOfN(n, g)
+    def ^^^[B](x: B): Gen[B]                 = Gen const x
+    def ^^[B](f: A => B): Gen[B]             = g map f
+    def >>[B](f: A => Gen[B]): Gen[B]        = g flatMap f
+    def ^?[B](pf: A ?=> B): Gen[B]           = g collect pf
+    def *(n: Int): Gen[Direct[A]]            = gen.directOfN(n, g)
+    def *(r: Gen[Int]): Gen[Direct[A]]       = r flatMap (g * _)
+    def zip[B, C](h: Gen[B])(f: (A, B) => C) = (g, h) map f
 
     def collect[B](pf: A ?=> B): Gen[B]                                    = g suchThat pf.isDefinedAt map pf.apply
     def collectN[B](n: Int)(pf: Each[A] ?=> B)(implicit z: Arb[A]): Gen[B] = gen.eachOfN(n, g) collect pf
@@ -71,7 +86,6 @@ package object tests {
 
   def expectType(expected: jClass, found: jClass): NamedProp        = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
   def expectTypes(expected: jClass, found: Each[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
-
   def expectType[A: CTag](result: A): NamedProp                     = expectType(classOf[A], result.getClass)
   def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], fromScala(results) map (_.getClass))
 

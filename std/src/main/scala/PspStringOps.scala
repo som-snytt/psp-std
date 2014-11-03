@@ -29,7 +29,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def remove(literal: String): String    = remove(Regex quote literal)
   def removeAll(literal: String): String = removeAll(Regex quote literal)
 
-  def replaceChar(pair: (Char, Char)): String = self.replace(pair._1, pair._2)
+  def replaceChar(pair: PairOf[Char]): String = self.replace(pair._1, pair._2)
   def replaceLiteral(sub: LiteralReplacement): String =
     (Regex quote sub.from) matcher self replaceAll (Matcher quoteReplacement sub.to)
 
