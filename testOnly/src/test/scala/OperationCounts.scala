@@ -35,28 +35,31 @@ class OperationCounts extends ScalacheckBundle {
     c => PolicyViewClass("p/direct", Probe.Direct(1 to max, c).view),
     c => ScalaViewClass("s/direct",  Probe.ScalaDirect(1 to max, c).view)
   )
-  def chooseMax   = choose(0, max)
-  def lowHalf     = choose(0, max / 2)
-  def highHalf    = choose(max / 2, max)
-  def chooseSmall = choose(1, max / 20)
+  def chooseMax   = 0 upTo max
+  def lowHalf     = 0 upTo max / 2
+  def highHalf    = max / 2 upTo max
+  def chooseSmall = 1 upTo max / 20
+  def chooseRange = gen.indexRangeFrom(max / 2, max)
 
-  private def vfn(f: ViewClass.Op): ViewClass.Op = f
-  private def divisibleBy(n: Int)                = (_: Int) % n == 0
-  private def lessThan(n: Int)                   = (_: Int) < n
+  private def lop[A](f: A => (String, ViewClass.Op)): A => ViewClass.Op = n => f(n) |> { case (label, f) => label |: f }
+
+  private def divides(n: Int)  = (_: Int) % n == 0
+  private def less(n: Int)     = (_: Int) < n
+  private def multiply(n: Int) = (_: Int) * n
 
   def viewMethod: Gen[ViewClass.Op] = oneOf(
-    lowHalf       map (n => s"drop $n"   |: vfn(_ drop n)),
-    highHalf      map (n => s"take $n"   |: vfn(_ take n)),
-    chooseMax     map (n => s"dropR $n"  |: vfn(_ dropRight n)),
-    chooseMax     map (n => s"takeR $n"  |: vfn(_ takeRight n)),
-    lowHalf       map (n => s"dropW <$n" |: vfn(_ dropWhile lessThan(n))),
-    lowHalf       map (n => s"takeW <$n" |: vfn(_ takeWhile lessThan(n))),
-    chooseSmall   map (n => s"*$n"       |: vfn(_ map (_ * n))),
-    chooseSmall   map (n => s"/$n"       |: vfn(_ withFilter divisibleBy(n))),
-    chooseSmall   map (n => s"!/$n"      |: vfn(_ filterNot divisibleBy(n))),
-    chooseSmall   map (n => s"%/$n"      |: vfn(_ collect newPartial(divisibleBy(n), _ / n))),
-    chooseSmall   map (n => s"x=>(x, x)" |: vfn(_ flatMap (x => Direct(x, x)))),
-    (lowHalf, chooseMax) map ((n1, n2) => s"slice($n1, $n2)" |: vfn(_ slice indexRange(n1, n2)))
+    lowHalf     ^^ lop(n => s"drop$n"    -> (_ drop n)),
+    highHalf    ^^ lop(n => s"take $n"   -> (_ take n)),
+    chooseMax   ^^ lop(n => s"dropR $n"  -> (_ dropRight n)),
+    chooseMax   ^^ lop(n => s"takeR $n"  -> (_ takeRight n)),
+    lowHalf     ^^ lop(n => s"dropW <$n" -> (_ dropWhile less(n))),
+    lowHalf     ^^ lop(n => s"takeW <$n" -> (_ takeWhile less(n))),
+    chooseSmall ^^ lop(n => s"*$n"       -> (_ map multiply(n))),
+    chooseSmall ^^ lop(n => s"/$n"       -> (_ withFilter divides(n))),
+    chooseSmall ^^ lop(n => s"!/$n"      -> (_ filterNot divides(n))),
+    chooseSmall ^^ lop(n => s"%/$n"      -> (_ collect newPartial(divides(n), _ / n))),
+    chooseSmall ^^ lop(n => s"x=>(x, x)" -> (_ flatMap (x => (x, x).seq))),
+    chooseRange ^^ lop(r => s"slice $r"  -> (_ slice r))
   )
   def composite: Gen[CompositeOp] = viewMethod * numComposite ^^ CompositeOp
   def compositeProp: Prop         = forAll((_: CompositeOp).passed) minSuccessful minSuccessful

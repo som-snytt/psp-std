@@ -38,16 +38,18 @@ package object gen {
   def pick[A](n: Int, xs: A*): Gen[Direct[A]]         = pick[A](n, xs.m.pvec)
   def pick[A](n: Int, xs: Direct[A]): Gen[Direct[A]]  = Gen.pick(n, xs.seq) map (_.m.pvec)
 
-  def index: Gen[Index]         = frequency(10 -> zeroPlusIndex, 1 -> NoIndex)
-  def int: Gen[Int]             = MinInt upTo MaxInt
-  def long: Gen[Long]           = MinLong upTo MaxLong
-  def posInt: Gen[Int]          = 1 upTo MaxInt
-  def posLong: Gen[Long]        = 1L upTo MaxLong
-  def uint: Gen[UInt]           = int ^^ UInt
-  def zeroPlusIndex: Gen[Index] = zeroPlusLong map Index
-  def zeroPlusInt: Gen[Int]     = 0 upTo MaxInt
-  def zeroPlusLong: Gen[Long]   = 0L upTo MaxLong
+  def indexTo(max: Int): Gen[Index] = (0 upTo max) ^^ (n => Index(n))
+  def index: Gen[Index]             = frequency(10 -> zeroPlusIndex, 1 -> NoIndex)
+  def int: Gen[Int]                 = MinInt upTo MaxInt
+  def long: Gen[Long]               = MinLong upTo MaxLong
+  def posInt: Gen[Int]              = 1 upTo MaxInt
+  def posLong: Gen[Long]            = 1L upTo MaxLong
+  def uint: Gen[UInt]               = int ^^ UInt
+  def zeroPlusIndex: Gen[Index]     = zeroPlusLong map Index
+  def zeroPlusInt: Gen[Int]         = 0 upTo MaxInt
+  def zeroPlusLong: Gen[Long]       = 0L upTo MaxLong
 
-  def letterFrom(s: String): Gen[Char]     = oneOf(s.seq)
-  def indexFrom(r: IndexRange): Gen[Index] = Gen.choose(r.start, r.endInclusive)
+  def letterFrom(s: String): Gen[Char]                      = oneOf(s.seq)
+  def indexFrom(r: IndexRange): Gen[Index]                  = Gen.choose(r.start, r.endInclusive)
+  def indexRangeFrom(sMax: Int, eMax: Int): Gen[IndexRange] = (0 upTo sMax, 0 upTo eMax) ^^ indexRange
 }
