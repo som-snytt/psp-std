@@ -24,7 +24,10 @@ abstract class TestRunnerCommon {
     new OperationCounts
   )
 
-  def wrapRun(b: Bundle): Boolean = Try(b.run) fold (t => andFalse(println(s"Caught $t running $b")), identity)
+  def wrapRun(b: Bundle): Boolean = Try(b.run) fold (
+    t => andFalse(println(s"Caught $t running $b"), t.printStackTrace),
+    identity
+  )
 
   def main(args: Array[String]): Unit = {
     bundles filter shouldRun mapOntoByEquals wrapRun filterValues (x => !x) match {

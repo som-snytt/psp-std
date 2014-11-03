@@ -46,7 +46,7 @@ object IndexRange {
   def undefined: IndexRange                       = new LongRange(-1L)
   def full: IndexRange                            = apply(0, MaxInt)
   def apply(range: ExclusiveIntRange): IndexRange = apply(range.start.zeroPlus, range.end.zeroPlus)
-  def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else new LongRange(start join64 end)
+  def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else if (end <= start) empty else new LongRange(start join64 end)
   def impl(x: IndexRange): LongRange              = new LongRange(x.start.safeInt join64 x.end.safeInt)
 }
 

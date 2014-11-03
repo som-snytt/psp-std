@@ -5,7 +5,7 @@ package lowlevel
 import api._
 
 final class CircularBuffer[A](capacity: Precise) extends Direct.DirectImpl[A] with AndThis {
-  assert(!capacity.isZero, capacity)
+  assert(!capacity.isZero, "CircularBuffer capacity cannot be 0")
 
   private[this] def cap                 = capacity.intSize
   private[this] val buffer              = newArray[Any](capacity)

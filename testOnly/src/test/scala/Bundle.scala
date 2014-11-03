@@ -21,7 +21,7 @@ trait Bundle extends ForceShowDirect {
   }
   def assert(body: => Boolean): Unit = {
     count += 1
-    if (Try(body).toOption exists (x => x)) passed += 1
+    Try(body).fold(_ => (), res => if (res) passed += 1)
   }
 
   def finish(msg: String): Boolean = {
@@ -42,8 +42,17 @@ trait Bundle extends ForceShowDirect {
  */
 final class NamedProp(val label: String, p: Prop) {
   def prop = p :| label
+  def check: Test.Result = p match {
+    case NamedProp.MapParams(prop, f) => Test.check(prop)(f)
+    case _                            => Test.check(p)(identity)
+  }
 }
 object NamedProp {
+  final case class MapParams(underlying: Prop, f: Unary[TestParams]) extends Prop {
+    def apply(prms: GenParams)                 = underlying(prms)
+    override def check(prms: TestParams): Unit = super.check(f(prms))
+  }
+
   def apply(label: String, p: Prop): NamedProp                 = new NamedProp(label, p)
   implicit def liftSeqPair(x: (String, Each[Prop])): NamedProp = NamedProp(x._1, x._2 reducel (_ && _))
   implicit def liftPair(x: (String, Prop)): NamedProp          = NamedProp(x._1, x._2)
@@ -57,7 +66,7 @@ trait ScalacheckBundle extends Bundle {
   def start = "+ " + BOLD + CYAN + bundle + RESET
 
   def pp(r: Result) = Pretty.pretty(r, Pretty.Params(0))
-  def runOne(p: NamedProp): Boolean = Test.check(p.prop)(identity) match {
+  def runOne(p: NamedProp): Boolean = p.check match {
     case x if x.passed => andTrue(println("+ %s  %s".format(pass, p.label)))
     case r             => andFalse(println("- %s  %s\nFalsified after %s passed tests\n%s".format(p.label, fail, r.succeeded, pp(r))))
   }

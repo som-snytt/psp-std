@@ -6,13 +6,17 @@ import lowlevel.ExclusiveIntRange
 import scala.{ collection => sc }
 import sc.{ mutable => scm, immutable => sci }
 
+object ViewClass {
+  type Op    = Unary[ViewClass]
+  type Trans = Unary[Op]
+}
+
 /** Methods for comparing against scala views.
  */
-trait TestedViewMethods extends ForceShowDirect {
-  type This <: TestedViewMethods
+trait ViewClass extends ForceShowDirect {
+  type This <: ViewClass
 
   def name: String
-
   def collect(pf: Int ?=> Int): This
   def drop(n: Precise): This
   def dropRight(n: Precise): This
@@ -30,8 +34,8 @@ trait TestedViewMethods extends ForceShowDirect {
   def withFilter(p: Predicate[Int]): This
 }
 
-final case class TestScalaView(name: String, xs: scIterable[Int]) extends TestedViewMethods {
-  type This = TestScalaView
+final case class ScalaViewClass(name: String, xs: scIterable[Int]) extends ViewClass {
+  type This = ScalaViewClass
   private implicit def liftResult(xs: scIterable[Int]): This = copy(xs = xs)
 
   def collect(pf: Int ?=> Int)      = xs collect pf
@@ -52,21 +56,21 @@ final case class TestScalaView(name: String, xs: scIterable[Int]) extends Tested
   def to_s: String                  = xs mkString ("[ ", ", ", " ]")
 }
 
-final case class TestPolicyView(name: String, xs: View[Int]) extends TestedViewMethods {
-  type This = TestPolicyView
+final case class PolicyViewClass(name: String, xs: View[Int]) extends ViewClass {
+  type This = PolicyViewClass
   private implicit def liftResult(xs: View[Int]): This = copy(xs = xs)
 
   def collect(pf: Int ?=> Int)      = xs collect pf
   def drop(n: Precise)              = xs drop n
   def dropRight(n: Precise)         = xs dropRight n
   def dropWhile(p: Predicate[Int])  = xs dropWhile p
-  def filter(p: Predicate[Int])     = xs filter p
-  def filterNot(p: Predicate[Int])  = xs filterNot p
+  def filter(p: Predicate[Int])     = this withFilter p
+  def filterNot(p: Predicate[Int])  = this withFilter !p
   def flatMap(f: Int => Each[Int])  = xs flatMap f
   def foreach(f: Int => Unit)       = xs foreach f
   def map(f: Int => Int)            = xs map f
   // def reverse                       = xs.reverse
-  def slice(range: IndexRange)      = xs slice range
+  def slice(range: IndexRange)      = xs drop range.toDrop take range.toTake
   def take(n: Precise)              = xs take n
   def takeRight(n: Precise)         = xs takeRight n
   def takeWhile(p: Predicate[Int])  = xs takeWhile p

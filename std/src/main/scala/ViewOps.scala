@@ -140,9 +140,8 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def zlast(implicit z: Empty[A]): A                  = if (isEmpty) z.empty else last
   def zreduce(f: BinOp[A])(implicit z: Empty[A]): A   = if (isEmpty) z.empty else reducel(f)
 
-
-  def zinit: View[A]                    = if (isEmpty) emptyValue else init
-  def ztail: View[A]                    = if (isEmpty) emptyValue else tail
+  def zinit: View[A]                    = if (isEmpty) emptyValue[View[A]] else init
+  def ztail: View[A]                    = if (isEmpty) emptyValue[View[A]] else tail
   def prepend(x: A): View[A]            = exView(x) ++ xs
   def append(x: A): View[A]             = xs ++ exView(x)
   def intersperse(ys: View[A]): View[A] = xs zip ys flatMap ((x, y) => Direct(x, y))

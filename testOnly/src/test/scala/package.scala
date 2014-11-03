@@ -8,6 +8,8 @@ import StdShow._
 package object tests {
   lazy val isTestDebug = sys.props contains "psp.test.debug"
 
+  implicit def assertions: Assertions = ImmediateTraceAssertions
+
   type Arb[A]             = Arbitrary[A]
   val Arb                 = Arbitrary
   type Forall1[-A]        = Predicate[A]
@@ -19,6 +21,8 @@ package object tests {
   type Result             = org.scalacheck.Test.Result
   type Failed             = org.scalacheck.Test.Failed
   type Buildable[A, C[X]] = org.scalacheck.util.Buildable[A, C]
+  type GenParams          = Gen.Parameters
+  type TestParams         = Test.Parameters
 
   def arb[A](implicit z: Arb[A]): Arb[A] = z
 
@@ -40,6 +44,10 @@ package object tests {
   implicit def arbitraryPint: Arb[Pint]                         = Arb(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
   implicit class LiftConverter[A](gen: Gen[A]) {
     def to[B](implicit f: A => B): Gen[B] = gen map f
+  }
+
+  implicit class Gen2Ops[A, B](g: (Gen[A], Gen[B])) {
+    def map[C](f: (A, B) => C): Gen[C] = Gen.zip(g._1, g._2) map f.tupled
   }
 
   implicit class GenOps[A](g: Gen[A]) {
@@ -66,7 +74,9 @@ package object tests {
     new Buildable[A, CC] { def builder: scmBuilder[A, CC[A]] = z.scalaBuilder }
 
   implicit class PropOps(p: Prop) {
-    def unary_! : Prop = p map (r => !r)
+    def mapParams(f: Unary[TestParams]): Prop = new NamedProp.MapParams(p, f)
+    def minSuccessful(size: Precise): Prop    = mapParams(_ withMinSuccessfulTests size.safeInt)
+    def unary_! : Prop                        = p map (r => !r)
   }
   implicit class PropResultOps(r: Prop.Result) {
     def unary_! : Prop.Result = r.copy(status = !r.status)

@@ -8,6 +8,32 @@ import psp.std.api._
 import psp.std.lowlevel._
 import psp.std.StdShow._
 
+package std {
+  trait Assertions {
+    def failed(msg: => String): Unit
+    def assert(assertion: Boolean, msg: => String): Unit = if (!assertion) failed(msg)
+  }
+  object Assertions {
+    private[this] var instance: Assertions = DefaultAssertions
+    def using[A](x: Assertions)(assertion: => Boolean, msg: => String): Unit = {
+      val saved = instance
+      instance = x
+      try instance.assert(assertion, msg) finally instance = saved
+    }
+    implicit object DefaultAssertions extends Assertions {
+      def failed(msg: => String): Unit = assertionError(msg)
+    }
+  }
+
+  object ImmediateTraceAssertions extends Assertions {
+    def failed(msg: => String): Unit = {
+      val t = new AssertionError(msg)
+      t.printStackTrace
+      throw t
+    }
+  }
+}
+
 package object std extends psp.std.StdPackage {
   type pList[A]    = PolicyList[A]
   type exSeq[+A]   = Each[A]
@@ -84,19 +110,19 @@ package object std extends psp.std.StdPackage {
   final val NoNth                = Nth.undefined
 
   // Methods similar to the more useful ones in scala's Predef.
-  def ??? : Nothing                                                      = throw new scala.NotImplementedError
-  def assert(assertion: Boolean): Unit                                   = if (!assertion) assertionError("assertion failed")
-  def assert(assertion: Boolean, msg: => Any): Unit                      = if (!assertion) assertionError(s"assertion failed: $msg")
-  def asserting[A](x: A)(assertion: => Boolean, msg: => String): A       = x sideEffect assert(assertion, msg)
-  def echoErr[A: TryShow](x: A): Unit                                    = Console echoErr pp"$x"
-  def identity[A](x: A): A                                               = x
-  def implicitly[A](implicit x: A): A                                    = x
-  def printResult[A: TryShow](msg: String)(result: A): A                 = result doto (r => println(pp"$msg: $r"))
-  def printResultIf[A: TryShow : Eq](show: A, msg: String)(result: A): A = result doto (r => if (r === show) println(pp"$msg: $r"))
-  def println[A: TryShow](x: A): Unit                                    = Console echoOut pp"$x"
-  def require(requirement: Boolean): Unit                                = if (!requirement) illegalArgumentException("requirement failed")
-  def require(requirement: Boolean, msg: => Any): Unit                   = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
-  def showResult[A: TryShow](msg: String)(result: A): A                  = result doto (r => println(pp"$msg: $r"))
+  def ??? : Nothing                                                                        = throw new scala.NotImplementedError
+  def assert(assertion: => Boolean)(implicit z: Assertions): Unit                          = Assertions.using(z)(assertion, "assertion failed")
+  def assert(assertion: => Boolean, msg: => Any)(implicit z: Assertions): Unit             = Assertions.using(z)(assertion, s"assertion failed: $msg")
+  def asserting[A](x: A)(assertion: => Boolean, msg: => String)(implicit z: Assertions): A = x sideEffect assert(assertion, msg)
+  def echoErr[A: TryShow](x: A): Unit                                                      = Console echoErr pp"$x"
+  def identity[A](x: A): A                                                                 = x
+  def implicitly[A](implicit x: A): A                                                      = x
+  def printResult[A: TryShow](msg: String)(result: A): A                                   = result doto (r => println(pp"$msg: $r"))
+  def printResultIf[A: TryShow : Eq](show: A, msg: String)(result: A): A                   = result doto (r => if (r === show) println(pp"$msg: $r"))
+  def println[A: TryShow](x: A): Unit                                                      = Console echoOut pp"$x"
+  def require(requirement: Boolean): Unit                                                  = if (!requirement) illegalArgumentException("requirement failed")
+  def require(requirement: Boolean, msg: => Any): Unit                                     = if (!requirement) illegalArgumentException(s"requirement failed: $msg")
+  def showResult[A: TryShow](msg: String)(result: A): A                                    = result doto (r => println(pp"$msg: $r"))
 
   // Operations involving classes, classpaths, and classloaders.
   def classLoaderOf[A: CTag](): ClassLoader = classOf[A].getClassLoader
@@ -136,8 +162,8 @@ package object std extends psp.std.StdPackage {
   def asExpected[A](body: Any): A          = body.castTo[A]
 
   def ?[A](implicit value: A): A                        = value
-  def andFalse(x: Unit): Boolean                        = false
-  def andTrue(x: Unit): Boolean                         = true
+  def andFalse(x: Unit, xs: Unit*): Boolean             = false
+  def andTrue(x: Unit, xs: Unit*): Boolean              = true
   def direct[A](xs: A*): Direct[A]                      = new Direct.FromScala(xs.toVector)
   def each[A](xs: sCollection[A]): Each[A]              = fromScala(xs)
   def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)

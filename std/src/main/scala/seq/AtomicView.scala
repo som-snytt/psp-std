@@ -3,7 +3,7 @@ package std
 
 import Size._, api._
 import lowlevel.CircularBuffer
-import psp.std.StdShow._
+import StdShow._, StdZero._
 
 sealed abstract class AtomicView[A, Repr] extends View.Atomic[A] with BaseView[A, Repr] with ops.InvariantViewOps[A] {
   type This <: AtomicView[A, Repr]
@@ -22,15 +22,19 @@ final case class SplitView[+A, Repr](left: BaseView[A, Repr], right: BaseView[A,
 
 object FlattenSlice {
   def unapply[A, Repr](xs: BaseView[A, Repr]): Option[(BaseView[A, Repr], IndexRange)] = xs match {
-    case xs: DirectView[_, _] => Some(xs -> xs.indices)
-    case LabeledView(xs, _)   => unapply(xs)
-    case Mapped(xs, f)        => unapply(xs) map { case (xs, range) => (xs map f, range) }
-    case DroppedR(xs, n)      => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
-    case TakenR(xs, n)        => unapply(xs) map { case (xs, range) => (xs, range takeRight n) }
-    case Dropped(xs, n)       => unapply(xs) map { case (xs, range) => (xs, range drop n) }
-    case Taken(xs, n)         => unapply(xs) map { case (xs, range) => (xs, range take n) }
-    case HasSize(n: Precise)  => Some(xs -> n.indices)
-    case _                    => None
+    case xs: DirectView[_, _]     => Some(xs -> xs.indices)
+    case LabeledView(xs, _)       => unapply(xs)
+    case Mapped(xs, f)            => unapply(xs) map { case (xs, range) => (xs map f, range) }
+    case Dropped(xs, Precise(0))  => unapply(xs)
+    case DroppedR(xs, Precise(0)) => unapply(xs)
+    case Taken(xs, Precise(0))    => Some(emptyValue)
+    case TakenR(xs, Precise(0))   => Some(emptyValue)
+    case DroppedR(xs, n)          => unapply(xs) map { case (xs, range) => (xs, range dropRight n) }
+    case TakenR(xs, n)            => unapply(xs) map { case (xs, range) => (xs, range takeRight n) }
+    case Dropped(xs, n)           => unapply(xs) map { case (xs, range) => (xs, range drop n) }
+    case Taken(xs, n)             => unapply(xs) map { case (xs, range) => (xs, range take n) }
+    case HasSize(n: Precise)      => Some(xs -> n.indices)
+    case _                        => None
   }
 }
 
@@ -173,11 +177,16 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
     dropped
   }
 
-  private def foreachTakeRight[A](xs: Each[A], f: A => Unit, n: Precise): Unit =
-    (CircularBuffer[A](n) ++= xs) foreach f
-
-  private def foreachDropRight[A](xs: Each[A], f: A => Unit, n: Precise): Unit =
-    xs.foldl(CircularBuffer[A](n))((buf, x) => if (buf.isFull) try buf finally f(buf push x) else buf += x)
+  private def foreachTakeRight[A](xs: Each[A], f: A => Unit, n: Precise): Unit = (
+    if (n.isPositive)
+      (CircularBuffer[A](n) ++= xs) foreach f
+  )
+  private def foreachDropRight[A](xs: Each[A], f: A => Unit, n: Precise): Unit = (
+    if (n.isZero)
+      xs foreach f
+    else
+      xs.foldl(CircularBuffer[A](n))((buf, x) => if (buf.isFull) try buf finally f(buf push x) else buf += x)
+  )
 
   private def foreachSlice[A](xs: View[A], range: IndexRange, f: A => Unit): Unit = xs match {
     case xs: AtomicView[_, _]                                       => xs.foreachSlice(range)(f)
