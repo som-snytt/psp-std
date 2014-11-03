@@ -35,8 +35,8 @@ final case class TestScalaView(name: String, xs: scIterable[Int]) extends Tested
   private implicit def liftResult(xs: scIterable[Int]): This = copy(xs = xs)
 
   def collect(pf: Int ?=> Int)      = xs collect pf
-  def drop(n: Precise)              = xs drop n.getInt
-  def dropRight(n: Precise)         = xs dropRight n.getInt
+  def drop(n: Precise)              = xs drop n.safeInt
+  def dropRight(n: Precise)         = xs dropRight n.safeInt
   def dropWhile(p: Predicate[Int])  = xs dropWhile p
   def filter(p: Predicate[Int])     = xs filter p
   def filterNot(p: Predicate[Int])  = xs filterNot p
@@ -45,8 +45,8 @@ final case class TestScalaView(name: String, xs: scIterable[Int]) extends Tested
   def map(f: Int => Int)            = xs map f
   // def reverse                       = xs.reverse
   def slice(range: IndexRange)      = xs slice (range.startInt, range.endInt)
-  def take(n: Precise)              = xs take n.getInt
-  def takeRight(n: Precise)         = xs takeRight n.getInt
+  def take(n: Precise)              = xs take n.safeInt
+  def takeRight(n: Precise)         = xs takeRight n.safeInt
   def takeWhile(p: Predicate[Int])  = xs takeWhile p
   def withFilter(p: Predicate[Int]) = xs filter p
   def to_s: String                  = xs mkString ("[ ", ", ", " ]")

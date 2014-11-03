@@ -45,7 +45,7 @@ final class ExclusiveIntRange private (val bits: Long) extends AnyVal with Direc
   def >> (n: Int): ExclusiveIntRange = create(start + n, end + n)
   def << (n: Int): ExclusiveIntRange = create(start - n, end - n)
 
-  def elemAt(i: Index): Int = start + i.safeToInt
+  def elemAt(i: Index): Int = start + i.safeInt
   def contains(x: Int): Boolean = if (isAscending) start <= x && x < end else start >= x && x > end
 
   @inline def foreach(f: Int => Unit): Unit = foreachInt(start, end, step, f)

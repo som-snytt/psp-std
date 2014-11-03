@@ -8,8 +8,8 @@ final class ArraySpecificOps[A](val xs: Array[A]) extends AnyVal with HasPrecise
   def size: IntSize = Precise(xs.length)
   private def andThis(op: Unit): xs.type = xs
 
-  def apply(idx: Index): A                   = xs(idx.safeToInt)
-  def updated(idx: Index, value: A): xs.type = andThis(xs(idx.safeToInt) = value)
+  def apply(idx: Index): A                   = xs(idx.safeInt)
+  def updated(idx: Index, value: A): xs.type = andThis(xs(idx.safeInt) = value)
   def mapInPlace(f: A => A): xs.type         = andThis(foreachIndex(i => updated(i, f(apply(i)))))
   def sortInPlace: Array[A]                  = Array sortInPlace xs
 }

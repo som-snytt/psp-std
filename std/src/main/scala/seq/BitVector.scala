@@ -4,7 +4,7 @@ package std
 import api._
 
 final class BitVector(longs: Array[Long], val size: Precise) extends Direct.DirectImpl[Boolean] {
-  private def nubSize  = (size % 64).getInt
+  private def nubSize  = (size % 64).safeInt
   private def lastSize = if (isEmpty) 0 else if (nubSize > 0) nubSize else 64
 
   def apply64(index: Index): Bit64      = new Bit64(longs(index))
@@ -41,6 +41,6 @@ final class Bit1(val index: Int) extends AnyVal {
 }
 
 object Bit1 {
-  def apply(index: Index): Bit1 = asserting(new Bit1(index.safeToInt))(64.size containsIndex index, s"Out of range: $index")
+  def apply(index: Index): Bit1 = asserting(new Bit1(index.safeInt))(64.size containsIndex index, s"Out of range: $index")
   def apply(index: Int): Bit1   = apply(Index(index))
 }

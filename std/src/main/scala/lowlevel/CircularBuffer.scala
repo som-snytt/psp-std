@@ -10,7 +10,7 @@ final class CircularBuffer[A](capacity: Precise) extends Direct.DirectImpl[A] wi
   private[this] def cap                 = capacity.intSize
   private[this] val buffer              = newArray[Any](capacity)
   private[this] var seen                = 0L
-  private[this] def writePointer: Int   = (seen % cap).safeToInt
+  private[this] def writePointer: Int   = (seen % cap).safeInt
   private[this] def readPointer         = if (isFull) writePointer else 0
   private[this] def setHead(x: A): Unit = buffer(writePointer) = x sideEffect (seen += 1)
 
@@ -18,7 +18,7 @@ final class CircularBuffer[A](capacity: Precise) extends Direct.DirectImpl[A] wi
 
   def head: A                        = elemAt(0.index)
   def isFull                         = seen >= cap
-  def elemAt(index: Index): A        = buffer((readPointer + index.safeToInt) % cap).castTo[A]
+  def elemAt(index: Index): A        = buffer((readPointer + index.safeInt) % cap).castTo[A]
   def size: Precise                  = capacity min Size(seen)
   def ++=(xs: Each[A]): this.type = andThis(xs foreach setHead)
   def += (x: A): this.type           = andThis(this setHead x)

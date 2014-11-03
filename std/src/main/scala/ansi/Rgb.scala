@@ -13,7 +13,7 @@ object ColorName {
   def empty = ColorName("<none>")
 
   implicit def ReadColorNames: Read[Direct[ColorName]] = Read[Direct[ColorName]](s => colorMap namesOf s.readAs[RGB])
-  implicit def ShowColorName: Show[ColorName]           = Show[ColorName](x => (colorMap get x).fold(x.name)(idx => Ansi(38, 5, idx.safeToInt)(x.name)))
+  implicit def ShowColorName: Show[ColorName]           = Show[ColorName](x => (colorMap get x).fold(x.name)(idx => Ansi(38, 5, idx.safeInt)(x.name)))
 }
 
 final class RGB private (val bits: Int) extends AnyVal {
@@ -41,7 +41,7 @@ object RgbMap {
       def dist(key: ColorName) = lookup(key) distanceTo rgb
       val k = "%3s %s".format(idx, rgb.hex_s.to_s)
       val v = keys.toScalaVector sortBy dist take 5 map { k =>
-        val s = Ansi(38, 5, idx.safeToInt)(k.name)
+        val s = Ansi(38, 5, idx.safeInt)(k.name)
         "%8s  %s%s".format("%.3f" format dist(k), s, " " * (20 - k.name.length))
       }
       k -> (v mkString "  ")

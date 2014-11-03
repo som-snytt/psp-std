@@ -3,7 +3,6 @@ package tests
 
 import org.scalacheck._, Gen._
 import psp.std._, api._
-import StdShow._
 
 final case class SizeRange(min: Precise, max: Precise) {
   def chooseInt = choose(min.safeInt, max.safeInt)
@@ -36,7 +35,6 @@ package gen {
   object regex extends RegexGenerator(alphaLowerChar)
   object text extends TextGenerator(alphaNumChar, SizeRange(1, 8), SizeRange(3, 7))
 }
-
 
 package object gen {
   def eachOfN[A: Arb](n: Int, g: Gen[A]): Gen[Each[A]]     = containerOfN[Each, A](n, g)(?, _.toScalaTraversable)

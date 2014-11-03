@@ -22,7 +22,7 @@ final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.D
   @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(Index(i)))
 
   def elemAt(index: Index): Index = index + intRange.start
-  def contains(i: Index): Boolean = intRange contains i.safeToInt
+  def contains(i: Index): Boolean = intRange contains i.safeInt
 
   def >> (n: Int): IndexRange              = IndexRange(intRange >> n)
   def << (n: Int): IndexRange              = IndexRange(intRange << n)
@@ -47,7 +47,7 @@ object IndexRange {
   def full: IndexRange                            = apply(0, MaxInt)
   def apply(range: ExclusiveIntRange): IndexRange = apply(range.start.zeroPlus, range.end.zeroPlus)
   def apply(start: Int, end: Int): IndexRange     = if (start < 0 || end < 0) undefined else new LongRange(start join64 end)
-  def impl(x: IndexRange): LongRange              = new LongRange(x.start.safeToInt join64 x.end.safeToInt)
+  def impl(x: IndexRange): LongRange              = new LongRange(x.start.safeInt join64 x.end.safeInt)
 }
 
 /*** Wip.

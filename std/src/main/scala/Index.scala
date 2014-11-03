@@ -25,14 +25,14 @@ final class IndexImpl private[std] (val indexValue: Long) extends AnyVal with In
   def -(n: Long): Index             = if (isUndefined) this else Index(indexValue - n)
   def prev: Index                   = this - 1
   def next: Index                   = this + 1
-  def until(end: Index): IndexRange = indexRange(safeToInt, end.safeToInt)
+  def until(end: Index): IndexRange = indexRange(safeInt, end.safeInt)
   def sizeExcluding: Precise        = newSize(indexValue)
   def sizeIncluding: Precise        = newSize(indexValue + 1)
   def toBit1: Bit1                  = Bit1(this)
   def toIndex: Index                = this
   def toNth: Nth                    = Nth(indexValue + 1)
-  def toOffset: Offset              = if (isUndefined) abort("undefined") else Offset(safeToInt)
-  def safeToInt: Int                = indexValue.safeToInt
+  def toOffset: Offset              = if (isUndefined) abort("undefined") else Offset(safeInt)
+  def safeInt: Int                  = indexValue.safeInt
   def isUndefined                   = indexValue < 0
   def isEmpty                       = isUndefined
   override def toString             = if (isUndefined) "undefined" else s"$indexValue"
@@ -45,7 +45,7 @@ final class Nth private[std] (val nthValue: Long) extends AnyVal {
   def toIndex: Index    = Index(nthValue - 1)
   def toNth: Nth        = this
   def toOffset: Offset  = toIndex.toOffset
-  def safeToInt: Int    = nthValue.safeToInt
+  def safeInt: Int      = nthValue.safeInt
   def isUndefined       = nthValue <= 0
   override def toString = if (isUndefined) "undefined" else s"#$nthValue"
 }

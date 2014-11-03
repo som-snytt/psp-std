@@ -40,7 +40,7 @@ object Indexed {
       while (index.sizeIncluding > seen && hasNext) {
         next()
       }
-      memo(index.safeToInt)
+      memo(index.safeInt)
     }
     def isDefinedAt(i: Index): Boolean = {
       !i.isUndefined && (

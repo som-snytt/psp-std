@@ -131,7 +131,7 @@ final class LongOps(val self: Long) extends AnyVal {
   /** Safe in the senses that it won't silently truncate values, and
    *  will translate MaxLong to MaxInt instead of -1.
    */
-  def safeToInt: Int = self match {
+  def safeInt: Int = self match {
     case MaxLong => MaxInt
     case MinLong => MinInt
     case _       =>

@@ -23,15 +23,15 @@ object Direct {
   def stringBuilder(): Builds[Char, String]      = arrayBuilder[Char] map (cs => new String(cs))
   def arrayBuilder[A: CTag]: Builds[A, Array[A]] = Builds[A, Array[A]](xs =>
     xs.size match {
-      case size: Precise => newArray[A](size) doto (arr => xs foreachWithIndex ((x, i) => arr(i.safeToInt) = x))
+      case size: Precise => newArray[A](size) doto (arr => xs foreachWithIndex ((x, i) => arr(i.safeInt) = x))
       case _             => scala.Array.newBuilder[A] doto (b => xs foreach b.+=) result
     }
   )
   final class FromJava[A](xs: jList[A]) extends Leaf[A](xs.size) {
-    def elemAt(i: Index): A = xs get i.safeToInt
+    def elemAt(i: Index): A = xs get i.safeInt
   }
   final case class FromScala[A](scalaCollection: sciIndexedSeq[A]) extends Leaf[A](scalaCollection.length) with psp.std.FromScala[sciIndexedSeq[A]] {
-    def elemAt(i: Index): A = scalaCollection(i.safeToInt)
+    def elemAt(i: Index): A = scalaCollection(i.safeInt)
   }
   final class ToScala[A](xs: Direct[A]) extends sciIndexedSeq[A] {
     def apply(idx: Int): A = xs elemAt Index(idx)
@@ -44,10 +44,10 @@ object Direct {
     def elemAt(i: Index): A = f(i)
   }
   private class WrapString(xs: String) extends Leaf[Char](xs.length) {
-    def elemAt(i: Index): Char = xs charAt i.safeToInt
+    def elemAt(i: Index): Char = xs charAt i.safeInt
   }
   final class WrapArray[A](xs: Array[_]) extends Leaf[A](xs.length) {
-    def elemAt(i: Index): A = xs(i.safeToInt).castTo[A]
+    def elemAt(i: Index): A = xs(i.safeInt).castTo[A]
   }
   final case class Joined[A](xs: Direct[A], ys: Direct[A]) extends DirectImpl[A] {
     def elemAt(i: Index): A = if (xs containsIndex i) xs elemAt i else ys elemAt (i - xs.intSize)
@@ -60,12 +60,12 @@ object Direct {
   class TransformIndices[A](xs: Direct[A], f: Index => Index) extends Leaf[A](xs.size) {
     def elemAt(i: Index): A = xs elemAt f(i)
   }
-  final case class Reversed[A](xs: Direct[A]) extends TransformIndices(xs, xs.lastIndex - _.safeToInt)
+  final case class Reversed[A](xs: Direct[A]) extends TransformIndices(xs, xs.lastIndex - _.safeInt)
 
   def apply[A](xs: A*): Direct[A] = xs match {
     case xs: scmWrappedArray[A] => fromArray(xs.array)
     case xs: sciIndexedSeq[A]   => new FromScala[A](xs)
-    case _                      => new Impl[A](xs.size, xs.seq.toVector |> (v => index => v(index.safeToInt)))
+    case _                      => new Impl[A](xs.size, xs.seq.toVector |> (v => index => v(index.safeInt)))
   }
   def empty[A] : Direct[A]                             = Empty
   def join[A](xs: Direct[A], ys: Direct[A]): Direct[A] = Joined(xs, ys)

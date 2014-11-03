@@ -11,7 +11,7 @@ final class JioSeqStringOps(val xs: scSeq[String]) extends AnyVal {
 
 final class JioJarEntryOps(val entry: JarEntry) extends AnyVal {
   def isClassFile: Boolean = entry.getName endsWith ".class"
-  def intSize: Int         = entry.getSize.safeToInt
+  def intSize: Int         = entry.getSize.safeInt
 }
 
 final class JioUriOps(val uri: jUri) extends AnyVal {

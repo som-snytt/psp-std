@@ -180,9 +180,7 @@ trait HasPreciseSizeMethods extends Any {
   def size: Precise
 
   def longSize: Long      = size.value
-  def getInt: Int         = intSize
-  def safeInt: Int        = intSize
-  def intSize: Int        = longSize.safeToInt
+  def intSize: Int        = longSize.safeInt
   def isZero: Boolean     = longSize == 0L
   def isPositive: Boolean = longSize > 0L
   def indices: IndexRange = indexRange(0, intSize)
@@ -201,6 +199,7 @@ final class HasPreciseSizeOps(val x: HasPreciseSize) extends HasPreciseSizeMetho
 
 final class PreciseOps(val size: Precise) extends AnyRef with HasPreciseSizeMethods {
   def get: Long        = longSize
+  def safeInt          = get.safeInt
   def toDouble: Double = get.toDouble
 
   def + (n: Int): Precise = newSize(longSize + n)

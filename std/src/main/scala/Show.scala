@@ -78,7 +78,7 @@ final class ShowInterpolator(val stringContext: StringContext) extends AnyVal {
   final def sm(args: Any*): String = {
     def isLineBreak(c: Char) = c == '\n' || c == '\f' // compatible with StringLike#isLineBreak
     def stripTrailingPart(s: String) = {
-      val index: Int   = (s indexWhere isLineBreak).safeToInt
+      val index: Int   = (s indexWhere isLineBreak).safeInt
       val pre: String  = s take index force
       val post: String = s drop index force;
       pre ~ post.stripMargin
