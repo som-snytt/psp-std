@@ -55,7 +55,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
 
   def bytes: Array[Byte]             = self.getBytes
   def chars: Array[Char]             = self.toCharArray
-  def wordSet: ExSet[String]         = words.naturalSet
+  def wordSet: ExSet[String]         = words.byEquals.toSet
   def lineVector: Direct[String]     = splitChar('\n')
   def dollarSegments: Direct[String] = splitChar('$')
   def dottedSegments: Direct[String] = splitChar('.')

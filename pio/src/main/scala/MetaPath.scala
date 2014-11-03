@@ -27,7 +27,7 @@ final case class SinglePaths(singles: Direct[SinglePath]) extends Direct[SingleP
 
   val pathToPackage: ExMap[Path, View[String]] = paths mapOnto (_.deepPackageNames)
   // val packageToPath: ExMap[String, Direct[Path]] =
-  //   pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p).m containsByEquals pkg))
+  //   pathToPackage.values.flatMap(x => x).distinct mapOnto (pkg => paths filter (p => pathToPackage(p).m.byEquals contains pkg))
 }
 
 /** A MetaPath encapsulates the character content of a classpath string as

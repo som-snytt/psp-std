@@ -71,7 +71,7 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
   def clear()                                          = andThis(jmap.clear())
   def contains(key: K): Boolean                        = jmap containsKey key
   def containsValue(value: V): Boolean                 = jmap containsValue value
-  def domain: ExSet[K]                                 = jmap.keySet.m.naturalSet
+  def domain: ExSet[K]                                 = jmap.keySet.byEquals.toSet
   def get(key: K): Option[V]                           = Option(jmap get key)
   def iterator: scIterator[(K, V)]                     = (domain mapZip apply).iterator
   def putIfAbsent(k: K, v: V): Option[V]               = Option(jmap.putIfAbsent(k, v))

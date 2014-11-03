@@ -54,8 +54,6 @@ trait ApiViewOps[+A] extends Any {
   def zfoldl[B](f: (B, A) => B)(implicit z: Empty[B]): B = foldl(z.empty)(f)
   def zfoldr[B](f: (A, B) => B)(implicit z: Empty[B]): B = foldr(z.empty)(f)
 
-  def distinct(implicit z: HashEq[A]): View[A]                   = xs.pset
-  def distinctByEquals: View[A]                                  = distinct(HashEq.natural())
   def filter(p: Predicate[A]): View[A]                           = xs withFilter p
   def filterNot(p: Predicate[A]): View[A]                        = xs withFilter !p
   def gather[B](pf: A ?=> View[B]): View[B]                      = xs flatMap pf.zapply
@@ -114,33 +112,35 @@ trait ApiViewOps[+A] extends Any {
 
 trait ExtensionalOps[A] extends Any {
   protected def xs: View[A]
-  protected implicit def eqs: Eq[A]
-  def contains(x: A): Boolean = xs contains x
-  def indexOf(x: A): Index    = xs indexOf x
-  def without(x: A): View[A]  = xs without x
+  protected implicit def eqs[A]: HashEq[A]
+
+  def distinct: View[A]                                   = toSet
+  def contains(x: A): Boolean                             = xs contains x
+  def indexOf(x: A): Index                                = xs indexOf x
+  def without(x: A): View[A]                              = xs without x
+  def mapOnto[B](f: A => B): ExMap[A, B]                  = toSet mapOnto f
+  def toSet: ExSet[A]                                     = xs.toPolicySet
+  def toMap[K, V](implicit ev: A <:< (K, V)): ExMap[K, V] = xs.toPolicyMap
 }
 final class ByEqualsExtensionalOps[A](val xs: View[A]) extends AnyVal with ExtensionalOps[A] {
-  protected def eqs: Eq[A] = Eq.natural[A]()
+  protected def eqs[A]: HashEq[A] = HashEq.natural[A]()
 }
 final class ByRefExtensionalOps[A <: AnyRef](val xs: View[A]) extends AnyVal with ExtensionalOps[A] {
-  protected def eqs: Eq[A] = Eq.reference[A]()
+  protected def eqs[A]: HashEq[A] = HashEq(_.toRef eq _.toRef, identityHashCode)
 }
 
 trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def +:(elem: A): View[A] = exView(elem) ++ xs
   def :+(elem: A): View[A] = xs ++ exView(elem)
 
-  /** Can we figure out a way to abstract over these which pays off? */
   def byEquals: ExtensionalOps[A]          = new ByEqualsExtensionalOps[A](xs)
   def byRef: ExtensionalOps[A with Object] = new ByRefExtensionalOps[A with Object](toRefs)
 
-  def contains(x: A)(implicit z: Eq[A]): Boolean = exists (_ === x)
-  def indexOf(x: A)(implicit z: Eq[A]): Index    = indexWhere (_ === x)
-  def without(x: A)(implicit z: Eq[A]): View[A]  = xs filterNot (_ === x)
-
+  def contains(x: A)(implicit z: Eq[A]): Boolean                = exists (_ === x)
+  def indexOf(x: A)(implicit z: Eq[A]): Index                   = indexWhere (_ === x)
+  def without(x: A)(implicit z: Eq[A]): View[A]                 = xs filterNot (_ === x)
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
-  def mapOntoByEquals[B](f: A => B): ExMap[A, B]                = xs.toSetByEquals mapOnto f
-  def mapOntoByRef[B](f: A => B): ExMap[A with AnyRef, B]       = xs.toSetByRef mapOnto f
+  def distinct(implicit z: HashEq[A]): View[A]                  = xs.pset
 
   def findOr(p: Predicate[A], alt: => A): A           = find(p) | alt
   def product(implicit z: Products[A]): A             = xs.foldl(z.one)(z.product)
