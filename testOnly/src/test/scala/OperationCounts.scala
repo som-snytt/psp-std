@@ -48,7 +48,7 @@ class OperationCounts extends ScalacheckBundle {
   private def multiply(n: Int) = (_: Int) * n
 
   def viewMethod: Gen[ViewClass.Op] = oneOf(
-    lowHalf     ^^ lop(n => s"drop$n"    -> (_ drop n)),
+    lowHalf     ^^ lop(n => s"drop $n"   -> (_ drop n)),
     highHalf    ^^ lop(n => s"take $n"   -> (_ take n)),
     chooseMax   ^^ lop(n => s"dropR $n"  -> (_ dropRight n)),
     chooseMax   ^^ lop(n => s"takeR $n"  -> (_ takeRight n)),

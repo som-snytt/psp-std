@@ -112,20 +112,32 @@ trait ApiViewOps[+A] extends Any {
   **/
 }
 
+trait ExtensionalOps[A] extends Any {
+  protected def xs: View[A]
+  protected implicit def eqs: Eq[A]
+  def contains(x: A): Boolean = xs contains x
+  def indexOf(x: A): Index    = xs indexOf x
+  def without(x: A): View[A]  = xs without x
+}
+final class ByEqualsExtensionalOps[A](val xs: View[A]) extends AnyVal with ExtensionalOps[A] {
+  protected def eqs: Eq[A] = Eq.natural[A]()
+}
+final class ByRefExtensionalOps[A <: AnyRef](val xs: View[A]) extends AnyVal with ExtensionalOps[A] {
+  protected def eqs: Eq[A] = Eq.reference[A]()
+}
+
 trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def +:(elem: A): View[A] = exView(elem) ++ xs
   def :+(elem: A): View[A] = xs ++ exView(elem)
 
   /** Can we figure out a way to abstract over these which pays off? */
-  def contains(x: A)(implicit z: Eq[A]): Boolean                = exists (_ === x)
-  def containsRef(x: A with Object): Boolean                    = exists (_ id_== x)
-  def containsByEquals(x: A): Boolean                           = exists (_ == x)
-  def indexOf(x: A)(implicit z: Eq[A]): Index                   = indexWhere (_ === x)
-  def indexOfRef(x: A): Index                                   = indexWhere (_ id_== x)
-  def indexByEquals(x: A): Index                                = indexWhere (_ == x)
-  def without(x: A)(implicit z: Eq[A]): View[A]                 = xs filterNot (_ === x)
-  def withoutRef(x: A): View[A]                                 = xs filterNot (_ id_== x)
-  def withoutByEquals(x: A): View[A]                            = xs filterNot (_ == x)
+  def byEquals: ExtensionalOps[A]          = new ByEqualsExtensionalOps[A](xs)
+  def byRef: ExtensionalOps[A with Object] = new ByRefExtensionalOps[A with Object](toRefs)
+
+  def contains(x: A)(implicit z: Eq[A]): Boolean = exists (_ === x)
+  def indexOf(x: A)(implicit z: Eq[A]): Index    = indexWhere (_ === x)
+  def without(x: A)(implicit z: Eq[A]): View[A]  = xs filterNot (_ === x)
+
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
   def mapOntoByEquals[B](f: A => B): ExMap[A, B]                = xs.toSetByEquals mapOnto f
   def mapOntoByRef[B](f: A => B): ExMap[A with AnyRef, B]       = xs.toSetByRef mapOnto f
