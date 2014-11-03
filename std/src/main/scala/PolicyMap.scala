@@ -139,10 +139,10 @@ object PolicyMap {
       }
 
 
-    override def drop(n: Int): Us                  = drop(newSize(n))
-    override def take(n: Int): Us                  = take(newSize(n))
-    override def dropRight(n: Int): Us             = dropRight(newSize(n))
-    override def takeRight(n: Int): Us             = takeRight(newSize(n))
+    override def drop(n: Int): Us                  = this drop n.size
+    override def take(n: Int): Us                  = this take n.size
+    override def dropRight(n: Int): Us             = this dropRight n.size
+    override def takeRight(n: Int): Us             = this takeRight n.size
     override def takeWhile(p: Predicate[Pair]): Us = (pairs indexWhere !p requiring (_ >= 0)).fold(this)(take)
     override def dropWhile(p: Predicate[Pair]): Us = (pairs indexWhere !p requiring (_ >= 0)).fold(empty)(drop)
   }

@@ -7,7 +7,9 @@ sealed abstract class CollectionSizeException(msg: String) extends RuntimeExcept
 final class InfiniteSizeException(msg: String) extends CollectionSizeException(msg)
 final class LongSizeException(msg: String) extends CollectionSizeException(msg)
 
-trait FromScala[Repr] extends Any { def scalaCollection: Repr }
+trait FromScala[Repr] extends Any {
+  def scalaCollection: Repr
+}
 object FromScala {
   def apply[A, CC[X] <: sCollection[X]](xs: CC[A]): FromScala[CC[A]] = new FromScala[CC[A]] { def scalaCollection = xs }
   def unapply[Repr](wrapped: FromScala[Repr]): Some[Repr]            = Some(wrapped.scalaCollection)

@@ -164,6 +164,7 @@ package object std extends psp.std.StdPackage {
   def ?[A](implicit value: A): A                        = value
   def andFalse(x: Unit, xs: Unit*): Boolean             = false
   def andTrue(x: Unit, xs: Unit*): Boolean              = true
+  def andUnit(x: Unit, xs: Unit*): Unit                 = ()
   def direct[A](xs: A*): Direct[A]                      = new Direct.FromScala(xs.toVector)
   def each[A](xs: sCollection[A]): Each[A]              = fromScala(xs)
   def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)

@@ -15,7 +15,7 @@ object Order {
 
   def apply[A](f: (A, A) => Cmp): Impl[A]    = new Impl[A](f)
   def natural[A <: Comparable[A]](): Impl[A] = fromInt[A](_ compareTo _)
-  def order[A: Order] : Order[A]             = ?[Order[A]]
+  def order[A: Order] : Order[A]             = implicitly
   def fold(xs: Cmp*): Cmp                    = xs.m findOr (_ != EQ, EQ)
   def create[A](ord: Ordering[A]): Order[A]  = apply[A]((x, y) => newCmp(ord.compare(x, y)))
 

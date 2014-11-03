@@ -38,10 +38,9 @@ trait OrderInstances {
   implicit def offsetOrder: Order[Offset]            = orderBy[Offset](_.offsetValue)
   implicit def preciseOrder[A <: Precise] : Order[A] = orderBy[A](_.value)
 
-  implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = Order[(A, B)]    { case ((x1, x2), (y1, y2)) => (x1 compare y1) || (x2 compare y2) }
-  implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = Order[(A, B, C)] { case ((x1, x2, x3), (y1, y2, y3)) => (x1 compare y1) || (x2 compare y2) || (x3 compare y3) }
-
-  implicit def sizePartialOrder: PartialOrder[Size] = PartialOrder(Size.partialCompare)
+  implicit def tuple2Order[A: Order, B: Order] : Order[(A, B)]              = orderBy[(A, B)](fst) | snd
+  implicit def tuple3Order[A: Order, B: Order, C: Order] : Order[(A, B, C)] = orderBy[(A, B, C)](_._1) | (_._2) | (_._3)
+  implicit def sizePartialOrder: PartialOrder[Size]                         = PartialOrder(Size.partialCompare)
 }
 
 trait MonoidInstances {

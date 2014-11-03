@@ -26,21 +26,20 @@ abstract class StdPackage
          with PolicyDmz {
 
   implicit class ApiOrderOps[A](val ord: Order[A]) {
-    // def |[B: Order](f: A => B): Order[A] = Order[A]((x, y) => ord.compare(x, y) |> (r => if (r != Cmp.EQ) r else f(x) compare f(y)))
-
-    def toEq: Eq[A]                = Eq[A]((x, y) => ord.compare(x, y) == Cmp.EQ)
-    def toHashEq: HashEq[A]        = HashEq natural toEq
-    def reverse: Order[A]          = Order[A]((x, y) => ord.compare(x, y).flip)
-    def on[B](f: B => A): Order[B] = Order[B]((x, y) => ord.compare(f(x), f(y)))
+    def |[B: Order](f: A => B): Order[A] = Order((x, y) => ord.compare(x, y) || ?[Order[B]].compare(f(x), f(y)))
+    def toEq: Eq[A]                      = Eq[A]((x, y) => ord.compare(x, y) == Cmp.EQ)
+    def toHashEq: HashEq[A]              = HashEq natural toEq
+    def reverse: Order[A]                = Order[A]((x, y) => ord.compare(x, y).flip)
+    def on[B](f: B => A): Order[B]       = Order[B]((x, y) => ord.compare(f(x), f(y)))
   }
   implicit class CmpEnumOps(val cmp: Cmp) {
-    def || (that: Cmp): Cmp = if (cmp == Cmp.EQ) that else cmp
+    def || (that: => Cmp): Cmp = if (cmp == Cmp.EQ) that else cmp
   }
   implicit class BuildsOps[Elem, To](z: Builds[Elem, To]) {
     def comap[Prev](f: Prev => Elem): Builds[Prev, To] = Builds(xs => z build (xs map f))
     def map[Next](f: To => Next): Builds[Elem, Next]   = Builds(xs => f(z build xs))
     def direct: Suspended[Elem] => To                  = mf => z build Each(mf)
-    def scalaBuilder: scmBuilder[Elem, To]                = sciVector.newBuilder[Elem] mapResult (xs => z build xs)
+    def scalaBuilder: scmBuilder[Elem, To]             = sciVector.newBuilder[Elem] mapResult (xs => z build xs)
   }
   implicit class JavaEnumerationOps[A](it: jEnumeration[A]) {
     def toIterator = BiIterator enumeration it

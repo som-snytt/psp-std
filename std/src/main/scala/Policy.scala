@@ -18,5 +18,5 @@ object Unsafe extends LowPriorityUnsafe {
 }
 trait LowPriorityUnsafe {
   // We may as well derive some convenience from the absence of parametricity.
-  implicit def universalOrder[A] : Order[A] = orderBy[A](x => ("" + _, x.##))
+  implicit def universalOrder[A] : Order[A] = orderBy[A]("" + _) | (_.##)
 }
