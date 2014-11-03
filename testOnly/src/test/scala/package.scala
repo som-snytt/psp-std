@@ -51,6 +51,11 @@ package object tests {
   }
 
   implicit class GenOps[A](g: Gen[A]) {
+    def ^^[B](f: A => B): Gen[B]      = g map f
+    def >>[B](f: A => Gen[B]): Gen[B] = g flatMap f
+    def ^?[B](pf: A ?=> B): Gen[B]    = g collect pf
+    def *(n: Int): Gen[Direct[A]]     = gen.directOfN(n, g)
+
     def collect[B](pf: A ?=> B): Gen[B]                                    = g suchThat pf.isDefinedAt map pf.apply
     def collectN[B](n: Int)(pf: Each[A] ?=> B)(implicit z: Arb[A]): Gen[B] = gen.eachOfN(n, g) collect pf
     def stream: Each[A]                                                    = Each continually g.sample flatMap (_.pvec)

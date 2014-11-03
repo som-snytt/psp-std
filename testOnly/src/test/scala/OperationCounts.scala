@@ -42,22 +42,25 @@ class OperationCounts extends ScalacheckBundle {
 
   private def vfn(f: ViewClass.Op): ViewClass.Op = f
 
+  private def divisibleBy(n: Int) = (_: Int) % n == 0
+  private def lessThan(n: Int)    = (_: Int) < n
+
   def viewMethod: Gen[ViewClass.Op] = oneOf(
     lowHalf       map (n => s"drop $n"   |: vfn(_ drop n)),
     highHalf      map (n => s"take $n"   |: vfn(_ take n)),
     chooseMax     map (n => s"dropR $n"  |: vfn(_ dropRight n)),
     chooseMax     map (n => s"takeR $n"  |: vfn(_ takeRight n)),
-    lowHalf       map (n => s"dropW <$n" |: vfn(_ dropWhile (_ < n))),
-    lowHalf       map (n => s"takeW <$n" |: vfn(_ takeWhile (_ < n))),
+    lowHalf       map (n => s"dropW <$n" |: vfn(_ dropWhile lessThan(n))),
+    lowHalf       map (n => s"takeW <$n" |: vfn(_ takeWhile lessThan(n))),
     chooseSmall   map (n => s"*$n"       |: vfn(_ map (_ * n))),
-    chooseSmall   map (n => s"/$n"       |: vfn(_ withFilter (_ % n == 0))),
-    chooseSmall   map (n => s"!/$n"      |: vfn(_ filterNot (_ % n == 0))),
-    chooseSmall   map (n => s"%/$n"      |: vfn(_ collect { case x if x % n == 0 => x / n })),
+    chooseSmall   map (n => s"/$n"       |: vfn(_ withFilter divisibleBy(n))),
+    chooseSmall   map (n => s"!/$n"      |: vfn(_ filterNot divisibleBy(n))),
+    chooseSmall   map (n => s"%/$n"      |: vfn(_ collect newPartial(divisibleBy(n), _ / n))),
     chooseSmall   map (n => s"x=>(x, x)" |: vfn(_ flatMap (x => Direct(x, x)))),
     (lowHalf, chooseMax) map ((n1, n2) => s"slice($n1, $n2)" |: vfn(_ slice indexRange(n1, n2)))
   )
 
-  def viewMethods(size: SizeRange): Gen[Direct[ViewClass.Op]] = size.chooseInt flatMap (n => listOfN(n, viewMethod) map (_.m.pvec))
+  def viewMethods(size: SizeRange): Gen[Direct[ViewClass.Op]] = size.chooseInt flatMap (n => gen.directOfN(n, viewMethod))
   def composite: Gen[CompositeOp]                             = viewMethods(numComposite) map (fs => new CompositeOp(fs))
   def compositeProp: Prop                                     = forAll((_: CompositeOp).passed) minSuccessful minSuccessful
 
@@ -93,8 +96,8 @@ class OperationCounts extends ScalacheckBundle {
 
     def ops_s          = "%-63s" format (ops map ("%-15s" format _.try_s) mk_s " ")
     def description    = if (passed) passString else failString
-    def passString     = show"$ops_s  $counts  // ${results.head}"
-    def failString     = show"Inconsistent results for $ops_s:\n  ${outcomes mk_s "\n  "}"
+    def passString     = show"| $ops_s  $counts  // ${results.head}"
+    def failString     = show"Inconsistent results for $ops_s:\n  ${outcomes mk_s "\n  "}" mapLines ("| " + _)
     def distinctCounts = outcomes.map(_.calls).distinct.pvec
     def isInteresting  = !passed || distinctCounts.size >= 3.size || isTestDebug
     override def toString = description
@@ -102,7 +105,7 @@ class OperationCounts extends ScalacheckBundle {
 
   def props() = sciList[NamedProp](
     NamedProp(s"Generating $minSuccessful view combinations, displaying at most $maxDisplay", Prop(true)),
-    NamedProp("%-58s %-12s %s".format("", "Linear", "Direct"), Prop(true)),
+    NamedProp("%-60s %-12s %s".format("", "Linear", "Direct"), Prop(true)),
     NamedProp("policy never performs more operations than scala", compositeProp)
   )
 }
