@@ -14,6 +14,8 @@ final class JoinPartial[-T, +R](pf1: T ?=> R, pf2: T ?=> R)      extends Partial
 final class ComapPartial[T1, -T, +R](pf: T ?=> R, g: T1 => T)    extends PartialImpl[T1, R](x => pf contains g(x), x => pf(g(x)))
 final class CopmapPartial[T1, -T, +R](pf: T ?=> R, pg: T1 ?=> T) extends PartialImpl[T1, R](x => (pg contains x) && (pf contains pg(x)), x => pf(pg(x)))
 
+final class MapFunction1[A, B, C](f: A => B, g: B => C) extends (A => C) { def apply(x: A): C = g(f(x)) }
+
 /** "Extensions" are classes which only exist to add methods to
  *  built-in types from the scala standard library. As we phase
  *  out the use of the standard library these will migrate into
@@ -26,8 +28,8 @@ final class Function1Ops[T, R](val f: T => R) extends AnyVal {
   def untupled[A, B](implicit z: PairUp[T, A, B]): (A, B) => R = (x, y) => f(z.create(x, y))
 
   def partial: T ?=> R                                   = new FunctionAsPartial(f)
-  def map[S](g: R => S): T => S                          = f andThen g
-  def comap[S](g: S => T): S => R                        = g andThen f
+  def map[S](g: R => S): T => S                          = new MapFunction1(f, g)
+  def comap[S](g: S => T): S => R                        = new MapFunction1(g, f)
   def sameAt(g: T => R)(implicit z: Eq[R]): Predicate[T] = x => f(x) === g(x)
   def on[S](g: (R, R) => S): (T, T) => S                 = (x, y) => g(f(x), f(y))
 }
