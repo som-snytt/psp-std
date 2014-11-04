@@ -14,21 +14,8 @@ trait AnyView[+A] extends Any with Each[A] {
 trait SetView[A] extends Any with AnyView[A] with ExSet[A] {
 }
 
-trait View[+A] extends Any with AnyView[A] with ExSeq[A] {
+trait View[+A] extends Any with AnyView[A] {
   type MapTo[+X] <: View[X]
-}
-
-trait InMapView[-K, +V] extends Any with AnyView[V] with InMap[K, V] {
-  type CoMapTo[-X] <: InMapView[X, V]
-  type MapTo[+X] <: InMapView[K, X]
-
-  def comap[K1](f: K1 => K): CoMapTo[K1]
-  def filter(p: Predicate[V]): MapTo[V]
-  def map[V1](f: V => V1): MapTo[V1]
-}
-
-trait ExSeq[+A] extends Any {
-  self: View[A] =>
 
   def ++[A1 >: A](that: View[A1]): MapTo[A1]
   def collect[B](pf: A ?=> B): MapTo[B]
@@ -47,6 +34,14 @@ trait ExSeq[+A] extends Any {
   def withFilter(p: Predicate[A]): MapTo[A]
 }
 
+trait InMapView[-K, +V] extends Any with AnyView[V] with InMap[K, V] {
+  type CoMapTo[-X] <: InMapView[X, V]
+  type MapTo[+X] <: InMapView[K, X]
+
+  def comap[K1](f: K1 => K): CoMapTo[K1]
+  def filter(p: Predicate[V]): MapTo[V]
+  def map[V1](f: V => V1): MapTo[V1]
+}
 
 object View {
   trait Atomic[+A] extends Any with View[A]

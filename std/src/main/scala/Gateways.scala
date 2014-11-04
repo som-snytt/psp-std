@@ -36,7 +36,7 @@ trait GlobalShow0 {
   implicit def showableToTryShown[A](x: A)(implicit z: TryShow[A]): TryShown = new TryShown(z show x)
 }
 trait GlobalShow extends GlobalShow0 {
-  implicit def showableToShown[A](x: A)(implicit z: Show[A]): Shown = Shown(z show x)
+  implicit def showableToShown[A](x: A)(implicit z: Show[A]): Shown   = Shown(z show x)
 }
 
 trait StdTypeclasses {
