@@ -79,26 +79,31 @@ object ExtensionalSet {
   }
 }
 object IntensionalSet {
-  val Zero = apply[Any](ConstantFalse)
-  val One  = apply[Any](ConstantTrue)
+  val Zero = Pure[Any](ConstantFalse)
+  val One  = Pure[Any](ConstantTrue)
 
-  def apply[A](p: Predicate[A]): InSet[A] = new Pure[A](p)
-  private def shower[A]: Show[InSet[A]] = Show(show[A])
+  def apply[A](p: Predicate[A]): InSet[A] = p match {
+    case ConstantFalse => Zero
+    case ConstantTrue  => One
+    case _             => Pure[A](p)
+  }
   def show[A](xs: InSet[A])(implicit z: Show[InSet[A]] = shower[A]): String = xs match {
-    case Complement(xs)      => show"Not($xs)"
-    case Intersect(lhs, rhs) => show"Intersect($lhs, $rhs)"
-    case Union(lhs, rhs)     => show"Union($lhs, $rhs)"
-    case Diff(lhs, rhs)      => show"Diff($lhs, $rhs)"
-    case Filtered(lhs, rhs)  => pp"Filtered($lhs, $rhs)"
-    case Pure(member)        => pp"Pure($member)"
-    case xs                  => pp"$xs"
+    case Zero                => "∅"
+    case One                 => "U"
+    case Complement(xs)      => show"$xs′"
+    case Intersect(lhs, rhs) => show"$lhs ∩ $rhs"
+    case Union(lhs, rhs)     => show"$lhs ∪ $rhs"
+    case Diff(lhs, rhs)      => show"$lhs ∖ $rhs"
+    case Pure(f: ShowDirect) => f.to_s
+    case _                   => "{ ... }"
   }
 
-  abstract class Impl[A](p: Predicate[A])                      extends IntensionalSet[A] { def apply(x: A) = p(x) ; override def toString = show(this) }
-  final case class Filtered[A](lhs: InSet[A], p: Predicate[A]) extends Impl[A](x => lhs(x) && p(x))
-  final case class Complement[A](lhs: InSet[A])                extends Impl[A](x => !lhs(x))
-  final case class Intersect[A](lhs: InSet[A], rhs: InSet[A])  extends Impl[A](x => lhs(x) && rhs(x))
-  final case class Union[A](lhs: InSet[A], rhs: InSet[A])      extends Impl[A](x => lhs(x) || rhs(x))
-  final case class Diff[A](lhs: InSet[A], rhs: InSet[A])       extends Impl[A](x => lhs(x) && !rhs(x))
-  final case class Pure[A](isMember: Predicate[A])             extends Impl[A](isMember)
+  abstract class Impl[A](p: Predicate[A])                     extends IntensionalSet[A] { def apply(x: A) = p(x) ; override def toString = show(this) }
+  final case class Complement[A](lhs: InSet[A])               extends Impl[A](x => !lhs(x))
+  final case class Intersect[A](lhs: InSet[A], rhs: InSet[A]) extends Impl[A](x => lhs(x) && rhs(x))
+  final case class Union[A](lhs: InSet[A], rhs: InSet[A])     extends Impl[A](x => lhs(x) || rhs(x))
+  final case class Diff[A](lhs: InSet[A], rhs: InSet[A])      extends Impl[A](x => lhs(x) && !rhs(x))
+  final case class Pure[A](p: Predicate[A])                   extends Impl[A](p)
+
+  private def shower[A]: Show[InSet[A]] = Show(show[A])
 }
