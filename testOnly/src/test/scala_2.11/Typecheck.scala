@@ -2,7 +2,7 @@ package psp
 package tests
 
 import psp.std._, api._, macros._
-import Generated._, StdShow._
+import Expressions._, StdShow._
 
 class Typecheck extends ScalacheckBundle {
   def bundle = "Verifying Expected Failures"
@@ -11,7 +11,7 @@ class Typecheck extends ScalacheckBundle {
     val opsDirectString = null
     val directStringIs = null
     import scala.Predef._
-    divide("scala-library", typecheckedLines(scalaLibraryCode), expectedTypecheck = 32)
+    divide("scala-library", typecheckedLines(scalaLibraryCode), expectedTypecheck = 24)
   }
 
   /** We'll say a line which begins with the shown comment is expected to type check.
@@ -22,12 +22,19 @@ class Typecheck extends ScalacheckBundle {
 
   def divide(what: String, xs: sciVector[Typechecked], expectedTypecheck: Int): NamedProp = {
     val (good, bad) = xs partition (_.typechecks)
-    s"$expectedTypecheck/${xs.size} expressions from $what should typecheck" -> (Prop(expectedTypecheck == good.size) :| pp"good:\n$good\nbad:\n$bad")
+    NamedProp(
+      s"$expectedTypecheck/${xs.size} expressions from $what should typecheck",
+      (Prop(expectedTypecheck == good.size) :|
+        ("good:\n  " + (good mkString "\n  ") + "\n\nbad:\n  " + (bad mkString "\n  ") + "\n")
+      )
+    )
   }
 
   def props = sciSeq[NamedProp](
-    divide("psp-std", typecheckedLines(pspCode), expectedTypecheck = 10),
     divide("psp-show", typecheckedLines(pspShowCode)),
+    divide("psp-by-equals", typecheckedLines(policyByEquals), expectedTypecheck = 12),
+    divide("psp-by-ref", typecheckedLines(policyByRef), expectedTypecheck = 0),
+    divide("psp-straight", typecheckedLines(scalaLibraryCode), expectedTypecheck = 14),
     checkScala()
   )
 }
