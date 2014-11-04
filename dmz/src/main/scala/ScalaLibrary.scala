@@ -76,6 +76,7 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Array3[A]                 = Array[Array[Array[A]]]
   type Array4[A]                 = Array[Array[Array[Array[A]]]]
   type Array5[A]                 = Array[Array[Array[Array[Array[A]]]]]
+  type Bag[A]                    = ExMap[A, Precise]
   type Bytes                     = Array[Byte]
   type CTag[A]                   = scala.reflect.ClassTag[A]
   type CanBuildSelf[-Elem, Self] = scg.CanBuildFrom[Self, Elem, Self]

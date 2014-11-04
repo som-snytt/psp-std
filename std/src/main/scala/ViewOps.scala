@@ -114,12 +114,14 @@ trait ExtensionalOps[A] extends Any {
   protected def xs: View[A]
   protected implicit def eqs[A]: HashEq[A]
 
-  def distinct: View[A]                                   = toSet
-  def contains(x: A): Boolean                             = xs contains x
-  def indexOf(x: A): Index                                = xs indexOf x
-  def without(x: A): View[A]                              = xs without x
-  def mapOnto[B](f: A => B): ExMap[A, B]                  = toSet mapOnto f
-  def toSet: ExSet[A]                                     = xs.toPolicySet
+  def contains(x: A): Boolean            = xs contains x
+  def distinct: View[A]                  = toSet
+  def indexOf(x: A): Index               = xs indexOf x
+  def mapOnto[B](f: A => B): ExMap[A, B] = toSet mapOnto f
+  def toBag: Bag[A]                      = xs.toBag
+  def toSet: ExSet[A]                    = xs.toPolicySet
+  def without(x: A): View[A]             = xs without x
+
   def toMap[K, V](implicit ev: A <:< (K, V)): ExMap[K, V] = xs.toPolicyMap
 }
 final class ByEqualsExtensionalOps[A](val xs: View[A]) extends AnyVal with ExtensionalOps[A] {
@@ -137,10 +139,11 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def byRef: ExtensionalOps[A with Object] = new ByRefExtensionalOps[A with Object](toRefs)
 
   def contains(x: A)(implicit z: Eq[A]): Boolean                = exists (_ === x)
-  def indexOf(x: A)(implicit z: Eq[A]): Index                   = indexWhere (_ === x)
-  def without(x: A)(implicit z: Eq[A]): View[A]                 = xs filterNot (_ === x)
-  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
   def distinct(implicit z: HashEq[A]): View[A]                  = xs.pset
+  def indexOf(x: A)(implicit z: Eq[A]): Index                   = indexWhere (_ === x)
+  def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.pset mapOnto f
+  def toBag(implicit z: HashEq[A]): Bag[A]                      = exMap((xs.toScalaVector groupBy identity mapValues (_.size.size: Precise)).toSeq: _*)
+  def without(x: A)(implicit z: Eq[A]): View[A]                 = xs filterNot (_ === x)
 
   def findOr(p: Predicate[A], alt: => A): A           = find(p) | alt
   def product(implicit z: Products[A]): A             = xs.foldl(z.one)(z.product)
