@@ -13,7 +13,7 @@ object Build extends sbt.Build {
   def javaCrossTarget(id: String) = key.buildBase mapValue (_ / "target" / id / s"java_$javaBinaryVersion")
 
   def rootResourceDir: SettingOf[File] = resourceDirectory in Compile in LocalRootProject
-  def subprojects                      = List[sbt.Project](api, dmz, std, pio, dev)
+  def subprojects                      = List[sbt.Project](api, dmz, std, pio, dev, jvm)
   def classpathDeps                    = convertSeq(subprojects): List[ClasspathDep[ProjectReference]]
   def projectRefs                      = convertSeq(subprojects): List[ProjectReference]
 
@@ -22,6 +22,7 @@ object Build extends sbt.Build {
     def setup(text: String): Project = setup() also (description := text)
     def usesCompiler                 = p settings (libraryDependencies += Deps.scalaCompiler.value)
     def usesReflect                  = p settings (libraryDependencies += Deps.scalaReflect.value)
+    def usesParsers                  = p settings (libraryDependencies += Deps.scalaParsers)
     def helper(): Project            = p.noArtifacts setup "helper project" dependsOn (classpathDeps: _*)
     def noSources                    = p in file("target/helper/" + p.id)
   }
@@ -79,6 +80,7 @@ object Build extends sbt.Build {
   lazy val dmz = project setup "dmz for psp's non-standard standard library" dependsOn api
   lazy val std = project setup "psp's non-standard standard library" dependsOn dmz also guava
   lazy val pio = project setup "io library for pps-std" dependsOn std
+  lazy val jvm = project.usesCompiler.usesParsers setup "jvm library for psp's non-standard standard library" dependsOn pio
   lazy val dev = project setup "psp's even less stable code" dependsOn std
 
   lazy val publishOnly = project.helper.noSources aggregate (api, dmz, std)
