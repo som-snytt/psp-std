@@ -42,7 +42,7 @@ class StringExtensions extends ScalacheckBundle {
 class GridSpec extends ScalacheckBundle {
   def bundle = "Policy, Grid Operations"
 
-  def primePartition = Each from 2 mpartition (xs => _ % xs.head == 0)
+  def primePartition = Indexed from 2 mpartition (xs => _ % xs.head == 0)
   def primePartitionGrid(n: Int): View2D[Int]   = primePartition take n map (_ take n)
   def primePartitionGrid_t(n: Int): View2D[Int] = primePartition.transpose take n map (_ take n)
   def showGrid(xss: View2D[Int]): String = {
@@ -68,7 +68,7 @@ class GridSpec extends ScalacheckBundle {
   """
 
   def props = sciList(
-    seqShows("[ 2, 4, 6, ... ], [ 3, 9, 15, ... ], [ 5, 25, 35, ... ]", Each from 2 mpartition (xs => _ % xs.head == 0) take 3),
+    seqShows("[ 2, 4, 6, ... ], [ 3, 9, 15, ... ], [ 5, 25, 35, ... ]", Indexed from 2 mpartition (xs => _ % xs.head == 0) take 3),
     showsAs(primePartition6, showGrid(primePartitionGrid(6))),
     showsAs(primePartition6_t, showGrid(primePartitionGrid_t(6)))
   )
@@ -81,11 +81,11 @@ class PolicyBasic extends ScalacheckBundle {
   def pvector = Direct(1, 2, 3)
   def parray  = Array(1, 2, 3)
   def pseq    = Each[Int](parray foreach _)
-  def punfold = Each from 1
+  def punfold = Indexed from 1
 
   def closure    = parray transitiveClosure (x => exView(x.init.force, x.tail.force))
   def closureBag = closure flatMap (x => x) toBag // That's my closure bag, baby
-  def xxNumbers  = (Each from 0).m grep """^(.*)\1""".r
+  def xxNumbers  = (Indexed from 0).m grep """^(.*)\1""".r
 
   def props: sciList[NamedProp] = sciList(
     showsAs("[ 1, 2, 3 ]", plist),

@@ -8,14 +8,19 @@ import api._
  *  We can memoize an Each into an Indexed.
  */
 object Indexed {
-  def from(start: Long): Indexed[Long] = Pure(_.get + start)
-  def indices: Indexed[Index]          = Pure(identity)
+  def indices: Indexed[Index]              = Pure(identity)
+  def from(start: BigInt): Indexed[BigInt] = Pure(i => start + i.get)
+  def from(start: Int): Indexed[Int]       = Pure(i => start + i.safeInt)
+  def from(start: Long): Indexed[Long]     = Pure(i => start + i.get)
 
   final case class Pure[A](f: Index => A) extends AnyVal with Indexed[A] {
     def size                                = Size.Unknown
     def isEmpty                             = false
     def elemAt(i: Index): A                 = f(i)
-    @inline def foreach(f: A => Unit): Unit = Each from 0L foreach (i => f(elemAt(Index(i))))
+    @inline def foreach(f: A => Unit): Unit = {
+      var current: Long = 0L
+      while (true) { f(elemAt(Index(current))) ; current += 1 }
+    }
   }
 
   final class MemoIterator[+A](memo: Memo[A]) extends scIterator[A] {

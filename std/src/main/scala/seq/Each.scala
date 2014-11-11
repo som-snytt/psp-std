@@ -62,26 +62,20 @@ object Each {
       }
     }
   }
-  final case class Constant[A](elem: A) extends InfiniteSize[A] {
+  final case class Constant[A](elem: A) extends AnyVal with InfiniteSize[A] {
     @inline def foreach(f: A => Unit): Unit = while (true) f(elem)
   }
-  final case class Continually[A](fn: () => A) extends InfiniteSize[A] {
+  final case class Continually[A](fn: () => A) extends AnyVal with InfiniteSize[A] {
     @inline def foreach(f: A => Unit): Unit = while (true) f(fn())
   }
   final case class Unfold[A](zero: A)(next: A => A) extends InfiniteSize[A] {
     @inline def foreach(f: A => Unit): Unit = {
       var current = zero
-      while (true) {
-        f(current)
-        current = next(current)
-      }
+      while (true) { f(current) ; current = next(current) }
     }
   }
 
-  def from(n: BigInt): Each[BigInt] = unfold(n)(_ + 1)
-  def from(n: Int): Each[Int]       = unfold(n)(_ + 1)
-  def from(n: Long): Each[Long]     = unfold(n)(_ + 1)
-  def indices: Indexed[Index]       = Indexed.indices
+  def indices: Indexed[Index] = Indexed.indices
 
   def elems[A](xs: A*): Each[A]                                 = apply[A](xs foreach _)
   def const[A](elem: A): Constant[A]                            = Constant[A](elem)
