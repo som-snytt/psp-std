@@ -118,7 +118,7 @@ trait EqInstances {
 
   // Since Sets are created with their own notion of equality, you can't pass
   // an Eq instance. Map keys are also a set.
-  implicit def arrayHashEq[A: HashEq] : HashEq[Array[A]]       = hashEqBy[Array[A]](_.pvec)
+  implicit def arrayHashEq[A: HashEq] : HashEq[Array[A]]       = hashEqBy[Array[A]](_.toDirect)
   implicit def vectorHashEq[A: Eq] : HashEq[Direct[A]]         = HashEq((xs, ys) => (xs.toScalaVector corresponds ys.toScalaVector)(_ === _), _.toScalaVector.##)
   implicit def exSetEq[A] : Eq[ExSet[A]]                       = Eq(symmetrically[ExSet[A]](_ isSubsetOf _))
   implicit def exMapEq[K, V: Eq] : Eq[ExMap[K, V]]             = Eq((xs, ys) => xs.domain === ys.domain && (equalizer(xs.apply, ys.apply) forall xs.domain))

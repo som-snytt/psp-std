@@ -68,8 +68,7 @@ package std {
 }
 
 package object std extends psp.std.StdPackage {
-  type pList[A]    = PolicyList[A]
-  type DocSeq      = Each[Doc]
+  type DocSeq = Each[Doc]
 
   /** Scala, so aggravating.
    *  [error] could not find implicit value for parameter equiv: psp.std.api.Eq[psp.tests.Pint => psp.std.Boolean]
@@ -220,7 +219,7 @@ package object std extends psp.std.StdPackage {
 
   def fromScala[A](xs: sCollection[A]): AnyView[A] = xs match {
     case xs: sciIndexedSeq[_] => Direct fromScala xs m
-    case xs: sciLinearSeq[_]  => new PolicyList.FromScala(xs) m
+    case xs: sciLinearSeq[_]  => Linear fromScala xs m
     case xs: sciSet[_]        => new PolicySet.FromScala(xs) m
     case _                    => new Each.FromScala(xs) m
   }
@@ -248,15 +247,14 @@ package object std extends psp.std.StdPackage {
   }
   def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
 
-  def exMap[K: HashEq, V](xs: (K, V)*): ExMap[K, V]         = xs.m.pmap
-  def exSeq[A](xs: A*): Each[A]                             = xs.m.pseq
-  def exSet[A: HashEq](xs: A*): ExSet[A]                    = xs.m.pset
+  def exMap[K: HashEq, V](xs: (K, V)*): ExMap[K, V]         = xs.m.toExMap
+  def exSeq[A](xs: A*): Each[A]                             = xs.m.toEach
+  def exSet[A: HashEq](xs: A*): ExSet[A]                    = xs.m.toExSet
   def exView[A](xs: A*): View[A]                            = Direct[A](xs: _*).m
   def inMap[K, V](p: Predicate[K], f: K => V): InMap[K, V]  = new IntensionalMap(inSet(p), Lookup total f)
   def inSet[A](p: Predicate[A]): InSet[A]                   = p.inSet
   def inView[A](mf: Suspended[A]): View[A]                  = Each(mf).m
   def mutableMap[K, V](xs: (K, V)*): PolicyMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
-  def pList[A](xs: A*): pList[A]                            = xs.m.plist
 
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ

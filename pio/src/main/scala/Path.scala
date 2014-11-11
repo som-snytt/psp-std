@@ -119,7 +119,7 @@ trait JavaPathMethods extends Any {
   private def writeNioLines(lines: jIterable[String], options: OpenOption*): Path = Files.write(path, lines, utf8Charset, options: _*)
 
   private def filterChildren(fs: FileSystem, root: Path, p: Path => Boolean): Paths =
-    fs.provider.newDirectoryStream(root, p) |> (s => try s.m.pvec finally s.close())
+    fs.provider.newDirectoryStream(root, p) |> (s => try s.m.toDirect finally s.close())
 
   private def containerEntries(p: PathPredicate): Paths = (
     if (path.isReadable && isDir)

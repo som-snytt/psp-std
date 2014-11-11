@@ -18,7 +18,7 @@ final class LabeledFunction[-T, +R](f: T => R, val to_s: String) extends (T ?=> 
 }
 
 final class PolicyLoader(val classMap: ExMap[String, Bytes]) extends ClassLoader {
-  private val keys        = classMap.domain.pvec
+  private val keys        = classMap.domain.toDirect
   private val instanceMap = scmMap[String, jClass]()
   private val errorMap    = scmMap[String, LinkageError]()
   private def isNoClassDefFoundError(t: Throwable) = t match {
@@ -30,8 +30,8 @@ final class PolicyLoader(val classMap: ExMap[String, Bytes]) extends ClassLoader
   def names        = keys
   def classes      = names map (x => findClass(x))
   def errors       = errorMap.toMap
-  def missing      = errorMap.m.pmap filterValues isNoClassDefFoundError keys
-  def otherErrors  = errorMap.m.pmap filterValues !(isNoClassDefFoundError _)
+  def missing      = errorMap.m.toExMap filterValues isNoClassDefFoundError keys
+  def otherErrors  = errorMap.m.toExMap filterValues !(isNoClassDefFoundError _)
   def totalBytes   = classMap.values map (_.length) sum
 
   def define(name: String): jClass               = define(name, classMap(name))

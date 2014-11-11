@@ -20,8 +20,8 @@ package object ansi extends BasicAtoms[Ansi] {
   }
 
   lazy val colorMap: RgbMap = {
-    val map     = actualLines("xkcd-colors.txt") map parseLine pmap
-    val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.readAs[RGB]) pvec;
+    val map     = actualLines("xkcd-colors.txt") map parseLine toExMap
+    val palette = actualLines("xterm256-colors.txt") map (_.words.last) map (_.readAs[RGB]) toDirect;
     new RgbMap(map.keyVector, x => map(x), palette)
   }
 

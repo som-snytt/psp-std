@@ -40,7 +40,7 @@ package object tests {
   }
 
   implicit def arbWord: Arb[String]                             = Arb(gen.text.word)
-  implicit def arbitraryInSet[A : Arb : HashEq] : Arb[InSet[A]] = arb[sciSet[A]] map (_.m.toPolicySet)
+  implicit def arbitraryInSet[A : Arb : HashEq] : Arb[InSet[A]] = arb[sciSet[A]] map (_.m.toInSet)
   implicit def arbitraryPint: Arb[Pint]                         = Arb(Gen.choose(MinInt, MaxInt) map (x => Pint(x)))
   implicit class LiftConverter[A](gen: Gen[A]) {
     def to[B](implicit f: A => B): Gen[B] = gen map f
@@ -73,8 +73,8 @@ package object tests {
 
     def collect[B](pf: A ?=> B): Gen[B]                                    = g suchThat pf.isDefinedAt map pf.apply
     def collectN[B](n: Int)(pf: Each[A] ?=> B)(implicit z: Arb[A]): Gen[B] = gen.eachOfN(n, g) collect pf
-    def stream: Each[A]                                                    = Each continually g.sample flatMap (_.pvec)
-    def take(n: Int): Direct[A]                                            = stream take n pvec
+    def stream: Each[A]                                                    = Each continually g.sample flatMap (_.toDirect)
+    def take(n: Int): Direct[A]                                            = stream take n
   }
   implicit def chooseIndex: Choose[Index]  = Choose.xmap[Long, Index](_.index, _.indexValue)
   implicit def chooseSize: Choose[Precise] = Choose.xmap[Long, Precise](_.size, _.value)

@@ -18,7 +18,7 @@ trait ClassLoaderTrait {
     loop(loader)
   }
   def uris: Each[jUri] = loader match {
-    case cl: URLClassLoader => cl.getURLs.pseq map (_.toURI)
+    case cl: URLClassLoader => cl.getURLs.toEach map (_.toURI)
     case _                  => Nil
   }
 }

@@ -30,13 +30,13 @@ package gen {
 
 package object gen {
   def chooseFrom[A](xs: Direct[Gen[A]]): Gen[A]       = indexFrom(xs.indices) >> xs.elemAt
-  def chooseFrom[A](xs: Gen[A]*): Gen[A]              = chooseFrom(xs.m.pvec)
+  def chooseFrom[A](xs: Gen[A]*): Gen[A]              = chooseFrom(xs.m.toDirect)
   def directOfN[A](n: Int, g: Gen[A]): Gen[Direct[A]] = containerOfN[Direct, A](n, g)(?, _.trav)
   def directOf[A](g: Gen[A]): Gen[Direct[A]]          = containerOf[Direct, A](g)(?, _.trav)
   def eachOfN[A](n: Int, g: Gen[A]): Gen[Each[A]]     = containerOfN[Each, A](n, g)(?, _.trav)
   def eachOf[A](g: Gen[A]): Gen[Each[A]]              = containerOf[Each, A](g)(?, _.trav)
-  def pick[A](n: Int, xs: A*): Gen[Direct[A]]         = pick[A](n, xs.m.pvec)
-  def pick[A](n: Int, xs: Direct[A]): Gen[Direct[A]]  = Gen.pick(n, xs.seq) map (_.m.pvec)
+  def pick[A](n: Int, xs: A*): Gen[Direct[A]]         = pick[A](n, xs.m.toDirect)
+  def pick[A](n: Int, xs: Direct[A]): Gen[Direct[A]]  = Gen.pick(n, xs.seq) map (_.m.toDirect)
 
   def indexTo(max: Int): Gen[Index] = (0 upTo max) ^^ (n => Index(n))
   def index: Gen[Index]             = frequency(10 -> zeroPlusIndex, 1 -> NoIndex)

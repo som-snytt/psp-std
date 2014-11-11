@@ -49,7 +49,7 @@ class ValuesSpec extends ScalacheckBundle {
       def name = "%-5s" format ("`" + op.name + "`")
       val str  = qualities map (_ describe op.name) map ("%18s" format _) mkString ", "
       val desc = fshow"Relation laws for UInt $name%s  $str%s"
-      val prop = qualities flatMap (q => q(op).pvec) reducel (_ && _)
+      val prop = qualities flatMap (q => q(op).toDirect) reducel (_ && _)
       desc -> prop
     }
     (allOps map one) ++ named("UInts are non-negative" -> forAll(gen.uint)((x: UInt) => 0L <= x.longValue))

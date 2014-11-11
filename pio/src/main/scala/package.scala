@@ -58,6 +58,6 @@ package object pio {
     def classNames: View[String]            = classStream map (_.className)
     def classInstances: View[jClass]        = newLoader.classes filterNot (_ eq null)
     def classStream: View[JarEntryAndBytes] = mapBytes(JarEntryAndBytes) filter (_.isClass)
-    def newClassMap: ExMap[String, Bytes]   = classStream map (j => j.className -> j.bytes) pmap
+    def newClassMap: ExMap[String, Bytes]   = classStream map (j => j.className -> j.bytes) toExMap
   }
 }

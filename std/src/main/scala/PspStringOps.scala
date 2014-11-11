@@ -63,7 +63,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
 
   def containsChar(ch: Char): Boolean      = chars.m contains ch
   def splitChar(ch: Char): Direct[String]  = splitRegex(Regex quote ch.toString)
-  def splitRegex(r: Regex): Direct[String] = r.pattern split self pvec
+  def splitRegex(r: Regex): Direct[String] = r.pattern split self toDirect
   def words: Direct[String]                = splitRegex(whitespace)
 
   def mapChars(pf: Char ?=> Char): String          = self map (c => if (pf isDefinedAt c) pf(c) else c) build

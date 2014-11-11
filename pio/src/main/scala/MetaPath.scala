@@ -7,8 +7,8 @@ import MetaPath._
 import StdEq._
 
 final case class SinglePath(path: Path) extends AnyVal {
-  def entries        = path.entries.pseq
-  def deepEntries    = path.deepEntries.pseq
+  def entries        = path.entries.toEach
+  def deepEntries    = path.deepEntries.toEach
   def deepDirClasses = path.deepClasses map path.relativize
   def deepClasses    = if (path.isDirectory() && !path.isAbsolute) deepDirClasses else path.deepClasses
 

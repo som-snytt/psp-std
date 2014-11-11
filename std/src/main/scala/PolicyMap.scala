@@ -24,7 +24,7 @@ final class ExtensionalMap[K, V](domain: ExSet[K], lookup: Lookup[K, V]) extends
   def foreachKey(f: K => Unit): Unit        = keys foreach f
   def isEmpty: Boolean                      = domain.isEmpty
   def iterator: scIterator[Entry]           = keysIterator map (k => (k, lookup(k)))
-  def keyVector: Direct[K]                  = keys.pvec
+  def keyVector: Direct[K]                  = keys.toDirect
   def keys: View[K]                         = domain
   def keysIterator: scIterator[K]           = keys.iterator
   def reverseKeys                           = newMap(domain.reverse, lookup)
@@ -86,7 +86,7 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
 object PolicyMap {
   type BuildsMap[K, V] = Builds[(K, V), ExMap[K, V]]
 
-  def builder[K : HashEq, V] : BuildsMap[K, V]              = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.pset, Lookup(kvs.toPartial)))
+  def builder[K : HashEq, V] : BuildsMap[K, V]              = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.toExSet, Lookup(kvs.toPartial)))
   def apply[K, V](keys: ExSet[K], pf: K ?=> V): ExMap[K, V] = new ExtensionalMap(keys, Lookup(pf))
   def unapplySeq[K, V](map: ExMap[K, V]): Some[sciSeq[K]]   = Some(map.keyVector.seq)
 

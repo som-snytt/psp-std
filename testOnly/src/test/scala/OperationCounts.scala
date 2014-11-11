@@ -97,7 +97,7 @@ class OperationCounts extends ScalacheckBundle {
     def description       = if (passed) passString else failString
     def passString        = show"| $ops_s  $counts  // ${results.head}"
     def failString        = show"Inconsistent results for $ops_s:\n  ${outcomes mk_s "\n  "}" mapLines ("| " + _)
-    def distinctCounts    = outcomes.map(_.calls).distinct.pvec
+    def distinctCounts    = outcomes.map(_.calls).distinct.toDirect
     override def toString = description
   }
 

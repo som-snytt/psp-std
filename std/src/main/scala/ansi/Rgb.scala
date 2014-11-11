@@ -22,7 +22,7 @@ final class RGB private (val bits: Int) extends AnyVal {
 }
 
 final class RgbMap(val keys: Direct[ColorName], val lookup: ColorName => RGB, val palette: Direct[RGB]) {
-  def grouped = (keys.toScalaVector groupBy nearestIndex).values.map(_.m.pvec).m.pvec.m sortBy (x => (x.length, x.head.name.length)) map (_.joinWords)
+  def grouped = (keys.toScalaVector groupBy nearestIndex).values.map(_.m.toDirect).m.toDirect.m sortBy (x => (x.length, x.head.name.length)) map (_.joinWords)
 
   def get(key: ColorName): Option[Index]   = Try(nearestIndex(key)).toOption
   def namesOf(rgb: RGB): Direct[ColorName] = keys filter (k => nearest(rgb) == nearest(lookup(k)))
@@ -46,7 +46,7 @@ object RgbMap {
       }
       k -> (v mkString "  ")
     }
-    pairs.pmap.to_s
+    pairs.toExMap.to_s
   }
 
   def ShowRgbMap2: Show[RgbMap] = Show[RgbMap] { x =>
@@ -59,7 +59,7 @@ object RgbMap {
 
       k -> show"#$v1 => $index $v2 ($distance)"
     }
-    pairs.pmap.to_s
+    pairs.toExMap.to_s
   }
 }
 

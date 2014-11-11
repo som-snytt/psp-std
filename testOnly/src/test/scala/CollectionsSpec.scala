@@ -77,7 +77,7 @@ class GridSpec extends ScalacheckBundle {
 class PolicyBasic extends ScalacheckBundle {
   def bundle = "Policy, Basic Collections Operations"
 
-  def plist   = PolicyList(1, 2, 3)
+  def plist   = Linear(1, 2, 3)
   def pvector = Direct(1, 2, 3)
   def parray  = Array(1, 2, 3)
   def pseq    = Each[Int](parray foreach _)
@@ -98,7 +98,7 @@ class PolicyBasic extends ScalacheckBundle {
     showsAs("[ 1, 2, 3 ], [ 1, 2 ], [ 1 ], [  ], [ 2 ], [ 2, 3 ], [ 3 ]", closure mk_s ", "),
     showsAs("1 -> 3, 2 -> 4, 3 -> 3", closureBag.entries mk_s ", "),
     seqShows("1 -> 0, 2 -> 1, 3 -> 2", pvector.m.mapWithIndex(_ -> _)),
-    seqShows("11, 22, 33, 44", indexRange(1, 50).pvec.m grep """(.)\1""".r),
+    seqShows("11, 22, 33, 44", indexRange(1, 50).toDirect.m grep """(.)\1""".r),
     seqShows("99, 1010, 1111", xxNumbers drop 8 take 3)
   )
 }
