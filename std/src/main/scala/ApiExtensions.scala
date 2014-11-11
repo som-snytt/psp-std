@@ -133,18 +133,18 @@ final class IndexRangeOps(xs: IndexRange) {
 }
 
 final class InMapOps[K, V](xs: InMap[K, V]) {
-  def comap[K1](f: K1 => K): InMap[K1, V] = new IntensionalMap(xs.domain comap f, xs.lookup comap f)
+  def comap[K1](f: K1 => K): InMap[K1, V] = new InMap.Impl(xs.domain comap f, xs.lookup comap f)
   def partial: K ?=> V                    = newPartial(contains, xs.apply)
   def contains(key: K): Boolean           = xs domain key
-  def ++(that: InMap[K, V]): InMap[K, V]  = new IntensionalMap(xs.domain union that.domain, xs.lookup orElse that.lookup)
+  def ++(that: InMap[K, V]): InMap[K, V]  = new InMap.Impl(xs.domain union that.domain, xs.lookup orElse that.lookup)
 }
 final class ExMapOps[K, V](xs: ExMap[K, V]) {
-  def ++(that: ExMap[K, V]): ExMap[K, V] = new ExtensionalMap(xs.domain union that.domain, xs.lookup orElse that.lookup)
+  def ++(that: ExMap[K, V]): ExMap[K, V] = new ExMap.Impl(xs.domain union that.domain, xs.lookup orElse that.lookup)
 }
 
 final class InSetOps[A](xs: InSet[A]) {
   def comap[A1](f: A1 => A): InSet[A1]    = InSet(f andThen xs)
-  def mapOnto[B](f: A => B): InMap[A, B]  = new IntensionalMap(xs, Lookup total f)
+  def mapOnto[B](f: A => B): InMap[A, B]  = InMap(xs, f)
   def diff(that: InSet[A]): InSet[A]      = InSet.Diff(xs, that)
   def union(that: InSet[A]): InSet[A]     = InSet.Union(xs, that)
   def intersect(that: InSet[A]): InSet[A] = InSet.Intersect(xs, that)
@@ -169,7 +169,7 @@ final class ExSetOps[A](xs: ExSet[A]) {
   def filter(p: Predicate[A]): ExSet[A]   = ExSet.Filtered(xs, p)
   def intersect(that: ExSet[A]): ExSet[A] = ExSet.Intersect(xs, that)
   def isSubsetOf(ys: InSet[A]): Boolean   = xs forall ys
-  def mapOnto[B](f: A => B): ExMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
+  def mapOnto[B](f: A => B): ExMap[A, B]  = new ExMap.Impl(xs, Lookup total f)
   def replace(x: A): ExSet[A]             = if (xs(x)) without(x) add x else this add x
   def reverse: ExSet[A]                   = xs // XXX
   def union(that: ExSet[A]): ExSet[A]     = ExSet.Union(xs, that)

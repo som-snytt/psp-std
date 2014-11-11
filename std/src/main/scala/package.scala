@@ -247,14 +247,14 @@ package object std extends psp.std.StdPackage {
   }
   def PairUp[R, A, B](f: (A, B) => R): PairUp[R, A, B] = new PairUp[R, A, B] { def create(x: A, y: B) = f(x, y) }
 
-  def exMap[K: HashEq, V](xs: (K, V)*): ExMap[K, V]         = xs.m.toExMap
-  def exSeq[A](xs: A*): Each[A]                             = xs.m.toEach
-  def exSet[A: HashEq](xs: A*): ExSet[A]                    = xs.m.toExSet
-  def exView[A](xs: A*): View[A]                            = Direct[A](xs: _*).m
-  def inMap[K, V](p: Predicate[K], f: K => V): InMap[K, V]  = new IntensionalMap(inSet(p), Lookup total f)
-  def inSet[A](p: Predicate[A]): InSet[A]                   = p.inSet
-  def inView[A](mf: Suspended[A]): View[A]                  = Each(mf).m
-  def mutableMap[K, V](xs: (K, V)*): PolicyMutableMap[K, V] = new PolicyMutableMap(jConcurrentMap(xs: _*))
+  def exMap[K: HashEq, V](xs: (K, V)*): ExMap[K, V]        = xs.m.toExMap
+  def exSeq[A](xs: A*): Each[A]                            = xs.m.toEach
+  def exSet[A: HashEq](xs: A*): ExSet[A]                   = xs.m.toExSet
+  def exView[A](xs: A*): View[A]                           = Direct[A](xs: _*).m
+  def inMap[K, V](p: Predicate[K], f: K => V): InMap[K, V] = InMap(inSet(p), Lookup total f)
+  def inSet[A](p: Predicate[A]): InSet[A]                  = p.inSet
+  def inView[A](mf: Suspended[A]): View[A]                 = Each(mf).m
+  def mutableMap[K, V](xs: (K, V)*): MutableMap[K, V]      = MutableMap(jConcurrentMap(xs: _*))
 
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
