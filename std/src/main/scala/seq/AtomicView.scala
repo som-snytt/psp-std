@@ -5,19 +5,9 @@ import Size._, api._
 import lowlevel.CircularBuffer
 import StdShow._, StdZero._
 
-sealed abstract class AtomicView[A, Repr] extends BaseView[A, Repr] with ops.InvariantViewOps[A] {
+sealed abstract class AtomicView[A, Repr] extends InvariantBaseView[A, Repr] with ops.InvariantViewOps[A] {
   type This <: AtomicView[A, Repr]
   def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange
-}
-
-final case class SplitViewClass[+A, Repr](left: BaseView[A, Repr], right: BaseView[A, Repr]) extends SplitView[A] {
-  type Single[+X] = BaseView[X, Repr]
-
-  def mapLeft[A1 >: A](f: Single[A1]  => Single[A1]) = Split(f(left), right)
-  def mapRight[A1 >: A](f: Single[A1] => Single[A1]) = Split(left, f(right))
-  def join: Single[A]                                = Joined(left, right)
-  def intersperse: Single[A]                         = Interspersed(left, right)
-  def force[That](implicit z: Builds[A, That]): That = z build join
 }
 
 object FlattenSlice {
@@ -58,6 +48,16 @@ final class ExSetView[A, Repr](underlying: ExSet[A]) extends AtomicView[A, Repr]
   def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange = linearlySlice(underlying, range, f)
 }
 
+final class IndexedView[A, Repr](val underlying: Indexed[A]) extends AtomicView[A, Repr] with Indexed[A] {
+  type This = IndexedView[A, Repr]
+
+  def viewOps                                                   = Direct("<indexed>")
+  def size: Size                                                = underlying.size
+  def elemAt(i: Index): A                                       = underlying elemAt i
+  def foreach(f: A => Unit): Unit                               = underlying foreach f
+  def foreachSlice(range: IndexRange)(f: A => Unit): IndexRange = ??? // underlying slice range foreach f
+}
+
 final class DirectView[A, Repr](underlying: Direct[A]) extends AtomicView[A, Repr] with Direct[A] with ops.HasPreciseSizeMethods {
   type This = DirectView[A, Repr]
 
@@ -84,23 +84,17 @@ sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[
   def |:(label: String): MapTo[A] = new LabeledView(this, viewOps.init :+ label)
   def :|(label: String): MapTo[A] = new LabeledView(this, viewOps.init :+ label)
 
-  final def ++[A1 >: A](that: View[A1]): MapTo[A1]  = Joined(this, that)
+  final def ++[A1 >: A](that: View[A1]): View[A1]   = Joined(this, that)
   final def collect[B](pf: A ?=> B): MapTo[B]       = Collected(this, pf)
   final def drop(n: Precise): MapTo[A]              = Dropped(this, n)
   final def dropRight(n: Precise): MapTo[A]         = DroppedR(this, n)
   final def dropWhile(p: Predicate[A]): MapTo[A]    = DropWhile(this, p)
   final def flatMap[B](f: A => Each[B]): MapTo[B]   = FlatMapped(this, f)
-  // final def intersperse(that: View[A]): MapTo[A] = Interspersed(this, that)
   final def map[B](f: A => B): MapTo[B]             = Mapped(this, f)
   final def take(n: Precise): MapTo[A]              = Taken(this, n)
   final def takeRight(n: Precise): MapTo[A]         = TakenR(this, n)
   final def takeWhile(p: Predicate[A]): MapTo[A]    = TakenWhile(this, p)
   final def withFilter(p: Predicate[A]): MapTo[A]   = Filtered(this, p)
-
-  final def dropIndex(index: Index): MapTo[A]        = index.sizeExcluding |> (s => take(s) ++ drop(s.increment))
-  final def splitAt(index: Index): SplitView[A]      = index.sizeExcluding |> (s => Split(take(s), drop(s)))
-  final def span(p: Predicate[A]): SplitView[A]      = Split(takeWhile(p), dropWhile(p))
-  final def partition(p: Predicate[A]): SplitView[A] = Split(withFilter(p), withFilter(!p))
 
   final def force[That](implicit z: Builds[A, That]): That = z build this
   final def build(implicit z: Builds[A, Repr]): Repr       = force[Repr]
@@ -126,7 +120,14 @@ sealed trait BaseView[+A, Repr] extends AnyRef with View[A] with ops.ApiViewOps[
   }
 }
 
-sealed abstract class CompositeView[A, B, Repr](val description: String, val sizeEffect: Unary[Size]) extends BaseView[B, Repr] {
+sealed trait InvariantBaseView[A, Repr] extends BaseView[A, Repr] with InvariantView[A] {
+  final def join(that: InvariantView[A]): InvariantView[A] = Joined(this, that)
+  final def splitAt(index: Index): Split[A]                = Split(take(index.sizeExcluding), drop(index.sizeExcluding))
+  final def span(p: Predicate[A]): Split[A]                = Split(takeWhile(p), dropWhile(p))
+  final def partition(p: Predicate[A]): Split[A]           = Split(withFilter(p), withFilter(!p))
+}
+
+sealed abstract class CompositeView[A, B, Repr](val description: String, val sizeEffect: Unary[Size]) extends InvariantBaseView[B, Repr] {
   def prev: View[A]
   def size    = sizeEffect(prev.size)
   def viewOps = prev.viewOps :+ description
@@ -198,7 +199,6 @@ sealed abstract class CompositeView[A, B, Repr](val description: String, val siz
 
 }
 
-final case class Interspersed[A   , Repr](prev: BaseView[A, Repr], ys: View[A])     extends CompositeView[A, A, Repr](pp"intersperse $ys", _ + ys.size)
 final case class Joined [A, B >: A, Repr](prev: BaseView[A, Repr], ys: View[B])     extends CompositeView[A, B, Repr](pp"++ $ys", _ + ys.size)
 final case class Filtered    [A   , Repr](prev: BaseView[A, Repr], p: Predicate[A]) extends CompositeView[A, A, Repr](pp"filter $p",    _.atMost)
 final case class Dropped     [A   , Repr](prev: BaseView[A, Repr], n: Precise)      extends CompositeView[A, A, Repr](pp"drop $n",      _ - n)

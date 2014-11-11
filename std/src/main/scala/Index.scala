@@ -59,6 +59,7 @@ final class Offset private[std] (val offsetValue: Int) extends AnyVal {
   def +(n: Int): Offset              = Offset(offsetValue + n)
   def -(n: Int): Offset              = Offset(offsetValue - n)
   def unary_- : Offset               = Offset(-offsetValue)
+  def toSize: Precise                = math abs offsetValue size
   def toIndex: Index                 = Index(offsetValue)
   def toNth: Nth                     = toIndex.toNth
   def toOffset: Offset               = this

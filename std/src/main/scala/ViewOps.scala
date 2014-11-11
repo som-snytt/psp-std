@@ -38,7 +38,8 @@ trait ApiViewOps[+A] extends Any {
   def forallTrue(implicit ev: A <:< Boolean): Boolean    = forall(x => ev(x))
   def forall(p: Predicate[A]): Boolean                   = foldl[Boolean](true)((res, x) => if (!p(x)) return false else res)
   def head: A                                            = xs take 1 optionally { case Each(x) => x } orFail "empty.head"
-  def indexWhere(p: Predicate[A]): Index                 = (zipIndex findLeft p map snd) | NoIndex
+  def indexWhere(p: Predicate[A]): Index                 = zipIndex findLeft p map snd or NoIndex
+  def indicesWhere(p: Predicate[A]): View[Index]         = zipIndex filterLeft p map snd
   def isEmpty: Boolean                                   = xs.size.isZero || directIsEmpty
   def last: A                                            = xs takeRight 1 optionally { case Each(x) => x } orFail "empty.last"
   def max(implicit ord: Order[A]): A                     = xs reducel (_ max2 _)
@@ -69,7 +70,9 @@ trait ApiViewOps[+A] extends Any {
   def zip[B](ys: View[B]): ZipView[A, B]                         = new ZipView(xs, ys)
   def zipIndex: ZipView[A, Index]                                = new ZipView(xs, Each.indices)
 
-  def ofClass[B: CTag] : View[B] = xs collect classFilter[B]
+  def ofClass[B: CTag] : View[B]            = xs collect classFilter[B]
+  def takeToFirst(p: Predicate[A]): View[A] = xs span !p mapRight (_ take 1) rejoin
+  def dropIndex(index: Index): View[A]      = xs splitAt index mapRight (_ drop 1) rejoin
 
   def foldWithIndex[B](zero: B)(f: (B, A, Index) => B): B = {
     var res = zero
@@ -114,6 +117,7 @@ trait ExtensionalOps[A] extends Any {
   def contains(x: A): Boolean            = xs contains x
   def distinct: View[A]                  = toSet
   def indexOf(x: A): Index               = xs indexOf x
+  def indicesOf(x: A): View[Index]       = xs indicesOf x
   def mapOnto[B](f: A => B): ExMap[A, B] = toSet mapOnto f
   def toBag: Bag[A]                      = xs.toBag
   def toSet: ExSet[A]                    = xs.toExSet
@@ -138,9 +142,11 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
   def contains(x: A)(implicit z: Eq[A]): Boolean                = exists (_ === x)
   def distinct(implicit z: HashEq[A]): View[A]                  = xs.toExSet
   def indexOf(x: A)(implicit z: Eq[A]): Index                   = indexWhere (_ === x)
+  def indicesOf(x: A)(implicit z: Eq[A]): View[Index]           = indicesWhere (_ === x)
   def mapOnto[B](f: A => B)(implicit z: HashEq[A]): ExMap[A, B] = xs.toExSet mapOnto f
   def toBag(implicit z: HashEq[A]): Bag[A]                      = exMap((xs.toScalaVector groupBy identity mapValues (_.size.size: Precise)).toSeq: _*)
   def without(x: A)(implicit z: Eq[A]): View[A]                 = xs filterNot (_ === x)
+  def withoutEmpty(implicit z: Empty[A], eqs: Eq[A]): View[A]   = xs without z.empty
 
   def findOr(p: Predicate[A], alt: => A): A           = find(p) | alt
   def product(implicit z: Products[A]): A             = xs.foldl(z.one)(z.product)
@@ -171,12 +177,32 @@ trait InvariantViewOps[A] extends Any with ApiViewOps[A] {
     zfoldl[ExSet[B]]((seen, x) => f(x) |> (y => try seen add y finally seen(y) || mf(x)))
   )
 
+  def grouped(n: Precise): View[View[A]] = new Grouped[A](n) apply xs
+
+  private def iteratively[B](xs: View[A], head: View[A] => B, tail: View[A] => View[A]): View[B] = xs match {
+    case _ if xs.isEmpty => emptyValue
+    case _               => head(xs) +: iteratively(tail(xs), head, tail)
+  }
+
   def boundedClosure(maxDepth: Precise, f: A => View[A]): View[A] =
     if (maxDepth.isZero) xs else xs ++ (xs flatMap f).boundedClosure(maxDepth - 1, f)
 }
 
+private abstract class HeadAndTail[A, B] {
+  def isDone(xs: View[A]): Boolean
+  def head(xs: View[A]): B
+  def tail(xs: View[A]): View[A]
+  def apply(xs: View[A]): View[B] = if (isDone(xs)) emptyValue else head(xs) +: apply(tail(xs)) // XXX @tailrec
+}
+private class Grouped[A](n: Precise) extends HeadAndTail[A, View[A]] {
+  def isDone(xs: View[A]): Boolean = xs.isEmpty
+  def head(xs: View[A]): View[A]   = xs take n
+  def tail(xs: View[A]): View[A]   = xs drop n
+}
+
 final class DirectApiViewOps[A, Repr](val xs: DirectView[A, Repr]) extends AnyVal with DirectViewOps[A, Repr] {}
 final class EachApiViewOps[A](val xs: View[A]) extends AnyVal with InvariantViewOps[A] { }
+final class InvariantApiViewOps[A](val xs: InvariantView[A]) extends AnyVal with InvariantViewOps[A] { }
 
 final class PairViewOps[R, A, B](val xs: View[R])(implicit paired: PairDown[R, A, B]) {
   // We should be able to write these method on the normal ViewOps and take the implicit

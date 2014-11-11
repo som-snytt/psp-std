@@ -23,7 +23,7 @@ object BiIterator {
     case xs: Direct[A]  => direct(xs)
     case xs: Indexed[A] => indexed(xs)
     case xs: Linear[A]  => linear(xs)
-    case _              => indexed(xs.memo)
+    case _              => direct(xs.toDirect) // XXX
   }
 
   def array[A](xs: Array[A]): BiIterator[A]                          = new ArrayIterator(xs)
@@ -98,7 +98,7 @@ object BiIterable {
     case xs: Direct[A]  => apply[A](xs)
     case xs: Indexed[A] => apply[A](xs)
     case xs: Linear[A]  => apply[A](xs)
-    case _              => apply[A](xs.memo)  // XXX toScalaStream?
+    case _              => apply[A](xs.toScalaStream)
   }
   def apply[A](xs: Linear[A]): BiIterable[A]     = new LinearBased(xs)
   def apply[A](xs: Direct[A]): BiIterable[A]     = new DirectBased(xs)

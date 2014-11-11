@@ -15,11 +15,12 @@ sealed trait ColorString {
 }
 
 object ColorString {
+  val empty = apply("")
   implicit val ShowColorString: Show[ColorString] = Show[ColorString](_.colorized)
 
   def apply(raw: String): ColorString                        = new Atomic(raw, Ansi.empty)
   def apply(raw: String, code: Ansi): ColorString            = new Atomic(raw, code)
-  def apply(lhs: ColorString, rhs: ColorString): ColorString = new Join(lhs, rhs)
+  def apply(lhs: ColorString, rhs: ColorString): ColorString = if (lhs.isEmpty) rhs else if (rhs.isEmpty) lhs else new Join(lhs, rhs)
 
   final class Atomic(val raw: String, code: Ansi) extends ColorString {
     def length    = raw.length
@@ -35,7 +36,10 @@ object ColorString {
 }
 
 final class ColoredOps(val lhs: ColorString) extends AnyVal {
-  def ~(rhs: ColorString): ColorString = ColorString(lhs, rhs)
+  def isEmpty                            = lhs.raw.length == 0
+  def ~(rhs: ColorString): ColorString   = ColorString(lhs, rhs)
+  def <>(rhs: ColorString): ColorString  = if (lhs.isEmpty) rhs else if (rhs.isEmpty) lhs else lhs ~ rhs
+  def <+>(rhs: ColorString): ColorString = if (lhs.isEmpty) rhs else if (rhs.isEmpty) lhs else lhs ~ " ".color ~ rhs
 }
 
 final class TextOps(val lhs: String) extends AnyVal with BasicAtoms[ColorString] {
@@ -51,4 +55,5 @@ final class TextOps(val lhs: String) extends AnyVal with BasicAtoms[ColorString]
    *  "foo" %> Red + "bar" %> Magenta.bright
    */
   def %>(code: Ansi): ColorString = ColorString(lhs, code)
+  def color: ColorString          = ColorString(lhs)
 }

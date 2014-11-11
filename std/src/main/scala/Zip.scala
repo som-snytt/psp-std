@@ -14,10 +14,14 @@ final class ZipView[+A1, +A2](xs: View[A1], ys: View[A2]) {
     foreach((x, y) => if (p(x, y)) return Some(x -> y))
     None
   }
-  def foreach(f: (A1, A2) => Unit): Unit  = {
-    val it1 = xs.iterator
-    val it2 = ys.iterator
-    it1 foreach (x => if (it2.hasNext) f(x, it2.next) else return)
+  def foreach(f: (A1, A2) => Unit): Unit = (xs, ys) match {
+
+    case (xs: Direct[A1], ys: Direct[A2]) => (xs.size min ys.size).indices foreach (i => f(xs(i), ys(i)))
+    case (xs: Direct[A1], ys)             => (ys take xs.size).foreachWithIndex((y, i) => f(xs(i), y))
+    case (xs, ys: Direct[A2])             => (xs take ys.size).foreachWithIndex((x, i) => f(x, ys(i)))
+    case _                                =>
+      val it = xs.iterator
+      ys foreach (y => if (it.hasNext) f(it.next, y) else return)
   }
 
   def flatMap[B](f: (A1, A2) => View[B]): View[B] = inView(mf => foreach((x, y) => f(x, y) foreach mf))

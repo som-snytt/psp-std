@@ -21,7 +21,8 @@ abstract class TestRunnerCommon {
     new InferenceSpec,
     new CollectionsSpec,
     new SliceSpec,
-    new OperationCounts
+    new OperationCounts,
+    new TokenSpec
   )
 
   def wrapRun(b: Bundle): Boolean = Try(b.run) fold (

@@ -2,7 +2,7 @@ package psp
 package std
 package ansi
 
-import Ansi._
+import Ansi._, StdShow._
 
 object Ansi {
   final val ESC       = '\u001b'                    // <esc>
@@ -31,18 +31,21 @@ final class Ansi private (val atoms: sciVector[Atom]) extends BasicAttributes[An
   def /(that: Atom) = new Ansi(atoms :+ that)
   def /(that: Ansi) = new Ansi(atoms ++ that.atoms)
 
-  def apply(s: String): String = "%s%s%s".format(csi(atoms map (_.code): _*), s, csi(0))
+  private def prefix = csi(atoms map (_.code): _*)
+  private def suffix = csi(0)
 
-  override def toString = atoms mkString ("\\" + "e[", ";", "m")
+  def apply(s: String): String = prefix ~ s ~ suffix
+
+  override def toString = atoms mk_s ";"
 }
 
 /** One piece of an ansi control sequence.  Either a color
  *  (foreground or background) or an attribute (e.g. bright, underline.)
  *  Control sequences are created from Atoms with the / operator.
  */
-final class Atom private (val value: Int) extends AnyVal {
+final class Atom private (val value: Int) extends AnyVal with ForceShowDirect {
   def code: Int = value
-  override def toString = s"$code"
+  def to_s      = s"$code"
 }
 
 object Atom extends (Int => Atom) {

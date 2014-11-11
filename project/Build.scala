@@ -13,7 +13,7 @@ object Build extends sbt.Build {
   def javaCrossTarget(id: String) = key.buildBase mapValue (_ / "target" / id / s"java_$javaBinaryVersion")
 
   def rootResourceDir: SettingOf[File] = resourceDirectory in Compile in LocalRootProject
-  def subprojects                      = List[sbt.Project](api, dmz, std, pio, dev, jvm)
+  def subprojects                      = List[sbt.Project](api, dmz, std, pio, dev, jvm, scalac)
   def classpathDeps                    = convertSeq(subprojects): List[ClasspathDep[ProjectReference]]
   def projectRefs                      = convertSeq(subprojects): List[ProjectReference]
 
@@ -76,12 +76,13 @@ object Build extends sbt.Build {
           watchSources <++= sources in Test in testOnly
   )
 
-  lazy val api = project setup "api for psp's non-standard standard library"
-  lazy val dmz = project setup "dmz for psp's non-standard standard library" dependsOn api
-  lazy val std = project setup "psp's non-standard standard library" dependsOn dmz also guava
-  lazy val pio = project setup "io library for pps-std" dependsOn std
-  lazy val jvm = project.usesCompiler.usesParsers setup "jvm library for psp's non-standard standard library" dependsOn pio
-  lazy val dev = project setup "psp's even less stable code" dependsOn std
+  lazy val api    = project setup "api for psp's non-standard standard library"
+  lazy val dmz    = project setup "dmz for psp's non-standard standard library" dependsOn api
+  lazy val std    = project setup "psp's non-standard standard library" dependsOn dmz also guava
+  lazy val pio    = project setup "io library for pps-std" dependsOn std
+  lazy val jvm    = project.usesCompiler.usesParsers setup "jvm library for psp's non-standard standard library" dependsOn pio
+  lazy val dev    = project setup "psp's even less stable code" dependsOn std
+  lazy val scalac = project.usesCompiler setup "psp's compiler-requiring code" dependsOn pio
 
   lazy val publishOnly = project.helper.noSources aggregate (api, dmz, std)
   lazy val compileOnly = project.helper.noSources aggregate (projectRefs: _*)
@@ -96,7 +97,7 @@ object Build extends sbt.Build {
   // A console project which pulls in misc additional dependencies currently being explored.
   // Removing all scalac options except the ones listed here, to eliminate all the warnings
   // repl startup code in resources/initialCommands.scala
-  lazy val consoleOnly = project.helper.usesCompiler.alsoToolsJar dependsOn (testOnly % "test->test") settings (
+  lazy val consoleOnly = project.helper.usesCompiler.alsoToolsJar dependsOn (testOnly % "test->test") dependsOn (classpathDeps: _*) settings (
                     libraryDependencies <+=  scalaCompiler,
     scalacOptions in (Compile, console)  :=  replArgs,
        scalacOptions in (Test, console)  :=  replArgs,
