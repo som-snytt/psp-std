@@ -221,12 +221,12 @@ package object std extends psp.std.StdPackage {
     case xs: sciIndexedSeq[_] => Direct fromScala xs m
     case xs: sciLinearSeq[_]  => Linear fromScala xs m
     case xs: sciSet[_]        => new PolicySet.FromScala(xs) m
-    case _                    => new Each.FromScala(xs) m
+    case _                    => Each fromScala xs m
   }
   def fromJava[A](xs: jIterable[A]): AnyView[A] = xs match {
     case xs: jList[_] => Direct fromJava xs m
     case xs: jSet[_]  => new PolicySet.FromJava[A](xs) m
-    case xs           => new Each.FromJava[A](xs) m
+    case xs           => Each fromJava xs m
   }
 
   // Java.

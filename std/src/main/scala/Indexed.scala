@@ -9,12 +9,13 @@ import api._
  */
 object Indexed {
   def from(start: Long): Indexed[Long] = Pure(_.get + start)
+  def indices: Indexed[Index]          = Pure(identity)
 
   final case class Pure[A](f: Index => A) extends AnyVal with Indexed[A] {
     def size                                = Size.Unknown
     def isEmpty                             = false
     def elemAt(i: Index): A                 = f(i)
-    @inline def foreach(f: A => Unit): Unit = Each.indices foreach (i => f(elemAt(i)))
+    @inline def foreach(f: A => Unit): Unit = Each from 0L foreach (i => f(elemAt(Index(i))))
   }
 
   final class MemoIterator[+A](memo: Memo[A]) extends scIterator[A] {

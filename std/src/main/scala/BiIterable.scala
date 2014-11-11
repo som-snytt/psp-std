@@ -18,14 +18,22 @@ trait BiIterator[+A] extends jIterator[A @uV] with scIterator[A] {
 }
 
 object BiIterator {
-  def empty[A] : BiIterator[A]                                       = Empty
-  def single[A](x: A): BiIterator[A]                                 = new Single(x)
-  def joined[A](xs: BiIterator[A], ys: BiIterator[A]): BiIterator[A] = new Joined(xs, ys)
-  def mapped[A, B](it: BiIterator[A], f: A => B): BiIterator[B]      = new Mapped(it, f)
+  def empty[A] : BiIterator[A] = Empty
+  def apply[A](xs: Each[A]): BiIterator[A] = xs match {
+    case xs: Direct[A]  => direct(xs)
+    case xs: Indexed[A] => indexed(xs)
+    case xs: Linear[A]  => linear(xs)
+    case _              => indexed(xs.memo)
+  }
+
   def array[A](xs: Array[A]): BiIterator[A]                          = new ArrayIterator(xs)
-  def linear[A](xs: Linear[A]): BiIterator[A]                        = new LinearIterator(xs)
-  def vector[A](xs: Direct[A]): BiIterator[A]                        = new VectorIterator(xs)
+  def direct[A](xs: Direct[A]): BiIterator[A]                        = new DirectIterator(xs)
   def enumeration[A](enum: jEnumeration[A]): BiIterator[A]           = new EnumerationIterator(enum)
+  def indexed[A](xs: Indexed[A]): BiIterator[A]                      = new IndexedIterator(xs)
+  def joined[A](xs: BiIterator[A], ys: BiIterator[A]): BiIterator[A] = new Joined(xs, ys)
+  def linear[A](xs: Linear[A]): BiIterator[A]                        = new LinearIterator(xs)
+  def mapped[A, B](it: BiIterator[A], f: A => B): BiIterator[B]      = new Mapped(it, f)
+  def single[A](x: A): BiIterator[A]                                 = new Single(x)
 
   final class EnumerationIterator[A](enum: jEnumeration[A]) extends BiIterator[A] {
     def hasNext = enum.hasMoreElements
@@ -55,10 +63,15 @@ object BiIterator {
     def hasNext   = index < xs.length
     def next(): A = try xs(index) finally index += 1
   }
-  private class VectorIterator[A](xs: Direct[A]) extends BiIterator[A] {
+  private class DirectIterator[A](xs: Direct[A]) extends BiIterator[A] {
     private[this] var index: Index = 0.index
     def hasNext   = xs.size containsIndex index
     def next(): A = try xs(index) finally index += 1
+  }
+  private class IndexedIterator[A](xs: Indexed[A]) extends BiIterator[A] {
+    private[this] var index: Index = 0.index
+    def hasNext   = true // XXX - put containsIndex on Indexed/Direct
+    def next(): A = try xs elemAt index finally index += 1
   }
   private class Single[A](x: A) extends BiIterator[A] {
     private[this] var done = false
@@ -74,17 +87,24 @@ object BiIterable {
     def next(): A = nextFn
   }
 
-  private class VectorBased[A](xs: Direct[A])   extends BiIterableImpl(BiIterator vector xs)
+  private class DirectBased[A](xs: Direct[A])    extends BiIterableImpl(BiIterator direct xs)
+  private class IndexedBased[A](xs: Indexed[A])  extends BiIterableImpl(BiIterator indexed xs)
   private class LinearBased[A](xs: Linear[A])    extends BiIterableImpl(BiIterator linear xs)
   private class ArrayBased[A](xs: Array[A])      extends BiIterableImpl(BiIterator array xs)
   private class JavaBased[A](xs: jIterable[A])   extends BiIterableImpl(xs.iterator |> (it => new Impl(it.hasNext, it.next)))
   private class ScalaBased[A](xs: scIterable[A]) extends BiIterableImpl(xs.iterator |> (it => new Impl(it.hasNext, it.next)))
 
-  def apply[A](xs: Each[A]): BiIterable[A]       = new ScalaBased(xs.toScalaStream) // XXX
+  def apply[A](xs: Each[A]): BiIterable[A] = xs match {
+    case xs: Direct[A]  => apply[A](xs)
+    case xs: Indexed[A] => apply[A](xs)
+    case xs: Linear[A]  => apply[A](xs)
+    case _              => apply[A](xs.memo)  // XXX toScalaStream?
+  }
   def apply[A](xs: Linear[A]): BiIterable[A]     = new LinearBased(xs)
-  def apply[A](xs: Direct[A]): BiIterable[A]     = new VectorBased(xs)
+  def apply[A](xs: Direct[A]): BiIterable[A]     = new DirectBased(xs)
+  def apply[A](xs: Indexed[A]): BiIterable[A]    = new IndexedBased(xs)
   def apply[A](xs: Array[A]): BiIterable[A]      = new ArrayBased(xs)
   def apply[A](xs: jIterable[A]): BiIterable[A]  = new JavaBased(xs)
   def apply[A](xs: scIterable[A]): BiIterable[A] = new ScalaBased(xs)
-  def elems[A](xs: A*): BiIterable[A]            = new VectorBased(xs.m.toDirect)
+  def elems[A](xs: A*): BiIterable[A]            = new DirectBased(xs.m.toDirect)
 }

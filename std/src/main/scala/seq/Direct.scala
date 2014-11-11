@@ -51,15 +51,15 @@ object Direct {
   }
 
   def empty[A] : Direct[A]                             = Empty
-  def apply[A](xs: A*): Direct[A]                      = WrapVector(xs.toVector)
-  def fromScala[A](xs: sciIndexedSeq[A]): Direct[A]    = WrapVector(xs.toVector)
+  def apply[A](xs: A*): Direct[A]                      = xs match { case xs: scmWrappedArray[_] => WrapArray[A](xs.array) ; case _ => WrapVector(xs.toVector) }
+  def fromScala[A](xs: sCollection[A]): Direct[A]      = WrapVector(xs.toVector)
   def fromJava[A](xs: jList[A]): Direct[A]             = WrapJava(xs)
   def fromString(xs: String): Direct[Char]             = WrapString(xs)
   def fromArray[A](xs: Array[A]): Direct[A]            = WrapArray[A](xs)
   def wrapArray[A](xs: Array[_]): Direct[A]            = WrapArray[A](xs)
   def pure[A](size: Precise, f: Index => A): Direct[A] = Pure(size, f)
 
-  def join[A](xs: Direct[A], ys: Direct[A]): WrapVector[A] = xs match {
+  def join[A](xs: Direct[A], ys: Direct[A]): Direct[A] = xs match {
     case xs: WrapVector[A] => xs ++ ys
     case _                 => WrapVector(xs.toScalaVector) ++ ys
   }

@@ -18,6 +18,7 @@ trait StdGateways extends Any
   self =>
 
   implicit def opsDirect[A](xs: Direct[A]): ops.DirectOps[A] = new ops.DirectOps(xs)
+  implicit def opsLinear[A](xs: Linear[A]): ops.LinearOps[A] = new ops.LinearOps(xs)
 }
 
 // Adapt CanBuildFrom to Builds, since there are zillions of implicit CanBuildFroms already lying around.

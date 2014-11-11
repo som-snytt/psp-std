@@ -7,24 +7,16 @@ sealed abstract class CollectionSizeException(msg: String) extends RuntimeExcept
 final class InfiniteSizeException(msg: String) extends CollectionSizeException(msg)
 final class LongSizeException(msg: String) extends CollectionSizeException(msg)
 
-trait FromScala[Repr] extends Any {
-  def scalaCollection: Repr
-}
-object FromScala {
-  def apply[A, CC[X] <: sCollection[X]](xs: CC[A]): FromScala[CC[A]] = new FromScala[CC[A]] { def scalaCollection = xs }
-  def unapply[Repr](wrapped: FromScala[Repr]): Some[Repr]            = Some(wrapped.scalaCollection)
-}
-
 object Each {
   def builder[A] : Builds[A, Each[A]] = Builds(identity)
 
-  final class FromJava[A](xs: jIterable[A]) extends Each[A] {
+  final case class WrapJava[A](xs: jIterable[A]) extends AnyVal with Each[A] {
     def size = Size(xs)
-    @inline def foreach(f: A => Unit): Unit = BiIterable(xs) foreach f
+    @inline def foreach(f: A => Unit): Unit = xs.iterator foreach f
   }
-  final case class FromScala[A](scalaCollection: sCollection[A]) extends AnyVal with Each[A] with psp.std.FromScala[sCollection[A]] {
-    def size = Size(scalaCollection)
-    @inline def foreach(f: A => Unit): Unit = scalaCollection foreach f
+  final case class WrapScala[A](xs: sCollection[A]) extends AnyVal with Each[A] {
+    def size = Size(xs)
+    @inline def foreach(f: A => Unit): Unit = xs foreach f
   }
   /** We have to produce a scala Seq in order to return from an extractor.
    *  That requires us to produce made-up values for these methods thanks to
@@ -36,7 +28,7 @@ object Each {
       case Precise(n) if n > MaxInt => throw new LongSizeException(s"$xs")
       case Precise(n)               => n.toInt
     }
-    def iterator: scIterator[A] = xs.memo.iterator
+    def iterator: scIterator[A] = xs.iterator
     def apply(index: Int): A = xs drop index.size head
     override def foreach[U](f: A => U): Unit = xs foreach (x => f(x))
   }
@@ -89,7 +81,7 @@ object Each {
   def from(n: BigInt): Each[BigInt] = unfold(n)(_ + 1)
   def from(n: Int): Each[Int]       = unfold(n)(_ + 1)
   def from(n: Long): Each[Long]     = unfold(n)(_ + 1)
-  def indices: Each[Index]          = unfold(Index(0))(_.next)
+  def indices: Indexed[Index]       = Indexed.indices
 
   def elems[A](xs: A*): Each[A]                                 = apply[A](xs foreach _)
   def const[A](elem: A): Constant[A]                            = Constant[A](elem)
@@ -98,6 +90,8 @@ object Each {
   def empty[A] : Each[A]                                        = Direct.Empty
   def join[A](xs: Each[A], ys: Each[A]): Each[A]                = Joined[A](xs, ys)
   def unfold[A](start: A)(next: A => A): Unfold[A]              = Unfold[A](start)(next)
+  def fromScala[A](xs: sCollection[A]): Each[A]                 = WrapScala(xs)
+  def fromJava[A](xs: jIterable[A]): Each[A]                    = WrapJava(xs)
 
   def apply[A](mf: Suspended[A]): Each[A]        = new Impl[A](Size.unknown, mf)
   def unapplySeq[A](xs: Each[A]): Some[scSeq[A]] = Some(xs.seq)
