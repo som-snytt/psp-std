@@ -30,6 +30,9 @@ final class ZipView[+A1, +A2](xs: View[A1], ys: View[A2]) {
   def toMap[A0 >: A1]: sciMap[A0, A2]             = this map (_ -> _) toScalaMap
   def withFilter(q: Predicate2[A1, A2])           = inView[(A1, A2)](mf => foreach((x, y) => if (q(x, y)) mf(x -> y)))
 
+  def takeWhileLeft(q: Predicate[A1])  = pairs takeWhile (xy => q(fst(xy)))
+  def takeWhileRight(q: Predicate[A2]) = pairs takeWhile (xy => q(snd(xy)))
+
   def filterLeft(q: Predicate[A1])  = withFilter((x, y) => q(x))
   def filterRight(q: Predicate[A2]) = withFilter((x, y) => q(y))
 

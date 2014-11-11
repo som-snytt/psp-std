@@ -101,6 +101,8 @@ object Size {
       case Bounded(lo, hi) => bounded(f(lo), g(hi))
     }
 
+    def slice(range: IndexRange): Size = (this - range.toDrop) min range.toTake
+
     /** For instance taking the union of two sets. The new size is
      *  at least the size of the larger operand, but at most the sum
      *  of the two sizes.
@@ -128,6 +130,7 @@ object Size {
       case (GenBounded(l1, h1), GenBounded(l2, h2)) => bounded(l1 + l2, h1 + h2)
     }
     def - (rhs: Size): Size = (lhs, rhs) match {
+      case (Precise(l), Precise(r))         => l - r size
       case (Infinite, Finite(_, _))         => Infinite
       case (Finite(_, _), Infinite)         => Empty
       case (Finite(l1, h1), Finite(l2, h2)) => bounded(l1 - h2, h1 - l2)
