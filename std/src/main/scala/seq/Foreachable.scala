@@ -28,7 +28,7 @@ object Foreachable extends ForeachableCompanion[Foreachable] {
     def wrap(repr: Repr): AtomicView[Elem, Repr] = new LinearView[A, Repr](f(repr))
   }
 
-  implicit def PolicyForeachIs[A, CC[X] <: Each[X]] : Coll[A, CC[A]]       = apply[A, CC[A]](xs => xs)
+  implicit def PolicyForeachIs[A, CC[X] <: Each[X]] : Coll[A, CC[A]]          = apply[A, CC[A]](xs => xs)
   implicit def ScalaCollectionIs[A, CC[X] <: sCollection[X]] : Coll[A, CC[A]] = apply[A, CC[A]](fromScala)
   implicit def JavaIterableIs[A, CC[X] <: jIterable[X]] : Coll[A, CC[A]]      = apply[A, CC[A]](fromJava)
 }
@@ -39,9 +39,9 @@ object ForeachableSet extends ForeachableCompanion[ForeachableSet] {
     def wrap(repr: Repr) = new ExSetView(f(repr))
   }
   implicit def PolicySetIs[A, CC[X] <: ExSet[X]] : Coll[A, CC[A]] = apply[A, CC[A]](xs => xs)
-  implicit def JavaSetIs[A, CC[X] <: jSet[X]] : Coll[A, CC[A]]    = apply[A, CC[A]](xs => new PolicySet.FromJava(xs))
-  implicit def ScalaSetIs[A, CC[X] <: scSet[X]] : Coll[A, CC[A]]  = apply[A, CC[A]](xs => new PolicySet.FromScala(xs.toSet))
-  implicit def ScalaBitSetIs: Coll[Int, sciBitSet]                = apply[Int, sciBitSet](xs => new PolicySet.FromScala(xs))
+  implicit def JavaSetIs[A, CC[X] <: jSet[X]] : Coll[A, CC[A]]    = apply[A, CC[A]](ExSet fromJava _)
+  implicit def ScalaSetIs[A, CC[X] <: scSet[X]] : Coll[A, CC[A]]  = apply[A, CC[A]](ExSet fromScala _)
+  implicit def ScalaBitSetIs: Coll[Int, sciBitSet]                = apply[Int, sciBitSet](ExSet fromScala _)
 }
 
 object ForeachableLinear extends ForeachableCompanion[ForeachableLinear] {
@@ -63,5 +63,5 @@ object ForeachableIndexed extends ForeachableCompanion[ForeachableIndexed] {
   implicit def ArrayIs[A] : Coll[A, Array[A]]                                  = apply[A, Array[A]](Direct fromArray _)
   implicit def JavaStringIs: Coll[Char, String]                                = apply[Char, String](Direct fromString _)
   implicit def PolicyDirectIs[A, CC[X] <: Direct[X]] : Coll[A, CC[A]]          = apply[A, CC[A]](xs => xs)
-  implicit def ScalaIndexedSeqIs[A, CC[X] <: scIndexedSeq[A]] : Coll[A, CC[A]] = apply[A, CC[A]](xs => Direct fromScala xs.toIndexedSeq)
+  implicit def ScalaIndexedSeqIs[A, CC[X] <: scIndexedSeq[A]] : Coll[A, CC[A]] = apply[A, CC[A]](Direct fromScala _)
 }

@@ -28,7 +28,7 @@ trait StdGateways extends Any
 trait StdBuilds0 extends Any                 { implicit def implicitBuildsFromCBF[A, That](implicit z: CanBuild[A, That]): Builds[A, That] = Builds wrap z          }
 trait StdBuilds1 extends Any with StdBuilds0 { implicit def implicitBuildsArray[A: CTag] : Builds[A, Array[A]]                             = Direct.arrayBuilder[A] }
 trait StdBuilds2 extends Any with StdBuilds1 { implicit def implicitBuildsList[A] : Builds[A, Linear[A]]                                   = Linear.builder[A]  }
-trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, ExSet[A]]                             = PolicySet.builder[A]   }
+trait StdBuilds3 extends Any with StdBuilds2 { implicit def implicitBuildsSet[A: HashEq] : Builds[A, ExSet[A]]                             = ExSet.builder[A]   }
 trait StdBuilds4 extends Any with StdBuilds3 { implicit def implicitBuildsDirect[A] : Builds[A, Direct[A]]                                 = Direct.builder[A]      }
 trait StdBuilds  extends Any with StdBuilds4 { implicit def implicitBuildsString: Builds[Char, String]                                     = Direct.stringBuilder() }
 
@@ -138,36 +138,23 @@ trait StdOps3 extends Any with StdOps2 {
   implicit def opsTry[A](x: Try[A]): ops.TryOps[A]                                                       = new ops.TryOps[A](x)
   implicit def opsUnit(x: Unit): ops.UnitOps.type                                                        = ops.UnitOps
 
-  implicit def apiInSetPromote[A](x: InSet[A]): IntensionalSet[A] = x match {
-    case xs: IntensionalSet[A] => xs
-    case _                     => IntensionalSet(x)
-  }
-  implicit def apiInMapPromote[K, V](x: InMap[K, V]): IntensionalMap[K, V] = x match {
-    case xs: IntensionalMap[K, V] => xs
-    case _                        => new IntensionalMap(x.domain, Lookup(x))
-  }
+  implicit def apiInSetPromote[A](x: InSet[A]): InSet.Impl[A]          = InSet impl x
+  implicit def apiInMapPromote[K, V](x: InMap[K, V]): InMap.Impl[K, V] = InMap impl x
 }
 
 trait StdOps extends Any with StdOps3 {
   implicit def opsApiShowInterpolator(sc: StringContext): ShowInterpolator              = new ShowInterpolator(sc)
   implicit def predicateToDirectoryFilter[A](p: Predicate[A]): DirectoryStreamFilter[A] = new DirectoryStreamFilter[A] { def accept(entry: A) = p(entry) }
   implicit def predicateToPartialFunction[A](p: Predicate[A]): A ?=> A                  = { case x if p(x) => x }
+  implicit def directoryStreamView[A](stream: DirectoryStream[A]): View[A]              = inView(BiIterable(stream) foreach _)
 
   // Promotion of the api type (which has as few methods as possible) to the
   // concrete type which has all the other ones.
-  implicit def apiIndexPromote(x: Index): IndexImpl                        = Index impl x
-  implicit def apiIndexRangePromote(x: IndexRange): LongRange              = IndexRange impl x
-  implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]            = Order(ord.compare)
-  implicit def directoryStreamView[A](stream: DirectoryStream[A]): View[A] = inView(BiIterable(stream) foreach _)
-
-  implicit def apiExSetPromote[A](x: ExSet[A]): ExtensionalSet[A] = x match {
-    case xs: ExtensionalSet[A] => xs
-    case _                     => ExtensionalSet(x)(x.hashEq)
-  }
-  implicit def apiExMapPromote[K, V](x: ExMap[K, V]): ExtensionalMap[K, V] = x match {
-    case xs: ExtensionalMap[K, V] => xs
-    case _                        => new ExtensionalMap(x.domain, Lookup(x))
-  }
+  implicit def apiIndexPromote(x: Index): IndexImpl                    = Index impl x
+  implicit def apiIndexRangePromote(x: IndexRange): LongRange          = IndexRange impl x
+  implicit def apiOrderPromote[A](ord: Order[A]): Order.Impl[A]        = Order(ord.compare)
+  implicit def apiExSetPromote[A](x: ExSet[A]): ExSet.Impl[A]          = ExSet impl x
+  implicit def apiExMapPromote[K, V](x: ExMap[K, V]): ExMap.Impl[K, V] = ExMap impl x
 }
 
 // Prefer opsAnyRef.

@@ -62,7 +62,7 @@ abstract class StdPackage
   }
   implicit class AnyTargetSeqOps[A: HashEq](root: A) {
     def transitiveDepth(maxDepth: Int, expand: A => Each[A]): Each[A] = {
-      var seen = PolicySet.elems[A]()
+      var seen = exSet[A]()
       def loop(depth: Int, root: A, f: A => Unit): Unit = if (depth < maxDepth && !seen(root)) {
         seen = seen union exSet(root)
         f(root)

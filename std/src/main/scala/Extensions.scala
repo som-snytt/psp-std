@@ -44,7 +44,7 @@ final class BiFunctionOps[T, R](val f: (T, T) => R) extends AnyVal {
   // def on[S](g: S => T): (S, S) => R = (x, y) => f(g(x), g(y))
 }
 final class PredicateOps[A](val p: Predicate[A]) extends AnyVal {
-  def inSet: InSet[A] = IntensionalSet(p)
+  def inSet: InSet[A] = InSet(p)
 }
 final class PartialFunctionOps[A, B](val pf: A ?=> B) extends AnyVal {
   def contains(x: A)                        = pf isDefinedAt x

@@ -58,7 +58,7 @@ object Algebras {
   }
 
   final class InSetAlgebra[A] extends BooleanAlgebra[InSet[A]] {
-    import IntensionalSet._
+    import InSet._
 
     def and(x: InSet[A], y: InSet[A]): InSet[A] = (x, y) match {
       case (Complement(xs), Complement(ys)) => not(Union[A](xs, ys))

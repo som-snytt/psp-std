@@ -4,6 +4,27 @@ package std
 import api._, StdShow._
 import Lookup._
 
+object ExMap {
+  type BuildsMap[K, V] = Builds[(K, V), ExMap[K, V]]
+  type Impl[K, V]      = ExtensionalMap[K, V]
+
+  def builder[K : HashEq, V] : BuildsMap[K, V] = Direct.builder[(K, V)] map (kvs => new Impl(kvs.m.lefts.toExSet, Lookup(kvs.toPartial)))
+
+  def impl[K, V](xs: ExMap[K, V]): Impl[K, V] = xs match {
+    case xs: ExtensionalMap[K, V] => xs
+    case _                        => new ExtensionalMap(xs.domain, Lookup(xs))
+  }
+}
+
+object InMap {
+  type Impl[K, V] = IntensionalMap[K, V]
+
+  def impl[K, V](xs: InMap[K, V]): Impl[K, V] = xs match {
+    case xs: IntensionalMap[K, V] => xs
+    case _                        => new IntensionalMap(xs.domain, Lookup(xs))
+  }
+}
+
 final class IntensionalMap[K, V](domain: InSet[K], lookup: Lookup[K, V]) extends PolicyMap[InSet, K, V](domain, lookup) with InMap[K, V] {
   type NewMap[K1, V1] = InMap[K1, V1]
 
@@ -84,9 +105,9 @@ class PolicyMutableMap[K, V](jmap: jConcurrentMap[K, V], default: Default[K, V])
 }
 
 object PolicyMap {
-  type BuildsMap[K, V] = Builds[(K, V), ExMap[K, V]]
+  // type BuildsMap[K, V] = Builds[(K, V), ExMap[K, V]]
 
-  def builder[K : HashEq, V] : BuildsMap[K, V]              = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.toExSet, Lookup(kvs.toPartial)))
+  // def builder[K : HashEq, V] : BuildsMap[K, V]              = Direct.builder[(K, V)] map (kvs => new ExtensionalMap(kvs.m.lefts.toExSet, Lookup(kvs.toPartial)))
   def apply[K, V](keys: ExSet[K], pf: K ?=> V): ExMap[K, V] = new ExtensionalMap(keys, Lookup(pf))
   def unapplySeq[K, V](map: ExMap[K, V]): Some[sciSeq[K]]   = Some(map.keyVector.seq)
 

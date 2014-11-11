@@ -35,7 +35,7 @@ package std {
       }
       def showSet[A: Show](xs: InSet[A]): String = xs match {
         case xs: ExSet[A] => "{ " ~ internalEach[A](xs) ~ " }"
-        case _            => IntensionalSet.show(xs)
+        case _            => InSet show xs
       }
       def showJava[A: Show](xs: jIterable[A]): String    = "j[ " ~ internalEach(fromJava(xs)) ~ " ]"
       def showScala[A: Show](xs: sCollection[A]): String = "s[ " ~ internalEach(fromScala(xs)) ~ " ]"
@@ -220,12 +220,12 @@ package object std extends psp.std.StdPackage {
   def fromScala[A](xs: sCollection[A]): AnyView[A] = xs match {
     case xs: sciIndexedSeq[_] => Direct fromScala xs m
     case xs: sciLinearSeq[_]  => Linear fromScala xs m
-    case xs: sciSet[_]        => new PolicySet.FromScala(xs) m
+    case xs: sciSet[_]        => ExSet fromScala xs m
     case _                    => Each fromScala xs m
   }
   def fromJava[A](xs: jIterable[A]): AnyView[A] = xs match {
     case xs: jList[_] => Direct fromJava xs m
-    case xs: jSet[_]  => new PolicySet.FromJava[A](xs) m
+    case xs: jSet[_]  => ExSet fromJava xs m
     case xs           => Each fromJava xs m
   }
 

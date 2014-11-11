@@ -143,14 +143,14 @@ final class ExMapOps[K, V](xs: ExMap[K, V]) {
 }
 
 final class InSetOps[A](xs: InSet[A]) {
-  def comap[A1](f: A1 => A): InSet[A1]    = IntensionalSet(f andThen xs)
+  def comap[A1](f: A1 => A): InSet[A1]    = InSet(f andThen xs)
   def mapOnto[B](f: A => B): InMap[A, B]  = new IntensionalMap(xs, Lookup total f)
-  def diff(that: InSet[A]): InSet[A]      = IntensionalSet.Diff(xs, that)
-  def union(that: InSet[A]): InSet[A]     = IntensionalSet.Union(xs, that)
-  def intersect(that: InSet[A]): InSet[A] = IntensionalSet.Intersect(xs, that)
+  def diff(that: InSet[A]): InSet[A]      = InSet.Diff(xs, that)
+  def union(that: InSet[A]): InSet[A]     = InSet.Union(xs, that)
+  def intersect(that: InSet[A]): InSet[A] = InSet.Intersect(xs, that)
   def complement: InSet[A] = xs match {
-    case IntensionalSet.Complement(xs) => xs
-    case _                             => IntensionalSet.Complement(xs)
+    case InSet.Complement(xs) => xs
+    case _                             => InSet.Complement(xs)
   }
 
   def filter(p: Predicate[A]): InSet[A]    = this intersect inSet(p)
@@ -165,14 +165,14 @@ final class ExSetOps[A](xs: ExSet[A]) {
 
   def add(x: A): ExSet[A]                 = if (xs(x)) xs else xs union exSet(x)
   def canonicalize(x: A): A               = xs.findOr(_ === x, x)
-  def diff(that: ExSet[A]): ExSet[A]      = ExtensionalSet.Diff(xs, that)
-  def filter(p: Predicate[A]): ExSet[A]   = ExtensionalSet.Filtered(xs, p)
-  def intersect(that: ExSet[A]): ExSet[A] = ExtensionalSet.Intersect(xs, that)
+  def diff(that: ExSet[A]): ExSet[A]      = ExSet.Diff(xs, that)
+  def filter(p: Predicate[A]): ExSet[A]   = ExSet.Filtered(xs, p)
+  def intersect(that: ExSet[A]): ExSet[A] = ExSet.Intersect(xs, that)
   def isSubsetOf(ys: InSet[A]): Boolean   = xs forall ys
   def mapOnto[B](f: A => B): ExMap[A, B]  = new ExtensionalMap(xs, Lookup total f)
   def replace(x: A): ExSet[A]             = if (xs(x)) without(x) add x else this add x
   def reverse: ExSet[A]                   = xs // XXX
-  def union(that: ExSet[A]): ExSet[A]     = ExtensionalSet.Union(xs, that)
+  def union(that: ExSet[A]): ExSet[A]     = ExSet.Union(xs, that)
   def without(x: A): ExSet[A]             = xs diff exSet(x)
 
   def filterNot(p: Predicate[A]): ExSet[A] = this filter !p

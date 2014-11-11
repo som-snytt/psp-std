@@ -21,10 +21,10 @@ trait ConversionOps[A] extends Any {
   def toScala[CC[X]](implicit z: CanBuild[A, CC[A]]): CC[A] = to[CC](Builds wrap z)
 
   def toEach: Each[A]                                                     = xs
-  def toLinear: Linear[A]                                                 = xs match { case xs: Linear[A] => xs   ; case _ => Linear.builder[A] build xs                }
-  def toDirect: Direct[A]                                                 = xs match { case xs: Direct[A] => xs   ; case _ => Direct.builder[A] build xs                }
-  def toExSet(implicit z: HashEq[A]): ExSet[A]                            = xs match { case xs: ExSet[A] => xs    ; case _ => PolicySet.builder[A] build xs             }
-  def toExMap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): ExMap[K, V] = xs match { case xs: ExMap[K, V] => xs ; case _ => PolicyMap.builder[K, V] build (xs map ev) }
+  def toLinear: Linear[A]                                                 = xs match { case xs: Linear[A] => xs   ; case _ => Linear.builder[A] build xs            }
+  def toDirect: Direct[A]                                                 = xs match { case xs: Direct[A] => xs   ; case _ => Direct.builder[A] build xs            }
+  def toExSet(implicit z: HashEq[A]): ExSet[A]                            = xs match { case xs: ExSet[A] => xs    ; case _ => ExSet.builder[A] build xs             }
+  def toExMap[K, V](implicit ev: A <:< (K, V), z: HashEq[K]): ExMap[K, V] = xs match { case xs: ExMap[K, V] => xs ; case _ => ExMap.builder[K, V] build (xs map ev) }
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
   def toScalaList: sciList[A]                                   = toScala[sciList]
