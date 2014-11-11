@@ -197,7 +197,7 @@ package object std extends psp.std.StdPackage {
   def andFalse(x: Unit, xs: Unit*): Boolean             = false
   def andTrue(x: Unit, xs: Unit*): Boolean              = true
   def andUnit(x: Unit, xs: Unit*): Unit                 = ()
-  def direct[A](xs: A*): Direct[A]                      = new Direct.FromScala(xs.toVector)
+  def direct[A](xs: A*): Direct[A]                      = Direct fromScala xs.toVector
   def each[A](xs: sCollection[A]): Each[A]              = fromScala(xs)
   def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)
   def intRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end)
@@ -219,13 +219,13 @@ package object std extends psp.std.StdPackage {
   }
 
   def fromScala[A](xs: sCollection[A]): AnyView[A] = xs match {
-    case xs: sciIndexedSeq[_] => new Direct.FromScala(xs) m
+    case xs: sciIndexedSeq[_] => Direct fromScala xs m
     case xs: sciLinearSeq[_]  => new PolicyList.FromScala(xs) m
     case xs: sciSet[_]        => new PolicySet.FromScala(xs) m
     case _                    => new Each.FromScala(xs) m
   }
   def fromJava[A](xs: jIterable[A]): AnyView[A] = xs match {
-    case xs: jList[_] => new Direct.FromJava[A](xs) m
+    case xs: jList[_] => Direct fromJava xs m
     case xs: jSet[_]  => new PolicySet.FromJava[A](xs) m
     case xs           => new Each.FromJava[A](xs) m
   }

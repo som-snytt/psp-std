@@ -48,7 +48,8 @@ final class ExclusiveIntRange private (val bits: Long) extends AnyVal with Direc
   def elemAt(i: Index): Int = start + i.safeInt
   def contains(x: Int): Boolean = if (isAscending) start <= x && x < end else start >= x && x > end
 
-  @inline def foreach(f: Int => Unit): Unit = foreachInt(start, end, step, f)
+  @inline def foreach(f: Int => Unit): Unit        = if (!isEmpty) foreachInt(start, last, step, f)
+  @inline def foreachReverse(f: Int => Unit): Unit = if (!isEmpty) foreachInt(last, start, -step, f)
 
   override def toString = if (start == end) "<empty>" else s"[$start..$end)"
 }
@@ -59,11 +60,12 @@ object ExclusiveIntRange {
   /** Can't refer directly to fields because scala bloats all the bytecode
    *  going through getters. This way the parameters are locals.
    */
-  @inline def foreachInt(start: Int, end: Int, step: Int, f: Int => Unit): Unit = {
-    var elem = start
-    while (elem != end) {
-      f(elem)
+  @inline def foreachInt(start: Int, last: Int, step: Int, f: Int => Unit): Unit = {
+    var elem = start - step
+    while (true) {
       elem += step
+      f(elem)
+      if (elem == last) return
     }
   }
 

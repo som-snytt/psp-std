@@ -4,63 +4,71 @@ package std
 import api._
 
 object Direct {
-  final val Empty: Direct[Nothing] = new Impl[Nothing](0, i => abort(s"Empty($i)"))
+  final val Empty: Direct[Nothing] = WrapVector(sciVector())
 
-  trait DirectImpl[+A] extends Any with api.Direct[A] with api.HasPreciseSize {
+  final case class WrapVector[A](xs: sciVector[A]) extends AnyVal with DirectImpl[A] {
+    def +:(x: A): WrapVector[A]             = WrapVector(x +: xs)
+    def :+(x: A): WrapVector[A]             = WrapVector(xs :+ x)
+    def ++(ys: Direct[A]): WrapVector[A]    = WrapVector(xs ++ ys.seq)
+    def size: Precise                       = Precise(xs.size)
+    def elemAt(i: Index): A                 = xs(i.safeInt)
+    @inline def foreach(f: A => Unit): Unit = xs foreach f
+  }
+  final case class WrapArray[A](xs: Array[_]) extends AnyVal with DirectImpl[A] {
+    def size                                = Precise(xs.length)
+    def elemAt(i: Index): A                 = xs(i.safeInt).castTo[A]
+    @inline def foreach(f: A => Unit): Unit = size.indices foreach (i => f(elemAt(i)))
+  }
+  final case class WrapJava[A](xs: jList[A]) extends AnyVal with DirectImpl[A] {
+    def size                                = Precise(xs.size)
+    def elemAt(i: Index)                    = xs get i.safeInt
+    @inline def foreach(f: A => Unit): Unit = xs foreach f
+  }
+  final case class WrapString(xs: String) extends AnyVal with DirectImpl[Char] {
+    def size                                   = Precise(xs.length)
+    def elemAt(i: Index)                       = xs charAt i.safeInt
+    @inline def foreach(f: Char => Unit): Unit = size.indices foreach (i => f(xs elemAt i))
+  }
+  final case class Pure[A](size: Precise, elem: Index => A) extends DirectImpl[A] {
+    def elemAt(i: Index)                    = elem(i)
+    @inline def foreach(f: A => Unit): Unit = size.indices foreach (i => f(elem(i)))
+  }
+  final case class Reversed[A](xs: Direct[A]) extends AnyVal with DirectImpl[A] {
+    def size                = xs.size
+    def elemAt(i: Index): A = xs(size.lastIndex - i.sizeExcluding.get)
+    @inline def foreach(f: A => Unit): Unit = size.indices foreachReverse (i => f(xs(i)))
+  }
+
+  trait DirectImpl[+A] extends Any with Direct[A] {
     def isEmpty = size.isZero
   }
-  trait Forwarder[A] extends Direct[A] {
-    protected def underlying: Direct[A]
-    def elemAt(i: Index): A         = underlying(i)
-    def foreach(f: A => Unit): Unit = underlying foreach f
-    def size                        = underlying.size
-    def isEmpty                     = underlying.isEmpty
-  }
 
-  def build[A](f: Suspended[A]): Direct[A]       = builder[A] direct f
-  def builder[A] : Builds[A, Direct[A]]          = arrayBuilder[Any] map wrapArray
-  def stringBuilder(): Builds[Char, String]      = arrayBuilder[Char] map (cs => new String(cs))
+  def builder[A] : Builds[A, Direct[A]]     = Builds[A, sciVector[A]](xs => sciVector.newBuilder[A] doto (b => xs foreach b.+=) result) map fromScala
+  def stringBuilder(): Builds[Char, String] = Builds[Char, String](xs => new StringBuilder doto (b => xs foreach (c => b append c)) result)
   def arrayBuilder[A: CTag]: Builds[A, Array[A]] = Builds[A, Array[A]] {
     case xs @ HasSize(n: Precise) => newArray[A](n) doto (arr => xs foreachWithIndex ((x, i) => arr(i.safeInt) = x))
     case xs                       => scala.Array.newBuilder[A] doto (b => xs foreach b.+=) result
   }
-  final class ToScala[A](xs: Direct[A]) extends sciIndexedSeq[A] {
-    def apply(idx: Int): A = xs elemAt Index(idx)
-    def length: Int        = xs.intSize
-  }
-  abstract class Leaf[+A](val size: Precise, elem: Index => A) extends DirectImpl[A] {
-    def elemAt(i: Index): A = elem(i)
-    @inline final def foreach(f: A => Unit): Unit = this foreachIndex (i => f(elemAt(i)))
-  }
-  class TransformIndices[A](xs: Direct[A], f: Index => Index) extends Leaf[A](xs.size, i => xs elemAt f(i))
 
-  final class FromJava[A](xs: jList[A])                            extends Leaf[A](xs.size, xs get _.safeInt)
-  final class Impl[A](size: Precise, f: Index => A)                extends Leaf[A](size, f)
-  final class WrapString(xs: String)                               extends Leaf[Char](xs.length, xs charAt _.safeInt)
-  final class WrapArray[A](xs: Array[_])                           extends Leaf[A](xs.length, i => xs(i.safeInt).castTo[A])
-  final case class FromScala[A](scalaCollection: sciIndexedSeq[A]) extends Leaf[A](scalaCollection.length, scalaCollection apply _.safeInt) with psp.std.FromScala[sciIndexedSeq[A]]
-  final case class Reversed[A](xs: Direct[A])                      extends TransformIndices(xs, xs.lastIndex - _.safeInt)
-
-  final case class Joined[A](xs: Direct[A], ys: Direct[A]) extends DirectImpl[A] {
-    def elemAt(i: Index): A = if (xs containsIndex i) xs elemAt i else ys elemAt (i - xs.intSize)
-    def size                = xs.size + ys.size
-
-    @inline final def foreach(f: A => Unit): Unit = andUnit(xs foreach f, ys foreach f)
-  }
-
-  def apply[A](xs: A*): Direct[A] = xs match {
-    case xs: scmWrappedArray[A] => fromArray(xs.array)
-    case xs: sciIndexedSeq[A]   => new FromScala[A](xs)
-    case _                      => new Impl[A](xs.size, xs.seq.toVector |> (v => index => v(index.safeInt)))
-  }
   def empty[A] : Direct[A]                             = Empty
-  def join[A](xs: Direct[A], ys: Direct[A]): Direct[A] = Joined(xs, ys)
-  def fromScala[A](xs: sciIndexedSeq[A]): Direct[A]    = new FromScala(xs)
-  def fromString(xs: String): Direct[Char]             = new WrapString(xs)
-  def fromArray[A](xs: Array[A]): Direct[A]            = new WrapArray[A](xs)
-  def wrapArray[A](xs: Array[_]): Direct[A]            = new WrapArray[A](xs)
-  def pure[A](size: Precise, f: Index => A): Direct[A] = new Impl(size, f)
+  def apply[A](xs: A*): Direct[A]                      = WrapVector(xs.toVector)
+  def fromScala[A](xs: sciIndexedSeq[A]): Direct[A]    = WrapVector(xs.toVector)
+  def fromJava[A](xs: jList[A]): Direct[A]             = WrapJava(xs)
+  def fromString(xs: String): Direct[Char]             = WrapString(xs)
+  def fromArray[A](xs: Array[A]): Direct[A]            = WrapArray[A](xs)
+  def wrapArray[A](xs: Array[_]): Direct[A]            = WrapArray[A](xs)
+  def pure[A](size: Precise, f: Index => A): Direct[A] = Pure(size, f)
 
-  def from(start: Long): DirectView[Long, Direct[Long]] =
-    new DirectView(new Impl(Precise(MaxLong), n => start + n.indexValue)) //:| s"Direct.from($start)"
+  def join[A](xs: Direct[A], ys: Direct[A]): WrapVector[A] = xs match {
+    case xs: WrapVector[A] => xs ++ ys
+    case _                 => WrapVector(xs.toScalaVector) ++ ys
+  }
+  def append[A](xs: Direct[A], x: A): Direct[A] = xs match {
+    case xs: WrapVector[A] => xs :+ x
+    case _                 => WrapVector(xs.toScalaVector) :+ x
+  }
+  def prepend[A](x: A, xs: Direct[A]): Direct[A] = xs match {
+    case xs: WrapVector[A] => x +: xs
+    case _                 => x +: WrapVector(xs.toScalaVector)
+  }
 }

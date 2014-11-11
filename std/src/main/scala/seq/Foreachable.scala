@@ -63,5 +63,5 @@ object ForeachableIndexed extends ForeachableCompanion[ForeachableIndexed] {
   implicit def ArrayIs[A] : Coll[A, Array[A]]                                  = apply[A, Array[A]](Direct fromArray _)
   implicit def JavaStringIs: Coll[Char, String]                                = apply[Char, String](Direct fromString _)
   implicit def PolicyDirectIs[A, CC[X] <: Direct[X]] : Coll[A, CC[A]]          = apply[A, CC[A]](xs => xs)
-  implicit def ScalaIndexedSeqIs[A, CC[X] <: scIndexedSeq[A]] : Coll[A, CC[A]] = apply[A, CC[A]](xs => new Direct.FromScala(xs.toIndexedSeq))
+  implicit def ScalaIndexedSeqIs[A, CC[X] <: scIndexedSeq[A]] : Coll[A, CC[A]] = apply[A, CC[A]](xs => Direct fromScala xs.toIndexedSeq)
 }

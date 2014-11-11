@@ -19,7 +19,8 @@ final class LongRange private[std] (val bits: Long) extends AnyVal with Direct.D
   def toDrop: Precise = Precise(startInt)
   def toTake: Precise = intRange.size
 
-  @inline def foreach(f: Index => Unit): Unit = intRange foreach (i => f(Index(i)))
+  @inline def foreach(f: Index => Unit): Unit        = intRange foreach (i => f(Index(i)))
+  @inline def foreachReverse(f: Index => Unit): Unit = intRange foreachReverse (i => f(Index(i)))
 
   def elemAt(index: Index): Index = index + intRange.start
   def contains(i: Index): Boolean = intRange contains i.safeInt

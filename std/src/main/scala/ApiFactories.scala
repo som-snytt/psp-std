@@ -37,7 +37,7 @@ object Builds {
   def wrap[Elem, To](z: CanBuild[Elem, To]): Builds[Elem, To] = new Impl(xs => z() doto (b => xs foreach (b += _)) result)
 
   final class Impl[Elem, To](val f: Each[Elem] => To) extends AnyVal with Builds[Elem, To] {
-    def build(xs: Each[Elem]): To   = f(xs)
+    def build(xs: Each[Elem]): To      = f(xs)
     def apply(mf: Suspended[Elem]): To = build(Each(mf))
   }
 }

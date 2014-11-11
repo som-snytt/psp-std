@@ -29,10 +29,7 @@ trait ApiViewOps[+A] extends Any {
   }
 
   def foreachWithIndex(f: (A, Index) => Unit): Unit = foldl(0.index)((idx, x) => try idx.next finally f(x, idx))
-  def reverseForeach(f: A => Unit): Unit = xs match {
-    case xs: Direct[A] => xs.indices.reverse foreach (i => f(xs(i)))
-    case _             => xs.pvec.reverse foreach f
-  }
+  def foreachReverse(f: A => Unit): Unit            = xs.toPolicyVector |> (xs => xs.indices foreachReverse (i => f(xs(i))))
 
   def count(p: Predicate[A]): Int                        = foldl[Int](0)((res, x) => if (p(x)) res + 1 else res)
   def exists(p: Predicate[A]): Boolean                   = foldl[Boolean](false)((res, x) => if (p(x)) return true else res)
@@ -90,7 +87,7 @@ trait ApiViewOps[+A] extends Any {
   }
   def foldr[B](zero: B)(f: (A, B) => B): B = {
     var result = zero
-    reverseForeach(x => result = f(x, result))
+    foreachReverse(x => result = f(x, result))
     result
   }
 

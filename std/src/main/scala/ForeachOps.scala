@@ -25,7 +25,7 @@ trait ConversionOps[A] extends Any {
   def toPolicyList: pList[A]                                                     = PolicyList.builder[A] build xs
   def toPolicySeq: Each[A]                                                       = Each.builder[A] build xs
   def toPolicySet(implicit z: HashEq[A]): ExtensionalSet[A]                      = PolicySet.builder[A] build xs
-  def toPolicyVector: Direct[A]                                                  = Direct.builder[A] build xs
+  def toPolicyVector: Direct[A]                                                  = xs match { case xs: Direct[A] => xs ; case _ => Direct.builder[A] build xs }
   def toPolicyMap[K: HashEq, V](implicit ev: A <:< (K, V)): ExtensionalMap[K, V] = PolicyMap.builder[K, V] build (xs map ev)
 
   def toScalaIterable: scIterable[A]                            = toScala[scIterable]
@@ -69,8 +69,8 @@ final class ForeachOps[A](val xs: Each[A]) extends AnyVal with ConversionOps[A] 
 }
 
 final class DirectOps[A](val xs: Direct[A]) extends AnyVal with ConversionOps[A] {
-  def +:(y: A): Direct[A]          = Direct.join(Direct(y), xs)
-  def :+(y: A): Direct[A]          = Direct.join(xs, Direct(y))
+  def +:(x: A): Direct[A]          = Direct.prepend(x, xs)
+  def :+(x: A): Direct[A]          = Direct.append(xs, x)
   def ++(ys: Direct[A]): Direct[A] = Direct.join(xs, ys)
 
   def apply(i: Index): A           = xs elemAt i
