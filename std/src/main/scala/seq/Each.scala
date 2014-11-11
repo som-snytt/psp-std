@@ -77,21 +77,20 @@ object Each {
 
   def indices: Indexed[Index] = Indexed.indices
 
-  def elems[A](xs: A*): Each[A]                                 = apply[A](xs foreach _)
+  def apply[A](mf: Suspended[A]): Each[A]                       = new Impl[A](Size.unknown, mf)
   def const[A](elem: A): Constant[A]                            = Constant[A](elem)
   def continuallyWhile[A](p: Predicate[A])(expr: => A): Each[A] = continually(expr) takeWhile p
   def continually[A](elem: => A): Continually[A]                = Continually[A](() => elem)
+  def elems[A](xs: A*): Each[A]                                 = apply[A](xs foreach _)
   def empty[A] : Each[A]                                        = Direct.Empty
-  def join[A](xs: Each[A], ys: Each[A]): Each[A]                = Joined[A](xs, ys)
-  def unfold[A](start: A)(next: A => A): Unfold[A]              = Unfold[A](start)(next)
-  def fromScala[A](xs: sCollection[A]): Each[A]                 = WrapScala(xs)
   def fromJava[A](xs: jIterable[A]): Each[A]                    = WrapJava(xs)
-
-  def apply[A](mf: Suspended[A]): Each[A]        = new Impl[A](Size.unknown, mf)
-  def unapplySeq[A](xs: Each[A]): Some[scSeq[A]] = Some(xs.seq)
+  def fromScala[A](xs: sCollection[A]): Each[A]                 = WrapScala(xs)
+  def join[A](xs: Each[A], ys: Each[A]): Each[A]                = Joined[A](xs, ys)
+  def unapplySeq[A](xs: Each[A]): Some[scSeq[A]]                = Some(xs.seq)
+  def unfold[A](start: A)(next: A => A): Unfold[A]              = Unfold[A](start)(next)
 
   def show[A: Show](xs: Each[A], minElements: Precise, maxElements: Precise): String = xs splitAt maxElements.lastIndex match {
-    case SplitViewClass(xs, ys) if ys.isEmpty => xs mk_s ", "
-    case SplitViewClass(xs, _)                => (xs take minElements mk_s ", ") ~ ", ..."
+    case Split(xs, ys) if ys.isEmpty => xs mk_s ", "
+    case Split(xs, _)                => (xs take minElements mk_s ", ") ~ ", ..."
   }
 }

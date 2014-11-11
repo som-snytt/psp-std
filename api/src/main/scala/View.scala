@@ -6,9 +6,8 @@ import ApiAliases._
 
 trait AnyView[+A] extends Any with Each[A] {
   type MapTo[+X] <: AnyView[X]
-  type SplitTo[+X] <: SplitView[X]
 
-  def partition(p: Predicate[A]): SplitTo[A]
+  def partition(p: Predicate[A]): SplitView[A]
 }
 
 trait SetView[A] extends Any with AnyView[A] with ExSet[A] {
@@ -26,8 +25,8 @@ trait View[+A] extends Any with AnyView[A] {
   def dropWhile(p: Predicate[A]): MapTo[A]
   def flatMap[B](f: A => Each[B]): MapTo[B]
   def map[B](f: A => B): MapTo[B]
-  def span(p: Predicate[A]): SplitTo[A]
-  def splitAt(index: Index): SplitTo[A]
+  def span(p: Predicate[A]): SplitView[A]
+  def splitAt(index: Index): SplitView[A]
   def take(n: Precise): MapTo[A]
   def takeRight(n: Precise): MapTo[A]
   def takeWhile(p: Predicate[A]): MapTo[A]
