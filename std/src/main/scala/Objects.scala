@@ -8,8 +8,8 @@ object Pair {
   def unapply[R, A, B](x: R)(implicit z: PairDown[R, A, B]): Some[(A, B)] = Some((z left x, z right x))
 }
 object Split {
-  def apply[A](left: View[A], right: View[A]): View.Split[A] = SplitView(left, right)
-  def unapply[A](x: View.Split[A]): Some[(View[A], View[A])] = Some(x.left -> x.right)
+  def apply[A](left: View[A], right: View[A]): SplitView[A] = SplitViewClass(left, right)
+  def unapply[A](x: SplitView[A]): Some[(View[A], View[A])] = Some(x.left -> x.right)
 }
 object +: {
   def unapply[A](xs: Array[A])       = if (xs.length == 0) None else Some(xs(0) -> (xs drop 1))

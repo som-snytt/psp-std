@@ -84,9 +84,9 @@ trait StdOps2 extends Any with StdOps1 {
     def m: LinearView[A, Repr] = z wrap repr
   }
 
-  implicit def sCollectionIs[A, CC[X] <: sCollection[X]](xs: CC[A]): LinearView[A, CC[A]] = new LinearView[A, CC[A]](fromScala(xs))
-  implicit def jIterableIs[A, CC[X] <: jIterable[X]](xs: CC[A]): LinearView[A, CC[A]]     = new LinearView[A, CC[A]](fromJava(xs))
-  implicit def atomicForeachIs[A, CC[X] <: Each[X]](xs: CC[A]): LinearView[A, CC[A]]      = new LinearView[A, CC[A]](xs)
+  implicit def sCollectionIs[A, CC[X] <: sCollection[X]](xs: CC[A]): LinearView[A, CC[A]] = View linear (Linear fromScala xs)
+  implicit def jIterableIs[A, CC[X] <: jIterable[X]](xs: CC[A]): LinearView[A, CC[A]]     = View linear (Linear fromJava xs)
+  implicit def atomicForeachIs[A, CC[X] <: Each[X]](xs: CC[A]): AtomicView[A, CC[A]]      = View each xs
   implicit def opsEachView[A](x: View[A]): ops.EachApiViewOps[A]                          = new ops.EachApiViewOps(x)
 }
 
@@ -95,10 +95,10 @@ trait StdOps3 extends Any with StdOps2 {
     def m: DirectView[A, Repr] = z wrap repr
   }
 
-  implicit def directScalaIndexedIs[A, CC[X] <: sciIndexedSeq[X]](xs: CC[A]): DirectView[A, CC[A]] = new DirectView(Direct fromScala xs)
-  implicit def directIndexedIs[A, CC[X] <: Direct[X]](xs: CC[A]): DirectView[A, CC[A]]             = new DirectView(xs)
-  implicit def directArrayIs[A](xs: Array[A]): DirectView[A, Array[A]]                             = new DirectView(Direct fromArray xs)
-  implicit def directStringIs(xs: String): DirectView[Char, String]                                = new DirectView(Direct fromString xs)
+  implicit def directIndexedIs[A, CC[X] <: Direct[X]](xs: CC[A]): DirectView[A, CC[A]]             = View direct xs
+  implicit def directScalaIndexedIs[A, CC[X] <: sciIndexedSeq[X]](xs: CC[A]): DirectView[A, CC[A]] = View direct (Direct fromScala xs)
+  implicit def directArrayIs[A](xs: Array[A]): DirectView[A, Array[A]]                             = View direct (Direct fromArray xs)
+  implicit def directStringIs(xs: String): DirectView[Char, String]                                = View direct (Direct fromString xs)
 
   // We're (sickly) using the context bound to reduce the applicability of the implicit,
   // but then discarding it. The only way these can be value classes is if the type class

@@ -37,8 +37,8 @@ package std {
         case xs: ExSet[A] => "{ " ~ internalEach[A](xs) ~ " }"
         case _            => InSet show xs
       }
-      def showJava[A: Show](xs: jIterable[A]): String    = "j[ " ~ internalEach(fromJava(xs)) ~ " ]"
-      def showScala[A: Show](xs: sCollection[A]): String = "s[ " ~ internalEach(fromScala(xs)) ~ " ]"
+      def showJava[A: Show](xs: jIterable[A]): String    = "j[ " ~ internalEach(Each fromJava xs) ~ " ]"
+      def showScala[A: Show](xs: sCollection[A]): String = "s[ " ~ internalEach(Each fromScala xs) ~ " ]"
     }
   }
 
@@ -197,7 +197,7 @@ package object std extends psp.std.StdPackage {
   def andTrue(x: Unit, xs: Unit*): Boolean              = true
   def andUnit(x: Unit, xs: Unit*): Unit                 = ()
   def direct[A](xs: A*): Direct[A]                      = Direct fromScala xs.toVector
-  def each[A](xs: sCollection[A]): Each[A]              = fromScala(xs)
+  def each[A](xs: sCollection[A]): Each[A]              = Each fromScala xs
   def indexRange(start: Int, end: Int): IndexRange      = IndexRange(start, end)
   def intRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end)
   def nthRange(start: Int, end: Int): ExclusiveIntRange = ExclusiveIntRange(start, end + 1)
@@ -215,18 +215,6 @@ package object std extends psp.std.StdPackage {
     val t = new Thread() { override def run(): Unit = body }
     t setDaemon true
     t.start()
-  }
-
-  def fromScala[A](xs: sCollection[A]): AnyView[A] = xs match {
-    case xs: sciIndexedSeq[_] => Direct fromScala xs m
-    case xs: sciLinearSeq[_]  => Linear fromScala xs m
-    case xs: sciSet[_]        => ExSet fromScala xs m
-    case _                    => Each fromScala xs m
-  }
-  def fromJava[A](xs: jIterable[A]): AnyView[A] = xs match {
-    case xs: jList[_] => Direct fromJava xs m
-    case xs: jSet[_]  => ExSet fromJava xs m
-    case xs           => Each fromJava xs m
   }
 
   // Java.
@@ -251,8 +239,8 @@ package object std extends psp.std.StdPackage {
   def exSeq[A](xs: A*): Each[A]                            = xs.m.toEach
   def exSet[A: HashEq](xs: A*): ExSet[A]                   = xs.m.toExSet
   def exView[A](xs: A*): View[A]                           = Direct[A](xs: _*).m
-  def inMap[K, V](p: Predicate[K], f: K => V): InMap[K, V] = InMap(inSet(p), Lookup total f)
-  def inSet[A](p: Predicate[A]): InSet[A]                  = p.inSet
+  def inMap[K, V](p: Predicate[K], f: K => V): InMap[K, V] = InMap(inSet(p), f)
+  def inSet[A](p: Predicate[A]): InSet[A]                  = InSet(p)
   def inView[A](mf: Suspended[A]): View[A]                 = Each(mf).m
   def mutableMap[K, V](xs: (K, V)*): MutableMap[K, V]      = MutableMap(jConcurrentMap(xs: _*))
 

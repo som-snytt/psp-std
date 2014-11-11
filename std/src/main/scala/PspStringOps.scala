@@ -45,7 +45,7 @@ final class PspStringOps(val self: String) extends AnyVal with ops.DocStringOps 
   def isNonEmptyDigits       = self matches """^[\d]+$"""
   def isAllWhitespace        = self matches """[\s]*"""
   def nonEmpty: Boolean      = onull.length > 0
-  def capitalize: String     = mapNonEmpty(x => x splitAt 1.index match { case SplitView(l, r) => l.force.toUpperCase ~ r.force })
+  def capitalize: String     = mapNonEmpty(x => x splitAt 1.index match { case Split(l, r) => l.force.toUpperCase ~ r.force })
 
   def ~ (that: String): String    = self + that
   def * (n: Int): String          = this * n.size

@@ -91,7 +91,7 @@ object Each {
   def unapplySeq[A](xs: Each[A]): Some[scSeq[A]] = Some(xs.seq)
 
   def show[A: Show](xs: Each[A], minElements: Precise, maxElements: Precise): String = xs splitAt maxElements.lastIndex match {
-    case SplitView(xs, ys) if ys.isEmpty => xs mk_s ", "
-    case SplitView(xs, _)                => (xs take minElements mk_s ", ") ~ ", ..."
+    case SplitViewClass(xs, ys) if ys.isEmpty => xs mk_s ", "
+    case SplitViewClass(xs, _)                => (xs take minElements mk_s ", ") ~ ", ..."
   }
 }

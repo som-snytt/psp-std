@@ -6,7 +6,7 @@ import ApiAliases._
 
 trait AnyView[+A] extends Any with Each[A] {
   type MapTo[+X] <: AnyView[X]
-  type SplitTo[+X] <: View.Split[X]
+  type SplitTo[+X] <: SplitView[X]
 
   def partition(p: Predicate[A]): SplitTo[A]
 }
@@ -43,16 +43,12 @@ trait InMapView[-K, +V] extends Any with AnyView[V] with InMap[K, V] {
   def map[V1](f: V => V1): MapTo[V1]
 }
 
-object View {
-  trait Atomic[+A] extends Any with View[A]
-  trait Composite[A, +B] extends Any with View[B] { def prev: View[A] }
-  trait Split[+A] extends Any {
-    type Single[+A] <: View[A]
-    def mapLeft[A1 >: A](f: Single[A1] => Single[A1]): Split[A1]
-    def mapRight[A1 >: A](f: Single[A1] => Single[A1]): Split[A1]
-    def left: Single[A]
-    def right: Single[A]
-    def join: Single[A]
-    def intersperse: Single[A]
-  }
+trait SplitView[+A] extends Any {
+  type Single[+A] <: View[A]
+  def mapLeft[A1 >: A](f: Single[A1] => Single[A1]): SplitView[A1]
+  def mapRight[A1 >: A](f: Single[A1] => Single[A1]): SplitView[A1]
+  def left: Single[A]
+  def right: Single[A]
+  def join: Single[A]
+  def intersperse: Single[A]
 }

@@ -29,8 +29,8 @@ object Foreachable extends ForeachableCompanion[Foreachable] {
   }
 
   implicit def PolicyForeachIs[A, CC[X] <: Each[X]] : Coll[A, CC[A]]          = apply[A, CC[A]](xs => xs)
-  implicit def ScalaCollectionIs[A, CC[X] <: sCollection[X]] : Coll[A, CC[A]] = apply[A, CC[A]](fromScala)
-  implicit def JavaIterableIs[A, CC[X] <: jIterable[X]] : Coll[A, CC[A]]      = apply[A, CC[A]](fromJava)
+  implicit def ScalaCollectionIs[A, CC[X] <: sCollection[X]] : Coll[A, CC[A]] = apply[A, CC[A]](Each fromScala _)
+  implicit def JavaIterableIs[A, CC[X] <: jIterable[X]] : Coll[A, CC[A]]      = apply[A, CC[A]](Each fromJava _)
 }
 
 object ForeachableSet extends ForeachableCompanion[ForeachableSet] {
@@ -50,8 +50,8 @@ object ForeachableLinear extends ForeachableCompanion[ForeachableLinear] {
     def wrap(repr: Repr): LinearView[A, Repr] = new LinearView[A, Repr](f(repr))
   }
   implicit def PolicyLinearIs[A, CC[X] <: Linear[X]] : Coll[A, CC[A]]             = apply[A, CC[A]](xs => xs)
-  implicit def ScalaSeqIs[A, CC[X] <: scSeq[X]] : Coll[A, CC[A]]                  = apply[A, CC[A]](fromScala)
-  implicit def ScalaMapIs[K, V, CC[X, Y] <: scMap[X, Y]] : Coll[(K, V), CC[K, V]] = apply[(K, V), CC[K, V]](fromScala)
+  implicit def ScalaSeqIs[A, CC[X] <: scSeq[X]] : Coll[A, CC[A]]                  = apply[A, CC[A]](Linear fromScala _)
+  implicit def ScalaMapIs[K, V, CC[X, Y] <: scMap[X, Y]] : Coll[(K, V), CC[K, V]] = apply[(K, V), CC[K, V]](Each fromScala _)
 
 }
 object ForeachableIndexed extends ForeachableCompanion[ForeachableIndexed] {

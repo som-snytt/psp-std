@@ -87,7 +87,7 @@ package object tests {
   def expectType(expected: jClass, found: jClass): NamedProp        = fshow"$expected%15s  >:>  $found%s" -> Prop(expected isAssignableFrom found)
   def expectTypes(expected: jClass, found: Each[jClass]): NamedProp = fshow"$expected%15s  >:>  $found%s" -> found.map(c => Prop(expected isAssignableFrom c))
   def expectType[A: CTag](result: A): NamedProp                     = expectType(classOf[A], result.getClass)
-  def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], fromScala(results) map (_.getClass))
+  def expectTypes[A: CTag](results: A*): NamedProp                  = expectTypes(classOf[A], Direct fromScala results map (_.getClass))
 
   implicit def buildsToBuildable[A, CC[X]](implicit z: Builds[A, CC[A]]): Buildable[A, CC] =
     new Buildable[A, CC] { def builder: scmBuilder[A, CC[A]] = z.scalaBuilder }
