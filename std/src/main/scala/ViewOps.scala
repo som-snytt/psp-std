@@ -55,6 +55,7 @@ trait ApiViewOps[+A] extends Any {
   def filter(p: Predicate[A]): View[A]                           = xs withFilter p
   def filterNot(p: Predicate[A]): View[A]                        = xs withFilter !p
   def gather[B](pf: A ?=> View[B]): View[B]                      = xs flatMap pf.zapply
+  def gatherClass[B: CTag] : View[B]                             = xs collect classFilter[B]
   def grep(regex: Regex)(implicit z: Show[A]): View[A]           = xs filter (x => regex isMatch x)
   def init: View[A]                                              = xs dropRight 1
   def labelOp[B](label: String)(f: View[A] => View[B]): View[B]  = new LabeledView(f(xs), xs.viewOps :+ label)
@@ -62,10 +63,11 @@ trait ApiViewOps[+A] extends Any {
   def mapWithIndex[B](f: (A, Index) => B): View[B]               = inView[B](mf => foldWithIndex(())((res, x, i) => mf(f(x, i))))
   def mapZip[B](f: A => B): View[(A, B)]                         = xs map (x => x -> f(x))
   def slice(range: IndexRange): View[A]                          = labelOp(pp"slice $range")(_ drop range.toDrop take range.toTake)
+  def sliceWhile(p: Predicate[A], q: Predicate[A]): View[A]      = xs dropWhile p takeWhile q
   def sortDistinct(implicit ord: Order[A]): View[A]              = new DirectApiViewOps(xs.toDirect) sortDistinct
   def sorted(implicit ord: Order[A]): View[A]                    = new DirectApiViewOps(xs.toDirect) sorted
-  def tail: View[A]                                              = xs drop      1
-  def toRefs: View[Ref[A]]                                       = xs map (_.castTo[Ref[A]])
+  def tail: View[A]                                              = xs drop 1
+  def toRefs: View[Ref[A]]                                       = xs map (_.toRef)
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
   def zip[B](ys: View[B]): ZipView[A, B]                         = new ZipView(xs, ys)
   def zipIndex: ZipView[A, Index]                                = new ZipView(xs, Each.indices)
@@ -74,40 +76,15 @@ trait ApiViewOps[+A] extends Any {
   def takeToFirst(p: Predicate[A]): View[A] = xs span !p mapRight (_ take 1) rejoin
   def dropIndex(index: Index): View[A]      = xs splitAt index mapRight (_ drop 1) rejoin
 
-  def foldWithIndex[B](zero: B)(f: (B, A, Index) => B): B = {
-    var res = zero
-    var index = Index(0)
-    xs foreach { x =>
-      res = f(res, x, index)
-      index += 1
-    }
-    res
-  }
-  def foldl[B](zero: B)(f: (B, A) => B): B = {
-    var res = zero
-    xs foreach (x => res = f(res, x))
-    res
-  }
-  def foldr[B](zero: B)(f: (A, B) => B): B = {
-    var result = zero
-    foreachReverse(x => result = f(x, result))
-    result
-  }
+  def groupBy[B: HashEq](f: A => B): ExMap[B, View[A]] =
+    foldl(bufferMap[B, View[A]]())((buf, x) => andResult(buf, buf(f(x)) :+= x)).toMap.m.toExMap
 
-  /** TODO - possible map-creation methods.
+  def foldWithIndex[B](zero: B)(f: (B, A, Index) => B): B = foldFrom(zero) indexed f
+  def foldl[B](zero: B)(f: (B, A) => B): B                = foldFrom(zero) left f
+  def foldr[B](zero: B)(f: (A, B) => B): B                = foldFrom(zero) right f
 
-  def ascendingFrequency: ExMap[A, Int]                     = unsortedFrequencyMap |> (_.orderByValue)
-  def descendingFrequency: ExMap[A, Int]                    = ascendingFrequency.reverse
-  def unsortedFrequencyMap: Map[A, Int]                     = sciMap(toScalaVector groupBy identity mapValues (_.size) toSeq: _*)
-  def mapToAndOnto[B, C](k: A => B, v: A => C): ExMap[B, C] = toScalaVector |> (xs => newMap(xs map (x => k(x) -> v(x)): _*))
-  def mapToMapPairs[B, C](f: A => (B, C)): ExMap[B, C]      = toScalaVector |> (xs => newMap(xs map f: _*))
-  def groupBy[B, C](f: A => B)(g: Each[A] => C): ExMap[B, C] = {
-    val buf = scmMap[B, Linear[A]]() withDefaultValue newList[A]()
-    toEach foreach (x => buf(f(x)) ::= x)
-    newMap((buf.toMap mapValues g).toSeq: _*)
-  }
-
-  **/
+  def foldFrom[B](zero: B): FoldOps[A, B]          = FoldOpsClass(xs, zero)
+  def fold[B](implicit z: Empty[B]): FoldOps[A, B] = FoldOpsClass(xs, z.empty)
 }
 
 trait ExtensionalOps[A] extends Any {

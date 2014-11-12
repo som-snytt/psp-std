@@ -41,6 +41,7 @@ final class IndexImpl private[std] (val indexValue: Long) extends AnyVal with In
 /** Nth is a 1-based index. The recorded indexValue is 0-based as with Index.
  */
 final class Nth private[std] (val nthValue: Long) extends AnyVal {
+  def -(n: Long): Nth   = if (isUndefined) this else Nth(nthValue - n)
   def +(n: Long): Nth   = if (isUndefined) this else Nth(nthValue + n)
   def toIndex: Index    = Index(nthValue - 1)
   def toNth: Nth        = this

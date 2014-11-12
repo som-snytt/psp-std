@@ -101,7 +101,7 @@ class OperationCounts extends ScalacheckBundle {
     override def toString = description
   }
 
-  def props() = sciList[NamedProp](
+  def props() = Direct[NamedProp](
     NamedProp(s"Generating $minSuccessful view combinations, displaying at most $maxDisplay", Prop(true)),
     NamedProp("%-60s %-12s %s".format("", "Linear", "Direct"), Prop(true)),
     NamedProp("policy never performs more operations than scala", compositeProp)

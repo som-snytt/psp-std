@@ -40,6 +40,7 @@ trait ApiAliases extends scala.Any {
   type PairOf[+A]    = (A, A)
   type Shower[-A]    = A => String
   type Suspended[+A] = (A => Unit) => Unit
+  type Unary[A]      = A => A
 }
 
 // Necessary to use those aliases within the api package.

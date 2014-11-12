@@ -78,6 +78,7 @@ package object std extends psp.std.StdPackage {
   type InvariantPredicate[A] = A => Boolean
   type InvariantInSet[A]     = InSet[A]
   type View2D[+A]            = View[View[A]]
+  type Each2D[+A]            = Each[Each[A]]
 
   // Inlinable.
   final val InputStreamBufferSize = 8192
@@ -244,6 +245,7 @@ package object std extends psp.std.StdPackage {
   def inView[A](mf: Suspended[A]): View[A]                 = Each(mf).m
   def mutableMap[K, V](xs: (K, V)*): MutableMap[K, V]      = MutableMap(jConcurrentMap(xs: _*))
 
+  def bufferMap[A, B: Empty](): scmMap[A, B]                = scmMap[A, B]() withDefaultValue emptyValue[B]
   def newPartial[K, V](p: K => Boolean, f: K => V): K ?=> V = { case x if p(x) => f(x) }
   def newCmp(difference: Long): Cmp                         = if (difference < 0) Cmp.LT else if (difference > 0) Cmp.GT else Cmp.EQ
   def newArray[A: CTag](size: Precise): Array[A]            = new Array[A](size.intSize)

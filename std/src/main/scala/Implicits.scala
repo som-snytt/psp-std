@@ -81,15 +81,15 @@ abstract class StdPackage
     }
   }
 
-  implicit class View2DOps[+A](val xs: View2D[A]) {
-    def flatten: View[A]                  = xs flatMap identity
-    def mmap[B](f: A => B): View[View[B]] = xs map (_ map f)
+  implicit class Each2DOps[A](val xss: Each[Each[A]]) {
+    def flatten: View[A]                  = xss flatMap identity
+    def mmap[B](f: A => B): View[View[B]] = xss map (_ map f)
   }
 
   implicit def booleanToPredicate(value: Boolean): Predicate[Any] = if (value) ConstantTrue else ConstantFalse
   implicit def jClassToPolicyClass(x: jClass): PolicyClass        = new PolicyClass(x)
   implicit def intToPreciseSize(n: Int): IntSize                  = Precise(n)
-  implicit def convertNilSeq[A](x: scala.Nil.type): Direct[A]    = Direct[A]()
+  implicit def convertNilSeq[A](x: scala.Nil.type): Direct[A]     = Direct[A]()
 
   implicit def convertPolicySeq[A, B](xs: Each[A])(implicit conversion: A => B): Each[B] = xs map (x => conversion(x))
 

@@ -11,7 +11,7 @@ class TokenSpec extends ScalacheckBundle {
   val src              = scalac.source(input)
   val toks_s: String   = src.analysis.tokens.tabular("L" + _.line.nthValue, "" + _.pos.index.indexValue, " " + _.shown).trimLines
 
-  def props: sciList[NamedProp] = sciList(
+  def props: Direct[NamedProp] = Direct(
     s"sample source file tokenizes" -> Prop(expected === toks_s)
   )
 }

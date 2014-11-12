@@ -30,7 +30,7 @@ class Typecheck extends ScalacheckBundle {
     )
   }
 
-  def props = sciSeq[NamedProp](
+  def props = Direct[NamedProp](
     divide("psp-show", typecheckedLines(pspShowCode)),
     divide("psp-by-equals", typecheckedLines(policyByEquals), expectedTypecheck = 12),
     divide("psp-by-ref", typecheckedLines(policyByRef), expectedTypecheck = 0),

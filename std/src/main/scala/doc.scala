@@ -25,6 +25,8 @@ object Doc extends DocConstants {
 
   def apply(s: String): Doc     = Text(s)
   def apply[A: Show](x: A): Doc = Shown(x, implicitly[Show[A]])
+
+  implicit def showDoc: Show[Doc] = Show(x => "" + x)
 }
 
 trait DocConstants {

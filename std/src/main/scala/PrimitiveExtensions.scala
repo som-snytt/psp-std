@@ -22,7 +22,7 @@ final class AnyOps[A](val x: A) extends AnyVal {
   // "Maybe we can enforce good programming practice with annoyingly long method names."
   def isClass[A: CTag] = classOf[A] isAssignableFrom x.getClass
   def castTo[U] : U    = x.asInstanceOf[U]
-  def toRef: AnyRef    = castTo[AnyRef]
+  def toRef: Ref[A]    = castTo[Ref[A]]
   def isNull: Boolean  = toRef eq null
 
   def reflect[B](m: jMethod)(args: Any*): B = m.invoke(x, args.map(_.castTo[AnyRef]): _*).castTo[B]
@@ -34,7 +34,7 @@ final class AnyOps[A](val x: A) extends AnyVal {
   @inline def |>[B](f: A => B): B                 = f(x)
 
   // Calling eq on Anys.
-  def id_==(y: Any): Boolean = toRef eq y.toRef
+  def id_==(y: Any): Boolean = (toRef: AnyRef) eq y.toRef
   def id_## : Int            = identityHashCode(x)
 
   def fix[R]: FixType[A, R] = new FixType[A, R](x)

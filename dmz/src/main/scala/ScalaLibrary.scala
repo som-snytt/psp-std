@@ -88,6 +88,5 @@ trait ScalaLibrary extends Any with ApiAliases {
   type Predicate2[-A1, -A2]      = (A1, A2) => Boolean
   type Ref[+A]                   = A with AnyRef
   type UShort                    = Char
-  type Unary[A]                  = A => A
   type BinOp[A]                  = (A, A) => A
 }

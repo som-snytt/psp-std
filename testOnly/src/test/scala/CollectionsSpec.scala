@@ -24,7 +24,7 @@ class StringExtensions extends ScalacheckBundle {
   // take/dropRight with values around MinInt.
   def mostInts = arb[Int] filter (_ > MinInt + 5000)
 
-  def props: sciList[NamedProp] = sciList(
+  def props: Direct[NamedProp] = Direct(
     "stripSuffix" -> newProp2[String](_ stripSuffix _)(_ stripSuffix _),
     "stripPrefix" -> newProp2[String](_ stripPrefix _)(_ stripPrefix _),
     "take"        -> newProp2[Int](_ take _)(_ take _ build),
@@ -67,7 +67,7 @@ class GridSpec extends ScalacheckBundle {
     |12  33  85  133 253 377
   """
 
-  def props = sciList(
+  def props = Direct(
     seqShows("[ 2, 4, 6, ... ], [ 3, 9, 15, ... ], [ 5, 25, 35, ... ]", Indexed from 2 mpartition (xs => _ % xs.head == 0) take 3),
     showsAs(primePartition6, showGrid(primePartitionGrid(6))),
     showsAs(primePartition6_t, showGrid(primePartitionGrid_t(6)))
@@ -87,7 +87,7 @@ class PolicyBasic extends ScalacheckBundle {
   def closureBag = closure flatMap (x => x) toBag // That's my closure bag, baby
   def xxNumbers  = (Indexed from 0).m grep """^(.*)\1""".r
 
-  def props: sciList[NamedProp] = sciList(
+  def props: Direct[NamedProp] = Direct(
     showsAs("[ 1, 2, 3 ]", plist),
     showsAs("[ 1, 2, 3 ]", pvector),
     showsAs("[ 1, 2, 3 ]", parray),
@@ -115,7 +115,7 @@ class CollectionsSpec extends ScalacheckBundle {
 
   def paired[A](x: A): (A, Int) = x -> ("" + x).length
 
-  def props: sciList[NamedProp] = policyProps ++ sciList(
+  def props: Direct[NamedProp] = policyProps ++ Direct(
     expectTypes[sciBitSet](
       bits.m map identity build,
       bits.m map (_.toString.length) build,
@@ -161,12 +161,12 @@ class CollectionsSpec extends ScalacheckBundle {
     )
   )
 
-  def policyProps: sciList[NamedProp] = {
+  def policyProps: Direct[NamedProp] = {
     import StdEq._
     val pset = exSet("a" -> 1, "b" -> 2, "c" -> 3)
     val pseq = exSeq("a" -> 1, "b" -> 2, "c" -> 3)
 
-    sciList(
+    Direct(
       expectTypes[ExSet[_]](
         pset.m map identity build,
         pset.m.build,

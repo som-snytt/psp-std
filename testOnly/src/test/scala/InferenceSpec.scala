@@ -5,12 +5,12 @@ import psp.std._, api._, StdEq._, StdShow._
 
 class SliceSpec extends ScalacheckBundle {
   def bundle = "Slice Operations"
-  def checkSlice[A : Eq : Show](xs: Direct[A], start: Int, end: Int, expect: Direct[A]): sciList[NamedProp] = sciList(
+  def checkSlice[A : Eq : Show](xs: Direct[A], start: Int, end: Int, expect: Direct[A]): Direct[NamedProp] = Direct(
     show"$xs.slice($start, $end) === $expect"              -> Prop((xs slice indexRange(start, end) force) === expect),
     show"$xs drop $start take ($end - $start) === $expect" -> Prop((xs drop start.size take (end - start).size force) === expect)
   )
 
-  def props = sciList(
+  def props = Direct(
     checkSlice('a' to 'g', 2, 5, 'c' to 'e')
   ).flatten
 }
@@ -19,7 +19,7 @@ class InferenceSpec extends ScalacheckBundle {
   def bundle = "Type Inference, Views"
 
   val as: Array[Int]     = Array(1, 2, 3)
-  val ds: Direct[Int]   = Direct(1, 2, 3)
+  val ds: Direct[Int]    = Direct(1, 2, 3)
   val fs: Each[Int]      = Each(ds foreach _)
   val ls: sciList[Int]   = sciList(1, 2, 3)
   val ss: String         = "123"
@@ -34,7 +34,7 @@ class InferenceSpec extends ScalacheckBundle {
   val b6 = vs.m map identity build
   // val b7 = xs map identity //build
 
-  def ptBuild = sciList[NamedProp](
+  def ptBuild = Direct[NamedProp](
     expectType[Array[Int]](b1),
     expectType[Direct[Int]](b2),
     expectType[Each[Int]](b3),
@@ -80,7 +80,7 @@ class InferenceSpec extends ScalacheckBundle {
     xs.m map identity force
   )
 
-  def props: sciList[NamedProp] = sciList(ptArray, ptView, ptVector) ++ ptBuild ++ sciList(
+  def props: Direct[NamedProp] = Direct(ptArray, ptView, ptVector) ++ ptBuild ++ Direct(
     expectType[Array[Char]]   (ss.m map identity force),
     // expectType[String]        (ss map identity),
     expectType[String]        (ss map identity build),
