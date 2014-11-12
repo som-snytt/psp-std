@@ -65,7 +65,7 @@ trait ApiViewOps[+A] extends Any {
   def sortDistinct(implicit ord: Order[A]): View[A]              = new DirectApiViewOps(xs.toDirect) sortDistinct
   def sorted(implicit ord: Order[A]): View[A]                    = new DirectApiViewOps(xs.toDirect) sorted
   def tail: View[A]                                              = xs drop      1
-  def toRefs: View[AnyRef with A]                                = xs map (_.castTo[AnyRef with A])
+  def toRefs: View[Ref[A]]                                       = xs map (_.castTo[Ref[A]])
   def withSize(size: Size): View[A]                              = new Each.Impl[A](size, xs foreach _)
   def zip[B](ys: View[B]): ZipView[A, B]                         = new ZipView(xs, ys)
   def zipIndex: ZipView[A, Index]                                = new ZipView(xs, Each.indices)

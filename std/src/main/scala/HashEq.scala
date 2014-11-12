@@ -10,17 +10,17 @@ trait NaturalHashEq
 object Hash {
   final class Impl[-A](val f: A => Int) extends AnyVal with Hash[A] { def hash(x: A): Int = f(x) }
 
-  def reference[A](): Hash[A with AnyRef] = new Impl[A with AnyRef](_.id_##)
-  def natural[A](): Hash[A]               = new Impl[A](_.##)
-  def apply[A](f: A => Int): Hash[A]      = new Impl[A](f)
+  def reference[A](): Hash[Ref[A]]   = new Impl[Ref[A]](_.id_##)
+  def natural[A](): Hash[A]          = new Impl[A](_.##)
+  def apply[A](f: A => Int): Hash[A] = new Impl[A](f)
 }
 
 object Eq {
   final class Impl[-A](val f: Relation[A]) extends AnyVal with Eq[A] { def equiv(x: A, y: A) = f(x, y) }
 
-  def reference[A](): Eq[A with AnyRef] = new Impl[A with AnyRef](_ id_== _)
-  def natural[A](): Eq[A]               = new Impl[A](_ == _)
-  def apply[A](f: Relation[A]): Eq[A]   = new Impl[A](f)
+  def reference[A](): Eq[Ref[A]]      = new Impl[Ref[A]](_ id_== _)
+  def natural[A](): Eq[A]             = new Impl[A](_ == _)
+  def apply[A](f: Relation[A]): Eq[A] = new Impl[A](f)
 }
 
 trait HashEqLow {
