@@ -90,6 +90,7 @@ trait JavaLibrary extends Any {
   type jConcurrentMap[K, V]                    = java.util.concurrent.ConcurrentMap[K, V]
   type jConcurrentHashMap[K, V]                = java.util.concurrent.ConcurrentHashMap[K, V]
   type jDate                                   = java.util.Date
+  type jEnum[E <: jEnum[E]]                    = java.lang.Enum[E]
   type jEnumeration[A]                         = java.util.Enumeration[A]
   type jField                                  = java.lang.reflect.Field
   type jFile                                   = java.io.File

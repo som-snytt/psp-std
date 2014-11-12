@@ -181,5 +181,6 @@ trait ShowEach1 extends ShowEach0 {
   implicit def showScala[A: Show, CC[X] <: sCollection[X]](implicit z: ShowCollections): Show[CC[A]]           = Show(z.showScala[A])
 }
 trait ShowEach extends ShowEach1 {
+  implicit def showJavaEnum[A <: jEnum[A]] : Show[jEnum[A]]                    = Show.natural()
   implicit def showArray[A: Show](implicit z: ShowCollections): Show[Array[A]] = showBy[Array[A]](Direct.fromArray)
 }
